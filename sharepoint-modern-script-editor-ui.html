@@ -291,13 +291,52 @@
     </div>
 
     <style>
+      /* Fallout/Pip-Boy inspired full-width theme */
       #sp-pip-ui {
-        font-family: Segoe UI, system-ui, -apple-system, Arial, sans-serif;
-        color: #111;
+        --pb-green: #41ff7a;
+        --pb-green2: #1ce85e;
+        --pb-bg: #040905;
+        --pb-panel: rgba(0, 0, 0, 0.35);
+        --pb-line: rgba(65, 255, 122, 0.22);
+        --pb-muted: rgba(65, 255, 122, 0.7);
+        --pb-dim: rgba(65, 255, 122, 0.45);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        color: var(--pb-green);
       }
       #sp-pip-ui .app {
-        max-width: 1200px;
-        margin: 0 auto;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 10px 10px 16px;
+        border: 1px solid var(--pb-line);
+        background: radial-gradient(1200px 600px at 50% -200px, rgba(65, 255, 122, 0.14), transparent 60%),
+          linear-gradient(180deg, rgba(65, 255, 122, 0.06), transparent 55%),
+          var(--pb-bg);
+        position: relative;
+        overflow: hidden;
+      }
+      #sp-pip-ui .app::before {
+        content: "";
+        pointer-events: none;
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 0px,
+          rgba(0, 0, 0, 0) 2px,
+          rgba(0, 0, 0, 0.18) 3px
+        );
+        opacity: 0.45;
+        mix-blend-mode: multiply;
+      }
+      #sp-pip-ui .app::after {
+        content: "";
+        pointer-events: none;
+        position: absolute;
+        inset: -2px;
+        background: radial-gradient(closest-side at 50% 40%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.6) 110%);
+        opacity: 0.55;
       }
       #sp-pip-ui .topbar {
         display: flex;
@@ -305,16 +344,20 @@
         justify-content: space-between;
         gap: 12px;
         padding: 8px 0 12px;
-        border-bottom: 1px solid #edebe9;
+        border-bottom: 1px solid var(--pb-line);
+        position: relative;
+        z-index: 1;
       }
       #sp-pip-ui .h1 {
         font-weight: 700;
         font-size: 16px;
+        letter-spacing: 0.12em;
       }
       #sp-pip-ui .sub {
-        color: #605e5c;
+        color: var(--pb-muted);
         font-size: 12px;
         margin-top: 4px;
+        letter-spacing: 0.08em;
       }
       #sp-pip-ui .tabs {
         display: flex;
@@ -322,19 +365,24 @@
         flex-wrap: wrap;
       }
       #sp-pip-ui .tab {
-        border: 1px solid #c8c6c4;
-        background: #fff;
+        border: 1px solid var(--pb-line);
+        background: rgba(0, 0, 0, 0.25);
         padding: 6px 10px;
         border-radius: 6px;
         cursor: pointer;
         font-size: 12px;
+        color: var(--pb-muted);
+        letter-spacing: 0.12em;
       }
       #sp-pip-ui .tab.is-active {
-        border-color: #0078d4;
-        color: #0078d4;
+        border-color: rgba(65, 255, 122, 0.5);
+        color: var(--pb-green);
+        box-shadow: 0 0 12px rgba(65, 255, 122, 0.12);
       }
       #sp-pip-ui .panel {
         padding-top: 12px;
+        position: relative;
+        z-index: 1;
       }
 
       #sp-pip-ui .view {
@@ -357,9 +405,10 @@
       #sp-pip-ui .sectionTitle {
         font-weight: 700;
         font-size: 14px;
+        letter-spacing: 0.12em;
       }
       #sp-pip-ui .muted {
-        color: #605e5c;
+        color: var(--pb-muted);
         font-size: 12px;
       }
       #sp-pip-ui .mono {
@@ -378,8 +427,8 @@
       }
 
       #sp-pip-ui .card {
-        border: 1px solid #edebe9;
-        background: #fff;
+        border: 1px solid var(--pb-line);
+        background: linear-gradient(180deg, rgba(65, 255, 122, 0.05), rgba(0, 0, 0, 0.18));
         border-radius: 10px;
         padding: 12px;
       }
@@ -392,37 +441,42 @@
       #sp-pip-ui .input {
         width: 100%;
         box-sizing: border-box;
-        border: 1px solid #c8c6c4;
+        border: 1px solid var(--pb-line);
         border-radius: 6px;
         padding: 8px 10px;
         outline: none;
         font-size: 12px;
-        background: #fff;
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--pb-green);
+        letter-spacing: 0.06em;
       }
       #sp-pip-ui .input:focus {
-        border-color: #0078d4;
-        box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.15);
+        border-color: rgba(65, 255, 122, 0.5);
+        box-shadow: 0 0 0 2px rgba(65, 255, 122, 0.12);
       }
       #sp-pip-ui select.input {
         padding-right: 30px;
       }
 
       #sp-pip-ui .btn {
-        border: 1px solid #0078d4;
-        background: #0078d4;
-        color: #fff;
+        border: 1px solid rgba(65, 255, 122, 0.35);
+        background: rgba(0, 0, 0, 0.28);
+        color: var(--pb-green);
         padding: 8px 10px;
         border-radius: 6px;
         cursor: pointer;
         font-size: 12px;
+        letter-spacing: 0.12em;
       }
       #sp-pip-ui .btn.ghost {
-        background: #fff;
-        color: #0078d4;
+        background: rgba(0, 0, 0, 0.18);
+        color: var(--pb-muted);
+        border-color: var(--pb-line);
       }
       #sp-pip-ui .btn.danger {
-        border-color: #a4262c;
-        background: #a4262c;
+        border-color: rgba(255, 109, 109, 0.6);
+        background: rgba(255, 109, 109, 0.14);
+        color: #ff9a9a;
       }
 
       #sp-pip-ui .formGrid {
@@ -440,7 +494,8 @@
         font-weight: 600;
         font-size: 12px;
         margin-bottom: 4px;
-        color: #323130;
+        color: var(--pb-muted);
+        letter-spacing: 0.12em;
       }
       #sp-pip-ui .field.full {
         grid-column: 1 / -1;
@@ -469,7 +524,7 @@
         padding-right: 6px;
       }
       #sp-pip-ui .item {
-        border: 1px solid #edebe9;
+        border: 1px solid var(--pb-line);
         border-radius: 10px;
         padding: 10px;
         display: flex;
@@ -482,7 +537,7 @@
         font-size: 12px;
       }
       #sp-pip-ui .itemMeta {
-        color: #605e5c;
+        color: var(--pb-muted);
         font-size: 12px;
         margin-top: 2px;
       }
@@ -494,11 +549,15 @@
       #sp-pip-ui .linkbtn {
         border: none;
         background: transparent;
-        color: #0078d4;
-        text-decoration: underline;
+        color: var(--pb-green2);
+        text-decoration: none;
         cursor: pointer;
         padding: 0;
         font-size: 12px;
+        letter-spacing: 0.12em;
+      }
+      #sp-pip-ui .linkbtn:hover {
+        text-decoration: underline;
       }
 
       #sp-pip-ui .tableWrap {
@@ -511,7 +570,7 @@
       }
       #sp-pip-ui .table th,
       #sp-pip-ui .table td {
-        border-bottom: 1px solid #edebe9;
+        border-bottom: 1px solid var(--pb-line);
         padding: 8px;
         text-align: left;
         font-size: 12px;
@@ -522,6 +581,7 @@
     <script>
       (function () {
         // -------- Defaults (edit here OR in Settings tab) --------
+        // Defaults set to the list names you were already using with other agents.
         const DEFAULTS = {
           personnelList: "Personnel",
           certifiersList: "Certifiers",
@@ -579,17 +639,43 @@
           statusEl.textContent = msg || "";
         }
 
-        // Tabs
-        document.querySelectorAll("#sp-pip-ui .tab").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            document.querySelectorAll("#sp-pip-ui .tab").forEach((b) => b.classList.remove("is-active"));
-            btn.classList.add("is-active");
-            const tab = btn.getAttribute("data-tab");
-            document.querySelectorAll("#sp-pip-ui .view").forEach((v) => v.classList.remove("is-active"));
-            $("view-" + tab).classList.add("is-active");
-            document.querySelectorAll("#sp-pip-ui .tab").forEach((b) => b.setAttribute("aria-selected", b === btn ? "true" : "false"));
+        // Tabs (SharePoint-safe: event delegation + preventDefault)
+        const root = document.getElementById("sp-pip-ui");
+        function activateTab(tabKey) {
+          if (!tabKey) return;
+          root.querySelectorAll(".tab").forEach((b) => {
+            const isActive = b.getAttribute("data-tab") === tabKey;
+            b.classList.toggle("is-active", isActive);
+            b.setAttribute("aria-selected", isActive ? "true" : "false");
           });
-        });
+          root.querySelectorAll(".view").forEach((v) => v.classList.remove("is-active"));
+          const view = document.getElementById("view-" + tabKey);
+          if (view) view.classList.add("is-active");
+        }
+
+        root.addEventListener(
+          "click",
+          (e) => {
+            const btn = e.target && e.target.closest ? e.target.closest(".tab") : null;
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            activateTab(btn.getAttribute("data-tab"));
+          },
+          true,
+        );
+        // SharePoint date helpers
+        function toSpDate(dateOnly) {
+          if (!dateOnly) return null;
+          // SharePoint REST DateTime expects an ISO datetime string
+          return `${dateOnly}T00:00:00Z`;
+        }
+        function fromSpDate(value) {
+          if (!value) return "";
+          if (typeof value === "string") return value.slice(0, 10);
+          return "";
+        }
+
 
         // SharePoint context
         function getCtx() {
@@ -832,7 +918,7 @@
 
         function loadIntoForm(p) {
           f.id.value = String(p.Id);
-          f.recordDate.value = p.RecordDate || todayIso();
+          f.recordDate.value = fromSpDate(p.RecordDate) || todayIso();
           f.rank.value = p.Rank || RANKS[0];
           f.name.value = p.Name || p.Title || "";
           f.squadron.value = p.Squadron || SQUADRONS[0];
@@ -883,7 +969,7 @@
           const payload = {
             __metadata: { type: entityType },
             Title: f.name.value.trim() || "(no name)",
-            RecordDate: f.recordDate.value || todayIso(),
+            RecordDate: toSpDate(f.recordDate.value || todayIso()),
             Rank: f.rank.value || "",
             Name: f.name.value.trim(),
             Squadron: f.squadron.value || "",
@@ -982,13 +1068,13 @@
             }
 
             tr.appendChild(tdText(`${p.Rank ? p.Rank + " " : ""}${p.Name || p.Title || ""}`.trim()));
-            tr.appendChild(tdText(p.RecordDate || ""));
+            tr.appendChild(tdText(fromSpDate(p.RecordDate) || ""));
 
             const tdStart = document.createElement("td");
             const inStart = document.createElement("input");
             inStart.type = "date";
             inStart.className = "input";
-            inStart.value = p.P1StartDate || "";
+            inStart.value = fromSpDate(p.P1StartDate) || "";
             tdStart.appendChild(inStart);
             tr.appendChild(tdStart);
 
@@ -1004,7 +1090,7 @@
             const inEnd = document.createElement("input");
             inEnd.type = "date";
             inEnd.className = "input";
-            inEnd.value = p.P1EndDate || "";
+            inEnd.value = fromSpDate(p.P1EndDate) || "";
             tdEnd.appendChild(inEnd);
             tr.appendChild(tdEnd);
 
@@ -1020,8 +1106,8 @@
                 const entityType = await getEntityType(listTitle);
                 const payload = {
                   __metadata: { type: entityType },
-                  P1StartDate: inStart.value || null,
-                  P1EndDate: inEnd.value || null,
+                  P1StartDate: toSpDate(inStart.value) || null,
+                  P1EndDate: toSpDate(inEnd.value) || null,
                   ProjectedOffice: inProj.value.trim() || null,
                 };
                 const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${p.Id})`;
@@ -1137,7 +1223,7 @@
             meta.textContent = "No person selected.";
             return;
           }
-          meta.textContent = `Record: ${p.RecordDate || "—"} · Squadron: ${p.Squadron || "—"} · Office: ${p.OfficeSymbol || "—"}`;
+          meta.textContent = `Record: ${fromSpDate(p.RecordDate) || "—"} · Squadron: ${p.Squadron || "—"} · Office: ${p.OfficeSymbol || "—"}`;
 
           const certs = readCerts(p);
           if (certs.length === 0) {
@@ -1343,6 +1429,8 @@
             await loadPersonnel();
             await loadCertifiers();
             setStatus("Ready.");
+            // Ensure initial tab is active even if SharePoint mutates DOM.
+            activateTab("personnel");
           } catch (e) {
             setStatus("Error: " + e.message);
           }
