@@ -298,6 +298,22 @@
                 <span class="mono">CertificationsJson</span> to keep this paste-only UI
                 simple.
               </div>
+              <div class="muted" style="margin-top: 8px">
+                <strong>Note:</strong> The labels you see in the list form are often
+                <em>display names</em>. REST and this app need the
+                <em>internal name</em> (see <span class="mono">Run diagnose</span> below). If you truly created columns whose internal names match the list above, you are aligned.
+              </div>
+            </div>
+
+            <div class="card" style="margin-top: 12px">
+              <div class="cardTitle">Diagnose REST (read-only)</div>
+              <div class="muted" style="margin-bottom: 8px">
+                Uses the list titles in the boxes above (you do not have to click Save first). Shows SharePoint’s
+                real field keys on the first list item. Compare those keys to the agent’s list — if they differ, paste
+                mappings into <span class="mono">Personnel column map</span>.
+              </div>
+              <button type="button" class="btn ghost" id="sDiagnose">Run diagnose</button>
+              <pre id="sDiagnoseOut" class="diagnose-out"></pre>
             </div>
           </section>
         </div>
@@ -589,6 +605,19 @@
         text-align: left;
         font-size: 12px;
         vertical-align: top;
+      }
+
+      #sp-pip-ui .diagnose-out {
+        margin-top: 10px;
+        max-height: 280px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 11px;
+        border: 1px solid var(--pb-line);
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--pb-muted);
       }
     </style>
 
@@ -908,6 +937,79 @@
           setTimeout(() => {
             $("sStatus").textContent = "Ready.";
           }, 1200);
+        });
+
+        function currentSettingsFromForm() {
+          let colMap = {};
+          try {
+            const ta = $("sColumnMap").value.trim();
+            if (ta) colMap = JSON.parse(ta);
+          } catch (_) {
+            colMap = {};
+          }
+          if (typeof colMap !== "object" || colMap === null || Array.isArray(colMap)) colMap = {};
+          return {
+            personnelList: $("sPersonnelList").value.trim() || DEFAULTS.personnelList,
+            certifiersList: $("sCertifiersList").value.trim() || DEFAULTS.certifiersList,
+            certifiersField: $("sCertifiersField").value.trim() || DEFAULTS.certifiersField,
+            columnMap: colMap,
+          };
+        }
+
+        $("sDiagnose").addEventListener("click", () => {
+          void (async function () {
+            const out = $("sDiagnoseOut");
+            out.textContent = "Running…";
+            const s = currentSettingsFromForm();
+            const lines = [];
+            lines.push("REST base (current web): " + webUrl);
+            lines.push("");
+
+            async function probe(label, listTitle) {
+              lines.push("--- " + label + " — list title in URL: “" + listTitle + "” ---");
+              try {
+                const meta = await spFetch(
+                  `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')?$select=Id,Title,ItemCount,BaseTemplate`,
+                );
+                lines.push("SharePoint list Id: " + meta.Id);
+                lines.push("SharePoint list Title: " + (meta.Title || ""));
+                lines.push("ItemCount: " + (meta.ItemCount != null ? String(meta.ItemCount) : "(unknown)"));
+                const itemsData = await spFetch(
+                  `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items?$top=1`,
+                );
+                const rows = itemsData && itemsData.value ? itemsData.value : [];
+                if (rows.length === 0) {
+                  lines.push("No rows yet — add one item, save, then run diagnose again to see field keys.");
+                } else {
+                  const keys = Object.keys(rows[0])
+                    .filter((k) => !k.startsWith("@") && k !== "odata.type" && k !== "odata.id" && k !== "odata.editLink")
+                    .sort();
+                  lines.push("Internal field keys on first item (REST uses these, not display labels):");
+                  lines.push(keys.join(", "));
+                }
+              } catch (e) {
+                lines.push("ERROR: " + (e.message || String(e)));
+                lines.push(
+                  "Hint: getbytitle() must match the list title under Site contents exactly. If the list lives on another site, open this page on that site.",
+                );
+              }
+              lines.push("");
+            }
+
+            try {
+              await probe("Personnel", s.personnelList);
+              await probe("Certifiers", s.certifiersList);
+              lines.push("Certifiers name column you configured: " + s.certifiersField);
+              lines.push("(If keys above show something like Field1 instead of certifier, put the real key in Settings.)");
+            } catch (e) {
+              lines.push("FATAL: " + (e.message || String(e)));
+            }
+            out.textContent = lines.join("\n");
+            $("sStatus").textContent = "Diagnose finished — see box below.";
+            setTimeout(() => {
+              $("sStatus").textContent = "Ready.";
+            }, 2500);
+          })();
         });
 
         // Helpers
