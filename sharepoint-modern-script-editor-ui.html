@@ -1,0 +1,1353 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TrainingHub - SharePoint Modern Script Editor UI (Paste-Only)</title>
+  </head>
+  <body>
+    <!--
+      Paste the contents of the <div id="sp-pip-ui"> ... </script> block into your SharePoint Modern Script Editor.
+      This file exists so the snippet is easy to source-control and copy/paste.
+    -->
+
+    <div id="sp-pip-ui">
+      <div class="app">
+        <div class="topbar">
+          <div class="title">
+            <div class="h1">Training Hub UI (SharePoint Paste-Only)</div>
+            <div class="sub" id="spuiStatus">Ready.</div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="App tabs">
+            <button class="tab is-active" data-tab="personnel" role="tab" aria-selected="true">
+              Personnel
+            </button>
+            <button class="tab" data-tab="phase1" role="tab" aria-selected="false">Phase 1</button>
+            <button class="tab" data-tab="certs" role="tab" aria-selected="false">Certificates</button>
+            <button class="tab" data-tab="certifiers" role="tab" aria-selected="false">Certifiers</button>
+            <button class="tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <!-- Personnel -->
+          <section class="view is-active" id="view-personnel" role="tabpanel">
+            <div class="row row-between">
+              <div>
+                <div class="sectionTitle">Personnel roster</div>
+                <div class="muted">Create/edit personnel records (SharePoint list-backed).</div>
+              </div>
+              <div class="row">
+                <input
+                  id="pSearch"
+                  class="input"
+                  type="text"
+                  placeholder="Search (rank, name, squadron, office, status)..."
+                />
+                <button class="btn" id="pRefresh">Refresh</button>
+              </div>
+            </div>
+
+            <div class="grid2">
+              <div class="card">
+                <div class="cardTitle">Command Hub (Personnel Record)</div>
+
+                <div class="formGrid">
+                  <div class="field">
+                    <label>Record date</label>
+                    <input id="fRecordDate" class="input" type="date" readonly />
+                  </div>
+
+                  <div class="field rank">
+                    <label>Rank</label>
+                    <select id="fRank" class="input"></select>
+                  </div>
+
+                  <div class="field name">
+                    <label>Name</label>
+                    <input id="fName" class="input" type="text" placeholder="Last, First M" />
+                  </div>
+
+                  <div class="field">
+                    <label>Squadron</label>
+                    <select id="fSquadron" class="input"></select>
+                  </div>
+
+                  <div class="field">
+                    <label>Status</label>
+                    <select id="fStatus" class="input">
+                      <option>Active</option>
+                      <option>P1</option>
+                      <option>Inactive</option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label>Office symbol</label>
+                    <input id="fOffice" class="input" type="text" placeholder="S3T / S3O / etc." />
+                  </div>
+
+                  <div class="field">
+                    <label>Work phone</label>
+                    <input id="fWorkPhone" class="input" type="text" />
+                  </div>
+
+                  <div class="field">
+                    <label>Cell phone</label>
+                    <input id="fCellPhone" class="input" type="text" />
+                  </div>
+
+                  <div class="field full">
+                    <label>Notes (single line)</label>
+                    <input id="fNotes" class="input" type="text" />
+                  </div>
+
+                  <div class="row full row-between">
+                    <div class="muted" id="pEditingLabel">New record</div>
+                    <div class="row">
+                      <button class="btn ghost" id="pNew">New</button>
+                      <button class="btn" id="pSave">Save</button>
+                      <button class="btn danger" id="pDelete">Delete</button>
+                    </div>
+                  </div>
+
+                  <input id="fId" type="hidden" value="" />
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="cardTitle">Roster</div>
+                <div class="muted" id="pCount">0 records</div>
+                <div class="list" id="pList"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Phase 1 -->
+          <section class="view" id="view-phase1" role="tabpanel">
+            <div class="row row-between">
+              <div>
+                <div class="sectionTitle">Phase 1 tracking</div>
+                <div class="muted">
+                  Tracks: Rank/Name, Date arrived, P1 start, Projected office/flight, Date
+                  release, plus a P1-only recall roster printout.
+                </div>
+              </div>
+              <div class="row">
+                <button class="btn" id="p1Refresh">Refresh</button>
+                <button class="btn ghost" id="p1PrintRoster">Print P1 Recall Roster</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="cardTitle">Active P1</div>
+              <div class="tableWrap">
+                <table class="table" id="p1Table">
+                  <thead>
+                    <tr>
+                      <th>Rank/Name</th>
+                      <th>Date arrived</th>
+                      <th>Date Phase 1 started</th>
+                      <th>Projected office/flight</th>
+                      <th>Date release</th>
+                      <th style="width: 120px">Save</th>
+                    </tr>
+                  </thead>
+                  <tbody id="p1Body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Certificates -->
+          <section class="view" id="view-certs" role="tabpanel">
+            <div class="row row-between">
+              <div>
+                <div class="sectionTitle">Certificates</div>
+                <div class="muted">
+                  Paste-only version saves certs and prints a certificate page (no .pptx
+                  dependency).
+                </div>
+              </div>
+              <div class="row">
+                <button class="btn" id="cRefresh">Refresh personnel</button>
+              </div>
+            </div>
+
+            <div class="grid2">
+              <div class="card">
+                <div class="cardTitle">Select person</div>
+                <div class="field">
+                  <label>Personnel</label>
+                  <select id="cPerson" class="input"></select>
+                </div>
+                <div class="muted" id="cPersonMeta">No person selected.</div>
+              </div>
+
+              <div class="card">
+                <div class="cardTitle">Saved certs</div>
+                <div class="list" id="cSaved"></div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top: 12px">
+              <div class="cardTitle">Add / update certificate</div>
+              <div class="formGrid">
+                <div class="field">
+                  <label>Cert type</label>
+                  <select id="cType" class="input"></select>
+                </div>
+                <div class="field">
+                  <label>Awarded date</label>
+                  <input id="cDate" class="input" type="date" />
+                </div>
+                <div class="field full">
+                  <label>Notes</label>
+                  <input id="cNotes" class="input" type="text" />
+                </div>
+                <div class="row full row-between">
+                  <div class="muted" id="cStatus">Ready.</div>
+                  <div class="row">
+                    <button class="btn" id="cSave">Save cert</button>
+                    <button class="btn danger" id="cDelete">Delete cert</button>
+                    <button class="btn ghost" id="cPrint">Print certificate</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Certifiers -->
+          <section class="view" id="view-certifiers" role="tabpanel">
+            <div class="row row-between">
+              <div>
+                <div class="sectionTitle">Certifiers</div>
+                <div class="muted">
+                  Read-only view of certifier names sourced from a SharePoint list column
+                  named <span class="mono">certifier</span>.
+                </div>
+              </div>
+              <div class="row">
+                <button class="btn" id="zRefresh">Refresh</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="cardTitle">Names from SharePoint list</div>
+              <div class="list" id="zList"></div>
+            </div>
+          </section>
+
+          <!-- Settings -->
+          <section class="view" id="view-settings" role="tabpanel">
+            <div class="sectionTitle">Settings (edit list names here)</div>
+            <div class="muted">
+              This snippet uses SharePoint Lists as the database via
+              <span class="mono">/_api</span>.
+            </div>
+
+            <div class="card" style="margin-top: 12px">
+              <div class="cardTitle">SharePoint List Titles + Column Internal Names</div>
+              <div class="formGrid">
+                <div class="field">
+                  <label>Personnel list title</label>
+                  <input id="sPersonnelList" class="input" type="text" />
+                </div>
+                <div class="field">
+                  <label>Certifiers list title</label>
+                  <input id="sCertifiersList" class="input" type="text" />
+                </div>
+                <div class="field">
+                  <label>Certifiers field internal name</label>
+                  <input id="sCertifiersField" class="input" type="text" />
+                </div>
+                <div class="row full row-between">
+                  <div class="muted" id="sStatus">Ready.</div>
+                  <div class="row">
+                    <button class="btn" id="sSave">Save settings</button>
+                    <button class="btn ghost" id="sReset">Reset defaults</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top: 12px">
+              <div class="cardTitle">Required columns (Personnel list)</div>
+              <div class="muted mono">
+                Title (required), RecordDate, Rank, Name, Squadron, Status, OfficeSymbol,
+                WorkPhone, CellPhone, Notes, P1StartDate, P1EndDate, ProjectedOffice,
+                CertificationsJson
+              </div>
+              <div class="muted" style="margin-top: 8px">
+                Certificates are stored as JSON in
+                <span class="mono">CertificationsJson</span> to keep this paste-only UI
+                simple.
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      #sp-pip-ui {
+        font-family: Segoe UI, system-ui, -apple-system, Arial, sans-serif;
+        color: #111;
+      }
+      #sp-pip-ui .app {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      #sp-pip-ui .topbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0 12px;
+        border-bottom: 1px solid #edebe9;
+      }
+      #sp-pip-ui .h1 {
+        font-weight: 700;
+        font-size: 16px;
+      }
+      #sp-pip-ui .sub {
+        color: #605e5c;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      #sp-pip-ui .tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      #sp-pip-ui .tab {
+        border: 1px solid #c8c6c4;
+        background: #fff;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      #sp-pip-ui .tab.is-active {
+        border-color: #0078d4;
+        color: #0078d4;
+      }
+      #sp-pip-ui .panel {
+        padding-top: 12px;
+      }
+
+      #sp-pip-ui .view {
+        display: none;
+      }
+      #sp-pip-ui .view.is-active {
+        display: block;
+      }
+
+      #sp-pip-ui .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      #sp-pip-ui .row-between {
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      #sp-pip-ui .sectionTitle {
+        font-weight: 700;
+        font-size: 14px;
+      }
+      #sp-pip-ui .muted {
+        color: #605e5c;
+        font-size: 12px;
+      }
+      #sp-pip-ui .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      }
+
+      #sp-pip-ui .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 900px) {
+        #sp-pip-ui .grid2 {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      #sp-pip-ui .card {
+        border: 1px solid #edebe9;
+        background: #fff;
+        border-radius: 10px;
+        padding: 12px;
+      }
+      #sp-pip-ui .cardTitle {
+        font-weight: 700;
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+
+      #sp-pip-ui .input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #c8c6c4;
+        border-radius: 6px;
+        padding: 8px 10px;
+        outline: none;
+        font-size: 12px;
+        background: #fff;
+      }
+      #sp-pip-ui .input:focus {
+        border-color: #0078d4;
+        box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.15);
+      }
+      #sp-pip-ui select.input {
+        padding-right: 30px;
+      }
+
+      #sp-pip-ui .btn {
+        border: 1px solid #0078d4;
+        background: #0078d4;
+        color: #fff;
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      #sp-pip-ui .btn.ghost {
+        background: #fff;
+        color: #0078d4;
+      }
+      #sp-pip-ui .btn.danger {
+        border-color: #a4262c;
+        background: #a4262c;
+      }
+
+      #sp-pip-ui .formGrid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+      }
+      @media (max-width: 900px) {
+        #sp-pip-ui .formGrid {
+          grid-template-columns: 1fr;
+        }
+      }
+      #sp-pip-ui .field label {
+        display: block;
+        font-weight: 600;
+        font-size: 12px;
+        margin-bottom: 4px;
+        color: #323130;
+      }
+      #sp-pip-ui .field.full {
+        grid-column: 1 / -1;
+      }
+      #sp-pip-ui .field.rank {
+        max-width: 120px;
+      }
+      #sp-pip-ui .field.name {
+        grid-column: span 2;
+      }
+      @media (max-width: 900px) {
+        #sp-pip-ui .field.rank,
+        #sp-pip-ui .field.name {
+          max-width: none;
+          grid-column: auto;
+        }
+      }
+
+      #sp-pip-ui .list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 10px;
+        max-height: 520px;
+        overflow: auto;
+        padding-right: 6px;
+      }
+      #sp-pip-ui .item {
+        border: 1px solid #edebe9;
+        border-radius: 10px;
+        padding: 10px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      #sp-pip-ui .itemTitle {
+        font-weight: 700;
+        font-size: 12px;
+      }
+      #sp-pip-ui .itemMeta {
+        color: #605e5c;
+        font-size: 12px;
+        margin-top: 2px;
+      }
+      #sp-pip-ui .itemActions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      #sp-pip-ui .linkbtn {
+        border: none;
+        background: transparent;
+        color: #0078d4;
+        text-decoration: underline;
+        cursor: pointer;
+        padding: 0;
+        font-size: 12px;
+      }
+
+      #sp-pip-ui .tableWrap {
+        overflow: auto;
+      }
+      #sp-pip-ui .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      #sp-pip-ui .table th,
+      #sp-pip-ui .table td {
+        border-bottom: 1px solid #edebe9;
+        padding: 8px;
+        text-align: left;
+        font-size: 12px;
+        vertical-align: top;
+      }
+    </style>
+
+    <script>
+      (function () {
+        // -------- Defaults (edit here OR in Settings tab) --------
+        const DEFAULTS = {
+          personnelList: "Personnel",
+          certifiersList: "Certifiers",
+          certifiersField: "certifier",
+        };
+
+        const RANKS = [
+          "AB",
+          "Amn",
+          "A1C",
+          "SrA",
+          "SSgt",
+          "TSgt",
+          "MSgt",
+          "SMSgt",
+          "CMSgt",
+          "CCMSgt",
+          "2d Lt",
+          "1st Lt",
+          "Capt",
+          "Maj",
+          "Lt Col",
+          "Col",
+          "Brig Gen",
+          "Maj Gen",
+          "Lt Gen",
+          "Gen",
+          "Gen of the Air Force",
+        ];
+
+        const SQUADRONS = ["21 SFS", "34 SFS", "56 SFS", "633 SFS"];
+
+        const CERT_TYPES = [
+          "ATV Rider",
+          "BAC Datamaster",
+          "Combatives Instructor",
+          "Controlled Burn",
+          "Customs",
+          "Game Warden",
+          "HAZMAT Trained",
+          "Leads Practitioner",
+          "Lidar/Radar",
+          "NHTSA SFST",
+          "OC Contamination",
+          "Police Cyclist",
+          "Principles of Instruction",
+          "Traffic Investigator",
+          "POST RC",
+        ];
+        // --------------------------------------------------------
+
+        const $ = (id) => document.getElementById(id);
+        const statusEl = $("spuiStatus");
+        function setStatus(msg) {
+          statusEl.textContent = msg || "";
+        }
+
+        // Tabs
+        document.querySelectorAll("#sp-pip-ui .tab").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll("#sp-pip-ui .tab").forEach((b) => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+            const tab = btn.getAttribute("data-tab");
+            document.querySelectorAll("#sp-pip-ui .view").forEach((v) => v.classList.remove("is-active"));
+            $("view-" + tab).classList.add("is-active");
+            document.querySelectorAll("#sp-pip-ui .tab").forEach((b) => b.setAttribute("aria-selected", b === btn ? "true" : "false"));
+          });
+        });
+
+        // SharePoint context
+        function getCtx() {
+          try {
+            if (window._spPageContextInfo && window._spPageContextInfo.webAbsoluteUrl) return window._spPageContextInfo;
+          } catch (_) {}
+          try {
+            if (window.parent && window.parent._spPageContextInfo && window.parent._spPageContextInfo.webAbsoluteUrl) return window.parent._spPageContextInfo;
+          } catch (_) {}
+          return null;
+        }
+
+        const ctx = getCtx();
+        if (!ctx) {
+          setStatus("Error: Cannot read SharePoint page context. This must run on a SharePoint page with Modern Script Editor allowing JS.");
+          return;
+        }
+
+        const webUrl = String(ctx.webAbsoluteUrl || "").replace(/\/$/, "");
+
+        function getDigest() {
+          const el =
+            document.getElementById("__REQUESTDIGEST") ||
+            (function () {
+              try {
+                return window.parent.document.getElementById("__REQUESTDIGEST");
+              } catch (_) {
+                return null;
+              }
+            })();
+          return el && el.value ? el.value : "";
+        }
+
+        async function spFetch(path, opts) {
+          opts = opts || {};
+          const headers = Object.assign({}, opts.headers || {});
+          headers["Accept"] = "application/json;odata=nometadata";
+
+          const method = (opts.method || "GET").toUpperCase();
+          if (method !== "GET" && method !== "DELETE") {
+            headers["Content-Type"] = "application/json;odata=nometadata";
+          }
+
+          const digest = getDigest();
+          if (digest) headers["X-RequestDigest"] = digest;
+
+          let realMethod = method;
+          if (method === "MERGE" || method === "DELETE") {
+            headers["X-HTTP-Method"] = method;
+            headers["IF-MATCH"] = "*";
+            realMethod = "POST";
+          }
+
+          const res = await fetch(webUrl + path, {
+            method: realMethod,
+            headers,
+            body: opts.body ? JSON.stringify(opts.body) : undefined,
+            credentials: "include",
+          });
+
+          if (res.status === 204) return null;
+          const text = await res.text();
+          let data = null;
+          try {
+            data = text ? JSON.parse(text) : null;
+          } catch (_) {}
+
+          if (!res.ok) {
+            const msg = data && data.error && data.error.message ? data.error.message : text;
+            throw new Error((res.status + " " + res.statusText + " " + (msg || "")).slice(0, 500));
+          }
+          return data;
+        }
+
+        function escListTitle(title) {
+          return String(title || "").replace(/'/g, "''");
+        }
+
+        // Settings storage (in browser)
+        const settingsKey = "trainingHub::spUiSettings::" + webUrl.toLowerCase();
+        function loadSettings() {
+          try {
+            const raw = localStorage.getItem(settingsKey);
+            if (!raw) return Object.assign({}, DEFAULTS);
+            const parsed = JSON.parse(raw);
+            return Object.assign({}, DEFAULTS, parsed || {});
+          } catch (_) {
+            return Object.assign({}, DEFAULTS);
+          }
+        }
+        function saveSettings(s) {
+          localStorage.setItem(settingsKey, JSON.stringify(s));
+        }
+
+        let settings = loadSettings();
+        $("sPersonnelList").value = settings.personnelList;
+        $("sCertifiersList").value = settings.certifiersList;
+        $("sCertifiersField").value = settings.certifiersField;
+
+        $("sSave").addEventListener("click", () => {
+          settings = {
+            personnelList: $("sPersonnelList").value.trim() || DEFAULTS.personnelList,
+            certifiersList: $("sCertifiersList").value.trim() || DEFAULTS.certifiersList,
+            certifiersField: $("sCertifiersField").value.trim() || DEFAULTS.certifiersField,
+          };
+          saveSettings(settings);
+          $("sStatus").textContent = "Saved.";
+          setTimeout(() => {
+            $("sStatus").textContent = "Ready.";
+          }, 1200);
+        });
+
+        $("sReset").addEventListener("click", () => {
+          settings = Object.assign({}, DEFAULTS);
+          saveSettings(settings);
+          $("sPersonnelList").value = settings.personnelList;
+          $("sCertifiersList").value = settings.certifiersList;
+          $("sCertifiersField").value = settings.certifiersField;
+          $("sStatus").textContent = "Reset to defaults.";
+          setTimeout(() => {
+            $("sStatus").textContent = "Ready.";
+          }, 1200);
+        });
+
+        // Helpers
+        function todayIso() {
+          return new Date().toISOString().slice(0, 10);
+        }
+        function safeJsonParse(s, fallback) {
+          try {
+            return JSON.parse(s);
+          } catch (_) {
+            return fallback;
+          }
+        }
+        function stringifyJson(obj) {
+          try {
+            return JSON.stringify(obj);
+          } catch (_) {
+            return "[]";
+          }
+        }
+
+        // Populate dropdowns
+        function fillSelect(sel, values) {
+          sel.innerHTML = "";
+          values.forEach((v) => {
+            const o = document.createElement("option");
+            o.value = v;
+            o.textContent = v;
+            sel.appendChild(o);
+          });
+        }
+
+        fillSelect($("fRank"), RANKS);
+        fillSelect($("fSquadron"), SQUADRONS);
+        fillSelect($("cType"), CERT_TYPES);
+
+        const f = {
+          id: $("fId"),
+          recordDate: $("fRecordDate"),
+          rank: $("fRank"),
+          name: $("fName"),
+          squadron: $("fSquadron"),
+          status: $("fStatus"),
+          office: $("fOffice"),
+          work: $("fWorkPhone"),
+          cell: $("fCellPhone"),
+          notes: $("fNotes"),
+        };
+
+        function resetForm() {
+          f.id.value = "";
+          f.recordDate.value = todayIso();
+          f.rank.value = RANKS[0];
+          f.name.value = "";
+          f.squadron.value = SQUADRONS[0];
+          f.status.value = "Active";
+          f.office.value = "";
+          f.work.value = "";
+          f.cell.value = "";
+          f.notes.value = "";
+          $("pEditingLabel").textContent = "New record";
+        }
+        resetForm();
+
+        let personnel = [];
+
+        async function getEntityType(listTitle) {
+          const data = await spFetch(`/_api/web/lists/getbytitle('${escListTitle(listTitle)}')?$select=ListItemEntityTypeFullName`);
+          return data.ListItemEntityTypeFullName;
+        }
+
+        function rosterHay(p) {
+          return `${p.Rank || ""} ${p.Name || p.Title || ""} ${p.Squadron || ""} ${p.OfficeSymbol || ""} ${p.Status || ""}`.toLowerCase();
+        }
+
+        function renderRoster() {
+          const q = ($("pSearch").value || "").trim().toLowerCase();
+          const list = $("pList");
+          list.innerHTML = "";
+          const filtered = q ? personnel.filter((p) => rosterHay(p).includes(q)) : personnel.slice();
+          $("pCount").textContent = `${filtered.length} of ${personnel.length} records`;
+
+          if (filtered.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "muted";
+            empty.textContent = personnel.length ? "No matches." : "No records yet.";
+            list.appendChild(empty);
+            return;
+          }
+
+          filtered.forEach((p) => {
+            const item = document.createElement("div");
+            item.className = "item";
+            const left = document.createElement("div");
+            const title = document.createElement("div");
+            title.className = "itemTitle";
+            title.textContent = `${p.Rank ? p.Rank + " " : ""}${p.Name || p.Title || "(no name)"}`;
+            const meta = document.createElement("div");
+            meta.className = "itemMeta";
+            meta.textContent = `Squadron: ${p.Squadron || "—"} · Office: ${p.OfficeSymbol || "—"} · Status: ${p.Status || "—"} · Record: ${p.RecordDate || "—"}`;
+            left.appendChild(title);
+            left.appendChild(meta);
+
+            const actions = document.createElement("div");
+            actions.className = "itemActions";
+            const edit = document.createElement("button");
+            edit.type = "button";
+            edit.className = "linkbtn";
+            edit.textContent = "Edit";
+            edit.onclick = () => loadIntoForm(p);
+            actions.appendChild(edit);
+
+            item.appendChild(left);
+            item.appendChild(actions);
+            list.appendChild(item);
+          });
+        }
+
+        function loadIntoForm(p) {
+          f.id.value = String(p.Id);
+          f.recordDate.value = p.RecordDate || todayIso();
+          f.rank.value = p.Rank || RANKS[0];
+          f.name.value = p.Name || p.Title || "";
+          f.squadron.value = p.Squadron || SQUADRONS[0];
+          f.status.value = p.Status || "Active";
+          f.office.value = p.OfficeSymbol || "";
+          f.work.value = p.WorkPhone || "";
+          f.cell.value = p.CellPhone || "";
+          f.notes.value = p.Notes || "";
+          $("pEditingLabel").textContent = "Editing ID " + p.Id;
+          $("cPerson").value = String(p.Id);
+          renderCertsForSelected();
+        }
+
+        async function loadPersonnel() {
+          setStatus("Loading personnel…");
+          const listTitle = escListTitle(settings.personnelList);
+          const select = [
+            "Id",
+            "Title",
+            "RecordDate",
+            "Rank",
+            "Name",
+            "Squadron",
+            "Status",
+            "OfficeSymbol",
+            "WorkPhone",
+            "CellPhone",
+            "Notes",
+            "P1StartDate",
+            "P1EndDate",
+            "ProjectedOffice",
+            "CertificationsJson",
+          ].join(",");
+
+          const url = `/_api/web/lists/getbytitle('${listTitle}')/items?$select=${encodeURIComponent(select)}&$top=5000&$orderby=Modified desc`;
+          const data = await spFetch(url);
+          personnel = data && data.value ? data.value : [];
+          setStatus(`Loaded ${personnel.length} personnel.`);
+          renderRoster();
+          renderPhase1();
+          renderCertPersonSelect();
+        }
+
+        async function savePersonnel() {
+          const listTitle = settings.personnelList;
+          const entityType = await getEntityType(listTitle);
+
+          const payload = {
+            __metadata: { type: entityType },
+            Title: f.name.value.trim() || "(no name)",
+            RecordDate: f.recordDate.value || todayIso(),
+            Rank: f.rank.value || "",
+            Name: f.name.value.trim(),
+            Squadron: f.squadron.value || "",
+            Status: f.status.value || "",
+            OfficeSymbol: f.office.value.trim(),
+            WorkPhone: f.work.value.trim(),
+            CellPhone: f.cell.value.trim(),
+            Notes: f.notes.value.trim(),
+            P1StartDate: null,
+            P1EndDate: null,
+            ProjectedOffice: null,
+            CertificationsJson: (function () {
+              const existing = personnel.find((x) => String(x.Id) === String(f.id.value));
+              return existing && typeof existing.CertificationsJson === "string" ? existing.CertificationsJson : "[]";
+            })(),
+          };
+
+          const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items`;
+          if (f.id.value) {
+            await spFetch(`${base}(${f.id.value})`, { method: "MERGE", body: payload });
+          } else {
+            await spFetch(base, { method: "POST", body: payload });
+          }
+        }
+
+        async function deletePersonnel() {
+          if (!f.id.value) return;
+          const listTitle = settings.personnelList;
+          const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${f.id.value})`;
+          await spFetch(base, { method: "DELETE" });
+        }
+
+        $("pNew").addEventListener("click", () => resetForm());
+        $("pSave").addEventListener("click", async () => {
+          try {
+            setStatus("Saving personnel…");
+            await savePersonnel();
+            resetForm();
+            await loadPersonnel();
+            setStatus("Saved.");
+          } catch (e) {
+            setStatus("Error: " + e.message);
+          }
+        });
+
+        $("pDelete").addEventListener("click", async () => {
+          try {
+            if (!f.id.value) {
+              setStatus("Select a record first.");
+              return;
+            }
+            if (!confirm("Delete this personnel record?")) return;
+            setStatus("Deleting…");
+            await deletePersonnel();
+            resetForm();
+            await loadPersonnel();
+            setStatus("Deleted.");
+          } catch (e) {
+            setStatus("Error: " + e.message);
+          }
+        });
+
+        $("pRefresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + e.message)));
+        $("pSearch").addEventListener("input", () => renderRoster());
+
+        // Phase 1
+        function isActiveP1(p) {
+          return String(p.Status || "").toUpperCase() === "P1" && !p.P1EndDate;
+        }
+
+        function renderPhase1() {
+          const tbody = $("p1Body");
+          tbody.innerHTML = "";
+          const rows = personnel.filter((p) => String(p.Status || "").toUpperCase() === "P1" || p.P1StartDate || p.P1EndDate);
+
+          if (rows.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 6;
+            td.className = "muted";
+            td.textContent = "No Phase 1 records yet.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+          }
+
+          rows.sort((a, b) => String(a.Name || a.Title || "").localeCompare(String(b.Name || b.Title || "")));
+
+          rows.forEach((p) => {
+            const tr = document.createElement("tr");
+
+            function tdText(t) {
+              const td = document.createElement("td");
+              td.textContent = t || "—";
+              return td;
+            }
+
+            tr.appendChild(tdText(`${p.Rank ? p.Rank + " " : ""}${p.Name || p.Title || ""}`.trim()));
+            tr.appendChild(tdText(p.RecordDate || ""));
+
+            const tdStart = document.createElement("td");
+            const inStart = document.createElement("input");
+            inStart.type = "date";
+            inStart.className = "input";
+            inStart.value = p.P1StartDate || "";
+            tdStart.appendChild(inStart);
+            tr.appendChild(tdStart);
+
+            const tdProj = document.createElement("td");
+            const inProj = document.createElement("input");
+            inProj.type = "text";
+            inProj.className = "input";
+            inProj.value = p.ProjectedOffice || "";
+            tdProj.appendChild(inProj);
+            tr.appendChild(tdProj);
+
+            const tdEnd = document.createElement("td");
+            const inEnd = document.createElement("input");
+            inEnd.type = "date";
+            inEnd.className = "input";
+            inEnd.value = p.P1EndDate || "";
+            tdEnd.appendChild(inEnd);
+            tr.appendChild(tdEnd);
+
+            const tdSave = document.createElement("td");
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "btn";
+            b.textContent = "Save";
+            b.onclick = async () => {
+              try {
+                setStatus("Saving Phase 1 row…");
+                const listTitle = settings.personnelList;
+                const entityType = await getEntityType(listTitle);
+                const payload = {
+                  __metadata: { type: entityType },
+                  P1StartDate: inStart.value || null,
+                  P1EndDate: inEnd.value || null,
+                  ProjectedOffice: inProj.value.trim() || null,
+                };
+                const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${p.Id})`;
+                await spFetch(base, { method: "MERGE", body: payload });
+                await loadPersonnel();
+                setStatus("Saved.");
+              } catch (e) {
+                setStatus("Error: " + e.message);
+              }
+            };
+            tdSave.appendChild(b);
+            tr.appendChild(tdSave);
+            tbody.appendChild(tr);
+          });
+        }
+
+        $("p1Refresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + e.message)));
+
+        $("p1PrintRoster").addEventListener("click", () => {
+          const p1 = personnel
+            .filter(isActiveP1)
+            .sort((a, b) => String(a.Name || a.Title || "").localeCompare(String(b.Name || b.Title || "")));
+          const w = window.open("", "_blank");
+          const html = `
+            <html><head><title>P1 Recall Roster</title>
+            <style>
+              body{font-family:Segoe UI,Arial,sans-serif;padding:20px;}
+              h1{margin:0 0 8px;}
+              .muted{color:#666;font-size:12px;margin-bottom:12px;}
+              table{width:100%;border-collapse:collapse;}
+              th,td{border-bottom:1px solid #ddd;text-align:left;padding:8px;font-size:12px;vertical-align:top;}
+            </style></head><body>
+            <h1>P1 Recall Roster</h1>
+            <div class="muted">Generated: ${new Date().toLocaleString()}</div>
+            <table>
+              <thead><tr>
+                <th>Rank/Name</th><th>Date Arrived</th><th>P1 Start Date</th><th>Projected Office/Flight</th><th>Work Phone</th><th>Cell Phone</th>
+              </tr></thead>
+              <tbody>
+                ${p1
+                  .map(
+                    (p) => `
+                  <tr>
+                    <td>${(p.Rank ? p.Rank + " " : "") + (p.Name || p.Title || "")}</td>
+                    <td>${p.RecordDate || "—"}</td>
+                    <td>${p.P1StartDate || "—"}</td>
+                    <td>${p.ProjectedOffice || "—"}</td>
+                    <td>${p.WorkPhone || "—"}</td>
+                    <td>${p.CellPhone || "—"}</td>
+                  </tr>
+                `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+            </body></html>
+          `;
+          w.document.open();
+          w.document.write(html);
+          w.document.close();
+          w.focus();
+          w.print();
+        });
+
+        // Certificates
+        function renderCertPersonSelect() {
+          const sel = $("cPerson");
+          sel.innerHTML = "";
+          const opt0 = document.createElement("option");
+          opt0.value = "";
+          opt0.textContent = "— Select Personnel —";
+          sel.appendChild(opt0);
+
+          personnel
+            .slice()
+            .sort((a, b) => String(a.Name || a.Title || "").localeCompare(String(b.Name || b.Title || "")))
+            .forEach((p) => {
+              const o = document.createElement("option");
+              o.value = String(p.Id);
+              o.textContent = `${p.Rank ? p.Rank + " " : ""}${p.Name || p.Title || ""}`.trim();
+              sel.appendChild(o);
+            });
+
+          $("cType").value = CERT_TYPES[0];
+          $("cDate").value = todayIso();
+          $("cNotes").value = "";
+          renderCertsForSelected();
+        }
+
+        function getSelectedPerson() {
+          const id = $("cPerson").value;
+          if (!id) return null;
+          return personnel.find((p) => String(p.Id) === String(id)) || null;
+        }
+
+        function readCerts(person) {
+          const raw = person && typeof person.CertificationsJson === "string" ? person.CertificationsJson : "[]";
+          const arr = safeJsonParse(raw, []);
+          return Array.isArray(arr) ? arr : [];
+        }
+
+        function writeCerts(personId, certs) {
+          const p = personnel.find((x) => String(x.Id) === String(personId));
+          if (p) p.CertificationsJson = stringifyJson(certs);
+        }
+
+        function renderCertsForSelected() {
+          const p = getSelectedPerson();
+          const meta = $("cPersonMeta");
+          const saved = $("cSaved");
+          saved.innerHTML = "";
+          if (!p) {
+            meta.textContent = "No person selected.";
+            return;
+          }
+          meta.textContent = `Record: ${p.RecordDate || "—"} · Squadron: ${p.Squadron || "—"} · Office: ${p.OfficeSymbol || "—"}`;
+
+          const certs = readCerts(p);
+          if (certs.length === 0) {
+            const m = document.createElement("div");
+            m.className = "muted";
+            m.textContent = "No saved certs for this person.";
+            saved.appendChild(m);
+            return;
+          }
+
+          certs.sort((a, b) => String(a.certType || "").localeCompare(String(b.certType || "")));
+          certs.forEach((c) => {
+            const item = document.createElement("div");
+            item.className = "item";
+            const left = document.createElement("div");
+            const t = document.createElement("div");
+            t.className = "itemTitle";
+            t.textContent = c.certType || "(unknown)";
+            const mm = document.createElement("div");
+            mm.className = "itemMeta";
+            mm.textContent = `Awarded: ${c.awardedDate || "—"} · Notes: ${c.notes || "—"}`;
+            left.appendChild(t);
+            left.appendChild(mm);
+
+            const actions = document.createElement("div");
+            actions.className = "itemActions";
+            const edit = document.createElement("button");
+            edit.type = "button";
+            edit.className = "linkbtn";
+            edit.textContent = "Edit";
+            edit.onclick = () => {
+              $("cType").value = c.certType || CERT_TYPES[0];
+              $("cDate").value = c.awardedDate || todayIso();
+              $("cNotes").value = c.notes || "";
+              $("cStatus").textContent = "Loaded cert into editor.";
+            };
+            actions.appendChild(edit);
+
+            item.appendChild(left);
+            item.appendChild(actions);
+            saved.appendChild(item);
+          });
+        }
+
+        $("cPerson").addEventListener("change", renderCertsForSelected);
+        $("cRefresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + e.message)));
+
+        async function saveCert() {
+          const p = getSelectedPerson();
+          if (!p) {
+            $("cStatus").textContent = "Select personnel first.";
+            return;
+          }
+          const certType = $("cType").value;
+          const awardedDate = $("cDate").value;
+          const notes = $("cNotes").value.trim();
+
+          const certs = readCerts(p);
+          const idx = certs.findIndex((x) => x && x.certType === certType);
+          const row = { certType, awardedDate, notes, savedAt: new Date().toISOString() };
+          if (idx >= 0) certs[idx] = row;
+          else certs.push(row);
+
+          try {
+            setStatus("Saving certificate…");
+            const listTitle = settings.personnelList;
+            const entityType = await getEntityType(listTitle);
+            const payload = { __metadata: { type: entityType }, CertificationsJson: stringifyJson(certs) };
+            await spFetch(`/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${p.Id})`, { method: "MERGE", body: payload });
+            writeCerts(p.Id, certs);
+            renderCertsForSelected();
+            $("cStatus").textContent = "Saved.";
+            setStatus("Saved certificate.");
+          } catch (e) {
+            setStatus("Error: " + e.message);
+            $("cStatus").textContent = "Error saving cert.";
+          }
+        }
+
+        async function deleteCert() {
+          const p = getSelectedPerson();
+          if (!p) {
+            $("cStatus").textContent = "Select personnel first.";
+            return;
+          }
+          const certType = $("cType").value;
+          const certs = readCerts(p).filter((x) => x && x.certType !== certType);
+
+          try {
+            setStatus("Deleting certificate…");
+            const listTitle = settings.personnelList;
+            const entityType = await getEntityType(listTitle);
+            const payload = { __metadata: { type: entityType }, CertificationsJson: stringifyJson(certs) };
+            await spFetch(`/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${p.Id})`, { method: "MERGE", body: payload });
+            writeCerts(p.Id, certs);
+            renderCertsForSelected();
+            $("cStatus").textContent = "Deleted.";
+            setStatus("Deleted certificate.");
+          } catch (e) {
+            setStatus("Error: " + e.message);
+            $("cStatus").textContent = "Error deleting cert.";
+          }
+        }
+
+        function printCert() {
+          const p = getSelectedPerson();
+          if (!p) {
+            $("cStatus").textContent = "Select personnel first.";
+            return;
+          }
+          const certType = $("cType").value;
+          const awardedDate = $("cDate").value || todayIso();
+
+          const w = window.open("", "_blank");
+          const name = `${p.Rank ? p.Rank + " " : ""}${p.Name || p.Title || ""}`.trim();
+          const html = `
+            <html><head><title>Certificate - ${certType}</title>
+            <style>
+              body{font-family:Segoe UI,Arial,sans-serif;margin:0;padding:40px;background:#f8fafc;}
+              .page{max-width:900px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;padding:48px;}
+              .top{font-size:14px;color:#334155;text-align:center;letter-spacing:.12em;font-weight:700;}
+              h1{margin:18px 0 0;text-align:center;font-size:36px;}
+              h2{margin:10px 0 0;text-align:center;font-size:24px;color:#0f172a;}
+              .mid{margin-top:28px;text-align:center;color:#334155;font-size:16px;}
+              .name{margin-top:14px;text-align:center;font-size:34px;font-weight:800;}
+              .meta{margin-top:22px;display:flex;justify-content:space-between;gap:12px;color:#334155;font-size:14px;flex-wrap:wrap;}
+              .sig{margin-top:60px;display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;}
+              .line{border-top:1px solid #0f172a;padding-top:8px;width:300px;text-align:center;font-size:12px;color:#334155;}
+            </style></head><body>
+            <div class="page">
+              <div class="top">CERTIFICATE OF COMPLETION</div>
+              <h1>${certType}</h1>
+              <h2>Presented to</h2>
+              <div class="name">${name}</div>
+              <div class="mid">In recognition of successful completion.</div>
+              <div class="meta">
+                <div><b>Date Awarded:</b> ${awardedDate}</div>
+                <div><b>Office/Flight:</b> ${p.OfficeSymbol || "—"}</div>
+                <div><b>Squadron:</b> ${p.Squadron || "—"}</div>
+              </div>
+              <div class="sig">
+                <div class="line">Authorized Signature</div>
+                <div class="line">Command / Training</div>
+              </div>
+            </div>
+            </body></html>
+          `;
+          w.document.open();
+          w.document.write(html);
+          w.document.close();
+          w.focus();
+          w.print();
+        }
+
+        $("cSave").addEventListener("click", () => void saveCert());
+        $("cDelete").addEventListener("click", () => void deleteCert());
+        $("cPrint").addEventListener("click", () => printCert());
+
+        // Certifiers
+        async function loadCertifiers() {
+          setStatus("Loading certifiers…");
+          const listTitle = escListTitle(settings.certifiersList);
+          const field = settings.certifiersField;
+          const select = `Id,${field}`;
+          const url = `/_api/web/lists/getbytitle('${listTitle}')/items?$select=${encodeURIComponent(select)}&$top=5000&$orderby=Modified desc`;
+          const data = await spFetch(url);
+          const items = data && data.value ? data.value : [];
+          const names = [];
+          items.forEach((it) => {
+            const v = it[field];
+            if (typeof v === "string" && v.trim()) names.push(v.trim());
+          });
+          const unique = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+          const list = $("zList");
+          list.innerHTML = "";
+          if (unique.length === 0) {
+            const m = document.createElement("div");
+            m.className = "muted";
+            m.textContent = `No names found. Check list "${settings.certifiersList}" and column internal name "${field}".`;
+            list.appendChild(m);
+          } else {
+            unique.forEach((n) => {
+              const d = document.createElement("div");
+              d.className = "item";
+              const left = document.createElement("div");
+              const t = document.createElement("div");
+              t.className = "itemTitle";
+              t.textContent = n;
+              left.appendChild(t);
+              d.appendChild(left);
+              list.appendChild(d);
+            });
+          }
+          setStatus(`Loaded ${unique.length} certifiers.`);
+        }
+
+        $("zRefresh").addEventListener("click", () => loadCertifiers().catch((e) => setStatus("Error: " + e.message)));
+
+        // Initial load
+        (async function init() {
+          try {
+            setStatus("Initializing…");
+            await loadPersonnel();
+            await loadCertifiers();
+            setStatus("Ready.");
+          } catch (e) {
+            setStatus("Error: " + e.message);
+          }
+        })();
+      })();
+    </script>
+  </body>
+</html>
