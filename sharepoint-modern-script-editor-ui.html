@@ -262,6 +262,20 @@
                   <label>Certifiers field internal name</label>
                   <input id="sCertifiersField" class="input" type="text" />
                 </div>
+                <div class="field full">
+                  <label>Personnel column map (optional JSON)</label>
+                  <textarea
+                    id="sColumnMap"
+                    class="input"
+                    rows="4"
+                    placeholder='{"RecordDate":"Record_x0020_Date","Rank":"Rank0"}'
+                  ></textarea>
+                  <div class="muted" style="margin-top: 6px">
+                    If lists do not load, your list’s <strong>internal</strong> column names may differ from the
+                    defaults. Map logical names to internal names (see list settings → column → URL
+                    <span class="mono">Field=</span>). Leave empty to auto-try common SharePoint renames on read.
+                  </div>
+                </div>
                 <div class="row full row-between">
                   <div class="muted" id="sStatus">Ready.</div>
                   <div class="row">
@@ -586,6 +600,41 @@
           personnelList: "Personnel",
           certifiersList: "Certifiers",
           certifiersField: "certifier",
+          /** Map logical field → SharePoint internal column name (optional). */
+          columnMap: {},
+        };
+
+        /** Default internal names used when saving; override via columnMap JSON in Settings. */
+        const LOGICAL_DEFAULTS = {
+          RecordDate: "RecordDate",
+          Rank: "Rank",
+          Name: "Name",
+          Squadron: "Squadron",
+          Status: "Status",
+          OfficeSymbol: "OfficeSymbol",
+          WorkPhone: "WorkPhone",
+          CellPhone: "CellPhone",
+          Notes: "Notes",
+          P1StartDate: "P1StartDate",
+          P1EndDate: "P1EndDate",
+          ProjectedOffice: "ProjectedOffice",
+          CertificationsJson: "CertificationsJson",
+        };
+
+        const PERSONNEL_FALLBACKS = {
+          RecordDate: ["RecordDate", "Record_x0020_Date", "Record0", "DateArrived", "ArrivalDate"],
+          Rank: ["Rank", "Rank0", "PayGrade"],
+          Name: ["Name", "PersonnelName", "FullName", "DisplayName"],
+          Squadron: ["Squadron", "Squadron0", "Unit"],
+          Status: ["Status", "PersonnelStatus", "Personnel_x0020_Status"],
+          OfficeSymbol: ["OfficeSymbol", "Office0", "Office_x0020_Symbol", "Office"],
+          WorkPhone: ["WorkPhone", "Work_x0020_Phone", "WorkPhone0"],
+          CellPhone: ["CellPhone", "Cell_x0020_Phone", "CellPhone0"],
+          Notes: ["Notes", "Comments", "PersonnelNotes"],
+          P1StartDate: ["P1StartDate", "P1_x0020_Start_x0020_Date", "Phase1Start"],
+          P1EndDate: ["P1EndDate", "P1_x0020_End_x0020_Date", "Phase1End", "DateRelease"],
+          ProjectedOffice: ["ProjectedOffice", "Projected_x0020_Office", "ProjectedOffice0"],
+          CertificationsJson: ["CertificationsJson", "CertsJson", "SpecialtyCerts"],
         };
 
         const RANKS = [
@@ -672,7 +721,14 @@
         }
         function fromSpDate(value) {
           if (!value) return "";
-          if (typeof value === "string") return value.slice(0, 10);
+          if (typeof value === "string") {
+            const m = value.match(/^\/Date\((\d+)\)\/$/);
+            if (m) {
+              const d = new Date(parseInt(m[1], 10));
+              if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+            }
+            return value.slice(0, 10);
+          }
           return "";
         }
 
@@ -744,8 +800,18 @@
           } catch (_) {}
 
           if (!res.ok) {
-            const msg = data && data.error && data.error.message ? data.error.message : text;
-            throw new Error((res.status + " " + res.statusText + " " + (msg || "")).slice(0, 500));
+            let msg = "";
+            if (data && data.error) {
+              msg =
+                (typeof data.error.message === "string" && data.error.message) ||
+                (data.error.message && data.error.message.value) ||
+                "";
+            }
+            if (!msg && data && data["odata.error"] && data["odata.error"].message) {
+              msg = data["odata.error"].message.value || data["odata.error"].message || "";
+            }
+            if (!msg) msg = text || "";
+            throw new Error((res.status + " " + res.statusText + " " + msg).slice(0, 800));
           }
           return data;
         }
@@ -761,7 +827,9 @@
             const raw = localStorage.getItem(settingsKey);
             if (!raw) return Object.assign({}, DEFAULTS);
             const parsed = JSON.parse(raw);
-            return Object.assign({}, DEFAULTS, parsed || {});
+            const out = Object.assign({}, DEFAULTS, parsed || {});
+            if (!out.columnMap || typeof out.columnMap !== "object") out.columnMap = {};
+            return out;
           } catch (_) {
             return Object.assign({}, DEFAULTS);
           }
@@ -771,18 +839,59 @@
         }
 
         let settings = loadSettings();
+
+        function spField(logical) {
+          const ov = settings.columnMap && settings.columnMap[logical];
+          if (ov && String(ov).trim()) return String(ov).trim();
+          return LOGICAL_DEFAULTS[logical] || logical;
+        }
+
+        function readFromItem(item, logical) {
+          const fallbacks = PERSONNEL_FALLBACKS[logical] || [];
+          const tryKeys = [];
+          const primary = spField(logical);
+          if (primary) tryKeys.push(primary);
+          fallbacks.forEach((k) => {
+            if (k && !tryKeys.includes(k)) tryKeys.push(k);
+          });
+          if (!tryKeys.includes(logical)) tryKeys.push(logical);
+          for (const k of tryKeys) {
+            const v = item[k];
+            if (v !== undefined && v !== null && v !== "") return v;
+          }
+          return "";
+        }
+
         $("sPersonnelList").value = settings.personnelList;
         $("sCertifiersList").value = settings.certifiersList;
         $("sCertifiersField").value = settings.certifiersField;
+        $("sColumnMap").value =
+          settings.columnMap && Object.keys(settings.columnMap).length
+            ? JSON.stringify(settings.columnMap, null, 2)
+            : "";
 
         $("sSave").addEventListener("click", () => {
+          let colMap = {};
+          try {
+            const ta = $("sColumnMap").value.trim();
+            if (ta) colMap = JSON.parse(ta);
+            if (typeof colMap !== "object" || colMap === null || Array.isArray(colMap)) {
+              throw new Error("Column map must be a JSON object.");
+            }
+          } catch (e) {
+            $("sStatus").textContent = "Invalid column map JSON: " + (e.message || String(e));
+            return;
+          }
           settings = {
             personnelList: $("sPersonnelList").value.trim() || DEFAULTS.personnelList,
             certifiersList: $("sCertifiersList").value.trim() || DEFAULTS.certifiersList,
             certifiersField: $("sCertifiersField").value.trim() || DEFAULTS.certifiersField,
+            columnMap: colMap,
           };
           saveSettings(settings);
           $("sStatus").textContent = "Saved.";
+          void loadPersonnel().catch((e) => setStatus("Reload error: " + e.message));
+          void loadCertifiers().catch((e) => setStatus("Reload error: " + e.message));
           setTimeout(() => {
             $("sStatus").textContent = "Ready.";
           }, 1200);
@@ -794,6 +903,7 @@
           $("sPersonnelList").value = settings.personnelList;
           $("sCertifiersList").value = settings.certifiersList;
           $("sCertifiersField").value = settings.certifiersField;
+          $("sColumnMap").value = "";
           $("sStatus").textContent = "Reset to defaults.";
           setTimeout(() => {
             $("sStatus").textContent = "Ready.";
@@ -870,7 +980,8 @@
         }
 
         function rosterHay(p) {
-          return `${p.Rank || ""} ${p.Name || p.Title || ""} ${p.Squadron || ""} ${p.OfficeSymbol || ""} ${p.Status || ""}`.toLowerCase();
+          const nm = readFromItem(p, "Name") || p.Title || "";
+          return `${readFromItem(p, "Rank")} ${nm} ${readFromItem(p, "Squadron")} ${readFromItem(p, "OfficeSymbol")} ${readFromItem(p, "Status")}`.toLowerCase();
         }
 
         function renderRoster() {
@@ -894,10 +1005,10 @@
             const left = document.createElement("div");
             const title = document.createElement("div");
             title.className = "itemTitle";
-            title.textContent = `${p.Rank ? p.Rank + " " : ""}${p.Name || p.Title || "(no name)"}`;
+            title.textContent = `${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${readFromItem(p, "Name") || p.Title || "(no name)"}`;
             const meta = document.createElement("div");
             meta.className = "itemMeta";
-            meta.textContent = `Squadron: ${p.Squadron || "—"} · Office: ${p.OfficeSymbol || "—"} · Status: ${p.Status || "—"} · Record: ${p.RecordDate || "—"}`;
+            meta.textContent = `Squadron: ${readFromItem(p, "Squadron") || "—"} · Office: ${readFromItem(p, "OfficeSymbol") || "—"} · Status: ${readFromItem(p, "Status") || "—"} · Record: ${fromSpDate(readFromItem(p, "RecordDate")) || "—"}`;
             left.appendChild(title);
             left.appendChild(meta);
 
@@ -918,15 +1029,18 @@
 
         function loadIntoForm(p) {
           f.id.value = String(p.Id);
-          f.recordDate.value = fromSpDate(p.RecordDate) || todayIso();
-          f.rank.value = p.Rank || RANKS[0];
-          f.name.value = p.Name || p.Title || "";
-          f.squadron.value = p.Squadron || SQUADRONS[0];
-          f.status.value = p.Status || "Active";
-          f.office.value = p.OfficeSymbol || "";
-          f.work.value = p.WorkPhone || "";
-          f.cell.value = p.CellPhone || "";
-          f.notes.value = p.Notes || "";
+          f.recordDate.value = fromSpDate(readFromItem(p, "RecordDate")) || todayIso();
+          const rk = readFromItem(p, "Rank");
+          f.rank.value = RANKS.includes(rk) ? rk : RANKS[0];
+          f.name.value = readFromItem(p, "Name") || p.Title || "";
+          const sq = readFromItem(p, "Squadron");
+          f.squadron.value = SQUADRONS.includes(sq) ? sq : SQUADRONS[0];
+          const st = readFromItem(p, "Status");
+          f.status.value = ["Active", "P1", "Inactive"].includes(st) ? st : "Active";
+          f.office.value = readFromItem(p, "OfficeSymbol");
+          f.work.value = readFromItem(p, "WorkPhone");
+          f.cell.value = readFromItem(p, "CellPhone");
+          f.notes.value = readFromItem(p, "Notes");
           $("pEditingLabel").textContent = "Editing ID " + p.Id;
           $("cPerson").value = String(p.Id);
           renderCertsForSelected();
@@ -935,26 +1049,9 @@
         async function loadPersonnel() {
           setStatus("Loading personnel…");
           const listTitle = escListTitle(settings.personnelList);
-          const select = [
-            "Id",
-            "Title",
-            "RecordDate",
-            "Rank",
-            "Name",
-            "Squadron",
-            "Status",
-            "OfficeSymbol",
-            "WorkPhone",
-            "CellPhone",
-            "Notes",
-            "P1StartDate",
-            "P1EndDate",
-            "ProjectedOffice",
-            "CertificationsJson",
-          ].join(",");
-
-          const url = `/_api/web/lists/getbytitle('${listTitle}')/items?$select=${encodeURIComponent(select)}&$top=5000&$orderby=Modified desc`;
-          const data = await spFetch(url);
+          // Do not use $select: wrong internal names cause 400 and empty UI. Load all scalar fields.
+          const path = `/_api/web/lists/getbytitle('${listTitle}')/items?$top=5000&$orderby=Modified desc`;
+          const data = await spFetch(path);
           personnel = data && data.value ? data.value : [];
           setStatus(`Loaded ${personnel.length} personnel.`);
           renderRoster();
@@ -966,26 +1063,28 @@
           const listTitle = settings.personnelList;
           const entityType = await getEntityType(listTitle);
 
+          const existing = personnel.find((x) => String(x.Id) === String(f.id.value));
+          const certKey = spField("CertificationsJson");
+          let certJson = "[]";
+          if (existing) {
+            const raw = existing[certKey] != null ? existing[certKey] : readFromItem(existing, "CertificationsJson");
+            if (raw != null && String(raw).trim()) certJson = String(raw);
+          }
+
           const payload = {
             __metadata: { type: entityType },
             Title: f.name.value.trim() || "(no name)",
-            RecordDate: toSpDate(f.recordDate.value || todayIso()),
-            Rank: f.rank.value || "",
-            Name: f.name.value.trim(),
-            Squadron: f.squadron.value || "",
-            Status: f.status.value || "",
-            OfficeSymbol: f.office.value.trim(),
-            WorkPhone: f.work.value.trim(),
-            CellPhone: f.cell.value.trim(),
-            Notes: f.notes.value.trim(),
-            P1StartDate: null,
-            P1EndDate: null,
-            ProjectedOffice: null,
-            CertificationsJson: (function () {
-              const existing = personnel.find((x) => String(x.Id) === String(f.id.value));
-              return existing && typeof existing.CertificationsJson === "string" ? existing.CertificationsJson : "[]";
-            })(),
           };
+          payload[spField("RecordDate")] = toSpDate(f.recordDate.value || todayIso());
+          payload[spField("Rank")] = f.rank.value || "";
+          payload[spField("Name")] = f.name.value.trim();
+          payload[spField("Squadron")] = f.squadron.value || "";
+          payload[spField("Status")] = f.status.value || "";
+          payload[spField("OfficeSymbol")] = f.office.value.trim();
+          payload[spField("WorkPhone")] = f.work.value.trim();
+          payload[spField("CellPhone")] = f.cell.value.trim();
+          payload[spField("Notes")] = f.notes.value.trim();
+          payload[certKey] = certJson;
 
           const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items`;
           if (f.id.value) {
@@ -1037,13 +1136,18 @@
 
         // Phase 1
         function isActiveP1(p) {
-          return String(p.Status || "").toUpperCase() === "P1" && !p.P1EndDate;
+          return String(readFromItem(p, "Status") || "").toUpperCase() === "P1" && !readFromItem(p, "P1EndDate");
         }
 
         function renderPhase1() {
           const tbody = $("p1Body");
           tbody.innerHTML = "";
-          const rows = personnel.filter((p) => String(p.Status || "").toUpperCase() === "P1" || p.P1StartDate || p.P1EndDate);
+          const rows = personnel.filter(
+            (p) =>
+              String(readFromItem(p, "Status") || "").toUpperCase() === "P1" ||
+              readFromItem(p, "P1StartDate") ||
+              readFromItem(p, "P1EndDate"),
+          );
 
           if (rows.length === 0) {
             const tr = document.createElement("tr");
@@ -1056,7 +1160,9 @@
             return;
           }
 
-          rows.sort((a, b) => String(a.Name || a.Title || "").localeCompare(String(b.Name || b.Title || "")));
+          rows.sort((a, b) =>
+            String(readFromItem(a, "Name") || a.Title || "").localeCompare(String(readFromItem(b, "Name") || b.Title || "")),
+          );
 
           rows.forEach((p) => {
             const tr = document.createElement("tr");
@@ -1067,14 +1173,16 @@
               return td;
             }
 
-            tr.appendChild(tdText(`${p.Rank ? p.Rank + " " : ""}${p.Name || p.Title || ""}`.trim()));
-            tr.appendChild(tdText(fromSpDate(p.RecordDate) || ""));
+            tr.appendChild(
+              tdText(`${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${readFromItem(p, "Name") || p.Title || ""}`.trim()),
+            );
+            tr.appendChild(tdText(fromSpDate(readFromItem(p, "RecordDate")) || ""));
 
             const tdStart = document.createElement("td");
             const inStart = document.createElement("input");
             inStart.type = "date";
             inStart.className = "input";
-            inStart.value = fromSpDate(p.P1StartDate) || "";
+            inStart.value = fromSpDate(readFromItem(p, "P1StartDate")) || "";
             tdStart.appendChild(inStart);
             tr.appendChild(tdStart);
 
@@ -1082,7 +1190,7 @@
             const inProj = document.createElement("input");
             inProj.type = "text";
             inProj.className = "input";
-            inProj.value = p.ProjectedOffice || "";
+            inProj.value = readFromItem(p, "ProjectedOffice") || "";
             tdProj.appendChild(inProj);
             tr.appendChild(tdProj);
 
@@ -1090,7 +1198,7 @@
             const inEnd = document.createElement("input");
             inEnd.type = "date";
             inEnd.className = "input";
-            inEnd.value = fromSpDate(p.P1EndDate) || "";
+            inEnd.value = fromSpDate(readFromItem(p, "P1EndDate")) || "";
             tdEnd.appendChild(inEnd);
             tr.appendChild(tdEnd);
 
@@ -1106,10 +1214,10 @@
                 const entityType = await getEntityType(listTitle);
                 const payload = {
                   __metadata: { type: entityType },
-                  P1StartDate: toSpDate(inStart.value) || null,
-                  P1EndDate: toSpDate(inEnd.value) || null,
-                  ProjectedOffice: inProj.value.trim() || null,
                 };
+                payload[spField("P1StartDate")] = toSpDate(inStart.value) || null;
+                payload[spField("P1EndDate")] = toSpDate(inEnd.value) || null;
+                payload[spField("ProjectedOffice")] = inProj.value.trim() || null;
                 const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${p.Id})`;
                 await spFetch(base, { method: "MERGE", body: payload });
                 await loadPersonnel();
@@ -1129,7 +1237,9 @@
         $("p1PrintRoster").addEventListener("click", () => {
           const p1 = personnel
             .filter(isActiveP1)
-            .sort((a, b) => String(a.Name || a.Title || "").localeCompare(String(b.Name || b.Title || "")));
+            .sort((a, b) =>
+              String(readFromItem(a, "Name") || a.Title || "").localeCompare(String(readFromItem(b, "Name") || b.Title || "")),
+            );
           const w = window.open("", "_blank");
           const html = `
             <html><head><title>P1 Recall Roster</title>
@@ -1151,12 +1261,12 @@
                   .map(
                     (p) => `
                   <tr>
-                    <td>${(p.Rank ? p.Rank + " " : "") + (p.Name || p.Title || "")}</td>
-                    <td>${p.RecordDate || "—"}</td>
-                    <td>${p.P1StartDate || "—"}</td>
-                    <td>${p.ProjectedOffice || "—"}</td>
-                    <td>${p.WorkPhone || "—"}</td>
-                    <td>${p.CellPhone || "—"}</td>
+                    <td>${(readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : "") + (readFromItem(p, "Name") || p.Title || "")}</td>
+                    <td>${fromSpDate(readFromItem(p, "RecordDate")) || "—"}</td>
+                    <td>${fromSpDate(readFromItem(p, "P1StartDate")) || "—"}</td>
+                    <td>${readFromItem(p, "ProjectedOffice") || "—"}</td>
+                    <td>${readFromItem(p, "WorkPhone") || "—"}</td>
+                    <td>${readFromItem(p, "CellPhone") || "—"}</td>
                   </tr>
                 `,
                   )
@@ -1183,11 +1293,13 @@
 
           personnel
             .slice()
-            .sort((a, b) => String(a.Name || a.Title || "").localeCompare(String(b.Name || b.Title || "")))
+            .sort((a, b) =>
+              String(readFromItem(a, "Name") || a.Title || "").localeCompare(String(readFromItem(b, "Name") || b.Title || "")),
+            )
             .forEach((p) => {
               const o = document.createElement("option");
               o.value = String(p.Id);
-              o.textContent = `${p.Rank ? p.Rank + " " : ""}${p.Name || p.Title || ""}`.trim();
+              o.textContent = `${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${readFromItem(p, "Name") || p.Title || ""}`.trim();
               sel.appendChild(o);
             });
 
@@ -1204,14 +1316,22 @@
         }
 
         function readCerts(person) {
-          const raw = person && typeof person.CertificationsJson === "string" ? person.CertificationsJson : "[]";
+          if (!person) return [];
+          const key = spField("CertificationsJson");
+          const raw0 = person[key];
+          const raw =
+            raw0 != null && String(raw0).trim()
+              ? String(raw0)
+              : String(readFromItem(person, "CertificationsJson") || "[]");
           const arr = safeJsonParse(raw, []);
           return Array.isArray(arr) ? arr : [];
         }
 
         function writeCerts(personId, certs) {
           const p = personnel.find((x) => String(x.Id) === String(personId));
-          if (p) p.CertificationsJson = stringifyJson(certs);
+          if (!p) return;
+          const key = spField("CertificationsJson");
+          p[key] = stringifyJson(certs);
         }
 
         function renderCertsForSelected() {
@@ -1223,7 +1343,7 @@
             meta.textContent = "No person selected.";
             return;
           }
-          meta.textContent = `Record: ${fromSpDate(p.RecordDate) || "—"} · Squadron: ${p.Squadron || "—"} · Office: ${p.OfficeSymbol || "—"}`;
+          meta.textContent = `Record: ${fromSpDate(readFromItem(p, "RecordDate")) || "—"} · Squadron: ${readFromItem(p, "Squadron") || "—"} · Office: ${readFromItem(p, "OfficeSymbol") || "—"}`;
 
           const certs = readCerts(p);
           if (certs.length === 0) {
@@ -1291,7 +1411,9 @@
             setStatus("Saving certificate…");
             const listTitle = settings.personnelList;
             const entityType = await getEntityType(listTitle);
-            const payload = { __metadata: { type: entityType }, CertificationsJson: stringifyJson(certs) };
+            const certKey = spField("CertificationsJson");
+            const payload = { __metadata: { type: entityType } };
+            payload[certKey] = stringifyJson(certs);
             await spFetch(`/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${p.Id})`, { method: "MERGE", body: payload });
             writeCerts(p.Id, certs);
             renderCertsForSelected();
@@ -1316,7 +1438,9 @@
             setStatus("Deleting certificate…");
             const listTitle = settings.personnelList;
             const entityType = await getEntityType(listTitle);
-            const payload = { __metadata: { type: entityType }, CertificationsJson: stringifyJson(certs) };
+            const certKey = spField("CertificationsJson");
+            const payload = { __metadata: { type: entityType } };
+            payload[certKey] = stringifyJson(certs);
             await spFetch(`/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${p.Id})`, { method: "MERGE", body: payload });
             writeCerts(p.Id, certs);
             renderCertsForSelected();
@@ -1338,7 +1462,7 @@
           const awardedDate = $("cDate").value || todayIso();
 
           const w = window.open("", "_blank");
-          const name = `${p.Rank ? p.Rank + " " : ""}${p.Name || p.Title || ""}`.trim();
+          const name = `${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${readFromItem(p, "Name") || p.Title || ""}`.trim();
           const html = `
             <html><head><title>Certificate - ${certType}</title>
             <style>
@@ -1361,8 +1485,8 @@
               <div class="mid">In recognition of successful completion.</div>
               <div class="meta">
                 <div><b>Date Awarded:</b> ${awardedDate}</div>
-                <div><b>Office/Flight:</b> ${p.OfficeSymbol || "—"}</div>
-                <div><b>Squadron:</b> ${p.Squadron || "—"}</div>
+                <div><b>Office/Flight:</b> ${readFromItem(p, "OfficeSymbol") || "—"}</div>
+                <div><b>Squadron:</b> ${readFromItem(p, "Squadron") || "—"}</div>
               </div>
               <div class="sig">
                 <div class="line">Authorized Signature</div>
@@ -1386,14 +1510,30 @@
         async function loadCertifiers() {
           setStatus("Loading certifiers…");
           const listTitle = escListTitle(settings.certifiersList);
-          const field = settings.certifiersField;
-          const select = `Id,${field}`;
-          const url = `/_api/web/lists/getbytitle('${listTitle}')/items?$select=${encodeURIComponent(select)}&$top=5000&$orderby=Modified desc`;
-          const data = await spFetch(url);
-          const items = data && data.value ? data.value : [];
+          const preferredField = settings.certifiersField;
+
+          let items = [];
+          try {
+            const url = `/_api/web/lists/getbytitle('${listTitle}')/items?$select=${encodeURIComponent("Id," + preferredField)}&$top=5000&$orderby=Modified desc`;
+            const data = await spFetch(url);
+            items = data && data.value ? data.value : [];
+          } catch (e1) {
+            try {
+              setStatus("Retrying certifiers without $select…");
+              const url2 = `/_api/web/lists/getbytitle('${listTitle}')/items?$top=5000&$orderby=Modified desc`;
+              const data2 = await spFetch(url2);
+              items = data2 && data2.value ? data2.value : [];
+            } catch (e2) {
+              throw new Error("Certifiers list failed: " + (e2.message || String(e2)));
+            }
+          }
+
           const names = [];
           items.forEach((it) => {
-            const v = it[field];
+            let v = it[preferredField];
+            if (typeof v !== "string" || !v.trim()) {
+              v = it.Title;
+            }
             if (typeof v === "string" && v.trim()) names.push(v.trim());
           });
           const unique = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
@@ -1402,7 +1542,7 @@
           if (unique.length === 0) {
             const m = document.createElement("div");
             m.className = "muted";
-            m.textContent = `No names found. Check list "${settings.certifiersList}" and column internal name "${field}".`;
+            m.textContent = `No names found. Check list "${settings.certifiersList}" and column "${preferredField}" (or use Title).`;
             list.appendChild(m);
           } else {
             unique.forEach((n) => {
