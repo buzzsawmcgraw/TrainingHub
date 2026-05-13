@@ -75,9 +75,9 @@
       #sp-pip-ui details {
         margin-top: 12px;
       }
-      #sp-pip-ui summary {
-        cursor: pointer;
-        font-weight: 600;
+      #sp-pip-ui .mono {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 12px;
       }
     </style>
   </head>
@@ -85,9 +85,9 @@
     <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
     <div id="sp-pip-ui">
       <p>
-        <strong>Personnel list reader</strong> — the table builds <strong>one column per field</strong> SharePoint
-        returns on each item (scroll horizontally if needed). Site URL is set in the script. Use
-        <strong>Refresh list</strong> after changing data.
+        <strong>Personnel list reader</strong> — set <span class="mono">ROSTER_COLUMNS</span> in the script with your
+        SharePoint <strong>internal</strong> field names (and friendly labels) so order and columns stay correct. Leave
+        it empty to auto-build columns from the data. Use <strong>Refresh list</strong> after edits.
       </p>
       <div id="rosterReadState" class="read-state loading">Loading list…</div>
       <button type="button" id="probeRun">Refresh list</button>
@@ -128,12 +128,54 @@
         const LIST_PERSONNEL = "Personnel";
         /** Optional: List GUID from List settings → use if getbytitle fails. */
         const LIST_PERSONNEL_GUID = "";
+
+        /**
+         * Roster table columns — **recommended** so order and headers match your list.
+         *
+         * 1) Leave this as `[]` once, load the page, open **Diagnostics**, find “Table columns (auto union)” or the
+         *    first row JSON — copy the **exact** REST property names (e.g. `Record_x0020_Date`, `Last_x0020_Name`).
+         * 2) Paste them below in the order you want. Each entry is either:
+         *    - A string: `"LastName"` → column header shows that same text
+         *    - An object: `{ key: "Record_x0020_Date", label: "Record date" }` → header shows “Record date”
+         *
+         * Empty array `[]` = auto mode (one column per field returned on the rows — often messy).
+         */
+        const ROSTER_COLUMNS = [];
+
         // ============================================================
 
         const out = document.getElementById("probeOut");
         const btn = document.getElementById("probeRun");
         const rosterReadState = document.getElementById("rosterReadState");
         const rosterTableBody = document.getElementById("rosterTableBody");
+
+        function normalizedRosterColumns() {
+          const arr = Array.isArray(ROSTER_COLUMNS) ? ROSTER_COLUMNS : [];
+          const result = [];
+          arr.forEach((entry) => {
+            if (entry == null) return;
+            if (typeof entry === "string") {
+              const key = entry.trim();
+              if (key) result.push({ key: key, label: key });
+              return;
+            }
+            if (typeof entry === "object") {
+              const key = String(entry.key != null ? entry.key : entry.field != null ? entry.field : "").trim();
+              if (!key) return;
+              const label = String(entry.label != null ? entry.label : "").trim() || key;
+              result.push({ key: key, label: label });
+            }
+          });
+          return result;
+        }
+
+        /** Explicit plan from ROSTER_COLUMNS, or auto from row keys. */
+        function resolveRosterColumnPlan(rows) {
+          const explicit = normalizedRosterColumns();
+          if (explicit.length > 0) return { mode: "explicit", columns: explicit };
+          const keys = collectColumnKeys(rows);
+          return { mode: "auto", columns: keys.map((k) => ({ key: k, label: k })) };
+        }
 
         /** Skip OData / navigation noise; every other property becomes a table column. */
         function isODataOrMetaKey(k) {
@@ -202,12 +244,13 @@
           clearRosterTable();
           const thead = document.getElementById("rosterThead");
           if (!rosterTableBody || !thead) return;
-          const keys = collectColumnKeys(rows);
+          const plan = resolveRosterColumnPlan(rows);
+          const columns = plan.columns;
           const trHead = document.createElement("tr");
-          keys.forEach((k) => {
+          columns.forEach((col) => {
             const th = document.createElement("th");
-            th.textContent = k;
-            th.title = k;
+            th.textContent = col.label;
+            th.title = col.key;
             trHead.appendChild(th);
           });
           thead.appendChild(trHead);
@@ -215,9 +258,9 @@
           const frag = document.createDocumentFragment();
           rows.forEach((item) => {
             const tr = document.createElement("tr");
-            keys.forEach((k) => {
+            columns.forEach((col) => {
               const td = document.createElement("td");
-              const raw = item[k];
+              const raw = item[col.key];
               const text = formatCellValue(raw);
               td.textContent = text === "" ? "—" : text;
               tr.appendChild(td);
@@ -233,8 +276,10 @@
             "Reading list works — " +
               rows.length +
               " row(s), " +
-              keys.length +
-              " column(s) (REST field names). SharePoint ItemCount=" +
+              columns.length +
+              " column(s) (" +
+              (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
+              "). SharePoint ItemCount=" +
               ic +
               ', list "' +
               listTitle +
@@ -489,15 +534,35 @@
             log("List is empty (ItemCount may still be > 0 if filtered view — this is default view items).");
             return;
           }
-          const tableKeys = collectColumnKeys(rows);
-          log("Table columns (" + tableKeys.length + ", union of fields on loaded rows):\n" + tableKeys.join(", "), "ok");
+          const plan = resolveRosterColumnPlan(rows);
+          if (plan.mode === "explicit") {
+            log(
+              "Roster mode: **explicit** ROSTER_COLUMNS (" +
+                plan.columns.length +
+                "):\n" +
+                plan.columns.map((c) => c.key + (c.label !== c.key ? "  (header: " + c.label + ")" : "")).join("\n"),
+              "ok",
+            );
+          } else {
+            const tableKeys = collectColumnKeys(rows);
+            log(
+              "Roster mode: **auto** (union of fields on loaded rows). Copy names into ROSTER_COLUMNS to fix layout:\n" +
+                tableKeys.join(", "),
+              "ok",
+            );
+          }
           log("--- First row (raw JSON) ---", "ok");
           log(rows[0]);
           if (rows.length > 1) {
             log("--- Second row (raw JSON) ---", "ok");
             log(rows[1]);
           }
-          log("DONE. One table column per field name above (empty cells if that row has no value).", "ok");
+          log(
+            plan.mode === "explicit"
+              ? "DONE. Table uses your ROSTER_COLUMNS order; wrong cells mean a `key` does not match REST (check spelling)."
+              : "DONE. Set ROSTER_COLUMNS in the script to control column order and labels; auto mode uses every field returned.",
+            "ok",
+          );
           renderRosterTable(rows, meta);
         }
 
