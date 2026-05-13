@@ -39,6 +39,26 @@
       #sp-pip-ui *::after {
         box-sizing: border-box;
       }
+      #sp-pip-ui .hub-top-banner-wrap {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        line-height: 0;
+        overflow: hidden;
+        background: #030403;
+        border-bottom: 2px solid var(--pip-border);
+      }
+      #sp-pip-ui .hub-top-banner-wrap[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui .hub-top-banner-img {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-height: min(260px, 30vh);
+        object-fit: cover;
+        object-position: center center;
+      }
       #sp-pip-ui .hub-header {
         padding: 20px 22px 18px;
         background: linear-gradient(180deg, #0d140f 0%, #080c08 55%, var(--pip-bg) 100%);
@@ -395,6 +415,9 @@
   <body>
     <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
     <div id="sp-pip-ui">
+      <div class="hub-top-banner-wrap" id="hubTopBannerWrap" hidden>
+        <img id="hubTopBannerImg" class="hub-top-banner-img" src="" alt="" decoding="async" />
+      </div>
       <header class="hub-header">
         <div class="hub-header-row">
           <div class="hub-logo-wrap" id="hubLogoWrap" hidden>
@@ -476,6 +499,18 @@
         const HUB_LOGO_ALT = "88th Security Forces Squadron";
 
         /**
+         * Full-width image across the top of the web part (default: **S3T Files** / **banner.png** on this site).
+         * Paste a full file URL here to override. Leave "" to build from `PERSONNEL_SITE_ROOT_URL` +
+         * `HUB_BANNER_SITE_RELATIVE_PATH`. If the image does not load, open the file in SharePoint, copy the browser
+         * address, and set `HUB_TOP_BANNER_URL` to that value (or fix `HUB_BANNER_SITE_RELATIVE_PATH` — e.g. add
+         * `Shared%20Documents/` if **S3T Files** is a folder inside Documents, not the library root).
+         */
+        const HUB_TOP_BANNER_URL = "";
+        /** Path from site root to `banner.png` (spaces as %20). */
+        const HUB_BANNER_SITE_RELATIVE_PATH = "S3T%20Files/banner.png";
+        const HUB_TOP_BANNER_ALT = "88th Security Forces Squadron banner";
+
+        /**
          * Roster column `key` values that render as dropdowns. Options are loaded from SharePoint field **Choices**
          * (same internal name as used for save — see `resolveWriteKey` / first data row).
          */
@@ -510,6 +545,33 @@
         ];
 
         // ============================================================
+
+        function resolveTopBannerImageUrl() {
+          const explicit = typeof HUB_TOP_BANNER_URL === "string" ? HUB_TOP_BANNER_URL.trim() : "";
+          if (explicit) return explicit;
+          const root = (typeof PERSONNEL_SITE_ROOT_URL === "string" ? PERSONNEL_SITE_ROOT_URL : "")
+            .trim()
+            .replace(/\/$/, "");
+          const rel = (typeof HUB_BANNER_SITE_RELATIVE_PATH === "string" ? HUB_BANNER_SITE_RELATIVE_PATH : "")
+            .trim()
+            .replace(/^\//, "");
+          if (!root || !rel) return "";
+          return root + "/" + rel;
+        }
+
+        (function initHubTopBanner() {
+          const wrap = document.getElementById("hubTopBannerWrap");
+          const img = document.getElementById("hubTopBannerImg");
+          const url = resolveTopBannerImageUrl();
+          if (!wrap || !img) return;
+          if (!url) return;
+          img.src = url;
+          img.alt =
+            typeof HUB_TOP_BANNER_ALT === "string" && HUB_TOP_BANNER_ALT.trim()
+              ? HUB_TOP_BANNER_ALT.trim()
+              : "Squadron banner";
+          wrap.hidden = false;
+        })();
 
         (function initHubLogo() {
           const wrap = document.getElementById("hubLogoWrap");
