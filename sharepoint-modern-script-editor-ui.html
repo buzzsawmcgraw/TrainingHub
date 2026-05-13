@@ -135,6 +135,9 @@
 
               <div class="card">
                 <div class="cardTitle">Personnel roster</div>
+                <div class="muted" style="font-size: 11px; margin-bottom: 4px">
+                  Rows from the SharePoint list <strong>Personnel</strong> (same site as this page).
+                </div>
                 <div class="muted" id="pCount">0 records</div>
                 <div class="list" id="pList"></div>
               </div>
@@ -527,10 +530,10 @@
         font-size: 12px;
         margin-top: 2px;
       }
-      #sp-pip-ui .itemActions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
+      #sp-pip-ui .item.item-emphasis {
+        outline: 1px solid rgba(65, 255, 122, 0.55);
+        box-shadow: 0 0 14px rgba(65, 255, 122, 0.18);
+        border-radius: 6px;
       }
       #sp-pip-ui .linkbtn {
         border: none;
@@ -567,6 +570,7 @@
     <script>
       (function () {
         // -------- SharePoint lists on this web (edit source if titles differ) --------
+        /** Must match Site contents list name exactly — drives Hub roster + record Save/Delete. */
         const LIST_PERSONNEL = "Personnel";
         const LIST_CERTIFIERS = "Certifiers";
         /** REST field key on each Certifiers row for the instructor name (falls back to Title). */
@@ -759,6 +763,7 @@
             headers,
             body: opts.body ? JSON.stringify(opts.body) : undefined,
             credentials: "include",
+            cache: "no-store",
           });
 
           if (res.status === 204) return null;
@@ -957,6 +962,8 @@
         resetForm();
 
         let personnel = [];
+        /** After Save, scroll/highlight this list item Id once `renderRoster` runs. */
+        let rosterEmphasisId = null;
 
         async function getEntityType(listTitle) {
           const data = await spFetch(`/_api/web/lists/getbytitle('${escListTitle(listTitle)}')?$select=ListItemEntityTypeFullName`);
@@ -980,12 +987,17 @@
             empty.className = "muted";
             empty.textContent = personnel.length ? "No matches." : "No records yet.";
             list.appendChild(empty);
+            rosterEmphasisId = null;
             return;
           }
 
           filtered.forEach((p) => {
             const item = document.createElement("div");
             item.className = "item";
+            item.dataset.personnelId = String(p.Id);
+            if (rosterEmphasisId != null && String(p.Id) === String(rosterEmphasisId)) {
+              item.classList.add("item-emphasis");
+            }
             const left = document.createElement("div");
             const title = document.createElement("div");
             title.className = "itemTitle";
@@ -1009,6 +1021,29 @@
             item.appendChild(actions);
             list.appendChild(item);
           });
+
+          if (rosterEmphasisId != null) {
+            const hit = list.querySelector("[data-personnel-id=\"" + String(rosterEmphasisId).replace(/"/g, "") + "\"]");
+            if (hit) {
+              try {
+                hit.scrollIntoView({ block: "nearest", behavior: "smooth" });
+              } catch (_) {
+                hit.scrollIntoView(true);
+              }
+            }
+            rosterEmphasisId = null;
+          }
+        }
+
+        function parseCreatedItemId(created) {
+          if (!created || typeof created !== "object") return null;
+          if (created.Id != null && created.Id !== "") return String(created.Id);
+          const oid = created["odata.id"] || created["@odata.id"];
+          if (oid && typeof oid === "string") {
+            const m = oid.match(/\/items\((\d+)\)/i);
+            if (m) return m[1];
+          }
+          return null;
         }
 
         function loadIntoForm(p) {
@@ -1071,10 +1106,13 @@
 
           const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items`;
           if (f.id.value) {
-            await spFetch(`${base}(${f.id.value})`, { method: "MERGE", body: payload });
-          } else {
-            await spFetch(base, { method: "POST", body: payload });
+            const sid = String(f.id.value);
+            await spFetch(`${base}(${sid})`, { method: "MERGE", body: payload });
+            return { savedId: sid };
           }
+          const created = await spFetch(base, { method: "POST", body: payload });
+          const sid = parseCreatedItemId(created);
+          return { savedId: sid };
         }
 
         async function deletePersonnel() {
@@ -1088,7 +1126,9 @@
         $("pSave").addEventListener("click", async () => {
           try {
             setStatus("Saving personnel…");
-            await savePersonnel();
+            const result = await savePersonnel();
+            rosterEmphasisId = result && result.savedId ? String(result.savedId) : null;
+            $("pSearch").value = "";
             resetForm();
             await loadPersonnel();
             setStatus("Saved.");
@@ -1106,6 +1146,8 @@
             if (!confirm("Delete this personnel record?")) return;
             setStatus("Deleting…");
             await deletePersonnel();
+            rosterEmphasisId = null;
+            $("pSearch").value = "";
             resetForm();
             await loadPersonnel();
             setStatus("Deleted.");
