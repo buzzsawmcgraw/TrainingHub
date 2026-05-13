@@ -152,10 +152,10 @@
         border-bottom: 1px solid var(--pip-border);
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.16em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--pip-amber);
-        text-shadow: 0 0 6px rgba(255, 176, 0, 0.28);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
       }
       #sp-pip-ui pre span.ok {
         color: var(--pip-green);
@@ -347,19 +347,19 @@
         border-radius: 8px;
         padding: 18px 20px 20px;
         margin: 0;
-        background: linear-gradient(165deg, rgba(12, 28, 18, 0.95) 0%, var(--pip-surface) 45%, var(--pip-bg2) 100%);
-        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.06), inset 0 0 28px rgba(0, 0, 0, 0.45);
+        background: rgba(5, 14, 10, 0.55);
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), inset 0 0 32px rgba(0, 0, 0, 0.5);
       }
       #sp-pip-ui .add-person-panel h2.hub-subtitle {
         margin: 0 0 14px;
-        padding-bottom: 12px;
+        padding-bottom: 10px;
         border-bottom: 1px solid var(--pip-border);
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.16em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--pip-amber);
-        text-shadow: 0 0 6px rgba(255, 176, 0, 0.28);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
       }
       #sp-pip-ui form#newPersonForm.add-form-stack {
         display: flex;
@@ -378,14 +378,15 @@
         padding: 12px 14px 14px;
         margin-bottom: 18px;
         gap: 18px;
-        background: linear-gradient(165deg, rgba(10, 28, 18, 0.78) 0%, rgba(5, 14, 10, 0.88) 100%);
-        border: 1px solid var(--pip-border);
-        border-radius: 10px;
-        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.08), 0 8px 28px rgba(0, 0, 0, 0.42);
+        background: rgba(8, 22, 16, 0.35);
+        border: 1px solid rgba(30, 74, 54, 0.45);
+        border-radius: 8px;
+        box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.4);
       }
       #sp-pip-ui .add-form-split--primary > fieldset.add-form-group {
-        background: rgba(3, 12, 8, 0.88);
-        box-shadow: inset 0 0 0 1px rgba(60, 255, 122, 0.06);
+        background: rgba(8, 22, 16, 0.42);
+        border: 1px solid rgba(30, 74, 54, 0.4);
+        box-shadow: none;
         padding: 12px 14px 16px;
       }
       @media (max-width: 768px) {
@@ -398,13 +399,13 @@
         min-height: 100%;
       }
       #sp-pip-ui fieldset.add-form-group {
-        border: 1px solid var(--pip-border);
+        border: 1px solid rgba(30, 74, 54, 0.4);
         border-radius: 8px;
         padding: 10px 14px 14px;
         margin: 0 0 14px;
         min-width: 0;
-        background: rgba(4, 14, 10, 0.55);
-        box-shadow: inset 0 0 0 1px rgba(60, 255, 122, 0.04);
+        background: rgba(8, 22, 16, 0.38);
+        box-shadow: none;
       }
       #sp-pip-ui form#newPersonForm.add-form-stack > fieldset.add-form-group:last-of-type {
         margin-bottom: 0;
@@ -415,11 +416,11 @@
       #sp-pip-ui .add-form-group-legend {
         padding: 0 6px;
         font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.16em;
+        font-weight: 600;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--pip-amber);
-        text-shadow: 0 0 6px rgba(255, 176, 0, 0.28);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
       }
       #sp-pip-ui .add-form-grid {
         display: grid;
@@ -465,11 +466,12 @@
       #sp-pip-ui .add-field label {
         display: block;
         font-size: 10px;
-        font-weight: 700;
+        font-weight: 600;
         margin-bottom: 6px;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--pip-green-dim);
+        letter-spacing: 0.12em;
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.18);
       }
       #sp-pip-ui .add-field input,
       #sp-pip-ui .add-field select,
@@ -478,11 +480,11 @@
         box-sizing: border-box;
         font: 13px var(--pip-font);
         padding: 8px 10px;
-        border: 1px solid var(--pip-green-dim);
+        border: 1px solid rgba(30, 74, 54, 0.5);
         border-radius: var(--pip-control-radius);
-        background: rgba(3, 10, 6, 0.88);
-        color: var(--pip-green);
-        text-shadow: 0 0 2px var(--pip-green-glow);
+        background: rgba(5, 14, 10, 0.72);
+        color: rgba(210, 255, 224, 0.92);
+        text-shadow: 0 0 1px rgba(60, 255, 122, 0.12);
       }
       #sp-pip-ui .add-field input[type="text"],
       #sp-pip-ui .add-field input[type="date"] {
@@ -495,9 +497,9 @@
         padding: 8px 28px 8px 10px;
         cursor: pointer;
         appearance: none;
-        background-color: rgba(3, 10, 6, 0.88);
-        background-image: linear-gradient(45deg, transparent 50%, var(--pip-green-dim) 50%),
-          linear-gradient(135deg, var(--pip-green-dim) 50%, transparent 50%);
+        background-color: rgba(5, 14, 10, 0.72);
+        background-image: linear-gradient(45deg, transparent 50%, rgba(255, 204, 102, 0.45) 50%),
+          linear-gradient(135deg, rgba(255, 204, 102, 0.45) 50%, transparent 50%);
         background-position: calc(100% - 16px) calc(50% - 3px), calc(100% - 11px) calc(50% - 3px);
         background-size: 5px 5px, 5px 5px;
         background-repeat: no-repeat;
@@ -514,18 +516,19 @@
       }
       #sp-pip-ui .add-field input::placeholder,
       #sp-pip-ui .add-field textarea::placeholder {
-        color: #1a5c28;
+        color: rgba(60, 120, 80, 0.75);
       }
       #sp-pip-ui .add-field input:focus,
       #sp-pip-ui .add-field select:focus,
       #sp-pip-ui .add-field textarea:focus {
         outline: none;
-        border-color: var(--pip-green);
-        box-shadow: 0 0 10px var(--pip-green-glow);
+        border-color: rgba(60, 255, 122, 0.45);
+        box-shadow: 0 0 0 1px rgba(60, 255, 122, 0.12);
+        background: rgba(8, 22, 16, 0.55);
       }
       #sp-pip-ui .add-field select option {
-        background: #050805;
-        color: var(--pip-green);
+        background: rgba(8, 22, 16, 0.98);
+        color: rgba(210, 255, 224, 0.95);
       }
       #sp-pip-ui .add-form-actions {
         margin-top: 22px;
