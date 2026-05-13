@@ -624,6 +624,35 @@
           return "";
         }
 
+        /**
+         * Fresh X-RequestDigest for a given web URL. Required when POST/MERGE targets a web different from the
+         * Script Editor page, or when the hidden __REQUESTDIGEST is stale ("security validation ... invalid").
+         */
+        async function fetchFormDigestForWeb(webAbsoluteUrl) {
+          const base = String(webAbsoluteUrl || "").trim().replace(/\/$/, "");
+          if (!base) return "";
+          const res = await fetch(base + "/_api/contextinfo", {
+            method: "POST",
+            headers: {
+              Accept: "application/json;odata=nometadata",
+              "Content-Type": "application/json;odata=nometadata",
+            },
+            credentials: "include",
+            cache: "no-store",
+          });
+          const text = await res.text();
+          let data = null;
+          try {
+            data = text ? JSON.parse(text) : null;
+          } catch (_) {}
+          if (!res.ok || !data) return "";
+          if (data.FormDigestValue) return String(data.FormDigestValue);
+          if (data.d && data.d.GetContextWebInformation && data.d.GetContextWebInformation.FormDigestValue) {
+            return String(data.d.GetContextWebInformation.FormDigestValue);
+          }
+          return "";
+        }
+
         async function spFetch(path, opts, baseUrlOverride) {
           opts = opts || {};
           const base =
@@ -636,8 +665,24 @@
           if (method !== "GET" && method !== "DELETE") {
             headers["Content-Type"] = "application/json;odata=nometadata";
           }
-          const digest = getDigest();
+
+          const isPostWithBody = method === "POST" && opts.body != null;
+          const needsWriteDigest =
+            !opts.skipAntiForgery && (method === "MERGE" || method === "DELETE" || isPostWithBody);
+
+          let digest = "";
+          if (needsWriteDigest) {
+            try {
+              digest = await fetchFormDigestForWeb(base);
+            } catch (_) {
+              digest = "";
+            }
+            if (!digest) digest = getDigest();
+          } else {
+            digest = getDigest();
+          }
           if (digest) headers["X-RequestDigest"] = digest;
+
           let realMethod = method;
           if (method === "MERGE" || method === "DELETE") {
             headers["X-HTTP-Method"] = method;
