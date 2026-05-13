@@ -16,8 +16,10 @@ Open `sharepoint-modern-script-editor-ui.html` and paste the contents into your 
 
 Minimum:
 
-- **Personnel** list
-- **Certifiers** list (with a column internal name `certifier`)
+- **Personnel** list (title must be `Personnel` on the same site as the page)
+- **Certifiers** list (title `Certifiers`; names read from field `Certifier`, then `Title` if empty)
+
+List titles and the certifier field key are set in the snippet source (`LIST_PERSONNEL`, `LIST_CERTIFIERS`, `CERTIFIERS_NAME_FIELD`). Change those constants if your site uses different names.
 
 The UI uses `/_api` calls and expects to run on the SharePoint site so your signed-in session provides auth cookies.
 

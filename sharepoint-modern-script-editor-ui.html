@@ -34,7 +34,6 @@
             <button type="button" class="tab" data-tab="missed" role="tab" aria-selected="false">Missed Appointments</button>
             <button type="button" class="tab" data-tab="reports" role="tab" aria-selected="false">Reports</button>
           </div>
-          <button type="button" class="btn ghost" id="openSettings">Configure lists…</button>
         </div>
 
         <div class="panel">
@@ -43,7 +42,7 @@
             <div class="row row-between">
               <div>
                 <div class="sectionTitle">Command hub</div>
-                <div class="muted">Personnel roster and record entry (SharePoint list).</div>
+                <div class="muted">Personnel list <strong>Personnel</strong> on this site — all tracked fields below.</div>
               </div>
               <div class="row">
                 <input
@@ -64,6 +63,9 @@
                   <div class="field">
                     <label>Record date</label>
                     <input id="fRecordDate" class="input" type="date" readonly />
+                    <div class="muted" style="margin-top: 4px; font-size: 11px">
+                      New record: today. When you open someone’s row: their saved date.
+                    </div>
                   </div>
 
                   <div class="field rank">
@@ -110,6 +112,23 @@
                     <input id="fNotes" class="input" type="text" />
                   </div>
 
+                  <div class="field">
+                    <label>P1 start date</label>
+                    <input id="fP1Start" class="input" type="date" />
+                  </div>
+                  <div class="field">
+                    <label>P1 end date</label>
+                    <input id="fP1End" class="input" type="date" />
+                  </div>
+                  <div class="field full">
+                    <label>Projected office / flight</label>
+                    <input id="fProjectedOffice" class="input" type="text" />
+                  </div>
+                  <div class="field full">
+                    <label>Certifications (JSON)</label>
+                    <textarea id="fCertsJson" class="input" rows="4" spellcheck="false" placeholder="[]"></textarea>
+                  </div>
+
                   <div class="row full row-between">
                     <div class="muted" id="pEditingLabel">New record</div>
                     <div class="row">
@@ -140,8 +159,8 @@
                 office. That needs additional SharePoint lists or JSON columns per person.
               </p>
               <p class="muted">
-                Use <strong>Hub</strong> for core personnel fields for now. When you send the SharePoint list layout for
-                Office, this section can be wired the same way as Hub.
+                Use <strong>Hub</strong> for personnel fields on the <strong>Personnel</strong> list. This tab can be
+                wired later if you add office-specific lists.
               </p>
             </div>
           </section>
@@ -152,7 +171,8 @@
               <div>
                 <div class="sectionTitle">Instructors</div>
                 <div class="muted">
-                  Names are read from your Certifiers SharePoint list (column configured under Configure lists…).
+                  Names from the <strong>Certifiers</strong> list on this site (field <strong>Certifier</strong>, then
+                  <span class="mono">Title</span> if empty).
                 </div>
               </div>
               <div class="row">
@@ -184,7 +204,7 @@
               <div>
                 <div class="sectionTitle">Phase 1</div>
                 <div class="muted">
-                  P1 dates and projected office on the personnel record; P1-only recall roster printout.
+                  Same data as Hub — quick table edits here, or edit the full row on <strong>Hub</strong>.
                 </div>
               </div>
               <div class="row">
@@ -234,96 +254,6 @@
                 calculated statuses.
               </p>
               <p class="muted">Not wired in this paste-only build yet.</p>
-            </div>
-          </section>
-
-          <!-- Settings (not a main nav tab — open via Configure lists…) -->
-          <section class="view" id="view-settings" role="tabpanel">
-            <div class="row row-between" style="margin-bottom: 12px">
-              <div class="sectionTitle">Configure lists</div>
-              <button type="button" class="btn ghost" id="backToHub">← Back to Hub</button>
-            </div>
-            <div class="muted">
-              Enter each list’s <strong>title</strong> exactly as it appears in Site Contents, and which
-              <strong>column</strong> holds the values this app should read. SharePoint REST returns each column under a
-              field <strong>key</strong> (often the same as the internal name); if your column’s key differs from its
-              display label, use <span class="mono">Run diagnose</span> on that list and paste the matching key here.
-            </div>
-
-            <div class="card" style="margin-top: 12px">
-              <div class="cardTitle">Lists and columns</div>
-              <div class="formGrid">
-                <div class="field">
-                  <label>Personnel — SharePoint list title</label>
-                  <input id="sPersonnelList" class="input" type="text" placeholder="Personnel" />
-                </div>
-                <div class="field">
-                  <label>Certifiers — SharePoint list title</label>
-                  <input id="sCertifiersList" class="input" type="text" placeholder="Certifiers" />
-                </div>
-                <div class="field">
-                  <label>Certifiers — column to read (REST field key)</label>
-                  <input id="sCertifiersField" class="input" type="text" placeholder="e.g. Title or Certifier" />
-                  <div class="muted" style="margin-top: 6px">
-                    Instructors uses this field on each Certifiers row (falls back to <span class="mono">Title</span> if
-                    the cell is empty). Use the property name shown in <span class="mono">Run diagnose</span> for that
-                    list, not necessarily the column’s display name.
-                  </div>
-                </div>
-                <div class="field full">
-                  <label>Personnel column map (optional JSON)</label>
-                  <textarea
-                    id="sColumnMap"
-                    class="input"
-                    rows="4"
-                    placeholder='{"RecordDate":"Record_x0020_Date","Rank":"Rank0"}'
-                  ></textarea>
-                  <div class="muted" style="margin-top: 6px">
-                    If lists do not load, your list’s <strong>internal</strong> column names may differ from the
-                    defaults. Map logical names to internal names (see list settings → column → URL
-                    <span class="mono">Field=</span>). Leave empty to auto-try common SharePoint renames on read.
-                  </div>
-                </div>
-                <div class="row full row-between">
-                  <div class="muted" id="sStatus">Ready.</div>
-                  <div class="row">
-                    <button type="button" class="btn" id="sSave">Save settings</button>
-                    <button type="button" class="btn ghost" id="sReset">Reset defaults</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="card" style="margin-top: 12px">
-              <div class="cardTitle">Required columns (Personnel list)</div>
-              <div class="muted mono">
-                Title (required), RecordDate, Rank, Name, Squadron, Status, OfficeSymbol,
-                WorkPhone, CellPhone, Notes, P1StartDate, P1EndDate, ProjectedOffice,
-                CertificationsJson
-              </div>
-              <div class="muted" style="margin-top: 8px">
-                Optional: a multiple-lines-of-text column
-                <span class="mono">CertificationsJson</span> preserves certificate JSON for a future Certificates view; if
-                absent, map it in <span class="mono">Personnel column map</span> or add the column later. Hub save keeps
-                existing JSON when present.
-              </div>
-              <div class="muted" style="margin-top: 8px">
-                <strong>Note:</strong> The labels you see in the list form are often
-                <em>display names</em>. REST and this app need the
-                <em>internal name</em> (see <span class="mono">Run diagnose</span> below). If you truly created columns whose internal names match the list above, you are aligned.
-              </div>
-            </div>
-
-            <div class="card" style="margin-top: 12px">
-              <div class="cardTitle">Diagnose REST (read-only)</div>
-              <div class="muted" style="margin-bottom: 8px">
-                Uses the list titles in the boxes above (you do not have to click Save first). Shows each field
-                <strong>key</strong> on the first item so you can match Personnel columns or the Certifiers “column to
-                read” value. If keys differ from what you expect, paste Personnel mappings into
-                <span class="mono">Personnel column map</span> and adjust the Certifiers field key above.
-              </div>
-              <button type="button" class="btn ghost" id="sDiagnose">Run diagnose</button>
-              <pre id="sDiagnoseOut" class="diagnose-out"></pre>
             </div>
           </section>
         </div>
@@ -405,7 +335,7 @@
         display: flex;
         flex-wrap: wrap;
         align-items: flex-end;
-        justify-content: space-between;
+        justify-content: flex-start;
         gap: 10px;
         padding: 0 0 0;
         margin-bottom: 1.25rem;
@@ -518,6 +448,12 @@
       #sp-pip-ui .input:focus {
         border-color: rgba(65, 255, 122, 0.5);
         box-shadow: 0 0 0 2px rgba(65, 255, 122, 0.12);
+      }
+      #sp-pip-ui textarea.input {
+        font-family: inherit;
+        line-height: 1.35;
+        resize: vertical;
+        min-height: 72px;
       }
       #sp-pip-ui select.input {
         padding-right: 30px;
@@ -641,34 +577,22 @@
         font-size: 12px;
         vertical-align: top;
       }
-
-      #sp-pip-ui .diagnose-out {
-        margin-top: 10px;
-        max-height: 280px;
-        overflow: auto;
-        white-space: pre-wrap;
-        word-break: break-word;
-        font-size: 11px;
-        border: 1px solid var(--pb-line);
-        padding: 10px;
-        background: rgba(0, 0, 0, 0.35);
-        color: var(--pb-muted);
-      }
     </style>
 
     <script>
       (function () {
-        // -------- Defaults (edit here OR in Settings tab) --------
-        // Defaults set to the list names you were already using with other agents.
-        const DEFAULTS = {
-          personnelList: "Personnel",
-          certifiersList: "Certifiers",
-          certifiersField: "Certifier",
-          /** Map logical field → SharePoint internal column name (optional). */
-          columnMap: {},
-        };
+        // -------- SharePoint lists on this web (edit source if titles differ) --------
+        const LIST_PERSONNEL = "Personnel";
+        const LIST_CERTIFIERS = "Certifiers";
+        /** REST field key on each Certifiers row for the instructor name (falls back to Title). */
+        const CERTIFIERS_NAME_FIELD = "Certifier";
+        /**
+         * Optional: map logical Hub field name → SharePoint internal column key when yours differ.
+         * Example: { "Rank": "Rank0", "RecordDate": "Record_x0020_Date" }
+         */
+        const COLUMN_MAP = {};
 
-        /** Default internal names used when saving; override via columnMap JSON in Settings. */
+        /** Default REST keys when COLUMN_MAP has no override. */
         const LOGICAL_DEFAULTS = {
           RecordDate: "RecordDate",
           Rank: "Rank",
@@ -760,16 +684,6 @@
           },
           true,
         );
-        $("openSettings").addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          activateTab("settings");
-        });
-        $("backToHub").addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          activateTab("hub");
-        });
         // SharePoint date helpers
         function toSpDate(dateOnly) {
           if (!dateOnly) return null;
@@ -877,28 +791,8 @@
           return String(title || "").replace(/'/g, "''");
         }
 
-        // Settings storage (in browser)
-        const settingsKey = "trainingHub::spUiSettings::" + webUrl.toLowerCase();
-        function loadSettings() {
-          try {
-            const raw = localStorage.getItem(settingsKey);
-            if (!raw) return Object.assign({}, DEFAULTS);
-            const parsed = JSON.parse(raw);
-            const out = Object.assign({}, DEFAULTS, parsed || {});
-            if (!out.columnMap || typeof out.columnMap !== "object") out.columnMap = {};
-            return out;
-          } catch (_) {
-            return Object.assign({}, DEFAULTS);
-          }
-        }
-        function saveSettings(s) {
-          localStorage.setItem(settingsKey, JSON.stringify(s));
-        }
-
-        let settings = loadSettings();
-
         function spField(logical) {
-          const ov = settings.columnMap && settings.columnMap[logical];
+          const ov = COLUMN_MAP[logical];
           if (ov && String(ov).trim()) return String(ov).trim();
           return LOGICAL_DEFAULTS[logical] || logical;
         }
@@ -919,143 +813,30 @@
           return "";
         }
 
-        $("sPersonnelList").value = settings.personnelList;
-        $("sCertifiersList").value = settings.certifiersList;
-        $("sCertifiersField").value = settings.certifiersField;
-        $("sColumnMap").value =
-          settings.columnMap && Object.keys(settings.columnMap).length
-            ? JSON.stringify(settings.columnMap, null, 2)
-            : "";
-
-        $("sSave").addEventListener("click", () => {
-          let colMap = {};
-          try {
-            const ta = $("sColumnMap").value.trim();
-            if (ta) colMap = JSON.parse(ta);
-            if (typeof colMap !== "object" || colMap === null || Array.isArray(colMap)) {
-              throw new Error("Column map must be a JSON object.");
-            }
-          } catch (e) {
-            $("sStatus").textContent = "Invalid column map JSON: " + (e.message || String(e));
-            return;
-          }
-          settings = {
-            personnelList: $("sPersonnelList").value.trim() || DEFAULTS.personnelList,
-            certifiersList: $("sCertifiersList").value.trim() || DEFAULTS.certifiersList,
-            certifiersField: $("sCertifiersField").value.trim() || DEFAULTS.certifiersField,
-            columnMap: colMap,
-          };
-          saveSettings(settings);
-          $("sStatus").textContent = "Saved.";
-          void loadPersonnel().catch((e) => setStatus("Reload error: " + e.message));
-          void loadCertifiers().catch((e) => setStatus("Reload error: " + e.message));
-          setTimeout(() => {
-            $("sStatus").textContent = "Ready.";
-          }, 1200);
-        });
-
-        $("sReset").addEventListener("click", () => {
-          settings = Object.assign({}, DEFAULTS);
-          saveSettings(settings);
-          $("sPersonnelList").value = settings.personnelList;
-          $("sCertifiersList").value = settings.certifiersList;
-          $("sCertifiersField").value = settings.certifiersField;
-          $("sColumnMap").value = "";
-          $("sStatus").textContent = "Reset to defaults.";
-          setTimeout(() => {
-            $("sStatus").textContent = "Ready.";
-          }, 1200);
-        });
-
-        function currentSettingsFromForm() {
-          let colMap = {};
-          try {
-            const ta = $("sColumnMap").value.trim();
-            if (ta) colMap = JSON.parse(ta);
-          } catch (_) {
-            colMap = {};
-          }
-          if (typeof colMap !== "object" || colMap === null || Array.isArray(colMap)) colMap = {};
-          return {
-            personnelList: $("sPersonnelList").value.trim() || DEFAULTS.personnelList,
-            certifiersList: $("sCertifiersList").value.trim() || DEFAULTS.certifiersList,
-            certifiersField: $("sCertifiersField").value.trim() || DEFAULTS.certifiersField,
-            columnMap: colMap,
-          };
-        }
-
-        $("sDiagnose").addEventListener("click", () => {
-          void (async function () {
-            const out = $("sDiagnoseOut");
-            out.textContent = "Running…";
-            const s = currentSettingsFromForm();
-            const lines = [];
-            lines.push("REST base (current web): " + webUrl);
-            lines.push("");
-
-            async function probe(label, listTitle) {
-              lines.push("--- " + label + " — list title in URL: “" + listTitle + "” ---");
-              try {
-                const meta = await spFetch(
-                  `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')?$select=Id,Title,ItemCount,BaseTemplate`,
-                );
-                lines.push("SharePoint list Id: " + meta.Id);
-                lines.push("SharePoint list Title: " + (meta.Title || ""));
-                lines.push("ItemCount: " + (meta.ItemCount != null ? String(meta.ItemCount) : "(unknown)"));
-                const itemsData = await spFetch(
-                  `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items?$top=1`,
-                );
-                const rows = itemsData && itemsData.value ? itemsData.value : [];
-                if (rows.length === 0) {
-                  lines.push("No rows yet — add one item, save, then run diagnose again to see field keys.");
-                } else {
-                  const keys = Object.keys(rows[0])
-                    .filter((k) => !k.startsWith("@") && k !== "odata.type" && k !== "odata.id" && k !== "odata.editLink")
-                    .sort();
-                  lines.push("Internal field keys on first item (REST uses these, not display labels):");
-                  lines.push(keys.join(", "));
-                }
-              } catch (e) {
-                lines.push("ERROR: " + (e.message || String(e)));
-                lines.push(
-                  "Hint: getbytitle() must match the list title under Site contents exactly. If the list lives on another site, open this page on that site.",
-                );
-              }
-              lines.push("");
-            }
-
-            try {
-              await probe("Personnel", s.personnelList);
-              await probe("Certifiers", s.certifiersList);
-              lines.push("Certifiers — REST field key configured for 'column to read': " + s.certifiersField);
-              lines.push("(Compare to the keys listed for the Certifiers item above; use that exact key here if they differ.)");
-            } catch (e) {
-              lines.push("FATAL: " + (e.message || String(e)));
-            }
-            out.textContent = lines.join("\n");
-            $("sStatus").textContent = "Diagnose finished — see box below.";
-            setTimeout(() => {
-              $("sStatus").textContent = "Ready.";
-            }, 2500);
-          })();
-        });
-
         // Helpers
         function todayIso() {
           return new Date().toISOString().slice(0, 10);
-        }
-        function safeJsonParse(s, fallback) {
-          try {
-            return JSON.parse(s);
-          } catch (_) {
-            return fallback;
-          }
         }
         function stringifyJson(obj) {
           try {
             return JSON.stringify(obj);
           } catch (_) {
             return "[]";
+          }
+        }
+
+        function certsJsonForForm(p) {
+          const certKey = spField("CertificationsJson");
+          const raw0 = p[certKey];
+          const raw =
+            raw0 != null && String(raw0).trim() !== ""
+              ? String(raw0)
+              : String(readFromItem(p, "CertificationsJson") || "");
+          const t = raw.trim() || "[]";
+          try {
+            return JSON.stringify(JSON.parse(t), null, 2);
+          } catch (_) {
+            return t;
           }
         }
 
@@ -1084,6 +865,10 @@
           work: $("fWorkPhone"),
           cell: $("fCellPhone"),
           notes: $("fNotes"),
+          p1Start: $("fP1Start"),
+          p1End: $("fP1End"),
+          projected: $("fProjectedOffice"),
+          certsJson: $("fCertsJson"),
         };
 
         function resetForm() {
@@ -1097,6 +882,10 @@
           f.work.value = "";
           f.cell.value = "";
           f.notes.value = "";
+          f.p1Start.value = "";
+          f.p1End.value = "";
+          f.projected.value = "";
+          f.certsJson.value = "[]";
           $("pEditingLabel").textContent = "New record";
         }
         resetForm();
@@ -1110,7 +899,7 @@
 
         function rosterHay(p) {
           const nm = readFromItem(p, "Name") || p.Title || "";
-          return `${readFromItem(p, "Rank")} ${nm} ${readFromItem(p, "Squadron")} ${readFromItem(p, "OfficeSymbol")} ${readFromItem(p, "Status")}`.toLowerCase();
+          return `${readFromItem(p, "Rank")} ${nm} ${readFromItem(p, "Squadron")} ${readFromItem(p, "OfficeSymbol")} ${readFromItem(p, "Status")} ${readFromItem(p, "WorkPhone")} ${readFromItem(p, "CellPhone")} ${readFromItem(p, "Notes")} ${readFromItem(p, "ProjectedOffice")}`.toLowerCase();
         }
 
         function renderRoster() {
@@ -1170,12 +959,16 @@
           f.work.value = readFromItem(p, "WorkPhone");
           f.cell.value = readFromItem(p, "CellPhone");
           f.notes.value = readFromItem(p, "Notes");
+          f.p1Start.value = fromSpDate(readFromItem(p, "P1StartDate")) || "";
+          f.p1End.value = fromSpDate(readFromItem(p, "P1EndDate")) || "";
+          f.projected.value = readFromItem(p, "ProjectedOffice");
+          f.certsJson.value = certsJsonForForm(p);
           $("pEditingLabel").textContent = "Editing ID " + p.Id;
         }
 
         async function loadPersonnel() {
           setStatus("Loading personnel…");
-          const listTitle = escListTitle(settings.personnelList);
+          const listTitle = escListTitle(LIST_PERSONNEL);
           // Do not use $select: wrong internal names cause 400 and empty UI. Load all scalar fields.
           const path = `/_api/web/lists/getbytitle('${listTitle}')/items?$top=5000&$orderby=Modified desc`;
           const data = await spFetch(path);
@@ -1186,22 +979,26 @@
         }
 
         async function savePersonnel() {
-          const listTitle = settings.personnelList;
+          const listTitle = LIST_PERSONNEL;
           const entityType = await getEntityType(listTitle);
 
-          const existing = personnel.find((x) => String(x.Id) === String(f.id.value));
           const certKey = spField("CertificationsJson");
+          const rawCerts = f.certsJson.value.trim();
           let certJson = "[]";
-          if (existing) {
-            const raw = existing[certKey] != null ? existing[certKey] : readFromItem(existing, "CertificationsJson");
-            if (raw != null && String(raw).trim()) certJson = String(raw);
+          if (rawCerts) {
+            try {
+              certJson = stringifyJson(JSON.parse(rawCerts));
+            } catch (e) {
+              throw new Error("Certifications (JSON) must be valid JSON.");
+            }
           }
 
+          const isNew = !f.id.value;
           const payload = {
             __metadata: { type: entityType },
             Title: f.name.value.trim() || "(no name)",
           };
-          payload[spField("RecordDate")] = toSpDate(f.recordDate.value || todayIso());
+          payload[spField("RecordDate")] = toSpDate(isNew ? todayIso() : f.recordDate.value || todayIso());
           payload[spField("Rank")] = f.rank.value || "";
           payload[spField("Name")] = f.name.value.trim();
           payload[spField("Squadron")] = f.squadron.value || "";
@@ -1210,6 +1007,9 @@
           payload[spField("WorkPhone")] = f.work.value.trim();
           payload[spField("CellPhone")] = f.cell.value.trim();
           payload[spField("Notes")] = f.notes.value.trim();
+          payload[spField("P1StartDate")] = f.p1Start.value ? toSpDate(f.p1Start.value) : null;
+          payload[spField("P1EndDate")] = f.p1End.value ? toSpDate(f.p1End.value) : null;
+          payload[spField("ProjectedOffice")] = f.projected.value.trim();
           payload[certKey] = certJson;
 
           const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items`;
@@ -1222,7 +1022,7 @@
 
         async function deletePersonnel() {
           if (!f.id.value) return;
-          const listTitle = settings.personnelList;
+          const listTitle = LIST_PERSONNEL;
           const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${f.id.value})`;
           await spFetch(base, { method: "DELETE" });
         }
@@ -1336,7 +1136,7 @@
             b.onclick = async () => {
               try {
                 setStatus("Saving Phase 1 row…");
-                const listTitle = settings.personnelList;
+                const listTitle = LIST_PERSONNEL;
                 const entityType = await getEntityType(listTitle);
                 const payload = {
                   __metadata: { type: entityType },
@@ -1411,8 +1211,8 @@
         // Certifiers
         async function loadCertifiers() {
           setStatus("Loading certifiers…");
-          const listTitle = escListTitle(settings.certifiersList);
-          const preferredField = settings.certifiersField;
+          const listTitle = escListTitle(LIST_CERTIFIERS);
+          const preferredField = CERTIFIERS_NAME_FIELD;
 
           let items = [];
           try {
@@ -1444,7 +1244,7 @@
           if (unique.length === 0) {
             const m = document.createElement("div");
             m.className = "muted";
-            m.textContent = `No names found. Check list "${settings.certifiersList}" and column "${preferredField}" (or use Title).`;
+            m.textContent = `No names found. Check list "${LIST_CERTIFIERS}" and column "${preferredField}" (or use Title).`;
             list.appendChild(m);
           } else {
             unique.forEach((n) => {
