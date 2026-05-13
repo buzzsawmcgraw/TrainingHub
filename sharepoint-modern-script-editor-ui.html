@@ -3,92 +3,209 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Personnel list — REST read probe (paste into Script Editor)</title>
+    <title>Personnel — PIP-Boy style (Script Editor)</title>
     <style>
+      /* Page shell when viewing this file directly (Script Editor may only embed #sp-pip-ui) */
       body {
-        font: 14px/1.4 system-ui, sans-serif;
-        margin: 12px;
-        color: #111;
+        margin: 0;
+        padding: 12px;
+        background: #000;
+      }
+      #sp-pip-ui {
+        --pip-bg: #0a0e0a;
+        --pip-bg2: #0f160f;
+        --pip-green: #1eff45;
+        --pip-green-dim: #14a62e;
+        --pip-green-glow: rgba(30, 255, 69, 0.45);
+        --pip-amber: #ffb000;
+        --pip-red: #ff4d2d;
+        --pip-border: #1a3d22;
+        --pip-font: "Consolas", "Monaco", "Lucida Console", "Courier New", monospace;
+        box-sizing: border-box;
+        padding: 14px 16px 20px;
+        max-width: 100%;
+        font-family: var(--pip-font);
+        font-size: 14px;
+        line-height: 1.45;
+        color: var(--pip-green);
+        background: var(--pip-bg);
+        text-shadow: 0 0 3px var(--pip-green-glow);
+        border: 2px solid var(--pip-border);
+        border-radius: 2px;
+      }
+      #sp-pip-ui *,
+      #sp-pip-ui *::before,
+      #sp-pip-ui *::after {
+        box-sizing: border-box;
+      }
+      #sp-pip-ui p {
+        margin: 0 0 14px;
+        color: var(--pip-green);
+        letter-spacing: 0.02em;
+      }
+      #sp-pip-ui p strong {
+        color: var(--pip-green);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+      }
+      #sp-pip-ui pre span.ok {
+        color: var(--pip-green);
       }
       #sp-pip-ui pre {
         white-space: pre-wrap;
         word-break: break-word;
-        background: #f4f4f4;
+        background: var(--pip-bg2);
         padding: 12px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--pip-border);
         max-height: 70vh;
         overflow: auto;
+        color: var(--pip-green);
+        font-family: var(--pip-font);
+        font-size: 12px;
+        line-height: 1.4;
+        text-shadow: 0 0 4px var(--pip-green-glow);
       }
       #sp-pip-ui button {
         margin: 8px 8px 8px 0;
-        padding: 8px 14px;
+        padding: 8px 16px;
         cursor: pointer;
+        font-family: var(--pip-font);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--pip-bg);
+        background: var(--pip-green);
+        border: 2px solid var(--pip-green-dim);
+        border-radius: 2px;
+        text-shadow: none;
+        box-shadow: 0 0 12px var(--pip-green-glow);
+      }
+      #sp-pip-ui button:hover {
+        background: #5cff6e;
+        color: #020804;
+      }
+      #sp-pip-ui button.btn-secondary {
+        background: transparent;
+        color: var(--pip-green);
+        border: 2px solid var(--pip-green);
+        box-shadow: inset 0 0 8px rgba(30, 255, 69, 0.12);
+      }
+      #sp-pip-ui button.btn-secondary:hover {
+        background: rgba(30, 255, 69, 0.12);
+        color: #7dff8f;
+      }
+      #sp-pip-ui button:active {
+        transform: translateY(1px);
       }
       #sp-pip-ui .err {
-        color: #a00;
+        color: var(--pip-red);
+        text-shadow: 0 0 6px rgba(255, 77, 45, 0.55);
       }
       #sp-pip-ui .read-state {
         padding: 10px 12px;
         margin: 10px 0;
-        border-radius: 4px;
-        font-weight: 600;
+        border-radius: 2px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        border: 1px solid var(--pip-border);
+        font-family: var(--pip-font);
       }
       #sp-pip-ui .read-state.loading {
-        background: #e8eef5;
-        color: #234;
+        background: var(--pip-bg2);
+        color: var(--pip-green-dim);
+        text-shadow: 0 0 4px var(--pip-green-glow);
       }
       #sp-pip-ui .read-state.ok {
-        background: #e6f4ea;
-        color: #0d4d1c;
+        background: #071208;
+        color: var(--pip-green);
+        border-color: var(--pip-green-dim);
+        text-shadow: 0 0 6px var(--pip-green-glow);
       }
       #sp-pip-ui .read-state.warn {
-        background: #fff8e6;
-        color: #664d00;
+        background: #121005;
+        color: var(--pip-amber);
+        border-color: #5c4500;
+        text-shadow: 0 0 6px rgba(255, 176, 0, 0.35);
+      }
+      #sp-pip-ui .read-state.err {
+        background: #140805;
+        color: var(--pip-red);
+        border-color: #5c1a0a;
+        text-shadow: 0 0 6px rgba(255, 77, 45, 0.45);
       }
       #sp-pip-ui .roster-wrap {
         overflow: auto;
         max-height: 55vh;
-        border: 1px solid #ccc;
+        border: 2px solid var(--pip-border);
         margin: 12px 0;
+        background: var(--pip-bg2);
+        box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.65);
       }
       #sp-pip-ui table.roster {
         width: 100%;
         border-collapse: collapse;
-        font-size: 13px;
+        font-size: 12px;
+        font-family: var(--pip-font);
       }
       #sp-pip-ui table.roster th,
       #sp-pip-ui table.roster td {
-        border-bottom: 1px solid #ddd;
+        border-bottom: 1px solid var(--pip-border);
         padding: 8px 10px;
         text-align: left;
         vertical-align: top;
+        color: var(--pip-green);
       }
       #sp-pip-ui table.roster th {
-        background: #f0f0f0;
+        background: #050805;
         position: sticky;
         top: 0;
         z-index: 1;
+        color: var(--pip-green);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 11px;
+        border-bottom: 2px solid var(--pip-green-dim);
+        text-shadow: 0 0 5px var(--pip-green-glow);
       }
       #sp-pip-ui table.roster tr:nth-child(even) {
-        background: #fafafa;
+        background: rgba(10, 30, 14, 0.35);
+      }
+      #sp-pip-ui table.roster tr:hover td {
+        background: rgba(30, 255, 69, 0.08);
       }
       #sp-pip-ui details {
         margin-top: 12px;
+        color: var(--pip-green);
       }
       #sp-pip-ui summary {
         cursor: pointer;
-        font-weight: 600;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-size: 12px;
+        color: var(--pip-green);
+        text-shadow: 0 0 4px var(--pip-green-glow);
+      }
+      #sp-pip-ui summary:hover {
+        color: #7dff8f;
       }
       #sp-pip-ui .add-person-panel {
-        border: 1px solid #ccc;
-        border-radius: 6px;
+        border: 2px solid var(--pip-border);
+        border-radius: 2px;
         padding: 14px 16px;
         margin: 12px 0;
-        background: #fafafa;
+        background: linear-gradient(180deg, #0c120c 0%, var(--pip-bg2) 100%);
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
       }
       #sp-pip-ui .add-person-panel h2 {
         margin: 0 0 12px;
-        font-size: 16px;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--pip-green);
+        text-shadow: 0 0 8px var(--pip-green-glow);
       }
       #sp-pip-ui .add-form-grid {
         display: grid;
@@ -98,30 +215,56 @@
       }
       #sp-pip-ui .add-field label {
         display: block;
-        font-size: 12px;
-        font-weight: 600;
+        font-size: 11px;
+        font-weight: 700;
         margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--pip-green-dim);
       }
       #sp-pip-ui .add-field input,
       #sp-pip-ui .add-field select,
       #sp-pip-ui .add-field textarea {
         width: 100%;
         box-sizing: border-box;
-        font: 13px system-ui, sans-serif;
-        padding: 6px 8px;
-        border: 1px solid #bbb;
-        border-radius: 4px;
+        font: 13px var(--pip-font);
+        padding: 8px 10px;
+        border: 1px solid var(--pip-green-dim);
+        border-radius: 2px;
+        background: #050805;
+        color: var(--pip-green);
+        text-shadow: 0 0 3px var(--pip-green-glow);
+      }
+      #sp-pip-ui .add-field input::placeholder,
+      #sp-pip-ui .add-field textarea::placeholder {
+        color: #1a5c28;
+      }
+      #sp-pip-ui .add-field input:focus,
+      #sp-pip-ui .add-field select:focus,
+      #sp-pip-ui .add-field textarea:focus {
+        outline: none;
+        border-color: var(--pip-green);
+        box-shadow: 0 0 10px var(--pip-green-glow);
+      }
+      #sp-pip-ui .add-field select option {
+        background: #050805;
+        color: var(--pip-green);
       }
       #sp-pip-ui form#newPersonForm.add-form-grid .add-form-actions {
         grid-column: 1 / -1;
       }
+      #sp-pip-ui .add-form-actions {
+        margin-top: 14px;
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
         align-items: center;
       }
-        font-family: ui-monospace, Consolas, monospace;
+      #sp-pip-ui .mono {
+        font-family: var(--pip-font);
         font-size: 12px;
+        color: var(--pip-amber);
+        text-shadow: 0 0 4px rgba(255, 176, 0, 0.25);
       }
     </style>
   </head>
@@ -645,6 +788,7 @@
           bar.appendChild(submitBtn);
           const clearBtn = document.createElement("button");
           clearBtn.type = "button";
+          clearBtn.className = "btn-secondary";
           clearBtn.textContent = "Clear form";
           clearBtn.addEventListener("click", () => {
             form.reset();
