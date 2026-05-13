@@ -666,6 +666,12 @@
         const SET_TITLE_ON_CREATE = true;
 
         /**
+         * OData `$orderby` for list items. Rows are always sorted again client-side by LastName, then FirstName, so the
+         * roster (and Personnel ID order down the table) follows A–Z even if this clause is rejected (400).
+         */
+        const PERSONNEL_ITEMS_ORDERBY = "LastName asc,FirstName asc";
+
+        /**
          * Roster columns — fixed order for 88thSFS Personnel. Remove the `Id` row if you do not want Personnel ID.
          * If a column is always blank, open Diagnostics and change that row’s `key` / add `altKeys` (see Record Date).
          */
@@ -868,6 +874,36 @@
             if (k && Object.prototype.hasOwnProperty.call(item, k)) return item[k];
           }
           return undefined;
+        }
+
+        function sortPersonnelRowsAlphabetical(rows) {
+          if (!Array.isArray(rows) || rows.length < 2) return rows;
+          const cols = normalizedRosterColumns();
+          const lastCol = cols.find(function (c) {
+            return c.key === "LastName";
+          });
+          const firstCol = cols.find(function (c) {
+            return c.key === "FirstName";
+          });
+          function nameVal(item, col) {
+            if (!col) return "";
+            const keys = col.tryKeys || [col.key];
+            const raw = valueFromItemByKeys(item, keys);
+            return String(raw != null ? raw : "")
+              .trim()
+              .toLowerCase();
+          }
+          return rows.slice().sort(function (a, b) {
+            const la = nameVal(a, lastCol);
+            const lb = nameVal(b, lastCol);
+            if (la !== lb) return la < lb ? -1 : la > lb ? 1 : 0;
+            const fa = nameVal(a, firstCol);
+            const fb = nameVal(b, firstCol);
+            if (fa !== fb) return fa < fb ? -1 : fa > fb ? 1 : 0;
+            const ida = a.Id != null ? Number(a.Id) : 0;
+            const idb = b.Id != null ? Number(b.Id) : 0;
+            return ida - idb;
+          });
         }
 
         function resolveWriteKey(col, sampleRow) {
@@ -1654,9 +1690,16 @@
 
           const seg2 = personnelListApiPath();
           let items = null;
+          const orderByClause = String(PERSONNEL_ITEMS_ORDERBY || "").trim();
+          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
           try {
-            log("--- Request: GET items (up to 500, orderby Modified) ---", "ok");
-            items = await spFetch(`/_api/web/${seg2}/items?$top=500&$orderby=Modified desc`, {}, pw);
+            log(
+              "--- Request: GET items (up to 500" +
+                (orderByClause ? ", orderby " + orderByClause : "") +
+                ") ---",
+              "ok",
+            );
+            items = await spFetch(`/_api/web/${seg2}/items?$top=500` + orderByQs, {}, pw);
           } catch (e0) {
             if (/\b400\b/.test(String(e0.message || ""))) {
               log("orderby failed with 400; retry without orderby…", "err");
@@ -1674,7 +1717,8 @@
             }
           }
 
-          const rows = (items && items.value) || [];
+          let rows = (items && items.value) || [];
+          rows = sortPersonnelRowsAlphabetical(rows);
           log("Row count returned: " + rows.length, rows.length ? "ok" : "err");
           const sampleRow = rows.length > 0 ? rows[0] : null;
           const plan = resolveRosterColumnPlan(rows);
