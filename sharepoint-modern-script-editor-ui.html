@@ -95,6 +95,33 @@
         background: rgba(30, 255, 69, 0.12);
         color: #7dff8f;
       }
+      #sp-pip-ui button.btn-danger {
+        margin: 0;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-family: var(--pip-font);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #1a0505;
+        background: #ff3b35;
+        border: 2px solid #9c1818;
+        border-radius: 2px;
+        text-shadow: none;
+        box-shadow: 0 0 10px rgba(255, 60, 50, 0.4);
+      }
+      #sp-pip-ui button.btn-danger:hover {
+        background: #ff6258;
+        color: #0a0202;
+      }
+      #sp-pip-ui table.roster th.roster-actions,
+      #sp-pip-ui table.roster td.roster-actions {
+        width: 1%;
+        white-space: nowrap;
+        text-align: center;
+        vertical-align: middle;
+      }
       #sp-pip-ui button:active {
         transform: translateY(1px);
       }
@@ -483,12 +510,32 @@
           if (rosterTableBody) rosterTableBody.innerHTML = "";
         }
 
-        function renderRosterTable(rows, meta) {
+        async function deletePersonnelRow(id, pw, seg) {
+          const sid = parseInt(String(id), 10);
+          if (!sid || isNaN(sid)) {
+            setReadState("err", "Invalid row Id for delete.");
+            return;
+          }
+          if (!confirm("Delete personnel record Id " + sid + "? This cannot be undone.")) return;
+          try {
+            setReadState("loading", "Deleting record…");
+            await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
+            log("DELETE Id " + sid + " OK", "ok");
+            await runProbe();
+            setReadState("ok", "Deleted record Id " + sid + ".");
+          } catch (e) {
+            setReadState("err", "Delete failed: " + (e.message || String(e)).slice(0, 420));
+            log("DELETE failed:\n" + (e.message || String(e)), "err");
+          }
+        }
+
+        function renderRosterTable(rows, meta, pw, seg) {
           clearRosterTable();
           const thead = document.getElementById("rosterThead");
           if (!rosterTableBody || !thead) return;
           const plan = resolveRosterColumnPlan(rows);
           const columns = plan.columns;
+          const showDelete = pw && seg;
           const trHead = document.createElement("tr");
           columns.forEach((col) => {
             const th = document.createElement("th");
@@ -496,6 +543,13 @@
             th.title = (col.tryKeys || [col.key]).join(" · ");
             trHead.appendChild(th);
           });
+          if (showDelete) {
+            const thx = document.createElement("th");
+            thx.className = "roster-actions";
+            thx.textContent = " ";
+            thx.title = "Delete row";
+            trHead.appendChild(thx);
+          }
           thead.appendChild(trHead);
 
           const frag = document.createDocumentFragment();
@@ -509,6 +563,25 @@
               td.textContent = text === "" ? "—" : text;
               tr.appendChild(td);
             });
+            if (showDelete && item.Id != null) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              const delBtn = document.createElement("button");
+              delBtn.type = "button";
+              delBtn.className = "btn-danger";
+              delBtn.textContent = "Delete";
+              delBtn.title = "Delete list item Id " + item.Id;
+              delBtn.addEventListener("click", () => {
+                void deletePersonnelRow(item.Id, pw, seg);
+              });
+              tdAct.appendChild(delBtn);
+              tr.appendChild(tdAct);
+            } else if (showDelete) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              tdAct.textContent = "—";
+              tr.appendChild(tdAct);
+            }
             frag.appendChild(tr);
           });
           rosterTableBody.appendChild(frag);
@@ -1062,7 +1135,7 @@
           }
 
           await renderAddPersonForm(meta, pw, seg2, sampleRow);
-          renderRosterTable(rows, meta);
+          renderRosterTable(rows, meta, pw, seg2);
         }
 
         btn.addEventListener("click", () => {
