@@ -74,23 +74,26 @@
       #sp-pip-ui .hub-logo-wrap {
         flex: 0 0 auto;
         line-height: 0;
-        border: 2px solid var(--pip-border);
-        border-radius: 4px;
-        background: rgba(0, 0, 0, 0.35);
-        box-shadow: 0 0 16px rgba(30, 255, 69, 0.12);
-        padding: 4px;
+        width: 96px;
+        height: 96px;
+        border: 3px solid var(--pip-green-dim);
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.45);
+        box-shadow: 0 0 18px rgba(30, 255, 69, 0.2), inset 0 0 12px rgba(0, 0, 0, 0.5);
+        padding: 0;
+        overflow: hidden;
       }
       #sp-pip-ui .hub-logo-wrap[hidden] {
         display: none !important;
       }
       #sp-pip-ui .hub-logo {
         display: block;
-        max-width: min(160px, 32vw);
-        max-height: 96px;
-        width: auto;
-        height: auto;
-        object-fit: contain;
-        vertical-align: middle;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        object-fit: cover;
+        object-position: center center;
       }
       #sp-pip-ui .hub-header-titles {
         flex: 1 1 200px;
@@ -489,13 +492,21 @@
         const LIST_PERSONNEL_GUID = "";
 
         /**
-         * Optional masthead PNG/JPEG/SVG. Upload the file to this SharePoint site (e.g. **Site Assets** or a document
-         * library), copy the file’s link, and paste the full URL here. Leave "" to hide the logo.
-         * Example: https://usaf.dps.mil/sites/88thSFS/SiteAssets/88sfs-emblem.png
-         * (You can also use a `data:image/png;base64,...` data URL if size and policy allow.)
+         * Circular profile image to the left of the squadron header (default: **S3T Files** / **Fallout Guy.png**).
+         * `HUB_PROFILE_IMAGE_URL` — full URL override. `HUB_LOGO_URL` — legacy override if profile URL is empty.
+         * Otherwise built from `PERSONNEL_SITE_ROOT_URL` + `HUB_PROFILE_SITE_RELATIVE_PATH`.
+         */
+        const HUB_PROFILE_IMAGE_URL = "";
+        /** Path from site root (spaces as %20). Same folder convention as the banner. */
+        const HUB_PROFILE_SITE_RELATIVE_PATH = "S3T%20Files/Fallout%20Guy.png";
+        const HUB_PROFILE_ALT = "Fallout guy";
+
+        /**
+         * Optional square/rect masthead image (legacy). If set and `HUB_PROFILE_IMAGE_URL` is empty, used as profile
+         * source before the Fallout Guy default path.
          */
         const HUB_LOGO_URL = "";
-        /** Alt text when the logo is shown (accessibility). */
+        /** Alt text fallback when the profile image is shown. */
         const HUB_LOGO_ALT = "88th Security Forces Squadron";
 
         /**
@@ -573,13 +584,31 @@
           wrap.hidden = false;
         })();
 
+        function resolveProfileImageUrl() {
+          const profileExplicit =
+            typeof HUB_PROFILE_IMAGE_URL === "string" ? HUB_PROFILE_IMAGE_URL.trim() : "";
+          if (profileExplicit) return profileExplicit;
+          const logoLegacy = typeof HUB_LOGO_URL === "string" ? HUB_LOGO_URL.trim() : "";
+          if (logoLegacy) return logoLegacy;
+          const root = (typeof PERSONNEL_SITE_ROOT_URL === "string" ? PERSONNEL_SITE_ROOT_URL : "")
+            .trim()
+            .replace(/\/$/, "");
+          const rel = (typeof HUB_PROFILE_SITE_RELATIVE_PATH === "string" ? HUB_PROFILE_SITE_RELATIVE_PATH : "")
+            .trim()
+            .replace(/^\//, "");
+          if (!root || !rel) return "";
+          return root + "/" + rel;
+        }
+
         (function initHubLogo() {
           const wrap = document.getElementById("hubLogoWrap");
           const img = document.getElementById("hubLogoImg");
-          const url = typeof HUB_LOGO_URL === "string" ? HUB_LOGO_URL.trim() : "";
+          const url = resolveProfileImageUrl();
           if (!wrap || !img || !url) return;
           img.src = url;
-          img.alt = typeof HUB_LOGO_ALT === "string" && HUB_LOGO_ALT.trim() ? HUB_LOGO_ALT.trim() : "Squadron emblem";
+          const altProfile = typeof HUB_PROFILE_ALT === "string" ? HUB_PROFILE_ALT.trim() : "";
+          const altLogo = typeof HUB_LOGO_ALT === "string" ? HUB_LOGO_ALT.trim() : "";
+          img.alt = altProfile || altLogo || "Profile image";
           wrap.hidden = false;
         })();
 
