@@ -28,7 +28,6 @@
           <div class="tabs" id="mainTabs" role="tablist" aria-label="Main">
             <button type="button" class="tab is-active" data-tab="hub" role="tab" aria-selected="true">Hub</button>
             <button type="button" class="tab" data-tab="office" role="tab" aria-selected="false">Office</button>
-            <button type="button" class="tab" data-tab="certificates" role="tab" aria-selected="false">Certificates</button>
             <button type="button" class="tab" data-tab="instructors" role="tab" aria-selected="false">Instructors</button>
             <button type="button" class="tab" data-tab="scheduler" role="tab" aria-selected="false">Scheduler</button>
             <button type="button" class="tab" data-tab="phase1" role="tab" aria-selected="false">Phase 1</button>
@@ -137,70 +136,13 @@
             <div class="sectionTitle">Office</div>
             <div class="card">
               <p class="muted">
-                In the desktop app, this tab is the per-person BLS / TCCC, bylaw topics, course checkboxes, and certifier
-                dropdowns grouped by office. That needs additional SharePoint lists or JSON columns per person.
+                In the desktop app, this tab is the per-person BLS / TCCC, bylaw topics, and course checkboxes grouped by
+                office. That needs additional SharePoint lists or JSON columns per person.
               </p>
               <p class="muted">
                 Use <strong>Hub</strong> for core personnel fields for now. When you send the SharePoint list layout for
                 Office, this section can be wired the same way as Hub.
               </p>
-            </div>
-          </section>
-
-          <!-- Certificates -->
-          <section class="view" id="view-certificates" role="tabpanel">
-            <div class="row row-between">
-              <div>
-                <div class="sectionTitle">Certificates</div>
-                <div class="muted">
-                  Saved certs per person (JSON on personnel list) and print-friendly certificate page.
-                </div>
-              </div>
-              <div class="row">
-                <button type="button" class="btn" id="cRefresh">Refresh personnel</button>
-              </div>
-            </div>
-
-            <div class="grid2">
-              <div class="card">
-                <div class="cardTitle">Select person</div>
-                <div class="field">
-                  <label>Personnel</label>
-                  <select id="cPerson" class="input"></select>
-                </div>
-                <div class="muted" id="cPersonMeta">No person selected.</div>
-              </div>
-
-              <div class="card">
-                <div class="cardTitle">Saved certs</div>
-                <div class="list" id="cSaved"></div>
-              </div>
-            </div>
-
-            <div class="card" style="margin-top: 12px">
-              <div class="cardTitle">Add / update certificate</div>
-              <div class="formGrid">
-                <div class="field">
-                  <label>Cert type</label>
-                  <select id="cType" class="input"></select>
-                </div>
-                <div class="field">
-                  <label>Awarded date</label>
-                  <input id="cDate" class="input" type="date" />
-                </div>
-                <div class="field full">
-                  <label>Notes</label>
-                  <input id="cNotes" class="input" type="text" />
-                </div>
-                <div class="row full row-between">
-                  <div class="muted" id="cStatus">Ready.</div>
-                  <div class="row">
-                    <button type="button" class="btn" id="cSave">Save cert</button>
-                    <button type="button" class="btn danger" id="cDelete">Delete cert</button>
-                    <button type="button" class="btn ghost" id="cPrint">Print certificate</button>
-                  </div>
-                </div>
-              </div>
             </div>
           </section>
 
@@ -352,9 +294,10 @@
                 CertificationsJson
               </div>
               <div class="muted" style="margin-top: 8px">
-                Certificates are stored as JSON in
-                <span class="mono">CertificationsJson</span> to keep this paste-only UI
-                simple.
+                Optional: a multiple-lines-of-text column
+                <span class="mono">CertificationsJson</span> preserves certificate JSON for a future Certificates view; if
+                absent, map it in <span class="mono">Personnel column map</span> or add the column later. Hub save keeps
+                existing JSON when present.
               </div>
               <div class="muted" style="margin-top: 8px">
                 <strong>Note:</strong> The labels you see in the list form are often
@@ -775,23 +718,6 @@
 
         const SQUADRONS = ["21 SFS", "34 SFS", "56 SFS", "633 SFS"];
 
-        const CERT_TYPES = [
-          "ATV Rider",
-          "BAC Datamaster",
-          "Combatives Instructor",
-          "Controlled Burn",
-          "Customs",
-          "Game Warden",
-          "HAZMAT Trained",
-          "Leads Practitioner",
-          "Lidar/Radar",
-          "NHTSA SFST",
-          "OC Contamination",
-          "Police Cyclist",
-          "Principles of Instruction",
-          "Traffic Investigator",
-          "POST RC",
-        ];
         // --------------------------------------------------------
 
         const $ = (id) => document.getElementById(id);
@@ -1137,7 +1063,6 @@
 
         fillSelect($("fRank"), RANKS);
         fillSelect($("fSquadron"), SQUADRONS);
-        fillSelect($("cType"), CERT_TYPES);
 
         const f = {
           id: $("fId"),
@@ -1237,8 +1162,6 @@
           f.cell.value = readFromItem(p, "CellPhone");
           f.notes.value = readFromItem(p, "Notes");
           $("pEditingLabel").textContent = "Editing ID " + p.Id;
-          $("cPerson").value = String(p.Id);
-          renderCertsForSelected();
         }
 
         async function loadPersonnel() {
@@ -1251,7 +1174,6 @@
           setStatus(`Loaded ${personnel.length} personnel.`);
           renderRoster();
           renderPhase1();
-          renderCertPersonSelect();
         }
 
         async function savePersonnel() {
@@ -1476,230 +1398,6 @@
           w.focus();
           w.print();
         });
-
-        // Certificates
-        function renderCertPersonSelect() {
-          const sel = $("cPerson");
-          sel.innerHTML = "";
-          const opt0 = document.createElement("option");
-          opt0.value = "";
-          opt0.textContent = "— Select Personnel —";
-          sel.appendChild(opt0);
-
-          personnel
-            .slice()
-            .sort((a, b) =>
-              String(readFromItem(a, "Name") || a.Title || "").localeCompare(String(readFromItem(b, "Name") || b.Title || "")),
-            )
-            .forEach((p) => {
-              const o = document.createElement("option");
-              o.value = String(p.Id);
-              o.textContent = `${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${readFromItem(p, "Name") || p.Title || ""}`.trim();
-              sel.appendChild(o);
-            });
-
-          $("cType").value = CERT_TYPES[0];
-          $("cDate").value = todayIso();
-          $("cNotes").value = "";
-          renderCertsForSelected();
-        }
-
-        function getSelectedPerson() {
-          const id = $("cPerson").value;
-          if (!id) return null;
-          return personnel.find((p) => String(p.Id) === String(id)) || null;
-        }
-
-        function readCerts(person) {
-          if (!person) return [];
-          const key = spField("CertificationsJson");
-          const raw0 = person[key];
-          const raw =
-            raw0 != null && String(raw0).trim()
-              ? String(raw0)
-              : String(readFromItem(person, "CertificationsJson") || "[]");
-          const arr = safeJsonParse(raw, []);
-          return Array.isArray(arr) ? arr : [];
-        }
-
-        function writeCerts(personId, certs) {
-          const p = personnel.find((x) => String(x.Id) === String(personId));
-          if (!p) return;
-          const key = spField("CertificationsJson");
-          p[key] = stringifyJson(certs);
-        }
-
-        function renderCertsForSelected() {
-          const p = getSelectedPerson();
-          const meta = $("cPersonMeta");
-          const saved = $("cSaved");
-          saved.innerHTML = "";
-          if (!p) {
-            meta.textContent = "No person selected.";
-            return;
-          }
-          meta.textContent = `Record: ${fromSpDate(readFromItem(p, "RecordDate")) || "—"} · Squadron: ${readFromItem(p, "Squadron") || "—"} · Office: ${readFromItem(p, "OfficeSymbol") || "—"}`;
-
-          const certs = readCerts(p);
-          if (certs.length === 0) {
-            const m = document.createElement("div");
-            m.className = "muted";
-            m.textContent = "No saved certs for this person.";
-            saved.appendChild(m);
-            return;
-          }
-
-          certs.sort((a, b) => String(a.certType || "").localeCompare(String(b.certType || "")));
-          certs.forEach((c) => {
-            const item = document.createElement("div");
-            item.className = "item";
-            const left = document.createElement("div");
-            const t = document.createElement("div");
-            t.className = "itemTitle";
-            t.textContent = c.certType || "(unknown)";
-            const mm = document.createElement("div");
-            mm.className = "itemMeta";
-            mm.textContent = `Awarded: ${c.awardedDate || "—"} · Notes: ${c.notes || "—"}`;
-            left.appendChild(t);
-            left.appendChild(mm);
-
-            const actions = document.createElement("div");
-            actions.className = "itemActions";
-            const edit = document.createElement("button");
-            edit.type = "button";
-            edit.className = "linkbtn";
-            edit.textContent = "Edit";
-            edit.onclick = () => {
-              $("cType").value = c.certType || CERT_TYPES[0];
-              $("cDate").value = c.awardedDate || todayIso();
-              $("cNotes").value = c.notes || "";
-              $("cStatus").textContent = "Loaded cert into editor.";
-            };
-            actions.appendChild(edit);
-
-            item.appendChild(left);
-            item.appendChild(actions);
-            saved.appendChild(item);
-          });
-        }
-
-        $("cPerson").addEventListener("change", renderCertsForSelected);
-        $("cRefresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + e.message)));
-
-        async function saveCert() {
-          const p = getSelectedPerson();
-          if (!p) {
-            $("cStatus").textContent = "Select personnel first.";
-            return;
-          }
-          const certType = $("cType").value;
-          const awardedDate = $("cDate").value;
-          const notes = $("cNotes").value.trim();
-
-          const certs = readCerts(p);
-          const idx = certs.findIndex((x) => x && x.certType === certType);
-          const row = { certType, awardedDate, notes, savedAt: new Date().toISOString() };
-          if (idx >= 0) certs[idx] = row;
-          else certs.push(row);
-
-          try {
-            setStatus("Saving certificate…");
-            const listTitle = settings.personnelList;
-            const entityType = await getEntityType(listTitle);
-            const certKey = spField("CertificationsJson");
-            const payload = { __metadata: { type: entityType } };
-            payload[certKey] = stringifyJson(certs);
-            await spFetch(`/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${p.Id})`, { method: "MERGE", body: payload });
-            writeCerts(p.Id, certs);
-            renderCertsForSelected();
-            $("cStatus").textContent = "Saved.";
-            setStatus("Saved certificate.");
-          } catch (e) {
-            setStatus("Error: " + e.message);
-            $("cStatus").textContent = "Error saving cert.";
-          }
-        }
-
-        async function deleteCert() {
-          const p = getSelectedPerson();
-          if (!p) {
-            $("cStatus").textContent = "Select personnel first.";
-            return;
-          }
-          const certType = $("cType").value;
-          const certs = readCerts(p).filter((x) => x && x.certType !== certType);
-
-          try {
-            setStatus("Deleting certificate…");
-            const listTitle = settings.personnelList;
-            const entityType = await getEntityType(listTitle);
-            const certKey = spField("CertificationsJson");
-            const payload = { __metadata: { type: entityType } };
-            payload[certKey] = stringifyJson(certs);
-            await spFetch(`/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${p.Id})`, { method: "MERGE", body: payload });
-            writeCerts(p.Id, certs);
-            renderCertsForSelected();
-            $("cStatus").textContent = "Deleted.";
-            setStatus("Deleted certificate.");
-          } catch (e) {
-            setStatus("Error: " + e.message);
-            $("cStatus").textContent = "Error deleting cert.";
-          }
-        }
-
-        function printCert() {
-          const p = getSelectedPerson();
-          if (!p) {
-            $("cStatus").textContent = "Select personnel first.";
-            return;
-          }
-          const certType = $("cType").value;
-          const awardedDate = $("cDate").value || todayIso();
-
-          const w = window.open("", "_blank");
-          const name = `${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${readFromItem(p, "Name") || p.Title || ""}`.trim();
-          const html = `
-            <html><head><title>Certificate - ${certType}</title>
-            <style>
-              body{font-family:Segoe UI,Arial,sans-serif;margin:0;padding:40px;background:#f8fafc;}
-              .page{max-width:900px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;padding:48px;}
-              .top{font-size:14px;color:#334155;text-align:center;letter-spacing:.12em;font-weight:700;}
-              h1{margin:18px 0 0;text-align:center;font-size:36px;}
-              h2{margin:10px 0 0;text-align:center;font-size:24px;color:#0f172a;}
-              .mid{margin-top:28px;text-align:center;color:#334155;font-size:16px;}
-              .name{margin-top:14px;text-align:center;font-size:34px;font-weight:800;}
-              .meta{margin-top:22px;display:flex;justify-content:space-between;gap:12px;color:#334155;font-size:14px;flex-wrap:wrap;}
-              .sig{margin-top:60px;display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;}
-              .line{border-top:1px solid #0f172a;padding-top:8px;width:300px;text-align:center;font-size:12px;color:#334155;}
-            </style></head><body>
-            <div class="page">
-              <div class="top">CERTIFICATE OF COMPLETION</div>
-              <h1>${certType}</h1>
-              <h2>Presented to</h2>
-              <div class="name">${name}</div>
-              <div class="mid">In recognition of successful completion.</div>
-              <div class="meta">
-                <div><b>Date Awarded:</b> ${awardedDate}</div>
-                <div><b>Office/Flight:</b> ${readFromItem(p, "OfficeSymbol") || "—"}</div>
-                <div><b>Squadron:</b> ${readFromItem(p, "Squadron") || "—"}</div>
-              </div>
-              <div class="sig">
-                <div class="line">Authorized Signature</div>
-                <div class="line">Command / Training</div>
-              </div>
-            </div>
-            </body></html>
-          `;
-          w.document.open();
-          w.document.write(html);
-          w.document.close();
-          w.focus();
-          w.print();
-        }
-
-        $("cSave").addEventListener("click", () => void saveCert());
-        $("cDelete").addEventListener("click", () => void deleteCert());
-        $("cPrint").addEventListener("click", () => printCert());
 
         // Certifiers
         async function loadCertifiers() {
