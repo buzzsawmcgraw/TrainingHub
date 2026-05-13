@@ -372,6 +372,19 @@
         align-items: stretch;
         margin-bottom: 14px;
       }
+      #sp-pip-ui .add-form-split--primary {
+        padding: 6px 8px 8px;
+        margin-bottom: 16px;
+        gap: 16px;
+        background: linear-gradient(165deg, rgba(10, 28, 18, 0.75) 0%, rgba(5, 14, 10, 0.85) 100%);
+        border: 1px solid var(--pip-border);
+        border-radius: 8px;
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.07), 0 6px 22px rgba(0, 0, 0, 0.38);
+      }
+      #sp-pip-ui .add-form-split--primary > fieldset.add-form-group {
+        background: rgba(3, 12, 8, 0.82);
+        box-shadow: inset 0 0 0 1px rgba(60, 255, 122, 0.05);
+      }
       @media (max-width: 768px) {
         #sp-pip-ui .add-form-split {
           grid-template-columns: 1fr;
@@ -413,6 +426,24 @@
       }
       #sp-pip-ui .add-form-grid--stack {
         grid-template-columns: 1fr;
+      }
+      #sp-pip-ui .add-form-grid--inline-quad {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px 12px;
+        align-items: end;
+      }
+      @media (max-width: 900px) {
+        #sp-pip-ui .add-form-grid--inline-quad {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      #sp-pip-ui .add-form-grid--inline-quad .add-field--notes textarea {
+        min-height: 40px;
+        max-height: 76px;
+      }
+      #sp-pip-ui fieldset.add-form-group--inline-row {
+        margin-bottom: 14px;
       }
       #sp-pip-ui .add-field--address textarea {
         min-height: 48px;
@@ -622,14 +653,13 @@
         ];
 
         /**
-         * Training Hub form (`Id` omitted). Same 2×2 split as before: Identity | Contact, then Organization | Notes.
-         * Only `keys` order changed — adjust `split` / `layout` only if you change group structure.
+         * Training Hub form (`Id` omitted). Top: Identity | Contact in one split panel. Bottom: Status, OfficeSymbol,
+         * Squadron, and Notes in a single full-width row (`inline-quad`).
          */
         const ADD_FORM_FIELD_GROUPS = [
           { title: "Identity & record", keys: ["RecordDate", "DoDID", "Rank", "LastName", "FirstName", "MiddleInitial"], split: "left", layout: "stack" },
           { title: "Contact", keys: ["Address", "CellPhone", "WorkPhone"], split: "right", layout: "stack" },
-          { title: "Organization & status", keys: ["Status", "OfficeSymbol", "Squadron"], split: "left", layout: "stack" },
-          { title: "Notes", keys: ["Notes"], split: "right", layout: "stack" },
+          { title: "Organization, status & notes", keys: ["Status", "OfficeSymbol", "Squadron", "Notes"], layout: "inline-quad" },
         ];
 
         // ============================================================
@@ -1209,6 +1239,7 @@
           const grid = document.createElement("div");
           grid.className = "add-form-grid";
           if (group.layout === "stack") grid.classList.add("add-form-grid--stack");
+          if (group.layout === "inline-quad") grid.classList.add("add-form-grid--inline-quad");
           group.keys.forEach((key) => {
             const col = cols.find((c) => c.key === key);
             if (!col) return;
@@ -1219,6 +1250,7 @@
           const fs = document.createElement("fieldset");
           fs.className = "add-form-group";
           if (group.compact) fs.classList.add("add-form-group--compact");
+          if (group.layout === "inline-quad") fs.classList.add("add-form-group--inline-row");
           const leg = document.createElement("legend");
           leg.className = "add-form-group-legend";
           leg.textContent = group.title;
@@ -1256,7 +1288,7 @@
               if (!fs) return;
               if (group.split === "left") {
                 splitWrap = document.createElement("div");
-                splitWrap.className = "add-form-split";
+                splitWrap.className = "add-form-split add-form-split--primary";
                 splitWrap.appendChild(fs);
                 form.appendChild(splitWrap);
                 return;
