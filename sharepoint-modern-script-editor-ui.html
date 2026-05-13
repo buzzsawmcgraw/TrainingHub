@@ -43,8 +43,13 @@
               <div>
                 <div class="sectionTitle">Command hub</div>
                 <div class="muted">
-                  Reads and saves the <strong>Personnel</strong> list on this SharePoint site (same site as this page).
-                  List title must match exactly — see <span class="mono">LIST_PERSONNEL</span> in the snippet source.
+                  Loads and saves the <strong>Personnel</strong> list on this site (title must match
+                  <span class="mono">LIST_PERSONNEL</span> in the snippet). New rows: click <strong>New</strong>, fill
+                  in, <strong>Save</strong>. You need <strong>Read</strong> to load and <strong>Contribute</strong> (or
+                  Edit) to add or change items.
+                </div>
+                <div class="muted" id="pHubCheck" style="margin-top: 6px; max-width: 900px; font-size: 11px; line-height: 1.45">
+                  Checking list…
                 </div>
               </div>
               <div class="row">
@@ -537,8 +542,8 @@
         font-size: 12px;
         letter-spacing: 0.12em;
       }
-      #sp-pip-ui .linkbtn:hover {
-        text-decoration: underline;
+      #sp-pip-ui .hubcheck-warn {
+        color: #ffb347;
       }
 
       #sp-pip-ui .tableWrap {
@@ -630,6 +635,19 @@
         ];
 
         const SQUADRONS = ["21 SFS", "34 SFS", "56 SFS", "633 SFS"];
+
+        /** Logical names the Hub Save POST/MERGE sends (must exist on list or be mapped in COLUMN_MAP). */
+        const HUB_SAVE_LOGICALS = [
+          "RecordDate",
+          "Rank",
+          "Name",
+          "Squadron",
+          "Status",
+          "OfficeSymbol",
+          "WorkPhone",
+          "CellPhone",
+          "Notes",
+        ];
 
         // --------------------------------------------------------
 
@@ -777,20 +795,118 @@
           return LOGICAL_DEFAULTS[logical] || logical;
         }
 
-        function readFromItem(item, logical) {
+        function columnCandidateKeys(logical) {
           const fallbacks = PERSONNEL_FALLBACKS[logical] || [];
-          const tryKeys = [];
+          const keys = [];
           const primary = spField(logical);
-          if (primary) tryKeys.push(primary);
+          if (primary) keys.push(primary);
           fallbacks.forEach((k) => {
-            if (k && !tryKeys.includes(k)) tryKeys.push(k);
+            if (k && !keys.includes(k)) keys.push(k);
           });
-          if (!tryKeys.includes(logical)) tryKeys.push(logical);
-          for (const k of tryKeys) {
+          if (!keys.includes(logical)) keys.push(logical);
+          return keys;
+        }
+
+        function readFromItem(item, logical) {
+          for (const k of columnCandidateKeys(logical)) {
             const v = item[k];
             if (v !== undefined && v !== null && v !== "") return v;
           }
           return "";
+        }
+
+        function formatRestError(e) {
+          const m = e && e.message ? String(e.message) : String(e);
+          if (/\b403\b/.test(m)) {
+            return "Permission denied (403). You need Contribute (or Edit) on the Personnel list to create or update rows. " + m;
+          }
+          if (/\b401\b/.test(m)) {
+            return "Unauthorized (401). Sign in to SharePoint and reload this page. " + m;
+          }
+          if (/\b404\b/.test(m)) {
+            return (
+              'Not found (404). Is there a list titled exactly "' +
+              LIST_PERSONNEL +
+              '" on this site? Same-site pages only. ' +
+              m
+            );
+          }
+          return m;
+        }
+
+        async function getPersonnelFieldInternalNameSet() {
+          const lt = escListTitle(LIST_PERSONNEL);
+          const set = new Set();
+          let path = `/_api/web/lists/getbytitle('${lt}')/fields?$select=InternalName&$top=200`;
+          for (let page = 0; page < 40; page++) {
+            const data = await spFetch(path);
+            const rows = (data && data.value) || [];
+            rows.forEach((r) => {
+              if (r && r.InternalName) set.add(String(r.InternalName));
+            });
+            const next = data && (data["@odata.nextLink"] || data["odata.nextLink"]);
+            if (!next) break;
+            try {
+              if (String(next).indexOf("http") === 0) {
+                const u = new URL(next);
+                path = u.pathname + u.search;
+              } else {
+                path = String(next).startsWith("/") ? String(next) : "/" + String(next);
+              }
+            } catch (_) {
+              break;
+            }
+          }
+          return set;
+        }
+
+        function validateHubSaveColumns(fieldSet) {
+          const problems = [];
+          for (const logical of HUB_SAVE_LOGICALS) {
+            const primary = spField(logical);
+            if (fieldSet.has(primary)) continue;
+            const candidates = columnCandidateKeys(logical);
+            const found = candidates.find((c) => fieldSet.has(c));
+            if (found) {
+              problems.push(
+                `Column "${logical}": list has "${found}" but Hub saves "${primary}". In the snippet set COLUMN_MAP["${logical}"] = "${found}".`,
+              );
+            } else {
+              problems.push(
+                `Column "${logical}": no matching field on the list (tried: ${candidates.join(", ")}). Add the column in SharePoint list settings or fix COLUMN_MAP.`,
+              );
+            }
+          }
+          return problems;
+        }
+
+        async function runHubListChecks() {
+          const el = $("pHubCheck");
+          if (!el) return;
+          el.textContent = "Checking Personnel list columns for Hub Save…";
+          el.className = "muted";
+          try {
+            const fieldSet = await getPersonnelFieldInternalNameSet();
+            const problems = validateHubSaveColumns(fieldSet);
+            const digest = getDigest();
+            const parts = [];
+            if (!digest) {
+              parts.push(
+                "Warning: no __REQUESTDIGEST on this page. Saving may fail on some sites — try a classic wiki / site page, or ensure the Script Editor runs in the published page context.",
+              );
+            }
+            if (problems.length === 0) {
+              parts.push("Hub check: every field this form saves exists on your Personnel list. You can add rows with New → Save.");
+            } else {
+              el.className = "muted hubcheck-warn";
+              parts.push("Hub check: fix these before Save will work reliably:");
+              problems.forEach((p) => parts.push("• " + p));
+            }
+            el.textContent = parts.join(" ");
+          } catch (e) {
+            el.className = "muted hubcheck-warn";
+            el.textContent = "Could not read list fields: " + formatRestError(e);
+          }
         }
 
         // Helpers
@@ -913,15 +1029,25 @@
         }
 
         async function loadPersonnel() {
-          setStatus("Loading personnel…");
-          const listTitle = escListTitle(LIST_PERSONNEL);
-          // Do not use $select: wrong internal names cause 400 and empty UI. Load all scalar fields.
-          const path = `/_api/web/lists/getbytitle('${listTitle}')/items?$top=5000&$orderby=Modified desc`;
-          const data = await spFetch(path);
-          personnel = data && data.value ? data.value : [];
-          setStatus(`Loaded ${personnel.length} personnel.`);
-          renderRoster();
-          renderPhase1();
+          const hubEl = $("pHubCheck");
+          try {
+            setStatus("Loading personnel…");
+            const listTitle = escListTitle(LIST_PERSONNEL);
+            // Do not use $select: wrong internal names cause 400 and empty UI. Load all scalar fields.
+            const path = `/_api/web/lists/getbytitle('${listTitle}')/items?$top=5000&$orderby=Modified desc`;
+            const data = await spFetch(path);
+            personnel = data && data.value ? data.value : [];
+            setStatus(`Loaded ${personnel.length} personnel.`);
+            renderRoster();
+            renderPhase1();
+            void runHubListChecks();
+          } catch (e) {
+            if (hubEl) {
+              hubEl.className = "muted hubcheck-warn";
+              hubEl.textContent = formatRestError(e);
+            }
+            throw e;
+          }
         }
 
         async function savePersonnel() {
@@ -967,7 +1093,7 @@
             await loadPersonnel();
             setStatus("Saved.");
           } catch (e) {
-            setStatus("Error: " + e.message);
+            setStatus("Error: " + formatRestError(e));
           }
         });
 
@@ -984,11 +1110,11 @@
             await loadPersonnel();
             setStatus("Deleted.");
           } catch (e) {
-            setStatus("Error: " + e.message);
+            setStatus("Error: " + formatRestError(e));
           }
         });
 
-        $("pRefresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + e.message)));
+        $("pRefresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + formatRestError(e))));
         $("pSearch").addEventListener("input", () => renderRoster());
 
         // Phase 1
@@ -1080,7 +1206,7 @@
                 await loadPersonnel();
                 setStatus("Saved.");
               } catch (e) {
-                setStatus("Error: " + e.message);
+                setStatus("Error: " + formatRestError(e));
               }
             };
             tdSave.appendChild(b);
@@ -1089,7 +1215,7 @@
           });
         }
 
-        $("p1Refresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + e.message)));
+        $("p1Refresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + formatRestError(e))));
 
         $("p1PrintRoster").addEventListener("click", () => {
           const p1 = personnel
@@ -1193,7 +1319,7 @@
           setStatus(`Loaded ${unique.length} certifiers.`);
         }
 
-        $("zRefresh").addEventListener("click", () => loadCertifiers().catch((e) => setStatus("Error: " + e.message)));
+        $("zRefresh").addEventListener("click", () => loadCertifiers().catch((e) => setStatus("Error: " + formatRestError(e))));
 
         // Initial load
         (async function init() {
@@ -1201,11 +1327,11 @@
             setStatus("Initializing…");
             await loadPersonnel();
             await loadCertifiers();
-            setStatus("Ready.");
+            setStatus(`Ready — ${personnel.length} personnel in view.`);
             // Ensure initial tab is active even if SharePoint mutates DOM.
             activateTab("hub");
           } catch (e) {
-            setStatus("Error: " + e.message);
+            setStatus("Error: " + formatRestError(e));
           }
         })();
       })();
