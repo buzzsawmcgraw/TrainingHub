@@ -244,23 +244,31 @@
               <button type="button" class="btn ghost" id="backToHub">← Back to Hub</button>
             </div>
             <div class="muted">
-              SharePoint REST (<span class="mono">/_api</span>) uses list titles and column internal names set here.
+              Enter each list’s <strong>title</strong> exactly as it appears in Site Contents, and which
+              <strong>column</strong> holds the values this app should read. SharePoint REST returns each column under a
+              field <strong>key</strong> (often the same as the internal name); if your column’s key differs from its
+              display label, use <span class="mono">Run diagnose</span> on that list and paste the matching key here.
             </div>
 
             <div class="card" style="margin-top: 12px">
-              <div class="cardTitle">SharePoint List Titles + Column Internal Names</div>
+              <div class="cardTitle">Lists and columns</div>
               <div class="formGrid">
                 <div class="field">
-                  <label>Personnel list title</label>
-                  <input id="sPersonnelList" class="input" type="text" />
+                  <label>Personnel — SharePoint list title</label>
+                  <input id="sPersonnelList" class="input" type="text" placeholder="Personnel" />
                 </div>
                 <div class="field">
-                  <label>Certifiers list title</label>
+                  <label>Certifiers — SharePoint list title</label>
                   <input id="sCertifiersList" class="input" type="text" placeholder="Certifiers" />
                 </div>
                 <div class="field">
-                  <label>Certifiers field internal name</label>
-                  <input id="sCertifiersField" class="input" type="text" placeholder="Certifier" />
+                  <label>Certifiers — column to read (REST field key)</label>
+                  <input id="sCertifiersField" class="input" type="text" placeholder="e.g. Title or Certifier" />
+                  <div class="muted" style="margin-top: 6px">
+                    Instructors uses this field on each Certifiers row (falls back to <span class="mono">Title</span> if
+                    the cell is empty). Use the property name shown in <span class="mono">Run diagnose</span> for that
+                    list, not necessarily the column’s display name.
+                  </div>
                 </div>
                 <div class="field full">
                   <label>Personnel column map (optional JSON)</label>
@@ -309,9 +317,10 @@
             <div class="card" style="margin-top: 12px">
               <div class="cardTitle">Diagnose REST (read-only)</div>
               <div class="muted" style="margin-bottom: 8px">
-                Uses the list titles in the boxes above (you do not have to click Save first). Shows SharePoint’s
-                real field keys on the first list item. Compare those keys to the agent’s list — if they differ, paste
-                mappings into <span class="mono">Personnel column map</span>.
+                Uses the list titles in the boxes above (you do not have to click Save first). Shows each field
+                <strong>key</strong> on the first item so you can match Personnel columns or the Certifiers “column to
+                read” value. If keys differ from what you expect, paste Personnel mappings into
+                <span class="mono">Personnel column map</span> and adjust the Certifiers field key above.
               </div>
               <button type="button" class="btn ghost" id="sDiagnose">Run diagnose</button>
               <pre id="sDiagnoseOut" class="diagnose-out"></pre>
@@ -1018,8 +1027,8 @@
             try {
               await probe("Personnel", s.personnelList);
               await probe("Certifiers", s.certifiersList);
-              lines.push("Certifiers name column you configured: " + s.certifiersField);
-              lines.push("(If keys above show something like Field1 instead of Certifier, put the real key in Settings.)");
+              lines.push("Certifiers — REST field key configured for 'column to read': " + s.certifiersField);
+              lines.push("(Compare to the keys listed for the Certifiers item above; use that exact key here if they differ.)");
             } catch (e) {
               lines.push("FATAL: " + (e.message || String(e)));
             }
