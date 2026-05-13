@@ -618,13 +618,14 @@
 
         /**
          * Training Hub form: groups and column keys (`Id` omitted). Use `split: "left"` / `"right"` for the top
-         * two-column row; `layout: "stack"` for a single-column grid inside that group; `compact` for a modest-width block.
+         * two-column row; `layout: "stack"` for a single-column grid inside that group; `compact` narrows a full-width
+         * group (omit when the group is already in a split column).
          */
         const ADD_FORM_FIELD_GROUPS = [
           { title: "Identity & record", keys: ["RecordDate", "LastName", "FirstName", "MiddleInitial", "DoDID"], split: "left", layout: "stack" },
           { title: "Contact", keys: ["Address", "WorkPhone", "CellPhone"], split: "right", layout: "stack" },
-          { title: "Organization & status", keys: ["Status", "OfficeSymbol", "Squadron", "Rank"] },
-          { title: "Notes", keys: ["Notes"], compact: true },
+          { title: "Organization & status", keys: ["Status", "OfficeSymbol", "Squadron", "Rank"], split: "left", layout: "stack" },
+          { title: "Notes", keys: ["Notes"], split: "right", layout: "stack" },
         ];
 
         // ============================================================
