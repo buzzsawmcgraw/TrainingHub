@@ -60,6 +60,7 @@
                   placeholder="Search (name, DoD ID, rank, squadron, office, status, phones, notes)..."
                 />
                 <button type="button" class="btn" id="pRefresh">Refresh</button>
+                <button type="button" class="btn ghost" id="pDiagnose">Diagnose</button>
               </div>
             </div>
 
@@ -591,6 +592,10 @@
         // -------- SharePoint lists on this web (edit source if titles differ) --------
         /** Must match Site contents list name exactly — drives Hub roster + record Save/Delete. */
         const LIST_PERSONNEL = "Personnel";
+
+        function personnelListTitle() {
+          return String(LIST_PERSONNEL || "").trim();
+        }
         /**
          * When true, the Hub does not read or write SharePoint’s built-in **Title** on Personnel. Names use
          * LastName / FirstName / MiddleInitial instead. Set to false if new-item POST requires Title.
@@ -756,6 +761,9 @@
           try {
             if (window.parent && window.parent._spPageContextInfo && window.parent._spPageContextInfo.webAbsoluteUrl) return window.parent._spPageContextInfo;
           } catch (_) {}
+          try {
+            if (window.top && window.top._spPageContextInfo && window.top._spPageContextInfo.webAbsoluteUrl) return window.top._spPageContextInfo;
+          } catch (_) {}
           return null;
         }
 
@@ -773,6 +781,13 @@
             (function () {
               try {
                 return window.parent.document.getElementById("__REQUESTDIGEST");
+              } catch (_) {
+                return null;
+              }
+            })() ||
+            (function () {
+              try {
+                return window.top.document.getElementById("__REQUESTDIGEST");
               } catch (_) {
                 return null;
               }
@@ -884,7 +899,7 @@
           if (/\b404\b/.test(m)) {
             return (
               'Not found (404). Is there a list titled exactly "' +
-              LIST_PERSONNEL +
+              personnelListTitle() +
               '" on this site? Same-site pages only. ' +
               m
             );
@@ -893,7 +908,7 @@
         }
 
         async function getPersonnelFieldInternalNameSet() {
-          const lt = escListTitle(LIST_PERSONNEL);
+          const lt = escListTitle(personnelListTitle());
           const set = new Set();
           let path = `/_api/web/lists/getbytitle('${lt}')/fields?$select=InternalName&$top=200`;
           for (let page = 0; page < 40; page++) {
@@ -959,6 +974,15 @@
               el.className = "muted hubcheck-warn";
               parts.push("Hub check: fix these before Save will work reliably:");
               problems.forEach((p) => parts.push("• " + p));
+            }
+            if (personnel.length > 0) {
+              const s0 = personnel[0];
+              if (s0 && s0.Id != null && !personnelDisplayName(s0) && !String(readFromItem(s0, "DoDID") || "").trim()) {
+                el.className = "muted hubcheck-warn";
+                parts.push(
+                  "Note: Items loaded but the first row has no Last/First/MI in the columns we map. Click Diagnose to see the real REST property names on an item and set COLUMN_MAP / LOGICAL_DEFAULTS to match.",
+                );
+              }
             }
             el.textContent = parts.join(" ");
           } catch (e) {
@@ -1144,30 +1168,84 @@
           $("pEditingLabel").textContent = "Editing ID " + p.Id;
         }
 
+        async function runPersonnelLoadDiagnostics() {
+          const el = $("pHubCheck");
+          if (!el) return;
+          el.className = "muted hubcheck-warn";
+          const lines = [];
+          lines.push("REST web: " + webUrl);
+          lines.push("LIST_PERSONNEL (trimmed): " + JSON.stringify(personnelListTitle()));
+          const lt = escListTitle(personnelListTitle());
+          lines.push("Requesting list metadata: getbytitle('" + lt + "')");
+          try {
+            const meta = await spFetch(`/_api/web/lists/getbytitle('${lt}')?$select=Id,Title,ItemCount`);
+            lines.push("OK — SharePoint list Id: " + meta.Id + ", list Title: " + (meta.Title || "") + ", ItemCount: " + (meta.ItemCount != null ? meta.ItemCount : "?"));
+          } catch (e) {
+            lines.push("getbytitle FAILED: " + (e.message || String(e)));
+            lines.push("Usually: wrong site (page web URL must match list site), wrong list name, or no access. No browser URL is configured in this snippet — it always uses the page’s web from _spPageContextInfo.");
+            el.textContent = lines.join(" ");
+            return;
+          }
+          try {
+            const items = await spFetch(`/_api/web/lists/getbytitle('${lt}')/items?$top=1`);
+            const rows = items && items.value ? items.value : [];
+            if (rows.length === 0) {
+              lines.push("Items: 0 rows in this list (roster will be empty until you add items in SharePoint or here).");
+            } else {
+              const row = rows[0];
+              const keys = Object.keys(row)
+                .filter((k) => !k.startsWith("@") && k !== "odata.type" && k !== "odata.id" && k !== "odata.editLink")
+                .sort();
+              lines.push("First item REST property names (compare to LOGICAL_DEFAULTS / COLUMN_MAP):");
+              lines.push(keys.join(", "));
+            }
+          } catch (e2) {
+            lines.push("Items read FAILED: " + (e2.message || String(e2)));
+          }
+          el.textContent = lines.join(" ");
+          setStatus("Diagnose finished — see message under Command hub.");
+        }
+
         async function loadPersonnel() {
           const hubEl = $("pHubCheck");
+          const listTitleEsc = escListTitle(personnelListTitle());
           try {
             setStatus("Loading personnel…");
-            const listTitle = escListTitle(LIST_PERSONNEL);
-            // Do not use $select: wrong internal names cause 400 and empty UI. Load all scalar fields.
-            const path = `/_api/web/lists/getbytitle('${listTitle}')/items?$top=5000&$orderby=Modified desc`;
-            const data = await spFetch(path);
+            const baseItems = `/_api/web/lists/getbytitle('${listTitleEsc}')/items?$top=5000`;
+            let path = baseItems + "&$orderby=Modified desc";
+            let data;
+            try {
+              data = await spFetch(path);
+            } catch (e0) {
+              if (/\b400\b/.test(String(e0.message || ""))) {
+                setStatus("Retrying load without $orderby…");
+                data = await spFetch(baseItems);
+              } else {
+                throw e0;
+              }
+            }
             personnel = data && data.value ? data.value : [];
-            setStatus(`Loaded ${personnel.length} personnel.`);
+            setStatus(`Loaded ${personnel.length} personnel from list "${personnelListTitle()}".`);
             renderRoster();
             renderPhase1();
             void runHubListChecks();
           } catch (e) {
             if (hubEl) {
               hubEl.className = "muted hubcheck-warn";
-              hubEl.textContent = formatRestError(e);
+              hubEl.textContent =
+                formatRestError(e) +
+                " — Tried GET " +
+                webUrl +
+                "/_api/web/lists/getbytitle('" +
+                listTitleEsc +
+                "')/items … Click Diagnose for details.";
             }
             throw e;
           }
         }
 
         async function savePersonnel() {
-          const listTitle = LIST_PERSONNEL;
+          const listTitle = personnelListTitle();
           const entityType = await getEntityType(listTitle);
 
           const isNew = !f.id.value;
@@ -1208,7 +1286,7 @@
 
         async function deletePersonnel() {
           if (!f.id.value) return;
-          const listTitle = LIST_PERSONNEL;
+          const listTitle = personnelListTitle();
           const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${f.id.value})`;
           await spFetch(base, { method: "DELETE" });
         }
@@ -1248,6 +1326,7 @@
         });
 
         $("pRefresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + formatRestError(e))));
+        $("pDiagnose").addEventListener("click", () => runPersonnelLoadDiagnostics().catch((e) => setStatus("Error: " + formatRestError(e))));
         $("pSearch").addEventListener("input", () => renderRoster());
 
         // Phase 1
@@ -1324,7 +1403,7 @@
             b.onclick = async () => {
               try {
                 setStatus("Saving Phase 1 row…");
-                const listTitle = LIST_PERSONNEL;
+                const listTitle = personnelListTitle();
                 const entityType = await getEntityType(listTitle);
                 const payload = {
                   __metadata: { type: entityType },
