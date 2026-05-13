@@ -35,21 +35,38 @@
   <body>
     <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
     <div id="sp-pip-ui">
-      <p><strong>Personnel REST probe</strong> — no roster UI; only proves read access and shows raw JSON.</p>
+      <p>
+        <strong>Personnel REST probe</strong> — paste explicit URLs in the script constants so REST does not depend on
+        guessing the site from the page.
+      </p>
       <button type="button" id="probeRun">Run probe again</button>
       <pre id="probeOut"></pre>
     </div>
 
     <script>
       (function () {
-        // ============ EDIT THESE ============
+        // ============ EDIT THESE (URLs remove ambiguity) ============
+        /**
+         * (A) Site root where the Personnel list lives — no trailing slash. Example:
+         * https://yourtenant.sharepoint.com/sites/88thSFS
+         * If set, ALL REST calls use this host/path (not _spPageContextInfo).
+         */
+        const PERSONNEL_SITE_ROOT_URL = "";
+
+        /**
+         * (B) If you don’t have the site root handy: paste ANY full URL from that same site — list view, SitePages,
+         * home. The script derives …/sites/SiteName or …/teams/TeamName. Ignored when PERSONNEL_SITE_ROOT_URL is set.
+         */
+        const PERSONNEL_SHAREPOINT_URL = "";
+
+        /** @deprecated Same effect as PERSONNEL_SITE_ROOT_URL; kept for older copies of this file. */
+        const PERSONNEL_REST_WEB_URL = "";
+
         /** Exact list name from Site contents (ignored if LIST_PERSONNEL_GUID is set). */
         const LIST_PERSONNEL = "Personnel";
         /** Optional: List GUID from List settings → use if getbytitle fails. */
         const LIST_PERSONNEL_GUID = "";
-        /** Only if the list lives on another site than this page: that site root URL, no trailing slash. */
-        const PERSONNEL_REST_WEB_URL = "";
-        // =====================================
+        // ============================================================
 
         const out = document.getElementById("probeOut");
         const btn = document.getElementById("probeRun");
@@ -117,12 +134,32 @@
           return el && el.value ? el.value : "";
         }
 
-        let webUrl = "";
+        function deriveSiteRootFromSharePointUrl(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return "";
+          try {
+            const u = new URL(s);
+            const path = u.pathname || "";
+            const sites = path.match(/^(\/sites\/[^/]+)/i);
+            if (sites) return (u.origin + sites[1]).replace(/\/$/, "");
+            const teams = path.match(/^(\/teams\/[^/]+)/i);
+            if (teams) return (u.origin + teams[1]).replace(/\/$/, "");
+            return u.origin.replace(/\/$/, "");
+          } catch (_) {
+            return "";
+          }
+        }
 
-        function personnelWebBase() {
-          const u = String(PERSONNEL_REST_WEB_URL || "").trim();
-          if (!u) return webUrl;
-          return u.replace(/\/$/, "");
+        function resolvedPersonnelRestBase() {
+          const site = String(PERSONNEL_SITE_ROOT_URL || "").trim().replace(/\/$/, "");
+          if (site) return site;
+          const legacy = String(PERSONNEL_REST_WEB_URL || "").trim().replace(/\/$/, "");
+          if (legacy) return legacy;
+          const derived = deriveSiteRootFromSharePointUrl(PERSONNEL_SHAREPOINT_URL);
+          if (derived) return derived;
+          const ctx = getCtx();
+          if (ctx && ctx.webAbsoluteUrl) return String(ctx.webAbsoluteUrl).replace(/\/$/, "");
+          return "";
         }
 
         async function spFetch(path, opts, baseUrlOverride) {
@@ -130,7 +167,7 @@
           const base =
             baseUrlOverride != null && String(baseUrlOverride).trim()
               ? String(baseUrlOverride).trim().replace(/\/$/, "")
-              : webUrl;
+              : resolvedPersonnelRestBase();
           const headers = Object.assign({}, opts.headers || {});
           headers["Accept"] = "application/json;odata=nometadata";
           const method = (opts.method || "GET").toUpperCase();
@@ -191,17 +228,36 @@
         async function runProbe() {
           out.innerHTML = "";
           const ctx = getCtx();
-          if (!ctx) {
-            log("FAIL: No _spPageContextInfo.webAbsoluteUrl. Run this inside SharePoint on a real site page.", "err");
+          const pageWeb = ctx && ctx.webAbsoluteUrl ? String(ctx.webAbsoluteUrl).replace(/\/$/, "") : "";
+          const pw = resolvedPersonnelRestBase();
+          if (!pw) {
+            log(
+              "FAIL: No REST base URL. Set PERSONNEL_SITE_ROOT_URL to your site root, or set PERSONNEL_SHAREPOINT_URL to any page/list URL under that site, then reload.",
+              "err",
+            );
             return;
           }
-          webUrl = String(ctx.webAbsoluteUrl || "").replace(/\/$/, "");
-          const pw = personnelWebBase();
           const seg = personnelListApiPath();
 
+          const baseSource = String(PERSONNEL_SITE_ROOT_URL || "").trim()
+            ? "PERSONNEL_SITE_ROOT_URL"
+            : String(PERSONNEL_REST_WEB_URL || "").trim()
+              ? "PERSONNEL_REST_WEB_URL"
+              : String(PERSONNEL_SHAREPOINT_URL || "").trim()
+                ? "PERSONNEL_SHAREPOINT_URL (derived site root)"
+                : pageWeb
+                  ? "_spPageContextInfo.webAbsoluteUrl (page)"
+                  : "unknown";
+          log("How REST base was chosen: " + baseSource);
           log("location.href:\n" + String(location.href));
-          log("Page web (context):\n" + webUrl);
-          log("REST base used for Personnel:\n" + pw + (pw !== webUrl ? "  (PERSONNEL_REST_WEB_URL override)" : ""));
+          log("Page web from context (informational only):\n" + (pageWeb || "(no _spPageContextInfo — OK if explicit URLs are set)"));
+          log(
+            "REST base used for ALL API calls below:\n" +
+              pw +
+              (pageWeb && pw === pageWeb
+                ? "  (same as page — from context or your URL matched the page site)"
+                : "  (explicit URL / derived from PERSONNEL_SHAREPOINT_URL — not necessarily this page’s site)"),
+          );
           log("List API segment:\n/_api/web/" + seg);
           log("LIST_PERSONNEL (trimmed):\n" + JSON.stringify(personnelListTitle()));
 
