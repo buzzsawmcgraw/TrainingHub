@@ -431,34 +431,11 @@
         grid-template-columns: 1fr;
         gap: 14px 0;
       }
-      #sp-pip-ui .add-form-grid--inline-quad {
-        display: grid;
-        grid-template-columns: repeat(3, max-content) minmax(12rem, 1.35fr);
-        gap: 12px 18px;
-        align-items: start;
-        justify-content: start;
-      }
-      @media (max-width: 900px) {
-        #sp-pip-ui .add-form-grid--inline-quad {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-        #sp-pip-ui .add-form-grid--inline-quad .add-field--notes {
-          grid-column: 1 / -1;
-        }
-      }
-      #sp-pip-ui .add-form-grid--inline-quad .add-field--notes textarea {
-        height: var(--pip-control-h);
-        min-height: var(--pip-control-h);
-        max-height: var(--pip-control-h);
-        width: 100%;
-        resize: none;
-        line-height: 1.35;
-        overflow-y: auto;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-      }
-      #sp-pip-ui fieldset.add-form-group--inline-row {
-        margin-bottom: 14px;
+      #sp-pip-ui .add-form-split--primary .add-field--notes textarea {
+        min-height: 96px;
+        max-height: 220px;
+        height: auto;
+        resize: vertical;
       }
       #sp-pip-ui .add-field--address textarea {
         min-height: 48px;
@@ -531,16 +508,21 @@
         color: var(--pip-green);
       }
       #sp-pip-ui .add-form-actions {
-        margin-top: 18px;
-        padding-top: 16px;
+        margin-top: 22px;
+        padding-top: 20px;
         border-top: 1px solid var(--pip-border);
         display: flex;
-        gap: 10px 12px;
+        gap: 16px;
         flex-wrap: wrap;
         align-items: center;
+        justify-content: center;
       }
       #sp-pip-ui .add-form-actions button {
         margin: 0;
+        padding: 14px 32px;
+        font-size: 14px;
+        letter-spacing: 0.12em;
+        border-radius: 6px;
       }
       #sp-pip-ui .mono {
         font-family: var(--pip-font);
@@ -686,13 +668,17 @@
         ];
 
         /**
-         * Training Hub form (`Id` omitted). Top: Identity | Contact in one split panel. Bottom: Status, OfficeSymbol,
-         * Squadron, and Notes in a single full-width row (`inline-quad`).
+         * Training Hub form (`Id` omitted). Identity | Contact in one panel. Contact includes phones, then
+         * Status / OfficeSymbol / Squadron, then Notes.
          */
         const ADD_FORM_FIELD_GROUPS = [
           { title: "Identity & record", keys: ["RecordDate", "DoDID", "Rank", "LastName", "FirstName", "MiddleInitial"], split: "left", layout: "stack" },
-          { title: "Contact", keys: ["Address", "CellPhone", "WorkPhone"], split: "right", layout: "stack" },
-          { title: "Organization, status & notes", keys: ["Status", "OfficeSymbol", "Squadron", "Notes"], layout: "inline-quad" },
+          {
+            title: "Contact",
+            keys: ["Address", "CellPhone", "WorkPhone", "Status", "OfficeSymbol", "Squadron", "Notes"],
+            split: "right",
+            layout: "stack",
+          },
         ];
 
         // ============================================================
@@ -1246,8 +1232,7 @@
           }
           const minW = measureCanvasTextWidth("(select)", font) + arrowPad;
           let px = Math.max(maxText + arrowPad, minW);
-          const inRow = sel.closest(".add-form-grid--inline-quad");
-          const cap = inRow ? 340 : 420;
+          const cap = 400;
           px = Math.min(px, cap);
           sel.style.width = px + "px";
           sel.style.maxWidth = "100%";
@@ -1307,7 +1292,6 @@
           const grid = document.createElement("div");
           grid.className = "add-form-grid";
           if (group.layout === "stack") grid.classList.add("add-form-grid--stack");
-          if (group.layout === "inline-quad") grid.classList.add("add-form-grid--inline-quad");
           group.keys.forEach((key) => {
             const col = cols.find((c) => c.key === key);
             if (!col) return;
@@ -1318,7 +1302,6 @@
           const fs = document.createElement("fieldset");
           fs.className = "add-form-group";
           if (group.compact) fs.classList.add("add-form-group--compact");
-          if (group.layout === "inline-quad") fs.classList.add("add-form-group--inline-row");
           const leg = document.createElement("legend");
           leg.className = "add-form-group-legend";
           leg.textContent = group.title;
@@ -1399,7 +1382,7 @@
           const submitBtn = document.createElement("button");
           submitBtn.type = "submit";
           submitBtn.className = "btn";
-          submitBtn.textContent = "Save to Personnel";
+          submitBtn.textContent = "Submit";
           bar.appendChild(submitBtn);
           const clearBtn = document.createElement("button");
           clearBtn.type = "button";
@@ -1491,7 +1474,7 @@
           }
 
           try {
-            setReadState("loading", "Saving new person…");
+            setReadState("loading", "Submitting…");
             const created = await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
             const newId = parseCreatedItemId(created);
             log("POST created item Id: " + (newId || "?"), "ok");
@@ -1499,9 +1482,9 @@
             if (form) form.reset();
             primeRecordDateDefault();
             await runProbe();
-            setReadState("ok", newId ? "Saved new person (Id " + newId + "). Table refreshed." : "Saved. Table refreshed.");
+            setReadState("ok", newId ? "Submitted (Id " + newId + "). Table refreshed." : "Submitted. Table refreshed.");
           } catch (e) {
-            setReadState("err", "Save failed: " + (e.message || String(e)).slice(0, 420));
+            setReadState("err", "Submit failed: " + (e.message || String(e)).slice(0, 420));
             log("POST failed:\n" + (e.message || String(e)), "err");
           }
         }
