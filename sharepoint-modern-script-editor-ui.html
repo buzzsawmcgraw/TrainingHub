@@ -27,8 +27,57 @@
       #sp-pip-ui .err {
         color: #a00;
       }
-      #sp-pip-ui .ok {
-        color: #060;
+      #sp-pip-ui .read-state {
+        padding: 10px 12px;
+        margin: 10px 0;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+      #sp-pip-ui .read-state.loading {
+        background: #e8eef5;
+        color: #234;
+      }
+      #sp-pip-ui .read-state.ok {
+        background: #e6f4ea;
+        color: #0d4d1c;
+      }
+      #sp-pip-ui .read-state.warn {
+        background: #fff8e6;
+        color: #664d00;
+      }
+      #sp-pip-ui .roster-wrap {
+        overflow: auto;
+        max-height: 55vh;
+        border: 1px solid #ccc;
+        margin: 12px 0;
+      }
+      #sp-pip-ui table.roster {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      #sp-pip-ui table.roster th,
+      #sp-pip-ui table.roster td {
+        border-bottom: 1px solid #ddd;
+        padding: 8px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      #sp-pip-ui table.roster th {
+        background: #f0f0f0;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      #sp-pip-ui table.roster tr:nth-child(even) {
+        background: #fafafa;
+      }
+      #sp-pip-ui details {
+        margin-top: 12px;
+      }
+      #sp-pip-ui summary {
+        cursor: pointer;
+        font-weight: 600;
       }
     </style>
   </head>
@@ -36,11 +85,30 @@
     <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
     <div id="sp-pip-ui">
       <p>
-        <strong>Personnel REST probe</strong> — paste explicit URLs in the script constants so REST does not depend on
-        guessing the site from the page.
+        <strong>Personnel list reader</strong> — table below shows what SharePoint returned. Explicit site URL is set
+        in the script. Use <strong>Refresh list</strong> after changing list data.
       </p>
-      <button type="button" id="probeRun">Run probe again</button>
-      <pre id="probeOut"></pre>
+      <div id="rosterReadState" class="read-state loading">Loading list…</div>
+      <button type="button" id="probeRun">Refresh list</button>
+      <div class="roster-wrap">
+        <table class="roster" aria-label="Personnel rows from SharePoint">
+          <thead>
+            <tr>
+              <th>Id</th>
+              <th>Name</th>
+              <th>Rank</th>
+              <th>Status</th>
+              <th>Record date</th>
+              <th>DoD ID</th>
+            </tr>
+          </thead>
+          <tbody id="rosterTableBody"></tbody>
+        </table>
+      </div>
+      <details>
+        <summary>Diagnostics (REST details &amp; raw JSON)</summary>
+        <pre id="probeOut"></pre>
+      </details>
     </div>
 
     <script>
@@ -72,6 +140,97 @@
 
         const out = document.getElementById("probeOut");
         const btn = document.getElementById("probeRun");
+        const rosterReadState = document.getElementById("rosterReadState");
+        const rosterTableBody = document.getElementById("rosterTableBody");
+
+        /** Try these REST property names in order when reading a column from an item. */
+        const PERSONNEL_READ_KEYS = {
+          last: ["LastName", "Last_x0020_Name"],
+          first: ["FirstName", "First_x0020_Name"],
+          mi: ["MiddleInitial", "Middle_x0020_Initial", "MI"],
+          dod: ["DoDID", "DoD_x0020_ID", "DODID"],
+          status: ["Status", "PersonnelStatus", "Personnel_x0020_Status"],
+          record: ["Record_x0020_Date", "RecordDate", "Record0"],
+          rank: ["Rank", "Rank0", "PayGrade"],
+        };
+
+        function pick(item, keys) {
+          for (let i = 0; i < keys.length; i++) {
+            const v = item[keys[i]];
+            if (v !== undefined && v !== null && v !== "") return String(v);
+          }
+          return "";
+        }
+
+        function fromSpDate(value) {
+          if (!value) return "";
+          if (typeof value === "string") {
+            const m = value.match(/^\/Date\((\d+)\)\/$/);
+            if (m) {
+              const d = new Date(parseInt(m[1], 10));
+              if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+            }
+            return value.slice(0, 10);
+          }
+          return "";
+        }
+
+        function rosterDisplayName(item) {
+          const ln = pick(item, PERSONNEL_READ_KEYS.last).trim();
+          const fn = pick(item, PERSONNEL_READ_KEYS.first).trim();
+          const mi = pick(item, PERSONNEL_READ_KEYS.mi).trim();
+          const t = item.Title != null ? String(item.Title).trim() : "";
+          if (ln || fn || mi) {
+            const main = [ln, fn].filter(Boolean).join(", ");
+            return (main + (mi ? " " + mi : "")).trim();
+          }
+          return t || "—";
+        }
+
+        function setReadState(kind, message) {
+          if (!rosterReadState) return;
+          rosterReadState.className = "read-state " + kind;
+          rosterReadState.textContent = message;
+        }
+
+        function clearRosterTable() {
+          if (rosterTableBody) rosterTableBody.innerHTML = "";
+        }
+
+        function renderRosterTable(rows, meta) {
+          clearRosterTable();
+          if (!rosterTableBody) return;
+          const frag = document.createDocumentFragment();
+          rows.forEach((item) => {
+            const tr = document.createElement("tr");
+            const id = item.Id != null ? String(item.Id) : "";
+            const td = (text) => {
+              const cell = document.createElement("td");
+              cell.textContent = text || "—";
+              return cell;
+            };
+            tr.appendChild(td(id));
+            tr.appendChild(td(rosterDisplayName(item)));
+            tr.appendChild(td(pick(item, PERSONNEL_READ_KEYS.rank)));
+            tr.appendChild(td(pick(item, PERSONNEL_READ_KEYS.status)));
+            tr.appendChild(td(fromSpDate(pick(item, PERSONNEL_READ_KEYS.record))));
+            tr.appendChild(td(pick(item, PERSONNEL_READ_KEYS.dod)));
+            frag.appendChild(tr);
+          });
+          rosterTableBody.appendChild(frag);
+          const listTitle = meta && meta.Title ? String(meta.Title) : personnelListTitle();
+          const ic = meta && meta.ItemCount != null ? meta.ItemCount : "?";
+          setReadState(
+            "ok",
+            "Reading list works — showing " +
+              rows.length +
+              " row(s) from REST (list \"" +
+              listTitle +
+              "\", SharePoint ItemCount=" +
+              ic +
+              "). If the table columns look wrong, open Diagnostics and compare property names on the first row.",
+          );
+        }
 
         function log(msg, cls) {
           const line = typeof msg === "string" ? msg : JSON.stringify(msg, null, 2);
@@ -229,10 +388,17 @@
 
         async function runProbe() {
           out.innerHTML = "";
+          clearRosterTable();
+          setReadState("loading", "Loading Personnel list from SharePoint…");
+
           const ctx = getCtx();
           const pageWeb = ctx && ctx.webAbsoluteUrl ? String(ctx.webAbsoluteUrl).replace(/\/$/, "") : "";
           const pw = resolvedPersonnelRestBase();
           if (!pw) {
+            setReadState(
+              "err",
+              "No REST base URL. Set PERSONNEL_SITE_ROOT_URL (or PERSONNEL_SHAREPOINT_URL), or open this on a SharePoint page.",
+            );
             log(
               "FAIL: No REST base URL. Set PERSONNEL_SITE_ROOT_URL to your site root, or set PERSONNEL_SHAREPOINT_URL to any page/list URL under that site, then reload.",
               "err",
@@ -263,12 +429,14 @@
           log("List API segment:\n/_api/web/" + seg);
           log("LIST_PERSONNEL (trimmed):\n" + JSON.stringify(personnelListTitle()));
 
+          let meta = null;
           try {
             log("--- Request: GET list metadata ---", "ok");
-            const meta = await spFetch(`/_api/web/${seg}?$select=Id,Title,ItemCount,ListItemEntityTypeFullName`, {}, pw);
+            meta = await spFetch(`/_api/web/${seg}?$select=Id,Title,ItemCount,ListItemEntityTypeFullName`, {}, pw);
             log(meta);
           } catch (e) {
             log("LIST METADATA FAILED:\n" + (e.message || String(e)), "err");
+            setReadState("err", "Cannot read this list (metadata request failed). Open Diagnostics for details and list names.");
             try {
               await enumerateListTitles(pw);
             } catch (e2) {
@@ -280,20 +448,34 @@
           const seg2 = personnelListApiPath();
           let items = null;
           try {
-            log("--- Request: GET items (top 25, orderby Modified) ---", "ok");
-            items = await spFetch(`/_api/web/${seg2}/items?$top=25&$orderby=Modified desc`, {}, pw);
+            log("--- Request: GET items (up to 500, orderby Modified) ---", "ok");
+            items = await spFetch(`/_api/web/${seg2}/items?$top=500&$orderby=Modified desc`, {}, pw);
           } catch (e0) {
             if (/\b400\b/.test(String(e0.message || ""))) {
               log("orderby failed with 400; retry without orderby…", "err");
-              items = await spFetch(`/_api/web/${seg2}/items?$top=25`, {}, pw);
+              try {
+                items = await spFetch(`/_api/web/${seg2}/items?$top=500`, {}, pw);
+              } catch (e1) {
+                setReadState("err", "Cannot read list items: " + (e1.message || String(e1)).slice(0, 280));
+                log("ITEMS FAILED (after retry):\n" + (e1.message || String(e1)), "err");
+                return;
+              }
             } else {
-              throw e0;
+              setReadState("err", "Cannot read list items: " + (e0.message || String(e0)).slice(0, 280));
+              log("ITEMS FAILED:\n" + (e0.message || String(e0)), "err");
+              return;
             }
           }
 
           const rows = (items && items.value) || [];
           log("Row count returned: " + rows.length, rows.length ? "ok" : "err");
           if (rows.length === 0) {
+            setReadState(
+              "warn",
+              "REST succeeded but returned 0 rows in the default view (SharePoint ItemCount=" +
+                (meta && meta.ItemCount != null ? meta.ItemCount : "?") +
+                "). The list may be empty or items are filtered by the default view.",
+            );
             log("List is empty (ItemCount may still be > 0 if filtered view — this is default view items).");
             return;
           }
@@ -307,14 +489,21 @@
             log("--- Second row (raw JSON) ---", "ok");
             log(rows[1]);
           }
-          log("DONE. If you see rows above, REST read works — wire your app to these property names.", "ok");
+          log("DONE. Table above uses common field names; Diagnostics shows exact REST keys.", "ok");
+          renderRosterTable(rows, meta);
         }
 
         btn.addEventListener("click", () => {
-          runProbe().catch((e) => log("UNCAUGHT:\n" + (e.message || String(e)), "err"));
+          runProbe().catch((e) => {
+            setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
+            log("UNCAUGHT:\n" + (e.message || String(e)), "err");
+          });
         });
 
-        runProbe().catch((e) => log("UNCAUGHT:\n" + (e.message || String(e)), "err"));
+        runProbe().catch((e) => {
+          setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
+          log("UNCAUGHT:\n" + (e.message || String(e)), "err");
+        });
       })();
     </script>
   </body>
