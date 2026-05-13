@@ -75,7 +75,51 @@
       #sp-pip-ui details {
         margin-top: 12px;
       }
-      #sp-pip-ui .mono {
+      #sp-pip-ui summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      #sp-pip-ui .add-person-panel {
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 14px 16px;
+        margin: 12px 0;
+        background: #fafafa;
+      }
+      #sp-pip-ui .add-person-panel h2 {
+        margin: 0 0 12px;
+        font-size: 16px;
+      }
+      #sp-pip-ui .add-form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px 14px;
+        align-items: end;
+      }
+      #sp-pip-ui .add-field label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      #sp-pip-ui .add-field input,
+      #sp-pip-ui .add-field select,
+      #sp-pip-ui .add-field textarea {
+        width: 100%;
+        box-sizing: border-box;
+        font: 13px system-ui, sans-serif;
+        padding: 6px 8px;
+        border: 1px solid #bbb;
+        border-radius: 4px;
+      }
+      #sp-pip-ui form#newPersonForm.add-form-grid .add-form-actions {
+        grid-column: 1 / -1;
+      }
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
         font-family: ui-monospace, Consolas, monospace;
         font-size: 12px;
       }
@@ -85,10 +129,10 @@
     <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
     <div id="sp-pip-ui">
       <p>
-        <strong>Personnel list reader</strong> — set <span class="mono">ROSTER_COLUMNS</span> in the script with your
-        SharePoint <strong>internal</strong> field names (and friendly labels) so order and columns stay correct. Leave
-        it empty to auto-build columns from the data. Use <strong>Refresh list</strong> after edits.
+        <strong>Personnel</strong> — add rows below, then review the table. Dropdowns load allowed values from your
+        SharePoint <strong>choice</strong> columns. Use <strong>Refresh list</strong> after adds.
       </p>
+      <div id="addPersonPanel" class="add-person-panel" aria-live="polite"></div>
       <div id="rosterReadState" class="read-state loading">Loading list…</div>
       <button type="button" id="probeRun">Refresh list</button>
       <div class="roster-wrap">
@@ -130,6 +174,15 @@
         const LIST_PERSONNEL_GUID = "";
 
         /**
+         * Roster column `key` values that render as dropdowns. Options are loaded from SharePoint field **Choices**
+         * (same internal name as used for save — see `resolveWriteKey` / first data row).
+         */
+        const DROPDOWN_COLUMN_KEYS = ["Status", "OfficeSymbol", "Squadron", "Rank"];
+
+        /** Send SharePoint **Title** on create (built from Last + First, else DoD ID, else "New personnel"). */
+        const SET_TITLE_ON_CREATE = true;
+
+        /**
          * Roster columns — fixed order for 88thSFS Personnel. Remove the `Id` row if you do not want Personnel ID.
          * If a column is always blank, open Diagnostics and change that row’s `key` / add `altKeys` (see Record Date).
          */
@@ -168,7 +221,7 @@
             if (entry == null) return;
             if (typeof entry === "string") {
               const key = entry.trim();
-              if (key) result.push({ key: key, label: key, tryKeys: [key] });
+              if (key) result.push({ key: key, label: key, tryKeys: [key], saveKey: null });
               return;
             }
             if (typeof entry === "object") {
@@ -182,7 +235,8 @@
               alt.forEach((a) => {
                 if (a && tryKeys.indexOf(a) === -1) tryKeys.push(a);
               });
-              result.push({ key: key, label: label, tryKeys: tryKeys });
+              const saveKey = entry.saveKey != null ? String(entry.saveKey).trim() : "";
+              result.push({ key: key, label: label, tryKeys: tryKeys, saveKey: saveKey || null });
             }
           });
           return result;
@@ -193,7 +247,7 @@
           const explicit = normalizedRosterColumns();
           if (explicit.length > 0) return { mode: "explicit", columns: explicit };
           const keys = collectColumnKeys(rows);
-          return { mode: "auto", columns: keys.map((k) => ({ key: k, label: k, tryKeys: [k] })) };
+          return { mode: "auto", columns: keys.map((k) => ({ key: k, label: k, tryKeys: [k], saveKey: null })) };
         }
 
         /** Skip OData / navigation noise; every other property becomes a table column. */
@@ -264,6 +318,16 @@
           return undefined;
         }
 
+        function resolveWriteKey(col, sampleRow) {
+          if (col.saveKey) return String(col.saveKey).trim();
+          if (sampleRow) {
+            const tryKeys = col.tryKeys || [col.key];
+            const hit = tryKeys.find((k) => sampleRow && Object.prototype.hasOwnProperty.call(sampleRow, k));
+            if (hit) return hit;
+          }
+          return col.key;
+        }
+
         function setReadState(kind, message) {
           if (!rosterReadState) return;
           rosterReadState.className = "read-state " + kind;
@@ -308,20 +372,22 @@
 
           const listTitle = meta && meta.Title ? String(meta.Title) : personnelListTitle();
           const ic = meta && meta.ItemCount != null ? meta.ItemCount : "?";
-          setReadState(
-            "ok",
-            "Reading list works — " +
-              rows.length +
-              " row(s), " +
-              columns.length +
-              " column(s) (" +
-              (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
-              "). SharePoint ItemCount=" +
-              ic +
-              ', list "' +
-              listTitle +
-              '".',
-          );
+          if (rows.length > 0) {
+            setReadState(
+              "ok",
+              "Reading list works — " +
+                rows.length +
+                " row(s), " +
+                columns.length +
+                " column(s) (" +
+                (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
+                "). SharePoint ItemCount=" +
+                ic +
+                ', list "' +
+                listTitle +
+                '".',
+            );
+          }
         }
 
         function log(msg, cls) {
@@ -478,9 +544,216 @@
           });
         }
 
+        async function fetchChoiceOptions(seg, pw, fieldInternalOrTitle) {
+          const esc = String(fieldInternalOrTitle || "").replace(/'/g, "''");
+          if (!esc) return { choices: [], error: "empty field name" };
+          const data = await spFetch(
+            `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=Choices,Title,InternalName,TypeAsString`,
+            {},
+            pw,
+          );
+          let choices = [];
+          if (Array.isArray(data.Choices)) choices = data.Choices;
+          else if (data.Choices && typeof data.Choices === "object" && Array.isArray(data.Choices.results))
+            choices = data.Choices.results;
+          choices = choices.map((c) => String(c).trim()).filter(Boolean);
+          return { choices: choices, field: data };
+        }
+
+        function primeRecordDateDefault() {
+          const el = document.getElementById("nf_RecordDate");
+          if (el && el.tagName === "INPUT" && el.type === "date" && !el.value) {
+            el.value = new Date().toISOString().slice(0, 10);
+          }
+        }
+
+        function parseCreatedItemId(created) {
+          if (!created || typeof created !== "object") return null;
+          if (created.Id != null && created.Id !== "") return String(created.Id);
+          const oid = created["odata.id"] || created["@odata.id"];
+          if (oid && typeof oid === "string") {
+            const m = oid.match(/\/items\((\d+)\)/i);
+            if (m) return m[1];
+          }
+          return null;
+        }
+
+        async function renderAddPersonForm(meta, pw, seg, sampleRow) {
+          const panel = document.getElementById("addPersonPanel");
+          if (!panel) return;
+          panel.innerHTML = "";
+          const cols = normalizedRosterColumns();
+          if (!cols.length) return;
+
+          const h = document.createElement("h2");
+          h.textContent = "Add person";
+          panel.appendChild(h);
+
+          const form = document.createElement("form");
+          form.id = "newPersonForm";
+          form.className = "add-form-grid";
+          form.addEventListener("submit", (ev) => {
+            ev.preventDefault();
+            void submitNewPerson(meta, pw, seg, sampleRow);
+          });
+
+          cols.forEach((col) => {
+            if (col.key === "Id") return;
+            const writeKey = resolveWriteKey(col, sampleRow);
+            const fwrap = document.createElement("div");
+            fwrap.className = "add-field";
+            const lab = document.createElement("label");
+            lab.setAttribute("for", "nf_" + col.key);
+            lab.textContent = col.label;
+            lab.title = "REST write key: " + writeKey;
+            fwrap.appendChild(lab);
+
+            const isDrop = DROPDOWN_COLUMN_KEYS.indexOf(col.key) !== -1;
+            let input;
+            if (isDrop) {
+              input = document.createElement("select");
+              input.id = "nf_" + col.key;
+              input.dataset.writeKey = writeKey;
+              const opt0 = document.createElement("option");
+              opt0.value = "";
+              opt0.textContent = "(select)";
+              input.appendChild(opt0);
+            } else if (col.key === "Address") {
+              input = document.createElement("textarea");
+              input.id = "nf_" + col.key;
+              input.dataset.writeKey = writeKey;
+              input.rows = 3;
+            } else if (col.key === "RecordDate") {
+              input = document.createElement("input");
+              input.type = "date";
+              input.id = "nf_" + col.key;
+              input.dataset.writeKey = writeKey;
+            } else {
+              input = document.createElement("input");
+              input.type = "text";
+              input.id = "nf_" + col.key;
+              input.dataset.writeKey = writeKey;
+            }
+            fwrap.appendChild(input);
+            form.appendChild(fwrap);
+          });
+
+          const bar = document.createElement("div");
+          bar.className = "add-form-actions";
+          const submitBtn = document.createElement("button");
+          submitBtn.className = "btn";
+          bar.appendChild(submitBtn);
+          const clearBtn = document.createElement("button");
+          clearBtn.type = "button";
+          clearBtn.textContent = "Clear form";
+          clearBtn.addEventListener("click", () => {
+            form.reset();
+            primeRecordDateDefault();
+          });
+          bar.appendChild(clearBtn);
+          form.appendChild(bar);
+          panel.appendChild(form);
+
+          for (let i = 0; i < cols.length; i++) {
+            const col = cols[i];
+            if (col.key === "Id") continue;
+            if (DROPDOWN_COLUMN_KEYS.indexOf(col.key) === -1) continue;
+            const writeKey = resolveWriteKey(col, sampleRow);
+            const sel = document.getElementById("nf_" + col.key);
+            if (!sel || sel.tagName !== "SELECT") continue;
+            try {
+              const r = await fetchChoiceOptions(seg, pw, writeKey);
+              if (r.choices && r.choices.length) {
+                r.choices.forEach((c) => {
+                  const o = document.createElement("option");
+                  o.value = c;
+                  o.textContent = c;
+                  sel.appendChild(o);
+                });
+              } else {
+                const o = document.createElement("option");
+                o.value = "";
+                o.textContent = "(no choices — check field internal name: " + writeKey + ")";
+                o.disabled = true;
+                sel.appendChild(o);
+              }
+            } catch (e) {
+              log("Choices for " + writeKey + ": " + (e.message || String(e)), "err");
+              const o = document.createElement("option");
+              o.value = "";
+              o.textContent = "(error loading choices)";
+              o.disabled = true;
+              sel.appendChild(o);
+            }
+          }
+          primeRecordDateDefault();
+        }
+
+        async function submitNewPerson(meta, pw, seg, sampleRow) {
+          const entityType = meta && meta.ListItemEntityTypeFullName;
+          if (!entityType) {
+            setReadState("err", "Missing list type metadata. Reload the page.");
+            return;
+          }
+          const cols = normalizedRosterColumns();
+          let lastName = "";
+          let firstName = "";
+          let dod = "";
+          cols.forEach((col) => {
+            if (col.key === "Id") return;
+            const el = document.getElementById("nf_" + col.key);
+            if (!el) return;
+            const v = String(el.value || "").trim();
+            if (col.key === "LastName") lastName = v;
+            if (col.key === "FirstName") firstName = v;
+            if (col.key === "DoDID") dod = v;
+          });
+          if (!lastName || !firstName) {
+            setReadState("err", "Last name and First name are required before saving.");
+            return;
+          }
+
+          const payload = { __metadata: { type: entityType } };
+          cols.forEach((col) => {
+            if (col.key === "Id") return;
+            const el = document.getElementById("nf_" + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || resolveWriteKey(col, sampleRow);
+            let v = String(el.value || "").trim();
+            if (v === "") return;
+            if (el.type === "date") {
+              payload[writeKey] = v + "T00:00:00Z";
+              return;
+            }
+            payload[writeKey] = v;
+          });
+
+          if (SET_TITLE_ON_CREATE) {
+            const title = [lastName, firstName].filter(Boolean).join(", ") || dod || "New personnel";
+            payload.Title = title;
+          }
+
+          try {
+            setReadState("loading", "Saving new person…");
+            const created = await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            const newId = parseCreatedItemId(created);
+            log("POST created item Id: " + (newId || "?"), "ok");
+            const form = document.getElementById("newPersonForm");
+            if (form) form.reset();
+            primeRecordDateDefault();
+            await runProbe();
+            setReadState("ok", newId ? "Saved new person (Id " + newId + "). Table refreshed." : "Saved. Table refreshed.");
+          } catch (e) {
+            setReadState("err", "Save failed: " + (e.message || String(e)).slice(0, 420));
+            log("POST failed:\n" + (e.message || String(e)), "err");
+          }
+        }
+
         async function runProbe() {
           out.innerHTML = "";
           clearRosterTable();
+          const addPanel = document.getElementById("addPersonPanel");
+          if (addPanel) addPanel.innerHTML = "";
           setReadState("loading", "Loading Personnel list from SharePoint…");
 
           const ctx = getCtx();
@@ -561,45 +834,49 @@
 
           const rows = (items && items.value) || [];
           log("Row count returned: " + rows.length, rows.length ? "ok" : "err");
+          const sampleRow = rows.length > 0 ? rows[0] : null;
+          const plan = resolveRosterColumnPlan(rows);
+
           if (rows.length === 0) {
             setReadState(
               "warn",
               "REST succeeded but returned 0 rows in the default view (SharePoint ItemCount=" +
                 (meta && meta.ItemCount != null ? meta.ItemCount : "?") +
-                "). The list may be empty or items are filtered by the default view.",
+                "). You can still add a person below; refresh after the first item exists.",
             );
             log("List is empty (ItemCount may still be > 0 if filtered view — this is default view items).");
-            return;
-          }
-          const plan = resolveRosterColumnPlan(rows);
-          if (plan.mode === "explicit") {
-            log(
-              "Roster mode: **explicit** ROSTER_COLUMNS (" +
-                plan.columns.length +
-                "):\n" +
-                plan.columns.map((c) => c.key + (c.label !== c.key ? "  (header: " + c.label + ")" : "")).join("\n"),
-              "ok",
-            );
           } else {
-            const tableKeys = collectColumnKeys(rows);
+            if (plan.mode === "explicit") {
+              log(
+                "Roster mode: **explicit** ROSTER_COLUMNS (" +
+                  plan.columns.length +
+                  "):\n" +
+                  plan.columns.map((c) => c.key + (c.label !== c.key ? "  (header: " + c.label + ")" : "")).join("\n"),
+                "ok",
+              );
+            } else {
+              const tableKeys = collectColumnKeys(rows);
+              log(
+                "Roster mode: **auto** (union of fields on loaded rows). Copy names into ROSTER_COLUMNS to fix layout:\n" +
+                  tableKeys.join(", "),
+                "ok",
+              );
+            }
+            log("--- First row (raw JSON) ---", "ok");
+            log(rows[0]);
+            if (rows.length > 1) {
+              log("--- Second row (raw JSON) ---", "ok");
+              log(rows[1]);
+            }
             log(
-              "Roster mode: **auto** (union of fields on loaded rows). Copy names into ROSTER_COLUMNS to fix layout:\n" +
-                tableKeys.join(", "),
+              plan.mode === "explicit"
+                ? "DONE. Table uses your ROSTER_COLUMNS order; wrong cells mean a `key` does not match REST (check spelling)."
+                : "DONE. Set ROSTER_COLUMNS in the script to control column order and labels; auto mode uses every field returned.",
               "ok",
             );
           }
-          log("--- First row (raw JSON) ---", "ok");
-          log(rows[0]);
-          if (rows.length > 1) {
-            log("--- Second row (raw JSON) ---", "ok");
-            log(rows[1]);
-          }
-          log(
-            plan.mode === "explicit"
-              ? "DONE. Table uses your ROSTER_COLUMNS order; wrong cells mean a `key` does not match REST (check spelling)."
-              : "DONE. Set ROSTER_COLUMNS in the script to control column order and labels; auto mode uses every field returned.",
-            "ok",
-          );
+
+          await renderAddPersonForm(meta, pw, seg2, sampleRow);
           renderRosterTable(rows, meta);
         }
 
