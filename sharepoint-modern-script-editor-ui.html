@@ -12,14 +12,15 @@
         background: #000;
       }
       #sp-pip-ui {
-        --pip-bg: #0a0e0a;
-        --pip-bg2: #0f160f;
-        --pip-green: #1eff45;
-        --pip-green-dim: #14a62e;
-        --pip-green-glow: rgba(30, 255, 69, 0.45);
-        --pip-amber: #ffb000;
-        --pip-red: #ff4d2d;
-        --pip-border: #1a3d22;
+        --pip-bg: #050807;
+        --pip-bg2: #0a1410;
+        --pip-surface: #07120d;
+        --pip-green: #3cff7a;
+        --pip-green-dim: #1f8f47;
+        --pip-green-glow: rgba(60, 255, 122, 0.28);
+        --pip-amber: #ffcc66;
+        --pip-red: #ff5a45;
+        --pip-border: #1e4a36;
         --pip-font: "Consolas", "Monaco", "Lucida Console", "Courier New", monospace;
         box-sizing: border-box;
         padding: 0;
@@ -28,10 +29,10 @@
         font-size: 14px;
         line-height: 1.45;
         color: var(--pip-green);
-        background: var(--pip-bg);
-        text-shadow: 0 0 3px var(--pip-green-glow);
+        background: radial-gradient(120% 80% at 50% 0%, #0d1f16 0%, var(--pip-bg) 55%);
+        text-shadow: 0 0 2px var(--pip-green-glow);
         border: 2px solid var(--pip-border);
-        border-radius: 4px;
+        border-radius: 8px;
         overflow: hidden;
       }
       #sp-pip-ui *,
@@ -131,38 +132,28 @@
       #sp-pip-ui .hub-section:last-child {
         margin-bottom: 0;
       }
-      #sp-pip-ui .hub-section-title {
-        margin: 0 0 10px;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--pip-green-dim);
-        text-shadow: 0 0 6px var(--pip-green-glow);
-      }
       #sp-pip-ui .hub-toolbar {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-end;
         gap: 12px 16px;
-        margin-top: 12px;
-      }
-      #sp-pip-ui .hub-help {
-        margin: 0;
-        flex: 1 1 220px;
-        font-size: 12px;
-        line-height: 1.5;
-        color: var(--pip-green-dim);
-        letter-spacing: 0.03em;
-        text-shadow: 0 0 2px rgba(30, 255, 69, 0.2);
-      }
-      #sp-pip-ui .hub-help strong {
-        color: var(--pip-green);
+        margin-top: 10px;
       }
       #sp-pip-ui .hub-toolbar button {
         flex: 0 0 auto;
         margin: 0;
+      }
+      #sp-pip-ui .hub-section--roster h2.hub-subtitle {
+        margin: 0 0 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--pip-border);
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--pip-green);
+        text-shadow: 0 0 8px var(--pip-green-glow);
       }
       #sp-pip-ui pre span.ok {
         color: var(--pip-green);
@@ -183,29 +174,29 @@
       }
       #sp-pip-ui button {
         margin: 8px 8px 8px 0;
-        padding: 8px 16px;
+        padding: 9px 18px;
         cursor: pointer;
         font-family: var(--pip-font);
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: var(--pip-bg);
-        background: var(--pip-green);
-        border: 2px solid var(--pip-green-dim);
-        border-radius: 2px;
+        color: #021208;
+        background: linear-gradient(180deg, #5dff8f 0%, var(--pip-green) 100%);
+        border: 1px solid var(--pip-green-dim);
+        border-radius: 4px;
         text-shadow: none;
-        box-shadow: 0 0 12px var(--pip-green-glow);
+        box-shadow: 0 0 14px var(--pip-green-glow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
       }
       #sp-pip-ui button:hover {
-        background: #5cff6e;
-        color: #020804;
+        background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%);
+        color: #010a06;
       }
       #sp-pip-ui button.btn-secondary {
-        background: transparent;
+        background: rgba(8, 24, 14, 0.6);
         color: var(--pip-green);
-        border: 2px solid var(--pip-green);
-        box-shadow: inset 0 0 8px rgba(30, 255, 69, 0.12);
+        border: 1px solid var(--pip-green-dim);
+        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.06);
       }
       #sp-pip-ui button.btn-secondary:hover {
         background: rgba(30, 255, 69, 0.12);
@@ -247,8 +238,8 @@
       }
       #sp-pip-ui .read-state {
         padding: 12px 14px;
-        margin: 0;
-        border-radius: 2px;
+        margin: 0 0 10px;
+        border-radius: 6px;
         font-weight: 700;
         letter-spacing: 0.04em;
         border: 1px solid var(--pip-border);
@@ -280,9 +271,10 @@
       #sp-pip-ui .roster-wrap {
         overflow: auto;
         max-height: min(52vh, 560px);
-        border: 2px solid var(--pip-border);
+        border: 1px solid var(--pip-border);
         margin: 0;
         background: var(--pip-bg2);
+        border-radius: 6px;
         box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.65);
       }
       #sp-pip-ui table.roster {
@@ -336,12 +328,12 @@
         color: #7dff8f;
       }
       #sp-pip-ui .add-person-panel {
-        border: 2px solid var(--pip-border);
-        border-radius: 6px;
+        border: 1px solid var(--pip-border);
+        border-radius: 8px;
         padding: 18px 20px 20px;
         margin: 0;
-        background: linear-gradient(180deg, #0c120c 0%, var(--pip-bg2) 100%);
-        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        background: linear-gradient(165deg, rgba(12, 28, 18, 0.95) 0%, var(--pip-surface) 45%, var(--pip-bg2) 100%);
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.06), inset 0 0 28px rgba(0, 0, 0, 0.45);
       }
       #sp-pip-ui .add-person-panel h2.hub-subtitle {
         margin: 0 0 8px;
@@ -368,16 +360,36 @@
         gap: 0;
         min-width: 0;
       }
+      #sp-pip-ui .add-form-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        align-items: stretch;
+        margin-bottom: 14px;
+      }
+      @media (max-width: 768px) {
+        #sp-pip-ui .add-form-split {
+          grid-template-columns: 1fr;
+        }
+      }
+      #sp-pip-ui .add-form-split > fieldset.add-form-group {
+        margin-bottom: 0;
+        min-height: 100%;
+      }
       #sp-pip-ui fieldset.add-form-group {
         border: 1px solid var(--pip-border);
-        border-radius: 4px;
+        border-radius: 6px;
         padding: 8px 14px 14px;
         margin: 0 0 14px;
         min-width: 0;
-        background: rgba(5, 12, 6, 0.45);
+        background: rgba(4, 14, 10, 0.55);
+        box-shadow: inset 0 0 0 1px rgba(60, 255, 122, 0.04);
       }
-      #sp-pip-ui fieldset.add-form-group:last-of-type {
+      #sp-pip-ui form#newPersonForm.add-form-stack > fieldset.add-form-group:last-of-type {
         margin-bottom: 0;
+      }
+      #sp-pip-ui fieldset.add-form-group--compact {
+        max-width: min(100%, 28rem);
       }
       #sp-pip-ui .add-form-group-legend {
         padding: 0 6px;
@@ -394,10 +406,18 @@
         gap: 12px 14px;
         align-items: start;
       }
-      @media (min-width: 480px) {
-        #sp-pip-ui .add-field--wide {
-          grid-column: 1 / -1;
-        }
+      #sp-pip-ui .add-form-grid--stack {
+        grid-template-columns: 1fr;
+      }
+      #sp-pip-ui .add-field--address textarea {
+        min-height: 48px;
+        max-height: 88px;
+        resize: vertical;
+      }
+      #sp-pip-ui .add-field--notes textarea {
+        min-height: 52px;
+        max-height: 100px;
+        resize: vertical;
       }
       #sp-pip-ui .add-field label {
         display: block;
@@ -416,13 +436,13 @@
         font: 13px var(--pip-font);
         padding: 8px 10px;
         border: 1px solid var(--pip-green-dim);
-        border-radius: 2px;
-        background: #050805;
+        border-radius: 4px;
+        background: rgba(3, 10, 6, 0.85);
         color: var(--pip-green);
-        text-shadow: 0 0 3px var(--pip-green-glow);
+        text-shadow: 0 0 2px var(--pip-green-glow);
       }
       #sp-pip-ui .add-field textarea {
-        min-height: 76px;
+        min-height: 52px;
         resize: vertical;
         line-height: 1.4;
       }
@@ -485,16 +505,11 @@
         <section class="hub-section hub-section--status" aria-label="Connection status and refresh">
           <div id="rosterReadState" class="read-state loading">Loading list…</div>
           <div class="hub-toolbar">
-            <p class="hub-help">
-              Add or update records in <strong>Training Hub</strong>, then use <strong>Refresh list</strong> to sync
-              the roster. Choice fields load allowed values from SharePoint. Open <strong>Diagnostics</strong> for REST
-              detail.
-            </p>
             <button type="button" id="probeRun">Refresh list</button>
           </div>
         </section>
         <section class="hub-section hub-section--roster" aria-label="Personnel roster">
-          <h2 class="hub-section-title">Personnel roster</h2>
+          <h2 class="hub-subtitle">Personnel roster</h2>
           <div class="roster-wrap">
             <table class="roster" aria-label="Personnel rows from SharePoint">
               <thead id="rosterThead"></thead>
@@ -602,14 +617,14 @@
         ];
 
         /**
-         * Training Hub form layout: fieldsets and column order (keys must match `ROSTER_COLUMNS`; `Id` is omitted).
-         * Add or reorder groups here if the list gains new fields.
+         * Training Hub form: groups and column keys (`Id` omitted). Use `split: "left"` / `"right"` for the top
+         * two-column row; `layout: "stack"` for a single-column grid inside that group; `compact` for a modest-width block.
          */
         const ADD_FORM_FIELD_GROUPS = [
-          { title: "Identity & record", keys: ["RecordDate", "LastName", "FirstName", "MiddleInitial", "DoDID"] },
-          { title: "Contact", keys: ["Address", "WorkPhone", "CellPhone"] },
+          { title: "Identity & record", keys: ["RecordDate", "LastName", "FirstName", "MiddleInitial", "DoDID"], split: "left", layout: "stack" },
+          { title: "Contact", keys: ["Address", "WorkPhone", "CellPhone"], split: "right", layout: "stack" },
           { title: "Organization & status", keys: ["Status", "OfficeSymbol", "Squadron", "Rank"] },
-          { title: "Notes", keys: ["Notes"] },
+          { title: "Notes", keys: ["Notes"], compact: true },
         ];
 
         // ============================================================
@@ -881,17 +896,17 @@
           if (rows.length > 0) {
             setReadState(
               "ok",
-              "Reading list works — " +
+              "Loaded " +
                 rows.length +
                 " row(s), " +
                 columns.length +
                 " column(s) (" +
                 (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
-                "). SharePoint ItemCount=" +
-                ic +
-                ', list "' +
+                "). List \"" +
                 listTitle +
-                '".',
+                "\" — ItemCount " +
+                ic +
+                ".",
             );
           }
         }
@@ -1146,7 +1161,8 @@
           const writeKey = resolveWriteKey(col, sampleRow);
           const fwrap = document.createElement("div");
           fwrap.className = "add-field";
-          if (col.key === "Address" || col.key === "Notes") fwrap.classList.add("add-field--wide");
+          if (col.key === "Address") fwrap.classList.add("add-field--address");
+          if (col.key === "Notes") fwrap.classList.add("add-field--notes");
           const lab = document.createElement("label");
           lab.setAttribute("for", "nf_" + col.key);
           lab.textContent = col.label;
@@ -1167,7 +1183,7 @@
             input = document.createElement("textarea");
             input.id = "nf_" + col.key;
             input.dataset.writeKey = writeKey;
-            input.rows = col.key === "Address" ? 4 : 3;
+            input.rows = col.key === "Address" ? 2 : 2;
           } else if (col.key === "RecordDate") {
             input = document.createElement("input");
             input.type = "date";
@@ -1181,6 +1197,29 @@
           }
           fwrap.appendChild(input);
           return fwrap;
+        }
+
+        function buildGroupFieldset(group, cols, sampleRow) {
+          if (!group || !group.title || !Array.isArray(group.keys)) return null;
+          const grid = document.createElement("div");
+          grid.className = "add-form-grid";
+          if (group.layout === "stack") grid.classList.add("add-form-grid--stack");
+          group.keys.forEach((key) => {
+            const col = cols.find((c) => c.key === key);
+            if (!col) return;
+            const fwrap = buildAddFieldWrap(col, sampleRow);
+            if (fwrap) grid.appendChild(fwrap);
+          });
+          if (!grid.childElementCount) return null;
+          const fs = document.createElement("fieldset");
+          fs.className = "add-form-group";
+          if (group.compact) fs.classList.add("add-form-group--compact");
+          const leg = document.createElement("legend");
+          leg.className = "add-form-group-legend";
+          leg.textContent = group.title;
+          fs.appendChild(leg);
+          fs.appendChild(grid);
+          return fs;
         }
 
         async function renderAddPersonForm(meta, pw, seg, sampleRow) {
@@ -1211,25 +1250,27 @@
 
           const groupedKeys = addFormGroupedKeySet();
 
+          let splitWrap = null;
           if (Array.isArray(ADD_FORM_FIELD_GROUPS)) {
             ADD_FORM_FIELD_GROUPS.forEach((group) => {
-              if (!group || !group.title || !Array.isArray(group.keys)) return;
-              const grid = document.createElement("div");
-              grid.className = "add-form-grid";
-              group.keys.forEach((key) => {
-                const col = cols.find((c) => c.key === key);
-                if (!col) return;
-                const fwrap = buildAddFieldWrap(col, sampleRow);
-                if (fwrap) grid.appendChild(fwrap);
-              });
-              if (!grid.childElementCount) return;
-              const fs = document.createElement("fieldset");
-              fs.className = "add-form-group";
-              const leg = document.createElement("legend");
-              leg.className = "add-form-group-legend";
-              leg.textContent = group.title;
-              fs.appendChild(leg);
-              fs.appendChild(grid);
+              const fs = buildGroupFieldset(group, cols, sampleRow);
+              if (!fs) return;
+              if (group.split === "left") {
+                splitWrap = document.createElement("div");
+                splitWrap.className = "add-form-split";
+                splitWrap.appendChild(fs);
+                form.appendChild(splitWrap);
+                return;
+              }
+              if (group.split === "right") {
+                if (!splitWrap) {
+                  splitWrap = document.createElement("div");
+                  splitWrap.className = "add-form-split";
+                  form.appendChild(splitWrap);
+                }
+                splitWrap.appendChild(fs);
+                return;
+              }
               form.appendChild(fs);
             });
           }
