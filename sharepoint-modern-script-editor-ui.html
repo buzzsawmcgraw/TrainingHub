@@ -43,10 +43,11 @@
               <div>
                 <div class="sectionTitle">Command hub</div>
                 <div class="muted">
-                  Loads and saves the <strong>Personnel</strong> list on this site (title must match
-                  <span class="mono">LIST_PERSONNEL</span> in the snippet). New rows: click <strong>New</strong>, fill
-                  in, <strong>Save</strong>. You need <strong>Read</strong> to load and <strong>Contribute</strong> (or
-                  Edit) to add or change items.
+                  Loads and saves the <strong>Personnel</strong> list (same site as the page unless you set
+                  <span class="mono">PERSONNEL_REST_WEB_URL</span>). Use <span class="mono">LIST_PERSONNEL</span> for the
+                  Site contents title, or <span class="mono">LIST_PERSONNEL_GUID</span> from List settings. New rows:
+                  click <strong>New</strong>, fill in, <strong>Save</strong>. You need <strong>Read</strong> to load and
+                  <strong>Contribute</strong> (or Edit) to add or change items.
                 </div>
                 <div class="muted" id="pHubCheck" style="margin-top: 6px; max-width: 900px; font-size: 11px; line-height: 1.45">
                   Checking list…
@@ -590,11 +591,45 @@
     <script>
       (function () {
         // -------- SharePoint lists on this web (edit source if titles differ) --------
-        /** Must match Site contents list name exactly — drives Hub roster + record Save/Delete. */
+        /** Must match Site contents list name exactly — drives Hub roster + record Save/Delete. Ignored if LIST_PERSONNEL_GUID is set. */
         const LIST_PERSONNEL = "Personnel";
+
+        /**
+         * Optional: Personnel list GUID from List settings (same site as REST calls). When set, the Hub
+         * uses lists(guid'…') instead of getbytitle — fixes “title is wrong” / duplicate-title issues.
+         * Example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+         */
+        const LIST_PERSONNEL_GUID = "";
+
+        /**
+         * If the Script Editor runs on a different SharePoint *web* than the Personnel list, set this
+         * to that site’s root URL (no trailing slash). Leave "" to use the current page web only.
+         * Same tenant / permissions still apply; Save may need the digest from that web in some setups.
+         */
+        const PERSONNEL_REST_WEB_URL = "";
 
         function personnelListTitle() {
           return String(LIST_PERSONNEL || "").trim();
+        }
+
+        function personnelGuidRaw() {
+          return String(LIST_PERSONNEL_GUID || "").trim();
+        }
+
+        function personnelListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(personnelGuidRaw());
+        }
+
+        /** Path segment after /_api/web/ for the Personnel list (lists/getbytitle('…') or lists(guid'…')). */
+        function personnelListApiPath() {
+          if (personnelListUsesGuid()) return "lists(guid'" + personnelGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(personnelListTitle()) + "')";
+        }
+
+        function personnelWebBase() {
+          const u = String(PERSONNEL_REST_WEB_URL || "").trim();
+          if (!u) return webUrl;
+          return u.replace(/\/$/, "");
         }
         /**
          * When true, the Hub does not read or write SharePoint’s built-in **Title** on Personnel. Names use
@@ -795,8 +830,12 @@
           return el && el.value ? el.value : "";
         }
 
-        async function spFetch(path, opts) {
+        async function spFetch(path, opts, baseUrlOverride) {
           opts = opts || {};
+          const base =
+            baseUrlOverride != null && String(baseUrlOverride).trim()
+              ? String(baseUrlOverride).trim().replace(/\/$/, "")
+              : webUrl;
           const headers = Object.assign({}, opts.headers || {});
           headers["Accept"] = "application/json;odata=nometadata";
 
@@ -815,7 +854,7 @@
             realMethod = "POST";
           }
 
-          const res = await fetch(webUrl + path, {
+          const res = await fetch(base + path, {
             method: realMethod,
             headers,
             body: opts.body ? JSON.stringify(opts.body) : undefined,
@@ -882,7 +921,11 @@
           const ln = String(readFromItem(p, "LastName") || "").trim();
           const fn = String(readFromItem(p, "FirstName") || "").trim();
           const mi = String(readFromItem(p, "MiddleInitial") || "").trim();
-          if (!ln && !fn && !mi) return "";
+          if (!ln && !fn && !mi) {
+            const t = p && p.Title != null ? String(p.Title).trim() : "";
+            if (t) return t;
+            return "";
+          }
           const main = [ln, fn].filter(Boolean).join(", ");
           if (main && mi) return main + " " + mi;
           return main || mi;
@@ -891,16 +934,17 @@
         function formatRestError(e) {
           const m = e && e.message ? String(e.message) : String(e);
           if (/\b403\b/.test(m)) {
-            return "Permission denied (403). You need Contribute (or Edit) on the Personnel list to create or update rows. " + m;
+            return (
+              "Permission denied (403). For roster reads you need at least View on the list; to Save you need Contribute or Edit. " +
+              m
+            );
           }
           if (/\b401\b/.test(m)) {
             return "Unauthorized (401). Sign in to SharePoint and reload this page. " + m;
           }
           if (/\b404\b/.test(m)) {
             return (
-              'Not found (404). Is there a list titled exactly "' +
-              personnelListTitle() +
-              '" on this site? Same-site pages only. ' +
+              'Not found (404). No list at this URL — set LIST_PERSONNEL to the exact Site contents name, or set LIST_PERSONNEL_GUID, or set PERSONNEL_REST_WEB_URL if the list lives on another site. ' +
               m
             );
           }
@@ -908,11 +952,12 @@
         }
 
         async function getPersonnelFieldInternalNameSet() {
-          const lt = escListTitle(personnelListTitle());
+          const listSeg = personnelListApiPath();
+          const pw = personnelWebBase();
           const set = new Set();
-          let path = `/_api/web/lists/getbytitle('${lt}')/fields?$select=InternalName&$top=200`;
+          let path = `/_api/web/${listSeg}/fields?$select=InternalName&$top=200`;
           for (let page = 0; page < 40; page++) {
-            const data = await spFetch(path);
+            const data = await spFetch(path, {}, pw);
             const rows = (data && data.value) || [];
             rows.forEach((r) => {
               if (r && r.InternalName) set.add(String(r.InternalName));
@@ -1069,8 +1114,12 @@
         /** After Save, scroll/highlight this list item Id once `renderRoster` runs. */
         let rosterEmphasisId = null;
 
-        async function getEntityType(listTitle) {
-          const data = await spFetch(`/_api/web/lists/getbytitle('${escListTitle(listTitle)}')?$select=ListItemEntityTypeFullName`);
+        async function getPersonnelEntityType() {
+          const data = await spFetch(
+            `/_api/web/${personnelListApiPath()}?$select=ListItemEntityTypeFullName`,
+            {},
+            personnelWebBase(),
+          );
           return data.ListItemEntityTypeFullName;
         }
 
@@ -1173,21 +1222,36 @@
           if (!el) return;
           el.className = "muted hubcheck-warn";
           const lines = [];
-          lines.push("REST web: " + webUrl);
-          lines.push("LIST_PERSONNEL (trimmed): " + JSON.stringify(personnelListTitle()));
-          const lt = escListTitle(personnelListTitle());
-          lines.push("Requesting list metadata: getbytitle('" + lt + "')");
           try {
-            const meta = await spFetch(`/_api/web/lists/getbytitle('${lt}')?$select=Id,Title,ItemCount`);
+            lines.push("Browser path: " + location.pathname);
+          } catch (_) {
+            lines.push("Browser path: (unavailable)");
+          }
+          lines.push("Page web (context): " + webUrl);
+          lines.push("Personnel REST base: " + personnelWebBase() + (personnelWebBase() !== webUrl ? "  (overridden — set PERSONNEL_REST_WEB_URL if list is on another site)" : ""));
+          lines.push(
+            "List binding: " +
+              (personnelListUsesGuid()
+                ? "lists(guid'" + personnelGuidRaw() + "')"
+                : 'lists(getbytitle("' + personnelListTitle() + '"))'),
+          );
+          lines.push("LIST_PERSONNEL (trimmed): " + JSON.stringify(personnelListTitle()));
+          const listSeg = personnelListApiPath();
+          const pw = personnelWebBase();
+          lines.push("Effective segment: /_api/web/" + listSeg);
+          try {
+            const meta = await spFetch(`/_api/web/${listSeg}?$select=Id,Title,ItemCount`, {}, pw);
             lines.push("OK — SharePoint list Id: " + meta.Id + ", list Title: " + (meta.Title || "") + ", ItemCount: " + (meta.ItemCount != null ? meta.ItemCount : "?"));
           } catch (e) {
-            lines.push("getbytitle FAILED: " + (e.message || String(e)));
-            lines.push("Usually: wrong site (page web URL must match list site), wrong list name, or no access. No browser URL is configured in this snippet — it always uses the page’s web from _spPageContextInfo.");
+            lines.push("List metadata FAILED: " + (e.message || String(e)));
+            lines.push(
+              "Fix: (1) Host the Script Editor on the same site as the list, or set PERSONNEL_REST_WEB_URL to that site root. (2) Set LIST_PERSONNEL to the exact Site contents name, or set LIST_PERSONNEL_GUID from List settings. (3) Confirm you can open the list in the browser while signed in.",
+            );
             el.textContent = lines.join(" ");
             return;
           }
           try {
-            const items = await spFetch(`/_api/web/lists/getbytitle('${lt}')/items?$top=1`);
+            const items = await spFetch(`/_api/web/${listSeg}/items?$top=1`, {}, pw);
             const rows = items && items.value ? items.value : [];
             if (rows.length === 0) {
               lines.push("Items: 0 rows in this list (roster will be empty until you add items in SharePoint or here).");
@@ -1208,24 +1272,25 @@
 
         async function loadPersonnel() {
           const hubEl = $("pHubCheck");
-          const listTitleEsc = escListTitle(personnelListTitle());
+          const listSeg = personnelListApiPath();
+          const pw = personnelWebBase();
           try {
             setStatus("Loading personnel…");
-            const baseItems = `/_api/web/lists/getbytitle('${listTitleEsc}')/items?$top=5000`;
+            const baseItems = `/_api/web/${listSeg}/items?$top=5000`;
             let path = baseItems + "&$orderby=Modified desc";
             let data;
             try {
-              data = await spFetch(path);
+              data = await spFetch(path, {}, pw);
             } catch (e0) {
               if (/\b400\b/.test(String(e0.message || ""))) {
                 setStatus("Retrying load without $orderby…");
-                data = await spFetch(baseItems);
+                data = await spFetch(baseItems, {}, pw);
               } else {
                 throw e0;
               }
             }
             personnel = data && data.value ? data.value : [];
-            setStatus(`Loaded ${personnel.length} personnel from list "${personnelListTitle()}".`);
+            setStatus(`Loaded ${personnel.length} personnel from list "${personnelListTitle()}"${pw !== webUrl ? " (REST base override)" : ""}.`);
             renderRoster();
             renderPhase1();
             void runHubListChecks();
@@ -1235,18 +1300,17 @@
               hubEl.textContent =
                 formatRestError(e) +
                 " — Tried GET " +
-                webUrl +
-                "/_api/web/lists/getbytitle('" +
-                listTitleEsc +
-                "')/items … Click Diagnose for details.";
+                pw +
+                "/_api/web/" +
+                listSeg +
+                "/items … Open Diagnose; set PERSONNEL_REST_WEB_URL or LIST_PERSONNEL_GUID if the list is not on this page’s site.";
             }
             throw e;
           }
         }
 
         async function savePersonnel() {
-          const listTitle = personnelListTitle();
-          const entityType = await getEntityType(listTitle);
+          const entityType = await getPersonnelEntityType();
 
           const isNew = !f.id.value;
           const payload = {
@@ -1273,22 +1337,24 @@
           payload[spField("Rank")] = f.rank.value || "";
           payload[spField("Notes")] = f.notes.value.trim();
 
-          const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items`;
+          const pw = personnelWebBase();
+          const listSeg = personnelListApiPath();
+          const base = `/_api/web/${listSeg}/items`;
           if (f.id.value) {
             const sid = String(f.id.value);
-            await spFetch(`${base}(${sid})`, { method: "MERGE", body: payload });
+            await spFetch(`${base}(${sid})`, { method: "MERGE", body: payload }, pw);
             return { savedId: sid };
           }
-          const created = await spFetch(base, { method: "POST", body: payload });
+          const created = await spFetch(base, { method: "POST", body: payload }, pw);
           const sid = parseCreatedItemId(created);
           return { savedId: sid };
         }
 
         async function deletePersonnel() {
           if (!f.id.value) return;
-          const listTitle = personnelListTitle();
-          const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${f.id.value})`;
-          await spFetch(base, { method: "DELETE" });
+          const pw = personnelWebBase();
+          const base = `/_api/web/${personnelListApiPath()}/items(${f.id.value})`;
+          await spFetch(base, { method: "DELETE" }, pw);
         }
 
         $("pNew").addEventListener("click", () => resetForm());
@@ -1403,16 +1469,17 @@
             b.onclick = async () => {
               try {
                 setStatus("Saving Phase 1 row…");
-                const listTitle = personnelListTitle();
-                const entityType = await getEntityType(listTitle);
+                const pw = personnelWebBase();
+                const listSeg = personnelListApiPath();
+                const entityType = await getPersonnelEntityType();
                 const payload = {
                   __metadata: { type: entityType },
                 };
                 payload[spField("P1StartDate")] = toSpDate(inStart.value) || null;
                 payload[spField("P1EndDate")] = toSpDate(inEnd.value) || null;
                 payload[spField("ProjectedOffice")] = inProj.value.trim() || null;
-                const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items(${p.Id})`;
-                await spFetch(base, { method: "MERGE", body: payload });
+                const base = `/_api/web/${listSeg}/items(${p.Id})`;
+                await spFetch(base, { method: "MERGE", body: payload }, pw);
                 await loadPersonnel();
                 setStatus("Saved.");
               } catch (e) {
