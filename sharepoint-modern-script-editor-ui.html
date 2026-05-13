@@ -337,14 +337,14 @@
       }
       #sp-pip-ui .add-person-panel {
         border: 2px solid var(--pip-border);
-        border-radius: 4px;
-        padding: 16px 18px 18px;
+        border-radius: 6px;
+        padding: 18px 20px 20px;
         margin: 0;
         background: linear-gradient(180deg, #0c120c 0%, var(--pip-bg2) 100%);
         box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
       }
       #sp-pip-ui .add-person-panel h2.hub-subtitle {
-        margin: 0 0 16px;
+        margin: 0 0 8px;
         padding-bottom: 12px;
         border-bottom: 1px solid var(--pip-border);
         font-size: 14px;
@@ -354,11 +354,50 @@
         color: var(--pip-green);
         text-shadow: 0 0 8px var(--pip-green-glow);
       }
+      #sp-pip-ui .add-panel-lead {
+        margin: 0 0 16px;
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--pip-green-dim);
+        letter-spacing: 0.02em;
+        max-width: 72ch;
+      }
+      #sp-pip-ui form#newPersonForm.add-form-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        min-width: 0;
+      }
+      #sp-pip-ui fieldset.add-form-group {
+        border: 1px solid var(--pip-border);
+        border-radius: 4px;
+        padding: 8px 14px 14px;
+        margin: 0 0 14px;
+        min-width: 0;
+        background: rgba(5, 12, 6, 0.45);
+      }
+      #sp-pip-ui fieldset.add-form-group:last-of-type {
+        margin-bottom: 0;
+      }
+      #sp-pip-ui .add-form-group-legend {
+        padding: 0 6px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        text-shadow: 0 0 6px rgba(255, 176, 0, 0.28);
+      }
       #sp-pip-ui .add-form-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-        gap: 14px 18px;
-        align-items: end;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 176px), 1fr));
+        gap: 12px 14px;
+        align-items: start;
+      }
+      @media (min-width: 480px) {
+        #sp-pip-ui .add-field--wide {
+          grid-column: 1 / -1;
+        }
       }
       #sp-pip-ui .add-field label {
         display: block;
@@ -382,6 +421,11 @@
         color: var(--pip-green);
         text-shadow: 0 0 3px var(--pip-green-glow);
       }
+      #sp-pip-ui .add-field textarea {
+        min-height: 76px;
+        resize: vertical;
+        line-height: 1.4;
+      }
       #sp-pip-ui .add-field input::placeholder,
       #sp-pip-ui .add-field textarea::placeholder {
         color: #1a5c28;
@@ -397,15 +441,17 @@
         background: #050805;
         color: var(--pip-green);
       }
-      #sp-pip-ui form#newPersonForm.add-form-grid .add-form-actions {
-        grid-column: 1 / -1;
-      }
       #sp-pip-ui .add-form-actions {
-        margin-top: 14px;
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid var(--pip-border);
         display: flex;
-        gap: 10px;
+        gap: 10px 12px;
         flex-wrap: wrap;
         align-items: center;
+      }
+      #sp-pip-ui .add-form-actions button {
+        margin: 0;
       }
       #sp-pip-ui .mono {
         font-family: var(--pip-font);
@@ -553,6 +599,17 @@
           { key: "Squadron", label: "Squadron" },
           { key: "Rank", label: "Rank" },
           { key: "Notes", label: "Notes" },
+        ];
+
+        /**
+         * Training Hub form layout: fieldsets and column order (keys must match `ROSTER_COLUMNS`; `Id` is omitted).
+         * Add or reorder groups here if the list gains new fields.
+         */
+        const ADD_FORM_FIELD_GROUPS = [
+          { title: "Identity & record", keys: ["RecordDate", "LastName", "FirstName", "MiddleInitial", "DoDID"] },
+          { title: "Contact", keys: ["Address", "WorkPhone", "CellPhone"] },
+          { title: "Organization & status", keys: ["Status", "OfficeSymbol", "Squadron", "Rank"] },
+          { title: "Notes", keys: ["Notes"] },
         ];
 
         // ============================================================
@@ -1072,6 +1129,60 @@
           return null;
         }
 
+        function addFormGroupedKeySet() {
+          const s = new Set();
+          if (!Array.isArray(ADD_FORM_FIELD_GROUPS)) return s;
+          ADD_FORM_FIELD_GROUPS.forEach((g) => {
+            if (!g || !Array.isArray(g.keys)) return;
+            g.keys.forEach((k) => {
+              if (k) s.add(String(k));
+            });
+          });
+          return s;
+        }
+
+        function buildAddFieldWrap(col, sampleRow) {
+          if (col.key === "Id") return null;
+          const writeKey = resolveWriteKey(col, sampleRow);
+          const fwrap = document.createElement("div");
+          fwrap.className = "add-field";
+          if (col.key === "Address" || col.key === "Notes") fwrap.classList.add("add-field--wide");
+          const lab = document.createElement("label");
+          lab.setAttribute("for", "nf_" + col.key);
+          lab.textContent = col.label;
+          lab.title = "REST write key: " + writeKey;
+          fwrap.appendChild(lab);
+
+          const isDrop = DROPDOWN_COLUMN_KEYS.indexOf(col.key) !== -1;
+          let input;
+          if (isDrop) {
+            input = document.createElement("select");
+            input.id = "nf_" + col.key;
+            input.dataset.writeKey = writeKey;
+            const opt0 = document.createElement("option");
+            opt0.value = "";
+            opt0.textContent = "(select)";
+            input.appendChild(opt0);
+          } else if (col.key === "Address" || col.key === "Notes") {
+            input = document.createElement("textarea");
+            input.id = "nf_" + col.key;
+            input.dataset.writeKey = writeKey;
+            input.rows = col.key === "Address" ? 4 : 3;
+          } else if (col.key === "RecordDate") {
+            input = document.createElement("input");
+            input.type = "date";
+            input.id = "nf_" + col.key;
+            input.dataset.writeKey = writeKey;
+          } else {
+            input = document.createElement("input");
+            input.type = "text";
+            input.id = "nf_" + col.key;
+            input.dataset.writeKey = writeKey;
+          }
+          fwrap.appendChild(input);
+          return fwrap;
+        }
+
         async function renderAddPersonForm(meta, pw, seg, sampleRow) {
           const panel = document.getElementById("addPersonPanel");
           if (!panel) return;
@@ -1084,59 +1195,71 @@
           h.textContent = "Training Hub";
           panel.appendChild(h);
 
+          const lead = document.createElement("p");
+          lead.className = "add-panel-lead";
+          lead.textContent =
+            "New personnel entry — Last name and First name are required before save. Choice fields use SharePoint allowed values. Use Clear form to reset.";
+          panel.appendChild(lead);
+
           const form = document.createElement("form");
           form.id = "newPersonForm";
-          form.className = "add-form-grid";
+          form.className = "add-form-stack";
           form.addEventListener("submit", (ev) => {
             ev.preventDefault();
             void submitNewPerson(meta, pw, seg, sampleRow);
           });
 
-          cols.forEach((col) => {
-            if (col.key === "Id") return;
-            const writeKey = resolveWriteKey(col, sampleRow);
-            const fwrap = document.createElement("div");
-            fwrap.className = "add-field";
-            const lab = document.createElement("label");
-            lab.setAttribute("for", "nf_" + col.key);
-            lab.textContent = col.label;
-            lab.title = "REST write key: " + writeKey;
-            fwrap.appendChild(lab);
+          const groupedKeys = addFormGroupedKeySet();
 
-            const isDrop = DROPDOWN_COLUMN_KEYS.indexOf(col.key) !== -1;
-            let input;
-            if (isDrop) {
-              input = document.createElement("select");
-              input.id = "nf_" + col.key;
-              input.dataset.writeKey = writeKey;
-              const opt0 = document.createElement("option");
-              opt0.value = "";
-              opt0.textContent = "(select)";
-              input.appendChild(opt0);
-            } else if (col.key === "Address") {
-              input = document.createElement("textarea");
-              input.id = "nf_" + col.key;
-              input.dataset.writeKey = writeKey;
-              input.rows = 3;
-            } else if (col.key === "RecordDate") {
-              input = document.createElement("input");
-              input.type = "date";
-              input.id = "nf_" + col.key;
-              input.dataset.writeKey = writeKey;
-            } else {
-              input = document.createElement("input");
-              input.type = "text";
-              input.id = "nf_" + col.key;
-              input.dataset.writeKey = writeKey;
+          if (Array.isArray(ADD_FORM_FIELD_GROUPS)) {
+            ADD_FORM_FIELD_GROUPS.forEach((group) => {
+              if (!group || !group.title || !Array.isArray(group.keys)) return;
+              const grid = document.createElement("div");
+              grid.className = "add-form-grid";
+              group.keys.forEach((key) => {
+                const col = cols.find((c) => c.key === key);
+                if (!col) return;
+                const fwrap = buildAddFieldWrap(col, sampleRow);
+                if (fwrap) grid.appendChild(fwrap);
+              });
+              if (!grid.childElementCount) return;
+              const fs = document.createElement("fieldset");
+              fs.className = "add-form-group";
+              const leg = document.createElement("legend");
+              leg.className = "add-form-group-legend";
+              leg.textContent = group.title;
+              fs.appendChild(leg);
+              fs.appendChild(grid);
+              form.appendChild(fs);
+            });
+          }
+
+          const leftovers = cols.filter((c) => c.key !== "Id" && !groupedKeys.has(c.key));
+          if (leftovers.length) {
+            const grid = document.createElement("div");
+            grid.className = "add-form-grid";
+            leftovers.forEach((col) => {
+              const fwrap = buildAddFieldWrap(col, sampleRow);
+              if (fwrap) grid.appendChild(fwrap);
+            });
+            if (grid.childElementCount) {
+              const fs = document.createElement("fieldset");
+              fs.className = "add-form-group";
+              const leg = document.createElement("legend");
+              leg.className = "add-form-group-legend";
+              leg.textContent = "Additional fields";
+              fs.appendChild(leg);
+              fs.appendChild(grid);
+              form.appendChild(fs);
             }
-            fwrap.appendChild(input);
-            form.appendChild(fwrap);
-          });
+          }
 
           const bar = document.createElement("div");
           bar.className = "add-form-actions";
           const submitBtn = document.createElement("button");
+          submitBtn.type = "submit";
           submitBtn.className = "btn";
+          submitBtn.textContent = "Save to Personnel";
           bar.appendChild(submitBtn);
           const clearBtn = document.createElement("button");
           clearBtn.type = "button";
