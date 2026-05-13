@@ -414,25 +414,6 @@
       #sp-pip-ui .add-form-grid--stack {
         grid-template-columns: 1fr;
       }
-      #sp-pip-ui .add-form-grid--footer-row {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 10px 12px;
-        align-items: end;
-      }
-      @media (max-width: 720px) {
-        #sp-pip-ui .add-form-grid--footer-row {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-      }
-      #sp-pip-ui .add-form-grid--footer-row .add-field--notes textarea {
-        min-height: 40px;
-        max-height: 72px;
-      }
-      #sp-pip-ui fieldset.add-form-group--footer {
-        margin-top: 2px;
-        padding-top: 12px;
-        border-top: 1px solid rgba(30, 74, 54, 0.55);
-      }
       #sp-pip-ui .add-field--address textarea {
         min-height: 48px;
         max-height: 88px;
@@ -641,32 +622,14 @@
         ];
 
         /**
-         * Training Hub form groups (`Id` omitted). Main block: stacked fields in list order; footer: one row
-         * (Status, OfficeSymbol, Squadron, Notes). Omit `title` to hide a fieldset legend; optional `ariaLabel`.
+         * Training Hub form (`Id` omitted). Same 2×2 split as before: Identity | Contact, then Organization | Notes.
+         * Only `keys` order changed — adjust `split` / `layout` only if you change group structure.
          */
         const ADD_FORM_FIELD_GROUPS = [
-          {
-            title: "",
-            ariaLabel: "Personnel entry",
-            layout: "stack",
-            keys: [
-              "RecordDate",
-              "DoDID",
-              "Rank",
-              "LastName",
-              "FirstName",
-              "MiddleInitial",
-              "Address",
-              "CellPhone",
-              "WorkPhone",
-            ],
-          },
-          {
-            title: "",
-            ariaLabel: "Status, office, squadron, and notes",
-            layout: "footer-row",
-            keys: ["Status", "OfficeSymbol", "Squadron", "Notes"],
-          },
+          { title: "Identity & record", keys: ["RecordDate", "DoDID", "Rank", "LastName", "FirstName", "MiddleInitial"], split: "left", layout: "stack" },
+          { title: "Contact", keys: ["Address", "CellPhone", "WorkPhone"], split: "right", layout: "stack" },
+          { title: "Organization & status", keys: ["Status", "OfficeSymbol", "Squadron"], split: "left", layout: "stack" },
+          { title: "Notes", keys: ["Notes"], split: "right", layout: "stack" },
         ];
 
         // ============================================================
@@ -1242,11 +1205,10 @@
         }
 
         function buildGroupFieldset(group, cols, sampleRow) {
-          if (!group || !Array.isArray(group.keys)) return null;
+          if (!group || !group.title || !Array.isArray(group.keys)) return null;
           const grid = document.createElement("div");
           grid.className = "add-form-grid";
           if (group.layout === "stack") grid.classList.add("add-form-grid--stack");
-          if (group.layout === "footer-row") grid.classList.add("add-form-grid--footer-row");
           group.keys.forEach((key) => {
             const col = cols.find((c) => c.key === key);
             if (!col) return;
@@ -1256,17 +1218,11 @@
           if (!grid.childElementCount) return null;
           const fs = document.createElement("fieldset");
           fs.className = "add-form-group";
-          if (group.layout === "footer-row") fs.classList.add("add-form-group--footer");
           if (group.compact) fs.classList.add("add-form-group--compact");
-          const titleStr = group.title != null ? String(group.title).trim() : "";
-          if (titleStr) {
-            const leg = document.createElement("legend");
-            leg.className = "add-form-group-legend";
-            leg.textContent = titleStr;
-            fs.appendChild(leg);
-          } else if (group.ariaLabel != null && String(group.ariaLabel).trim()) {
-            fs.setAttribute("aria-label", String(group.ariaLabel).trim());
-          }
+          const leg = document.createElement("legend");
+          leg.className = "add-form-group-legend";
+          leg.textContent = group.title;
+          fs.appendChild(leg);
           fs.appendChild(grid);
           return fs;
         }
@@ -1293,10 +1249,28 @@
 
           const groupedKeys = addFormGroupedKeySet();
 
+          let splitWrap = null;
           if (Array.isArray(ADD_FORM_FIELD_GROUPS)) {
             ADD_FORM_FIELD_GROUPS.forEach((group) => {
               const fs = buildGroupFieldset(group, cols, sampleRow);
-              if (fs) form.appendChild(fs);
+              if (!fs) return;
+              if (group.split === "left") {
+                splitWrap = document.createElement("div");
+                splitWrap.className = "add-form-split";
+                splitWrap.appendChild(fs);
+                form.appendChild(splitWrap);
+                return;
+              }
+              if (group.split === "right") {
+                if (!splitWrap) {
+                  splitWrap = document.createElement("div");
+                  splitWrap.className = "add-form-split";
+                  form.appendChild(splitWrap);
+                }
+                splitWrap.appendChild(fs);
+                return;
+              }
+              form.appendChild(fs);
             });
           }
 
