@@ -3,615 +3,68 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TrainingHub - SharePoint Modern Script Editor UI (Paste-Only)</title>
-  </head>
-  <body>
-    <!--
-      Paste the <div id="sp-pip-ui"> … </script> block into SharePoint Modern Script Editor on the SAME site
-      as your lists (e.g. page under …/sites/88thSFS/SitePages/… → lists in 88thSFS Site contents). No extra URL
-      is required for Personnel when page and list share that site. Edit LIST_* constants in the script if titles differ.
-    -->
-
-    <div id="sp-pip-ui">
-      <div class="app">
-        <div class="topbar">
-          <div class="title">
-            <div class="h1">88th Security Forces Squadron</div>
-            <div class="sub">
-              <span class="pip-auth">AUTHORIZED ACCESS ONLY</span>
-              <span class="pip-sep"> · </span>
-              <span id="spuiStatus">Ready.</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="navrow">
-          <div class="tabs" id="mainTabs" role="tablist" aria-label="Main">
-            <button type="button" class="tab is-active" data-tab="hub" role="tab" aria-selected="true">Hub</button>
-            <button type="button" class="tab" data-tab="office" role="tab" aria-selected="false">Office</button>
-            <button type="button" class="tab" data-tab="instructors" role="tab" aria-selected="false">Instructors</button>
-            <button type="button" class="tab" data-tab="scheduler" role="tab" aria-selected="false">Scheduler</button>
-            <button type="button" class="tab" data-tab="phase1" role="tab" aria-selected="false">Phase 1</button>
-            <button type="button" class="tab" data-tab="missed" role="tab" aria-selected="false">Missed Appointments</button>
-            <button type="button" class="tab" data-tab="reports" role="tab" aria-selected="false">Reports</button>
-          </div>
-        </div>
-
-        <div class="panel">
-          <!-- Hub (Command Hub + roster — same as original app home) -->
-          <section class="view is-active" id="view-hub" role="tabpanel">
-            <div class="row row-between">
-              <div>
-                <div class="sectionTitle">Command hub</div>
-                <div class="muted">
-                  <strong>Personnel</strong> roster and <strong>New → Save</strong> use the list on this site (same site
-                  as this page, e.g. 88thSFS). Match <span class="mono">LIST_PERSONNEL</span> to the Site contents name.
-                  Use <strong>Diagnose</strong> if the roster does not load. Other tabs are optional; Instructors loads
-                  the Certifiers list when you open that tab.
-                </div>
-                <div class="muted" id="pHubCheck" style="margin-top: 6px; max-width: 900px; font-size: 11px; line-height: 1.45">
-                  Checking list…
-                </div>
-              </div>
-              <div class="row">
-                <input
-                  id="pSearch"
-                  class="input"
-                  type="text"
-                  placeholder="Search (name, DoD ID, rank, squadron, office, status, phones, notes)..."
-                />
-                <button type="button" class="btn" id="pRefresh">Refresh</button>
-                <button type="button" class="btn ghost" id="pDiagnose">Diagnose</button>
-              </div>
-            </div>
-
-            <div class="grid2">
-              <div class="card">
-                <div class="cardTitle">Personnel record</div>
-
-                <div class="formGrid">
-                  <div class="field">
-                    <label>Record date</label>
-                    <input id="fRecordDate" class="input" type="date" readonly />
-                    <div class="muted" style="margin-top: 4px; font-size: 11px">
-                      New record: today. When you open someone’s row: their saved date.
-                    </div>
-                  </div>
-
-                  <div class="field">
-                    <label>Last name</label>
-                    <input id="fLastName" class="input" type="text" autocomplete="family-name" />
-                  </div>
-                  <div class="field">
-                    <label>First name</label>
-                    <input id="fFirstName" class="input" type="text" autocomplete="given-name" />
-                  </div>
-                  <div class="field" style="max-width: 120px">
-                    <label>M.I.</label>
-                    <input id="fMiddleInitial" class="input" type="text" maxlength="6" />
-                  </div>
-
-                  <div class="field">
-                    <label>DoD ID</label>
-                    <input id="fDoDID" class="input" type="text" inputmode="numeric" />
-                  </div>
-
-                  <div class="field full">
-                    <label>Address</label>
-                    <textarea id="fAddress" class="input" rows="3" spellcheck="false"></textarea>
-                  </div>
-
-                  <div class="field">
-                    <label>Work phone</label>
-                    <input id="fWorkPhone" class="input" type="text" />
-                  </div>
-                  <div class="field">
-                    <label>Cell phone</label>
-                    <input id="fCellPhone" class="input" type="text" />
-                  </div>
-
-                  <div class="field">
-                    <label>Status</label>
-                    <select id="fStatus" class="input"></select>
-                  </div>
-
-                  <div class="field">
-                    <label>Office symbol</label>
-                    <select id="fOffice" class="input"></select>
-                  </div>
-
-                  <div class="field">
-                    <label>Squadron</label>
-                    <select id="fSquadron" class="input"></select>
-                  </div>
-
-                  <div class="field">
-                    <label>Rank</label>
-                    <select id="fRank" class="input"></select>
-                  </div>
-
-                  <div class="field full">
-                    <label>Notes</label>
-                    <input id="fNotes" class="input" type="text" />
-                  </div>
-
-                  <div class="row full row-between">
-                    <div class="muted" id="pEditingLabel">New record</div>
-                    <div class="row">
-                      <button type="button" class="btn ghost" id="pNew">New</button>
-                      <button type="button" class="btn" id="pSave">Save</button>
-                      <button type="button" class="btn danger" id="pDelete">Delete</button>
-                    </div>
-                  </div>
-
-                  <input id="fId" type="hidden" value="" />
-                </div>
-              </div>
-
-              <div class="card">
-                <div class="cardTitle">Personnel roster</div>
-                <div class="muted" style="font-size: 11px; margin-bottom: 4px">
-                  Rows from the SharePoint list <strong>Personnel</strong> (same site as this page).
-                </div>
-                <div class="muted" id="pCount">0 records</div>
-                <div class="list" id="pList"></div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Office (full training matrix lives in original app; paste-only placeholder until lists are wired) -->
-          <section class="view" id="view-office" role="tabpanel">
-            <div class="sectionTitle">Office</div>
-            <div class="card">
-              <p class="muted">
-                In the desktop app, this tab is the per-person BLS / TCCC, bylaw topics, and course checkboxes grouped by
-                office. That needs additional SharePoint lists or JSON columns per person.
-              </p>
-              <p class="muted">
-                Use <strong>Hub</strong> for personnel fields on the <strong>Personnel</strong> list. This tab can be
-                wired later if you add office-specific lists.
-              </p>
-            </div>
-          </section>
-
-          <!-- Instructors (certifier name list — same source as original Instructors tab) -->
-          <section class="view" id="view-instructors" role="tabpanel">
-            <div class="row row-between">
-              <div>
-                <div class="sectionTitle">Instructors</div>
-                <div class="muted">
-                  Names from the <strong>Certifiers</strong> list on this site (field <strong>Certifier</strong>, then
-                  <span class="mono">Title</span> if empty).
-                </div>
-              </div>
-              <div class="row">
-                <button type="button" class="btn" id="zRefresh">Refresh</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="cardTitle">Certifier names</div>
-              <div class="list" id="zList"></div>
-            </div>
-          </section>
-
-          <!-- Scheduler -->
-          <section class="view" id="view-scheduler" role="tabpanel">
-            <div class="sectionTitle">Scheduler</div>
-            <div class="card">
-              <p class="muted">
-                In the desktop app, this view lists appointments across personnel by office. That requires an
-                appointments list (or per-person appointment rows) in SharePoint.
-              </p>
-              <p class="muted">Not wired in this paste-only build yet.</p>
-            </div>
-          </section>
-
-          <!-- Phase 1 -->
-          <section class="view" id="view-phase1" role="tabpanel">
-            <div class="row row-between">
-              <div>
-                <div class="sectionTitle">Phase 1</div>
-                <div class="muted">
-                  Edits P1 columns on the <strong>Personnel</strong> list only (not shown on Hub).
-                </div>
-              </div>
-              <div class="row">
-                <button type="button" class="btn" id="p1Refresh">Refresh</button>
-                <button type="button" class="btn ghost" id="p1PrintRoster">Print P1 recall roster</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="cardTitle">Phase 1 tracking</div>
-              <div class="tableWrap">
-                <table class="table" id="p1Table">
-                  <thead>
-                    <tr>
-                      <th>Rank/Name</th>
-                      <th>Date arrived</th>
-                      <th>Date Phase 1 started</th>
-                      <th>Projected office/flight</th>
-                      <th>Date release</th>
-                      <th style="width: 120px">Save</th>
-                    </tr>
-                  </thead>
-                  <tbody id="p1Body"></tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          <!-- Missed Appointments -->
-          <section class="view" id="view-missed" role="tabpanel">
-            <div class="sectionTitle">Missed Appointments</div>
-            <div class="card">
-              <p class="muted">
-                In the desktop app, this tab lists missed appointments and generates a memo. It depends on the same
-                appointment data as Scheduler.
-              </p>
-              <p class="muted">Not wired in this paste-only build yet.</p>
-            </div>
-          </section>
-
-          <!-- Reports -->
-          <section class="view" id="view-reports" role="tabpanel">
-            <div class="sectionTitle">Reports</div>
-            <div class="card">
-              <p class="muted">
-                In the desktop app, this tab builds weapons / bylaw / MQL PDF-style summaries. That pulls many lists and
-                calculated statuses.
-              </p>
-              <p class="muted">Not wired in this paste-only build yet.</p>
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
-
+    <title>Personnel list — REST read probe (paste into Script Editor)</title>
     <style>
-      /* Fallout/Pip-Boy inspired full-width theme */
-      #sp-pip-ui {
-        --pb-green: #41ff7a;
-        --pb-green2: #1ce85e;
-        --pb-bg: #040905;
-        --pb-panel: rgba(0, 0, 0, 0.35);
-        --pb-line: rgba(65, 255, 122, 0.22);
-        --pb-muted: rgba(65, 255, 122, 0.7);
-        --pb-dim: rgba(65, 255, 122, 0.45);
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-          "Courier New", monospace;
-        color: var(--pb-green);
+      body {
+        font: 14px/1.4 system-ui, sans-serif;
+        margin: 12px;
+        color: #111;
       }
-      #sp-pip-ui .app {
-        width: 100%;
-        max-width: none;
-        margin: 0;
-        padding: 10px 10px 16px;
-        border: 1px solid var(--pb-line);
-        background: radial-gradient(1200px 600px at 50% -200px, rgba(65, 255, 122, 0.14), transparent 60%),
-          linear-gradient(180deg, rgba(65, 255, 122, 0.06), transparent 55%),
-          var(--pb-bg);
-        position: relative;
-        overflow: hidden;
-      }
-      #sp-pip-ui .app::before {
-        content: "";
-        pointer-events: none;
-        position: absolute;
-        inset: 0;
-        background: repeating-linear-gradient(
-          to bottom,
-          rgba(0, 0, 0, 0) 0px,
-          rgba(0, 0, 0, 0) 2px,
-          rgba(0, 0, 0, 0.18) 3px
-        );
-        opacity: 0.45;
-        mix-blend-mode: multiply;
-      }
-      #sp-pip-ui .app::after {
-        content: "";
-        pointer-events: none;
-        position: absolute;
-        inset: -2px;
-        background: radial-gradient(closest-side at 50% 40%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.6) 110%);
-        opacity: 0.55;
-      }
-      #sp-pip-ui .topbar {
-        padding: 8px 0 4px;
-        position: relative;
-        z-index: 1;
-      }
-      #sp-pip-ui .h1 {
-        font-weight: 700;
-        font-size: 16px;
-        letter-spacing: 0.12em;
-      }
-      #sp-pip-ui .sub {
-        color: var(--pb-muted);
-        font-size: 12px;
-        margin-top: 4px;
-        letter-spacing: 0.08em;
-      }
-      #sp-pip-ui .pip-auth {
-        font-weight: 700;
-        color: var(--pb-green2);
-      }
-      #sp-pip-ui .pip-sep {
-        opacity: 0.45;
-      }
-      #sp-pip-ui .navrow {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: flex-end;
-        justify-content: flex-start;
-        gap: 10px;
-        padding: 0 0 0;
-        margin-bottom: 1.25rem;
-        border-bottom: none;
-        position: relative;
-        z-index: 1;
-      }
-      #sp-pip-ui .navrow .tabs {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        flex: 1;
-        min-width: 0;
-      }
-      /* Match pipboy-training-hub `.pip-nav a` / `.pip-nav a.active` */
-      #sp-pip-ui .navrow .tab {
-        border: 1px solid #16c400;
-        background: #0c0f0a;
-        padding: 0.4rem 0.75rem;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 15px;
-        line-height: 1.45;
-        letter-spacing: 0.04em;
-        color: #16c400;
-        text-shadow: 0 0 6px rgba(30, 255, 0, 0.35);
-        box-shadow: inset 0 0 12px rgba(30, 255, 0, 0.06);
-      }
-      #sp-pip-ui .navrow .tab:hover {
-        color: #1eff00;
-        border-color: #1eff00;
-      }
-      #sp-pip-ui .navrow .tab.is-active {
-        border-color: #1eff00;
-        color: #1eff00;
-        background: rgba(30, 255, 0, 0.1);
-        box-shadow: 0 0 6px rgba(30, 255, 0, 0.35);
-      }
-      #sp-pip-ui .panel {
-        padding-top: 12px;
-        position: relative;
-        z-index: 1;
-      }
-
-      #sp-pip-ui .view {
-        display: none;
-      }
-      #sp-pip-ui .view.is-active {
-        display: block;
-      }
-
-      #sp-pip-ui .row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-      #sp-pip-ui .row-between {
-        justify-content: space-between;
-        align-items: flex-start;
-      }
-      #sp-pip-ui .sectionTitle {
-        font-weight: 700;
-        font-size: 14px;
-        letter-spacing: 0.12em;
-      }
-      #sp-pip-ui .muted {
-        color: var(--pb-muted);
-        font-size: 12px;
-      }
-      #sp-pip-ui .mono {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      }
-
-      #sp-pip-ui .grid2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-      @media (max-width: 900px) {
-        #sp-pip-ui .grid2 {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      #sp-pip-ui .card {
-        border: 1px solid var(--pb-line);
-        background: linear-gradient(180deg, rgba(65, 255, 122, 0.05), rgba(0, 0, 0, 0.18));
-        border-radius: 10px;
+      #sp-pip-ui pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: #f4f4f4;
         padding: 12px;
-      }
-      #sp-pip-ui .cardTitle {
-        font-weight: 700;
-        font-size: 13px;
-        margin-bottom: 6px;
-      }
-
-      #sp-pip-ui .input {
-        width: 100%;
-        box-sizing: border-box;
-        border: 1px solid var(--pb-line);
-        border-radius: 6px;
-        padding: 8px 10px;
-        outline: none;
-        font-size: 12px;
-        background: rgba(0, 0, 0, 0.35);
-        color: var(--pb-green);
-        letter-spacing: 0.06em;
-      }
-      #sp-pip-ui .input:focus {
-        border-color: rgba(65, 255, 122, 0.5);
-        box-shadow: 0 0 0 2px rgba(65, 255, 122, 0.12);
-      }
-      #sp-pip-ui textarea.input {
-        font-family: inherit;
-        line-height: 1.35;
-        resize: vertical;
-        min-height: 68px;
-      }
-      #sp-pip-ui select.input {
-        padding-right: 30px;
-      }
-
-      #sp-pip-ui .btn {
-        border: 1px solid rgba(65, 255, 122, 0.35);
-        background: rgba(0, 0, 0, 0.28);
-        color: var(--pb-green);
-        padding: 8px 10px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 12px;
-        letter-spacing: 0.12em;
-      }
-      #sp-pip-ui .btn.ghost {
-        background: rgba(0, 0, 0, 0.18);
-        color: var(--pb-muted);
-        border-color: var(--pb-line);
-      }
-      #sp-pip-ui .btn.danger {
-        border-color: rgba(255, 109, 109, 0.6);
-        background: rgba(255, 109, 109, 0.14);
-        color: #ff9a9a;
-      }
-
-      #sp-pip-ui .formGrid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 10px;
-      }
-      @media (max-width: 900px) {
-        #sp-pip-ui .formGrid {
-          grid-template-columns: 1fr;
-        }
-      }
-      #sp-pip-ui .field label {
-        display: block;
-        font-weight: 600;
-        font-size: 12px;
-        margin-bottom: 4px;
-        color: var(--pb-muted);
-        letter-spacing: 0.12em;
-      }
-      #sp-pip-ui .field.full {
-        grid-column: 1 / -1;
-      }
-      #sp-pip-ui .field.rank {
-        max-width: 120px;
-      }
-      #sp-pip-ui .field.name {
-        grid-column: span 2;
-      }
-      @media (max-width: 900px) {
-        #sp-pip-ui .field.rank,
-        #sp-pip-ui .field.name {
-          max-width: none;
-          grid-column: auto;
-        }
-      }
-
-      #sp-pip-ui .list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 10px;
-        max-height: 520px;
-        overflow: auto;
-        padding-right: 6px;
-      }
-      #sp-pip-ui .item {
-        border: 1px solid var(--pb-line);
-        border-radius: 10px;
-        padding: 10px;
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 10px;
-      }
-      #sp-pip-ui .itemTitle {
-        font-weight: 700;
-        font-size: 12px;
-      }
-      #sp-pip-ui .itemMeta {
-        color: var(--pb-muted);
-        font-size: 12px;
-        margin-top: 2px;
-      }
-      #sp-pip-ui .item.item-emphasis {
-        outline: 1px solid rgba(65, 255, 122, 0.55);
-        box-shadow: 0 0 14px rgba(65, 255, 122, 0.18);
-        border-radius: 6px;
-      }
-      #sp-pip-ui .linkbtn {
-        border: none;
-        background: transparent;
-        color: var(--pb-green2);
-        text-decoration: none;
-        cursor: pointer;
-        padding: 0;
-        font-size: 12px;
-        letter-spacing: 0.12em;
-      }
-      #sp-pip-ui .hubcheck-warn {
-        color: #ffb347;
-      }
-
-      #sp-pip-ui .tableWrap {
+        border: 1px solid #ccc;
+        max-height: 70vh;
         overflow: auto;
       }
-      #sp-pip-ui .table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 8px;
+      #sp-pip-ui button {
+        margin: 8px 8px 8px 0;
+        padding: 8px 14px;
+        cursor: pointer;
       }
-      #sp-pip-ui .table th,
-      #sp-pip-ui .table td {
-        border-bottom: 1px solid var(--pb-line);
-        padding: 8px;
-        text-align: left;
-        font-size: 12px;
-        vertical-align: top;
+      #sp-pip-ui .err {
+        color: #a00;
+      }
+      #sp-pip-ui .ok {
+        color: #060;
       }
     </style>
+  </head>
+  <body>
+    <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
+    <div id="sp-pip-ui">
+      <p><strong>Personnel REST probe</strong> — no roster UI; only proves read access and shows raw JSON.</p>
+      <button type="button" id="probeRun">Run probe again</button>
+      <pre id="probeOut"></pre>
+    </div>
 
     <script>
       (function () {
-        // -------- SharePoint lists on this web (edit source if titles differ) --------
-        /**
-         * Same-site rule (88thSFS): Web part on …/sites/88thSFS/SitePages/… + Personnel in that site’s
-         * Site contents → leave PERSONNEL_REST_WEB_URL and LIST_PERSONNEL_GUID empty. REST uses this page’s web.
-         * LIST_PERSONNEL must match the list display name exactly (e.g. Personnel).
-         */
-        /** Must match Site contents list name exactly — drives Hub roster + record Save/Delete. Ignored if LIST_PERSONNEL_GUID is set. */
+        // ============ EDIT THESE ============
+        /** Exact list name from Site contents (ignored if LIST_PERSONNEL_GUID is set). */
         const LIST_PERSONNEL = "Personnel";
-
-        /**
-         * Optional: Personnel list GUID from List settings (same site as REST calls). When set, the Hub
-         * uses lists(guid'…') instead of getbytitle — fixes “title is wrong” / duplicate-title issues.
-         * Example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-         */
+        /** Optional: List GUID from List settings → use if getbytitle fails. */
         const LIST_PERSONNEL_GUID = "";
-
-        /**
-         * If the Script Editor runs on a different SharePoint *web* than the Personnel list, set this
-         * to that site’s root URL (no trailing slash). Leave "" to use the current page web only.
-         * Same tenant / permissions still apply; Save may need the digest from that web in some setups.
-         */
+        /** Only if the list lives on another site than this page: that site root URL, no trailing slash. */
         const PERSONNEL_REST_WEB_URL = "";
+        // =====================================
+
+        const out = document.getElementById("probeOut");
+        const btn = document.getElementById("probeRun");
+
+        function log(msg, cls) {
+          const line = typeof msg === "string" ? msg : JSON.stringify(msg, null, 2);
+          const span = document.createElement("span");
+          if (cls) span.className = cls;
+          span.textContent = line + "\n\n";
+          out.appendChild(span);
+        }
+
+        function escListTitle(title) {
+          return String(title || "").replace(/'/g, "''");
+        }
 
         function personnelListTitle() {
           return String(LIST_PERSONNEL || "").trim();
@@ -625,199 +78,24 @@
           return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(personnelGuidRaw());
         }
 
-        /** Path segment after /_api/web/ for the Personnel list (lists/getbytitle('…') or lists(guid'…')). */
         function personnelListApiPath() {
           if (personnelListUsesGuid()) return "lists(guid'" + personnelGuidRaw() + "')";
           return "lists/getbytitle('" + escListTitle(personnelListTitle()) + "')";
         }
 
-        function personnelWebBase() {
-          const u = String(PERSONNEL_REST_WEB_URL || "").trim();
-          if (!u) return webUrl;
-          return u.replace(/\/$/, "");
-        }
-        /**
-         * When true, the Hub does not read or write SharePoint’s built-in **Title** on Personnel. Names use
-         * LastName / FirstName / MiddleInitial instead. Set to false if new-item POST requires Title.
-         */
-        const PERSONNEL_IGNORE_SP_TITLE = true;
-        const LIST_CERTIFIERS = "Certifiers";
-        /** REST field key on each Certifiers row for the instructor name (falls back to Title). */
-        const CERTIFIERS_NAME_FIELD = "Certifier";
-        /**
-         * When true, load Certifiers during startup. When false (default), Certifiers load only when you open the
-         * Instructors tab — so a missing or misnamed Certifiers list never blocks Personnel roster or Save.
-         */
-        const LOAD_CERTIFIERS_ON_START = false;
-        /**
-         * Optional: map logical Hub field → SharePoint internal column key when yours differ.
-         * "Record Date" (with a space) is usually `Record_x0020_Date` — already the default below.
-         */
-        const COLUMN_MAP = {};
-
-        /** Default REST keys when COLUMN_MAP has no override (match your Personnel list). */
-        const LOGICAL_DEFAULTS = {
-          RecordDate: "Record_x0020_Date",
-          LastName: "LastName",
-          FirstName: "FirstName",
-          MiddleInitial: "MiddleInitial",
-          DoDID: "DoDID",
-          Address: "Address",
-          WorkPhone: "WorkPhone",
-          CellPhone: "CellPhone",
-          Status: "Status",
-          OfficeSymbol: "OfficeSymbol",
-          Squadron: "Squadron",
-          Rank: "Rank",
-          Notes: "Notes",
-          P1StartDate: "P1StartDate",
-          P1EndDate: "P1EndDate",
-          ProjectedOffice: "ProjectedOffice",
-          CertificationsJson: "CertificationsJson",
-        };
-
-        const PERSONNEL_FALLBACKS = {
-          RecordDate: ["Record_x0020_Date", "RecordDate", "Record0", "DateArrived"],
-          LastName: ["LastName", "Last_x0020_Name"],
-          FirstName: ["FirstName", "First_x0020_Name"],
-          MiddleInitial: ["MiddleInitial", "Middle_x0020_Initial", "MI"],
-          DoDID: ["DoDID", "DoD_x0020_ID", "DODID"],
-          Address: ["Address", "StreetAddress", "PersonnelAddress"],
-          WorkPhone: ["WorkPhone", "Work_x0020_Phone", "WorkPhone0"],
-          CellPhone: ["CellPhone", "Cell_x0020_Phone", "CellPhone0"],
-          Status: ["Status", "PersonnelStatus", "Personnel_x0020_Status"],
-          OfficeSymbol: ["OfficeSymbol", "Office0", "Office_x0020_Symbol"],
-          Squadron: ["Squadron", "Squadron0", "Unit"],
-          Rank: ["Rank", "Rank0", "PayGrade"],
-          Notes: ["Notes", "Comments", "PersonnelNotes"],
-          P1StartDate: ["P1StartDate", "P1_x0020_Start_x0020_Date", "Phase1Start"],
-          P1EndDate: ["P1EndDate", "P1_x0020_End_x0020_Date", "Phase1End", "DateRelease"],
-          ProjectedOffice: ["ProjectedOffice", "Projected_x0020_Office", "ProjectedOffice0"],
-          CertificationsJson: ["CertificationsJson", "CertsJson", "SpecialtyCerts"],
-        };
-
-        const RANKS = [
-          "AB",
-          "Amn",
-          "A1C",
-          "SrA",
-          "SSgt",
-          "TSgt",
-          "MSgt",
-          "SMSgt",
-          "CMSgt",
-          "CCMSgt",
-          "2d Lt",
-          "1st Lt",
-          "Capt",
-          "Maj",
-          "Lt Col",
-          "Col",
-          "Brig Gen",
-          "Maj Gen",
-          "Lt Gen",
-          "Gen",
-          "Gen of the Air Force",
-        ];
-
-        const SQUADRONS = ["21 SFS", "34 SFS", "56 SFS", "633 SFS"];
-
-        /** Must match SharePoint Status choice values exactly (edit to your list). */
-        const STATUS_OPTIONS = ["Active", "P1", "Inactive"];
-
-        /** Must match SharePoint Office symbol choice values exactly (edit to your list). */
-        const OFFICE_SYMBOLS = ["S3T", "S3O", "S1", "S3", "S4", "DOU", "Other"];
-
-        /** Logical names the Hub Save POST/MERGE sends (must exist on list or be mapped in COLUMN_MAP). */
-        const HUB_SAVE_LOGICALS = [
-          "RecordDate",
-          "LastName",
-          "FirstName",
-          "MiddleInitial",
-          "DoDID",
-          "Address",
-          "WorkPhone",
-          "CellPhone",
-          "Status",
-          "OfficeSymbol",
-          "Squadron",
-          "Rank",
-          "Notes",
-        ];
-
-        // --------------------------------------------------------
-
-        const $ = (id) => document.getElementById(id);
-        const statusEl = $("spuiStatus");
-        function setStatus(msg) {
-          statusEl.textContent = msg || "";
-        }
-
-        // Tabs (SharePoint-safe: event delegation + preventDefault)
-        const root = document.getElementById("sp-pip-ui");
-        function activateTab(tabKey) {
-          if (!tabKey) return;
-          root.querySelectorAll(".tab").forEach((b) => {
-            const isActive = b.getAttribute("data-tab") === tabKey;
-            b.classList.toggle("is-active", isActive);
-            b.setAttribute("aria-selected", isActive ? "true" : "false");
-          });
-          root.querySelectorAll(".view").forEach((v) => v.classList.remove("is-active"));
-          const view = document.getElementById("view-" + tabKey);
-          if (view) view.classList.add("is-active");
-        }
-
-        function onMainTabClick(e) {
-          const btn = e.target && e.target.closest ? e.target.closest(".tab") : null;
-          if (!btn) return;
-          e.preventDefault();
-          e.stopPropagation();
-          const tabKey = btn.getAttribute("data-tab");
-          activateTab(tabKey);
-          if (tabKey === "instructors" && !LOAD_CERTIFIERS_ON_START) maybeBootstrapCertifiers();
-        }
-        root.addEventListener("click", onMainTabClick, true);
-        // SharePoint date helpers
-        function toSpDate(dateOnly) {
-          if (!dateOnly) return null;
-          // SharePoint REST DateTime expects an ISO datetime string
-          return `${dateOnly}T00:00:00Z`;
-        }
-        function fromSpDate(value) {
-          if (!value) return "";
-          if (typeof value === "string") {
-            const m = value.match(/^\/Date\((\d+)\)\/$/);
-            if (m) {
-              const d = new Date(parseInt(m[1], 10));
-              if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-            }
-            return value.slice(0, 10);
-          }
-          return "";
-        }
-
-
-        // SharePoint context
         function getCtx() {
           try {
             if (window._spPageContextInfo && window._spPageContextInfo.webAbsoluteUrl) return window._spPageContextInfo;
           } catch (_) {}
           try {
-            if (window.parent && window.parent._spPageContextInfo && window.parent._spPageContextInfo.webAbsoluteUrl) return window.parent._spPageContextInfo;
+            if (window.parent && window.parent._spPageContextInfo && window.parent._spPageContextInfo.webAbsoluteUrl)
+              return window.parent._spPageContextInfo;
           } catch (_) {}
           try {
             if (window.top && window.top._spPageContextInfo && window.top._spPageContextInfo.webAbsoluteUrl) return window.top._spPageContextInfo;
           } catch (_) {}
           return null;
         }
-
-        const ctx = getCtx();
-        if (!ctx) {
-          setStatus("Error: Cannot read SharePoint page context. This must run on a SharePoint page with Modern Script Editor allowing JS.");
-          return;
-        }
-
-        const webUrl = String(ctx.webAbsoluteUrl || "").replace(/\/$/, "");
 
         function getDigest() {
           const el =
@@ -839,6 +117,14 @@
           return el && el.value ? el.value : "";
         }
 
+        let webUrl = "";
+
+        function personnelWebBase() {
+          const u = String(PERSONNEL_REST_WEB_URL || "").trim();
+          if (!u) return webUrl;
+          return u.replace(/\/$/, "");
+        }
+
         async function spFetch(path, opts, baseUrlOverride) {
           opts = opts || {};
           const base =
@@ -847,22 +133,18 @@
               : webUrl;
           const headers = Object.assign({}, opts.headers || {});
           headers["Accept"] = "application/json;odata=nometadata";
-
           const method = (opts.method || "GET").toUpperCase();
           if (method !== "GET" && method !== "DELETE") {
             headers["Content-Type"] = "application/json;odata=nometadata";
           }
-
           const digest = getDigest();
           if (digest) headers["X-RequestDigest"] = digest;
-
           let realMethod = method;
           if (method === "MERGE" || method === "DELETE") {
             headers["X-HTTP-Method"] = method;
             headers["IF-MATCH"] = "*";
             realMethod = "POST";
           }
-
           const res = await fetch(base + path, {
             method: realMethod,
             headers,
@@ -870,14 +152,12 @@
             credentials: "include",
             cache: "no-store",
           });
-
           if (res.status === 204) return null;
           const text = await res.text();
           let data = null;
           try {
             data = text ? JSON.parse(text) : null;
           } catch (_) {}
-
           if (!res.ok) {
             let msg = "";
             if (data && data.error) {
@@ -890,757 +170,93 @@
               msg = data["odata.error"].message.value || data["odata.error"].message || "";
             }
             if (!msg) msg = text || "";
-            throw new Error((res.status + " " + res.statusText + " " + msg).slice(0, 800));
+            throw new Error((res.status + " " + res.statusText + " " + msg).slice(0, 1200));
           }
           return data;
         }
 
-        function escListTitle(title) {
-          return String(title || "").replace(/'/g, "''");
-        }
-
-        function spField(logical) {
-          const ov = COLUMN_MAP[logical];
-          if (ov && String(ov).trim()) return String(ov).trim();
-          return LOGICAL_DEFAULTS[logical] || logical;
-        }
-
-        function columnCandidateKeys(logical) {
-          const fallbacks = PERSONNEL_FALLBACKS[logical] || [];
-          const keys = [];
-          const primary = spField(logical);
-          if (primary) keys.push(primary);
-          fallbacks.forEach((k) => {
-            if (k && !keys.includes(k)) keys.push(k);
-          });
-          if (!keys.includes(logical)) keys.push(logical);
-          return keys;
-        }
-
-        function readFromItem(item, logical) {
-          for (const k of columnCandidateKeys(logical)) {
-            const v = item[k];
-            if (v !== undefined && v !== null && v !== "") return v;
-          }
-          return "";
-        }
-
-        /** Roster / sort label: Last, First + middle (SharePoint Title not used when ignored). */
-        function personnelDisplayName(p) {
-          const ln = String(readFromItem(p, "LastName") || "").trim();
-          const fn = String(readFromItem(p, "FirstName") || "").trim();
-          const mi = String(readFromItem(p, "MiddleInitial") || "").trim();
-          if (!ln && !fn && !mi) {
-            const t = p && p.Title != null ? String(p.Title).trim() : "";
-            if (t) return t;
-            return "";
-          }
-          const main = [ln, fn].filter(Boolean).join(", ");
-          if (main && mi) return main + " " + mi;
-          return main || mi;
-        }
-
-        function formatRestError(e) {
-          const m = e && e.message ? String(e.message) : String(e);
-          if (/\b403\b/.test(m)) {
-            return (
-              "Permission denied (403). For roster reads you need at least View on the list; to Save you need Contribute or Edit. " +
-              m
-            );
-          }
-          if (/\b401\b/.test(m)) {
-            return "Unauthorized (401). Sign in to SharePoint and reload this page. " + m;
-          }
-          if (/\b404\b/.test(m)) {
-            return (
-              'Not found (404). No list at this URL — set LIST_PERSONNEL to the exact Site contents name, or set LIST_PERSONNEL_GUID, or set PERSONNEL_REST_WEB_URL if the list lives on another site. ' +
-              m
-            );
-          }
-          return m;
-        }
-
-        async function getPersonnelFieldInternalNameSet() {
-          const listSeg = personnelListApiPath();
-          const pw = personnelWebBase();
-          const set = new Set();
-          let path = `/_api/web/${listSeg}/fields?$select=InternalName&$top=200`;
-          for (let page = 0; page < 40; page++) {
-            const data = await spFetch(path, {}, pw);
-            const rows = (data && data.value) || [];
-            rows.forEach((r) => {
-              if (r && r.InternalName) set.add(String(r.InternalName));
-            });
-            const next = data && (data["@odata.nextLink"] || data["odata.nextLink"]);
-            if (!next) break;
-            try {
-              if (String(next).indexOf("http") === 0) {
-                const u = new URL(next);
-                path = u.pathname + u.search;
-              } else {
-                path = String(next).startsWith("/") ? String(next) : "/" + String(next);
-              }
-            } catch (_) {
-              break;
-            }
-          }
-          return set;
-        }
-
-        function validateHubSaveColumns(fieldSet) {
-          const problems = [];
-          for (const logical of HUB_SAVE_LOGICALS) {
-            const primary = spField(logical);
-            if (fieldSet.has(primary)) continue;
-            const candidates = columnCandidateKeys(logical);
-            const found = candidates.find((c) => fieldSet.has(c));
-            if (found) {
-              problems.push(
-                `Column "${logical}": list has "${found}" but Hub saves "${primary}". In the snippet set COLUMN_MAP["${logical}"] = "${found}".`,
-              );
-            } else {
-              problems.push(
-                `Column "${logical}": no matching field on the list (tried: ${candidates.join(", ")}). Add the column in SharePoint list settings or fix COLUMN_MAP.`,
-              );
-            }
-          }
-          return problems;
-        }
-
-        async function runHubListChecks() {
-          const el = $("pHubCheck");
-          if (!el) return;
-          el.textContent = "Checking Personnel list columns for Hub Save…";
-          el.className = "muted";
-          try {
-            const fieldSet = await getPersonnelFieldInternalNameSet();
-            const problems = validateHubSaveColumns(fieldSet);
-            const digest = getDigest();
-            const parts = [];
-            if (!digest) {
-              parts.push(
-                "Warning: no __REQUESTDIGEST on this page. Saving may fail on some sites — try a classic wiki / site page, or ensure the Script Editor runs in the published page context.",
-              );
-            }
-            if (problems.length === 0) {
-              parts.push("Hub check: every field this form saves exists on your Personnel list. You can add rows with New → Save.");
-            } else {
-              el.className = "muted hubcheck-warn";
-              parts.push("Hub check: fix these before Save will work reliably:");
-              problems.forEach((p) => parts.push("• " + p));
-            }
-            if (personnel.length > 0) {
-              const s0 = personnel[0];
-              if (s0 && s0.Id != null && !personnelDisplayName(s0) && !String(readFromItem(s0, "DoDID") || "").trim()) {
-                el.className = "muted hubcheck-warn";
-                parts.push(
-                  "Note: Items loaded but the first row has no Last/First/MI in the columns we map. Click Diagnose to see the real REST property names on an item and set COLUMN_MAP / LOGICAL_DEFAULTS to match.",
-                );
-              }
-            }
-            el.textContent = parts.join(" ");
-          } catch (e) {
-            el.className = "muted hubcheck-warn";
-            el.textContent = "Could not read list fields: " + formatRestError(e);
-          }
-        }
-
-        // Helpers
-        function todayIso() {
-          return new Date().toISOString().slice(0, 10);
-        }
-
-        // Populate dropdowns
-        function fillSelect(sel, values) {
-          sel.innerHTML = "";
-          values.forEach((v) => {
-            const o = document.createElement("option");
-            o.value = v;
-            o.textContent = v;
-            sel.appendChild(o);
-          });
-        }
-
-        function ensureSelectHasValue(sel, val, fallbackList) {
-          if (!sel) return;
-          const v = val != null ? String(val).trim() : "";
-          if (v) {
-            const opts = Array.from(sel.options).map((o) => o.value);
-            if (!opts.includes(v)) {
-              const o = document.createElement("option");
-              o.value = v;
-              o.textContent = v + " (from list)";
-              sel.appendChild(o);
-            }
-            sel.value = v;
-          } else if (fallbackList && fallbackList.length) {
-            sel.value = fallbackList[0];
-          }
-        }
-
-        fillSelect($("fStatus"), STATUS_OPTIONS);
-        fillSelect($("fOffice"), OFFICE_SYMBOLS);
-        fillSelect($("fSquadron"), SQUADRONS);
-        fillSelect($("fRank"), RANKS);
-
-        const f = {
-          id: $("fId"),
-          recordDate: $("fRecordDate"),
-          lastName: $("fLastName"),
-          firstName: $("fFirstName"),
-          middleInitial: $("fMiddleInitial"),
-          dodId: $("fDoDID"),
-          address: $("fAddress"),
-          work: $("fWorkPhone"),
-          cell: $("fCellPhone"),
-          status: $("fStatus"),
-          office: $("fOffice"),
-          squadron: $("fSquadron"),
-          rank: $("fRank"),
-          notes: $("fNotes"),
-        };
-
-        function resetForm() {
-          f.id.value = "";
-          f.recordDate.value = todayIso();
-          f.lastName.value = "";
-          f.firstName.value = "";
-          f.middleInitial.value = "";
-          f.dodId.value = "";
-          f.address.value = "";
-          f.work.value = "";
-          f.cell.value = "";
-          f.status.value = STATUS_OPTIONS[0];
-          f.office.value = OFFICE_SYMBOLS[0];
-          f.squadron.value = SQUADRONS[0];
-          f.rank.value = RANKS[0];
-          f.notes.value = "";
-          $("pEditingLabel").textContent = "New record";
-        }
-        resetForm();
-
-        let personnel = [];
-        /** After Save, scroll/highlight this list item Id once `renderRoster` runs. */
-        let rosterEmphasisId = null;
-
-        async function getPersonnelEntityType() {
+        async function enumerateListTitles(pw) {
+          log("--- Listing lists on this web (first 200, not hidden) — find exact Title for LIST_PERSONNEL ---");
           const data = await spFetch(
-            `/_api/web/${personnelListApiPath()}?$select=ListItemEntityTypeFullName`,
+            "/_api/web/lists?$select=Title,Id,ItemCount,Hidden&$filter=Hidden eq false&$orderby=Title&$top=200",
             {},
-            personnelWebBase(),
+            pw,
           );
-          return data.ListItemEntityTypeFullName;
-        }
-
-        function rosterHay(p) {
-          const nm = personnelDisplayName(p);
-          return `${readFromItem(p, "Rank")} ${nm} ${readFromItem(p, "DoDID")} ${readFromItem(p, "Squadron")} ${readFromItem(p, "OfficeSymbol")} ${readFromItem(p, "Status")} ${readFromItem(p, "WorkPhone")} ${readFromItem(p, "CellPhone")} ${readFromItem(p, "Address")} ${readFromItem(p, "Notes")}`.toLowerCase();
-        }
-
-        function renderRoster() {
-          const q = ($("pSearch").value || "").trim().toLowerCase();
-          const list = $("pList");
-          list.innerHTML = "";
-          const filtered = q ? personnel.filter((p) => rosterHay(p).includes(q)) : personnel.slice();
-          $("pCount").textContent = `${filtered.length} of ${personnel.length} records`;
-
-          if (filtered.length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "muted";
-            empty.textContent = personnel.length ? "No matches." : "No records yet.";
-            list.appendChild(empty);
-            rosterEmphasisId = null;
-            return;
-          }
-
-          filtered.forEach((p) => {
-            const item = document.createElement("div");
-            item.className = "item";
-            item.dataset.personnelId = String(p.Id);
-            if (rosterEmphasisId != null && String(p.Id) === String(rosterEmphasisId)) {
-              item.classList.add("item-emphasis");
-            }
-            const left = document.createElement("div");
-            const title = document.createElement("div");
-            title.className = "itemTitle";
-            title.textContent = `${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${personnelDisplayName(p) || "(no name)"}`;
-            const meta = document.createElement("div");
-            meta.className = "itemMeta";
-            meta.textContent = `DoD ID: ${readFromItem(p, "DoDID") || "—"} · Squadron: ${readFromItem(p, "Squadron") || "—"} · Office: ${readFromItem(p, "OfficeSymbol") || "—"} · Status: ${readFromItem(p, "Status") || "—"} · Record: ${fromSpDate(readFromItem(p, "RecordDate")) || "—"}`;
-            left.appendChild(title);
-            left.appendChild(meta);
-
-            const actions = document.createElement("div");
-            actions.className = "itemActions";
-            const edit = document.createElement("button");
-            edit.type = "button";
-            edit.className = "linkbtn";
-            edit.textContent = "Edit";
-            edit.onclick = () => loadIntoForm(p);
-            actions.appendChild(edit);
-
-            item.appendChild(left);
-            item.appendChild(actions);
-            list.appendChild(item);
-          });
-
-          if (rosterEmphasisId != null) {
-            const hit = list.querySelector("[data-personnel-id=\"" + String(rosterEmphasisId).replace(/"/g, "") + "\"]");
-            if (hit) {
-              try {
-                hit.scrollIntoView({ block: "nearest", behavior: "smooth" });
-              } catch (_) {
-                hit.scrollIntoView(true);
-              }
-            }
-            rosterEmphasisId = null;
-          }
-        }
-
-        function parseCreatedItemId(created) {
-          if (!created || typeof created !== "object") return null;
-          if (created.Id != null && created.Id !== "") return String(created.Id);
-          const oid = created["odata.id"] || created["@odata.id"];
-          if (oid && typeof oid === "string") {
-            const m = oid.match(/\/items\((\d+)\)/i);
-            if (m) return m[1];
-          }
-          return null;
-        }
-
-        function loadIntoForm(p) {
-          f.id.value = String(p.Id);
-          f.recordDate.value = fromSpDate(readFromItem(p, "RecordDate")) || todayIso();
-          f.lastName.value = readFromItem(p, "LastName");
-          f.firstName.value = readFromItem(p, "FirstName");
-          f.middleInitial.value = readFromItem(p, "MiddleInitial");
-          f.dodId.value = readFromItem(p, "DoDID");
-          f.address.value = readFromItem(p, "Address");
-          f.work.value = readFromItem(p, "WorkPhone");
-          f.cell.value = readFromItem(p, "CellPhone");
-          f.notes.value = readFromItem(p, "Notes");
-          ensureSelectHasValue(f.status, readFromItem(p, "Status"), STATUS_OPTIONS);
-          ensureSelectHasValue(f.office, readFromItem(p, "OfficeSymbol"), OFFICE_SYMBOLS);
-          ensureSelectHasValue(f.squadron, readFromItem(p, "Squadron"), SQUADRONS);
-          ensureSelectHasValue(f.rank, readFromItem(p, "Rank"), RANKS);
-          $("pEditingLabel").textContent = "Editing ID " + p.Id;
-        }
-
-        async function runPersonnelLoadDiagnostics() {
-          const el = $("pHubCheck");
-          if (!el) return;
-          el.className = "muted hubcheck-warn";
-          const lines = [];
-          try {
-            lines.push("Browser path: " + location.pathname);
-          } catch (_) {
-            lines.push("Browser path: (unavailable)");
-          }
-          lines.push("Page web (context): " + webUrl);
-          lines.push("Personnel REST base: " + personnelWebBase() + (personnelWebBase() !== webUrl ? "  (overridden — set PERSONNEL_REST_WEB_URL if list is on another site)" : ""));
-          lines.push(
-            "List binding: " +
-              (personnelListUsesGuid()
-                ? "lists(guid'" + personnelGuidRaw() + "')"
-                : 'lists(getbytitle("' + personnelListTitle() + '"))'),
-          );
-          lines.push("LIST_PERSONNEL (trimmed): " + JSON.stringify(personnelListTitle()));
-          const listSeg = personnelListApiPath();
-          const pw = personnelWebBase();
-          lines.push("Effective segment: /_api/web/" + listSeg);
-          try {
-            const meta = await spFetch(`/_api/web/${listSeg}?$select=Id,Title,ItemCount`, {}, pw);
-            lines.push("OK — SharePoint list Id: " + meta.Id + ", list Title: " + (meta.Title || "") + ", ItemCount: " + (meta.ItemCount != null ? meta.ItemCount : "?"));
-          } catch (e) {
-            lines.push("List metadata FAILED: " + (e.message || String(e)));
-            lines.push(
-              "Fix: (1) Host the Script Editor on the same site as the list, or set PERSONNEL_REST_WEB_URL to that site root. (2) Set LIST_PERSONNEL to the exact Site contents name, or set LIST_PERSONNEL_GUID from List settings. (3) Confirm you can open the list in the browser while signed in.",
-            );
-            el.textContent = lines.join(" ");
-            return;
-          }
-          try {
-            const items = await spFetch(`/_api/web/${listSeg}/items?$top=1`, {}, pw);
-            const rows = items && items.value ? items.value : [];
-            if (rows.length === 0) {
-              lines.push("Items: 0 rows in this list (roster will be empty until you add items in SharePoint or here).");
-            } else {
-              const row = rows[0];
-              const keys = Object.keys(row)
-                .filter((k) => !k.startsWith("@") && k !== "odata.type" && k !== "odata.id" && k !== "odata.editLink")
-                .sort();
-              lines.push("First item REST property names (compare to LOGICAL_DEFAULTS / COLUMN_MAP):");
-              lines.push(keys.join(", "));
-            }
-          } catch (e2) {
-            lines.push("Items read FAILED: " + (e2.message || String(e2)));
-          }
-          el.textContent = lines.join(" ");
-          setStatus("Diagnose finished — see message under Command hub.");
-        }
-
-        async function loadPersonnel() {
-          const hubEl = $("pHubCheck");
-          const listSeg = personnelListApiPath();
-          const pw = personnelWebBase();
-          try {
-            setStatus("Loading personnel…");
-            const baseItems = `/_api/web/${listSeg}/items?$top=5000`;
-            let path = baseItems + "&$orderby=Modified desc";
-            let data;
-            try {
-              data = await spFetch(path, {}, pw);
-            } catch (e0) {
-              if (/\b400\b/.test(String(e0.message || ""))) {
-                setStatus("Retrying load without $orderby…");
-                data = await spFetch(baseItems, {}, pw);
-              } else {
-                throw e0;
-              }
-            }
-            personnel = data && data.value ? data.value : [];
-            setStatus(`Loaded ${personnel.length} personnel from list "${personnelListTitle()}"${pw !== webUrl ? " (REST base override)" : ""}.`);
-            renderRoster();
-            renderPhase1();
-            void runHubListChecks();
-          } catch (e) {
-            if (hubEl) {
-              hubEl.className = "muted hubcheck-warn";
-              hubEl.textContent =
-                formatRestError(e) +
-                " — Tried GET " +
-                pw +
-                "/_api/web/" +
-                listSeg +
-                "/items … Open Diagnose; set PERSONNEL_REST_WEB_URL or LIST_PERSONNEL_GUID if the list is not on this page’s site.";
-            }
-            throw e;
-          }
-        }
-
-        async function savePersonnel() {
-          const entityType = await getPersonnelEntityType();
-
-          const isNew = !f.id.value;
-          const payload = {
-            __metadata: { type: entityType },
-          };
-          if (!PERSONNEL_IGNORE_SP_TITLE) {
-            const t =
-              [f.lastName.value.trim(), f.firstName.value.trim()].filter(Boolean).join(", ") ||
-              f.dodId.value.trim() ||
-              "(no name)";
-            payload.Title = t;
-          }
-          payload[spField("RecordDate")] = toSpDate(isNew ? todayIso() : f.recordDate.value || todayIso());
-          payload[spField("LastName")] = f.lastName.value.trim();
-          payload[spField("FirstName")] = f.firstName.value.trim();
-          payload[spField("MiddleInitial")] = f.middleInitial.value.trim();
-          payload[spField("DoDID")] = f.dodId.value.trim();
-          payload[spField("Address")] = f.address.value.trim();
-          payload[spField("WorkPhone")] = f.work.value.trim();
-          payload[spField("CellPhone")] = f.cell.value.trim();
-          payload[spField("Status")] = f.status.value || "";
-          payload[spField("OfficeSymbol")] = f.office.value || "";
-          payload[spField("Squadron")] = f.squadron.value || "";
-          payload[spField("Rank")] = f.rank.value || "";
-          payload[spField("Notes")] = f.notes.value.trim();
-
-          const pw = personnelWebBase();
-          const listSeg = personnelListApiPath();
-          const base = `/_api/web/${listSeg}/items`;
-          if (f.id.value) {
-            const sid = String(f.id.value);
-            await spFetch(`${base}(${sid})`, { method: "MERGE", body: payload }, pw);
-            return { savedId: sid };
-          }
-          const created = await spFetch(base, { method: "POST", body: payload }, pw);
-          const sid = parseCreatedItemId(created);
-          return { savedId: sid };
-        }
-
-        async function deletePersonnel() {
-          if (!f.id.value) return;
-          const pw = personnelWebBase();
-          const base = `/_api/web/${personnelListApiPath()}/items(${f.id.value})`;
-          await spFetch(base, { method: "DELETE" }, pw);
-        }
-
-        $("pNew").addEventListener("click", () => resetForm());
-        $("pSave").addEventListener("click", async () => {
-          try {
-            setStatus("Saving personnel…");
-            const result = await savePersonnel();
-            rosterEmphasisId = result && result.savedId ? String(result.savedId) : null;
-            $("pSearch").value = "";
-            resetForm();
-            await loadPersonnel();
-            setStatus("Saved.");
-          } catch (e) {
-            setStatus("Error: " + formatRestError(e));
-          }
-        });
-
-        $("pDelete").addEventListener("click", async () => {
-          try {
-            if (!f.id.value) {
-              setStatus("Select a record first.");
-              return;
-            }
-            if (!confirm("Delete this personnel record?")) return;
-            setStatus("Deleting…");
-            await deletePersonnel();
-            rosterEmphasisId = null;
-            $("pSearch").value = "";
-            resetForm();
-            await loadPersonnel();
-            setStatus("Deleted.");
-          } catch (e) {
-            setStatus("Error: " + formatRestError(e));
-          }
-        });
-
-        $("pRefresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + formatRestError(e))));
-        $("pDiagnose").addEventListener("click", () => runPersonnelLoadDiagnostics().catch((e) => setStatus("Error: " + formatRestError(e))));
-        $("pSearch").addEventListener("input", () => renderRoster());
-
-        // Phase 1
-        function isActiveP1(p) {
-          return String(readFromItem(p, "Status") || "").toUpperCase() === "P1" && !readFromItem(p, "P1EndDate");
-        }
-
-        function renderPhase1() {
-          const tbody = $("p1Body");
-          tbody.innerHTML = "";
-          const rows = personnel.filter(
-            (p) =>
-              String(readFromItem(p, "Status") || "").toUpperCase() === "P1" ||
-              readFromItem(p, "P1StartDate") ||
-              readFromItem(p, "P1EndDate"),
-          );
-
-          if (rows.length === 0) {
-            const tr = document.createElement("tr");
-            const td = document.createElement("td");
-            td.colSpan = 6;
-            td.className = "muted";
-            td.textContent = "No Phase 1 records yet.";
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-            return;
-          }
-
-          rows.sort((a, b) => personnelDisplayName(a).localeCompare(personnelDisplayName(b)));
-
-          rows.forEach((p) => {
-            const tr = document.createElement("tr");
-
-            function tdText(t) {
-              const td = document.createElement("td");
-              td.textContent = t || "—";
-              return td;
-            }
-
-            tr.appendChild(
-              tdText(`${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${personnelDisplayName(p)}`.trim()),
-            );
-            tr.appendChild(tdText(fromSpDate(readFromItem(p, "RecordDate")) || ""));
-
-            const tdStart = document.createElement("td");
-            const inStart = document.createElement("input");
-            inStart.type = "date";
-            inStart.className = "input";
-            inStart.value = fromSpDate(readFromItem(p, "P1StartDate")) || "";
-            tdStart.appendChild(inStart);
-            tr.appendChild(tdStart);
-
-            const tdProj = document.createElement("td");
-            const inProj = document.createElement("input");
-            inProj.type = "text";
-            inProj.className = "input";
-            inProj.value = readFromItem(p, "ProjectedOffice") || "";
-            tdProj.appendChild(inProj);
-            tr.appendChild(tdProj);
-
-            const tdEnd = document.createElement("td");
-            const inEnd = document.createElement("input");
-            inEnd.type = "date";
-            inEnd.className = "input";
-            inEnd.value = fromSpDate(readFromItem(p, "P1EndDate")) || "";
-            tdEnd.appendChild(inEnd);
-            tr.appendChild(tdEnd);
-
-            const tdSave = document.createElement("td");
-            const b = document.createElement("button");
-            b.type = "button";
-            b.className = "btn";
-            b.textContent = "Save";
-            b.onclick = async () => {
-              try {
-                setStatus("Saving Phase 1 row…");
-                const pw = personnelWebBase();
-                const listSeg = personnelListApiPath();
-                const entityType = await getPersonnelEntityType();
-                const payload = {
-                  __metadata: { type: entityType },
-                };
-                payload[spField("P1StartDate")] = toSpDate(inStart.value) || null;
-                payload[spField("P1EndDate")] = toSpDate(inEnd.value) || null;
-                payload[spField("ProjectedOffice")] = inProj.value.trim() || null;
-                const base = `/_api/web/${listSeg}/items(${p.Id})`;
-                await spFetch(base, { method: "MERGE", body: payload }, pw);
-                await loadPersonnel();
-                setStatus("Saved.");
-              } catch (e) {
-                setStatus("Error: " + formatRestError(e));
-              }
-            };
-            tdSave.appendChild(b);
-            tr.appendChild(tdSave);
-            tbody.appendChild(tr);
+          const rows = (data && data.value) || [];
+          rows.forEach((r) => {
+            log("  • " + (r.Title || "") + "  (Id=" + r.Id + ", ItemCount=" + (r.ItemCount != null ? r.ItemCount : "?") + ")");
           });
         }
 
-        $("p1Refresh").addEventListener("click", () => loadPersonnel().catch((e) => setStatus("Error: " + formatRestError(e))));
+        async function runProbe() {
+          out.innerHTML = "";
+          const ctx = getCtx();
+          if (!ctx) {
+            log("FAIL: No _spPageContextInfo.webAbsoluteUrl. Run this inside SharePoint on a real site page.", "err");
+            return;
+          }
+          webUrl = String(ctx.webAbsoluteUrl || "").replace(/\/$/, "");
+          const pw = personnelWebBase();
+          const seg = personnelListApiPath();
 
-        $("p1PrintRoster").addEventListener("click", () => {
-          const p1 = personnel
-            .filter(isActiveP1)
-            .sort((a, b) => personnelDisplayName(a).localeCompare(personnelDisplayName(b)));
-          const w = window.open("", "_blank");
-          const html = `
-            <html><head><title>P1 Recall Roster</title>
-            <style>
-              body{font-family:Segoe UI,Arial,sans-serif;padding:20px;}
-              h1{margin:0 0 8px;}
-              .muted{color:#666;font-size:12px;margin-bottom:12px;}
-              table{width:100%;border-collapse:collapse;}
-              th,td{border-bottom:1px solid #ddd;text-align:left;padding:8px;font-size:12px;vertical-align:top;}
-            </style></head><body>
-            <h1>P1 Recall Roster</h1>
-            <div class="muted">Generated: ${new Date().toLocaleString()}</div>
-            <table>
-              <thead><tr>
-                <th>Rank/Name</th><th>Date Arrived</th><th>P1 Start Date</th><th>Projected Office/Flight</th><th>Work Phone</th><th>Cell Phone</th>
-              </tr></thead>
-              <tbody>
-                ${p1
-                  .map(
-                    (p) => `
-                  <tr>
-                    <td>${(readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : "") + personnelDisplayName(p)}</td>
-                    <td>${fromSpDate(readFromItem(p, "RecordDate")) || "—"}</td>
-                    <td>${fromSpDate(readFromItem(p, "P1StartDate")) || "—"}</td>
-                    <td>${readFromItem(p, "ProjectedOffice") || "—"}</td>
-                    <td>${readFromItem(p, "WorkPhone") || "—"}</td>
-                    <td>${readFromItem(p, "CellPhone") || "—"}</td>
-                  </tr>
-                `,
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-            </body></html>
-          `;
-          w.document.open();
-          w.document.write(html);
-          w.document.close();
-          w.focus();
-          w.print();
-        });
+          log("location.href:\n" + String(location.href));
+          log("Page web (context):\n" + webUrl);
+          log("REST base used for Personnel:\n" + pw + (pw !== webUrl ? "  (PERSONNEL_REST_WEB_URL override)" : ""));
+          log("List API segment:\n/_api/web/" + seg);
+          log("LIST_PERSONNEL (trimmed):\n" + JSON.stringify(personnelListTitle()));
 
-        // Certifiers
-        async function loadCertifiers() {
-          setStatus("Loading certifiers…");
-          const listTitle = escListTitle(LIST_CERTIFIERS);
-          const preferredField = CERTIFIERS_NAME_FIELD;
-
-          let items = [];
           try {
-            const url = `/_api/web/lists/getbytitle('${listTitle}')/items?$select=${encodeURIComponent("Id," + preferredField)}&$top=5000&$orderby=Modified desc`;
-            const data = await spFetch(url);
-            items = data && data.value ? data.value : [];
-          } catch (e1) {
+            log("--- Request: GET list metadata ---", "ok");
+            const meta = await spFetch(`/_api/web/${seg}?$select=Id,Title,ItemCount,ListItemEntityTypeFullName`, {}, pw);
+            log(meta);
+          } catch (e) {
+            log("LIST METADATA FAILED:\n" + (e.message || String(e)), "err");
             try {
-              setStatus("Retrying certifiers without $select…");
-              const url2 = `/_api/web/lists/getbytitle('${listTitle}')/items?$top=5000&$orderby=Modified desc`;
-              const data2 = await spFetch(url2);
-              items = data2 && data2.value ? data2.value : [];
+              await enumerateListTitles(pw);
             } catch (e2) {
-              throw new Error("Certifiers list failed: " + (e2.message || String(e2)));
+              log("Could not enumerate lists either:\n" + (e2.message || String(e2)), "err");
             }
+            return;
           }
 
-          const names = [];
-          items.forEach((it) => {
-            let v = it[preferredField];
-            if (typeof v !== "string" || !v.trim()) {
-              v = it.Title;
-            }
-            if (typeof v === "string" && v.trim()) names.push(v.trim());
-          });
-          const unique = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
-          const list = $("zList");
-          list.innerHTML = "";
-          if (unique.length === 0) {
-            const m = document.createElement("div");
-            m.className = "muted";
-            m.textContent = `No names found. Check list "${LIST_CERTIFIERS}" and column "${preferredField}" (or use Title).`;
-            list.appendChild(m);
-          } else {
-            unique.forEach((n) => {
-              const d = document.createElement("div");
-              d.className = "item";
-              const left = document.createElement("div");
-              const t = document.createElement("div");
-              t.className = "itemTitle";
-              t.textContent = n;
-              left.appendChild(t);
-              d.appendChild(left);
-              list.appendChild(d);
-            });
-          }
-          setStatus(`Loaded ${unique.length} certifiers.`);
-        }
-
-        $("zRefresh").addEventListener("click", () => loadCertifiers().catch((e) => setStatus("Error: " + formatRestError(e))));
-
-        let certifiersLazyOnce = false;
-        function maybeBootstrapCertifiers() {
-          if (certifiersLazyOnce) return;
-          certifiersLazyOnce = true;
-          loadCertifiers().catch((err) => {
-            const hub = $("pHubCheck");
-            const m = formatRestError(err);
-            if (hub) {
-              hub.className = "muted hubcheck-warn";
-              hub.textContent = (hub.textContent || "") + " Instructors list: " + m;
-            }
-          });
-        }
-
-        // Initial load — Personnel only is required; Certifiers optional (see LOAD_CERTIFIERS_ON_START).
-        (async function init() {
+          const seg2 = personnelListApiPath();
+          let items = null;
           try {
-            setStatus("Loading Personnel…");
-            await loadPersonnel();
-            if (LOAD_CERTIFIERS_ON_START) {
-              try {
-                await loadCertifiers();
-              } catch (e) {
-                const hub = $("pHubCheck");
-                if (hub) {
-                  hub.className = "muted hubcheck-warn";
-                  hub.textContent = (hub.textContent || "") + " Certifiers: " + formatRestError(e);
-                }
-              }
+            log("--- Request: GET items (top 25, orderby Modified) ---", "ok");
+            items = await spFetch(`/_api/web/${seg2}/items?$top=25&$orderby=Modified desc`, {}, pw);
+          } catch (e0) {
+            if (/\b400\b/.test(String(e0.message || ""))) {
+              log("orderby failed with 400; retry without orderby…", "err");
+              items = await spFetch(`/_api/web/${seg2}/items?$top=25`, {}, pw);
+            } else {
+              throw e0;
             }
-            setStatus(`Ready — ${personnel.length} personnel.`);
-            activateTab("hub");
-          } catch (e) {
-            setStatus("Error: " + formatRestError(e));
           }
-        })();
+
+          const rows = (items && items.value) || [];
+          log("Row count returned: " + rows.length, rows.length ? "ok" : "err");
+          if (rows.length === 0) {
+            log("List is empty (ItemCount may still be > 0 if filtered view — this is default view items).");
+            return;
+          }
+          const keys = Object.keys(rows[0])
+            .filter((k) => !k.startsWith("@") && k !== "odata.type" && k !== "odata.id" && k !== "odata.editLink")
+            .sort();
+          log("Column / property names on first row:\n" + keys.join(", "), "ok");
+          log("--- First row (raw JSON) ---", "ok");
+          log(rows[0]);
+          if (rows.length > 1) {
+            log("--- Second row (raw JSON) ---", "ok");
+            log(rows[1]);
+          }
+          log("DONE. If you see rows above, REST read works — wire your app to these property names.", "ok");
+        }
+
+        btn.addEventListener("click", () => {
+          runProbe().catch((e) => log("UNCAUGHT:\n" + (e.message || String(e)), "err"));
+        });
+
+        runProbe().catch((e) => log("UNCAUGHT:\n" + (e.message || String(e)), "err"));
       })();
     </script>
   </body>
