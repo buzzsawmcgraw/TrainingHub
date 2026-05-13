@@ -7,8 +7,9 @@
   </head>
   <body>
     <!--
-      Paste the contents of the <div id="sp-pip-ui"> ... </script> block into your SharePoint Modern Script Editor.
-      This file exists so the snippet is easy to source-control and copy/paste.
+      Paste the <div id="sp-pip-ui"> … </script> block into SharePoint Modern Script Editor on the SAME site
+      as your lists (e.g. page under …/sites/88thSFS/SitePages/… → lists in 88thSFS Site contents). No extra URL
+      is required for Personnel when page and list share that site. Edit LIST_* constants in the script if titles differ.
     -->
 
     <div id="sp-pip-ui">
@@ -43,11 +44,10 @@
               <div>
                 <div class="sectionTitle">Command hub</div>
                 <div class="muted">
-                  Loads and saves the <strong>Personnel</strong> list (same site as the page unless you set
-                  <span class="mono">PERSONNEL_REST_WEB_URL</span>). Use <span class="mono">LIST_PERSONNEL</span> for the
-                  Site contents title, or <span class="mono">LIST_PERSONNEL_GUID</span> from List settings. New rows:
-                  click <strong>New</strong>, fill in, <strong>Save</strong>. You need <strong>Read</strong> to load and
-                  <strong>Contribute</strong> (or Edit) to add or change items.
+                  <strong>Personnel</strong> roster and <strong>New → Save</strong> use the list on this site (same site
+                  as this page, e.g. 88thSFS). Match <span class="mono">LIST_PERSONNEL</span> to the Site contents name.
+                  Use <strong>Diagnose</strong> if the roster does not load. Other tabs are optional; Instructors loads
+                  the Certifiers list when you open that tab.
                 </div>
                 <div class="muted" id="pHubCheck" style="margin-top: 6px; max-width: 900px; font-size: 11px; line-height: 1.45">
                   Checking list…
@@ -591,6 +591,11 @@
     <script>
       (function () {
         // -------- SharePoint lists on this web (edit source if titles differ) --------
+        /**
+         * Same-site rule (88thSFS): Web part on …/sites/88thSFS/SitePages/… + Personnel in that site’s
+         * Site contents → leave PERSONNEL_REST_WEB_URL and LIST_PERSONNEL_GUID empty. REST uses this page’s web.
+         * LIST_PERSONNEL must match the list display name exactly (e.g. Personnel).
+         */
         /** Must match Site contents list name exactly — drives Hub roster + record Save/Delete. Ignored if LIST_PERSONNEL_GUID is set. */
         const LIST_PERSONNEL = "Personnel";
 
@@ -639,6 +644,11 @@
         const LIST_CERTIFIERS = "Certifiers";
         /** REST field key on each Certifiers row for the instructor name (falls back to Title). */
         const CERTIFIERS_NAME_FIELD = "Certifier";
+        /**
+         * When true, load Certifiers during startup. When false (default), Certifiers load only when you open the
+         * Instructors tab — so a missing or misnamed Certifiers list never blocks Personnel roster or Save.
+         */
+        const LOAD_CERTIFIERS_ON_START = false;
         /**
          * Optional: map logical Hub field → SharePoint internal column key when yours differ.
          * "Record Date" (with a space) is usually `Record_x0020_Date` — already the default below.
@@ -757,17 +767,16 @@
           if (view) view.classList.add("is-active");
         }
 
-        root.addEventListener(
-          "click",
-          (e) => {
-            const btn = e.target && e.target.closest ? e.target.closest(".tab") : null;
-            if (!btn) return;
-            e.preventDefault();
-            e.stopPropagation();
-            activateTab(btn.getAttribute("data-tab"));
-          },
-          true,
-        );
+        function onMainTabClick(e) {
+          const btn = e.target && e.target.closest ? e.target.closest(".tab") : null;
+          if (!btn) return;
+          e.preventDefault();
+          e.stopPropagation();
+          const tabKey = btn.getAttribute("data-tab");
+          activateTab(tabKey);
+          if (tabKey === "instructors" && !LOAD_CERTIFIERS_ON_START) maybeBootstrapCertifiers();
+        }
+        root.addEventListener("click", onMainTabClick, true);
         // SharePoint date helpers
         function toSpDate(dateOnly) {
           if (!dateOnly) return null;
@@ -1596,14 +1605,37 @@
 
         $("zRefresh").addEventListener("click", () => loadCertifiers().catch((e) => setStatus("Error: " + formatRestError(e))));
 
-        // Initial load
+        let certifiersLazyOnce = false;
+        function maybeBootstrapCertifiers() {
+          if (certifiersLazyOnce) return;
+          certifiersLazyOnce = true;
+          loadCertifiers().catch((err) => {
+            const hub = $("pHubCheck");
+            const m = formatRestError(err);
+            if (hub) {
+              hub.className = "muted hubcheck-warn";
+              hub.textContent = (hub.textContent || "") + " Instructors list: " + m;
+            }
+          });
+        }
+
+        // Initial load — Personnel only is required; Certifiers optional (see LOAD_CERTIFIERS_ON_START).
         (async function init() {
           try {
-            setStatus("Initializing…");
+            setStatus("Loading Personnel…");
             await loadPersonnel();
-            await loadCertifiers();
-            setStatus(`Ready — ${personnel.length} personnel in view.`);
-            // Ensure initial tab is active even if SharePoint mutates DOM.
+            if (LOAD_CERTIFIERS_ON_START) {
+              try {
+                await loadCertifiers();
+              } catch (e) {
+                const hub = $("pHubCheck");
+                if (hub) {
+                  hub.className = "muted hubcheck-warn";
+                  hub.textContent = (hub.textContent || "") + " Certifiers: " + formatRestError(e);
+                }
+              }
+            }
+            setStatus(`Ready — ${personnel.length} personnel.`);
             activateTab("hub");
           } catch (e) {
             setStatus("Error: " + formatRestError(e));
