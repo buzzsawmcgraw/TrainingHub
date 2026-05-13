@@ -15,28 +15,36 @@
       <div class="app">
         <div class="topbar">
           <div class="title">
-            <div class="h1">Training Hub UI (SharePoint Paste-Only)</div>
-            <div class="sub" id="spuiStatus">Ready.</div>
-          </div>
-
-          <div class="tabs" role="tablist" aria-label="App tabs">
-            <button type="button" class="tab is-active" data-tab="personnel" role="tab" aria-selected="true">
-              Personnel
-            </button>
-            <button type="button" class="tab" data-tab="phase1" role="tab" aria-selected="false">Phase 1</button>
-            <button type="button" class="tab" data-tab="certs" role="tab" aria-selected="false">Certificates</button>
-            <button type="button" class="tab" data-tab="certifiers" role="tab" aria-selected="false">Certifiers</button>
-            <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+            <div class="h1">88th Security Forces Squadron</div>
+            <div class="sub">
+              <span class="pip-auth">AUTHORIZED ACCESS ONLY</span>
+              <span class="pip-sep"> · </span>
+              <span id="spuiStatus">Ready.</span>
+            </div>
           </div>
         </div>
 
+        <div class="navrow">
+          <div class="tabs" id="mainTabs" role="tablist" aria-label="Main">
+            <button type="button" class="tab is-active" data-tab="hub" role="tab" aria-selected="true">Hub</button>
+            <button type="button" class="tab" data-tab="office" role="tab" aria-selected="false">Office</button>
+            <button type="button" class="tab" data-tab="certificates" role="tab" aria-selected="false">Certificates</button>
+            <button type="button" class="tab" data-tab="instructors" role="tab" aria-selected="false">Instructors</button>
+            <button type="button" class="tab" data-tab="scheduler" role="tab" aria-selected="false">Scheduler</button>
+            <button type="button" class="tab" data-tab="phase1" role="tab" aria-selected="false">Phase 1</button>
+            <button type="button" class="tab" data-tab="missed" role="tab" aria-selected="false">Missed Appointments</button>
+            <button type="button" class="tab" data-tab="reports" role="tab" aria-selected="false">Reports</button>
+          </div>
+          <button type="button" class="btn ghost" id="openSettings">Configure lists…</button>
+        </div>
+
         <div class="panel">
-          <!-- Personnel -->
-          <section class="view is-active" id="view-personnel" role="tabpanel">
+          <!-- Hub (Command Hub + roster — same as original app home) -->
+          <section class="view is-active" id="view-hub" role="tabpanel">
             <div class="row row-between">
               <div>
-                <div class="sectionTitle">Personnel roster</div>
-                <div class="muted">Create/edit personnel records (SharePoint list-backed).</div>
+                <div class="sectionTitle">Command hub</div>
+                <div class="muted">Personnel roster and record entry (SharePoint list).</div>
               </div>
               <div class="row">
                 <input
@@ -51,7 +59,7 @@
 
             <div class="grid2">
               <div class="card">
-                <div class="cardTitle">Command Hub (Personnel Record)</div>
+                <div class="cardTitle">Personnel record</div>
 
                 <div class="formGrid">
                   <div class="field">
@@ -117,57 +125,35 @@
               </div>
 
               <div class="card">
-                <div class="cardTitle">Roster</div>
+                <div class="cardTitle">Personnel roster</div>
                 <div class="muted" id="pCount">0 records</div>
                 <div class="list" id="pList"></div>
               </div>
             </div>
           </section>
 
-          <!-- Phase 1 -->
-          <section class="view" id="view-phase1" role="tabpanel">
-            <div class="row row-between">
-              <div>
-                <div class="sectionTitle">Phase 1 tracking</div>
-                <div class="muted">
-                  Tracks: Rank/Name, Date arrived, P1 start, Projected office/flight, Date
-                  release, plus a P1-only recall roster printout.
-                </div>
-              </div>
-              <div class="row">
-                <button type="button" class="btn" id="p1Refresh">Refresh</button>
-                <button type="button" class="btn ghost" id="p1PrintRoster">Print P1 Recall Roster</button>
-              </div>
-            </div>
-
+          <!-- Office (full training matrix lives in original app; paste-only placeholder until lists are wired) -->
+          <section class="view" id="view-office" role="tabpanel">
+            <div class="sectionTitle">Office</div>
             <div class="card">
-              <div class="cardTitle">Active P1</div>
-              <div class="tableWrap">
-                <table class="table" id="p1Table">
-                  <thead>
-                    <tr>
-                      <th>Rank/Name</th>
-                      <th>Date arrived</th>
-                      <th>Date Phase 1 started</th>
-                      <th>Projected office/flight</th>
-                      <th>Date release</th>
-                      <th style="width: 120px">Save</th>
-                    </tr>
-                  </thead>
-                  <tbody id="p1Body"></tbody>
-                </table>
-              </div>
+              <p class="muted">
+                In the desktop app, this tab is the per-person BLS / TCCC, bylaw topics, course checkboxes, and certifier
+                dropdowns grouped by office. That needs additional SharePoint lists or JSON columns per person.
+              </p>
+              <p class="muted">
+                Use <strong>Hub</strong> for core personnel fields for now. When you send the SharePoint list layout for
+                Office, this section can be wired the same way as Hub.
+              </p>
             </div>
           </section>
 
           <!-- Certificates -->
-          <section class="view" id="view-certs" role="tabpanel">
+          <section class="view" id="view-certificates" role="tabpanel">
             <div class="row row-between">
               <div>
                 <div class="sectionTitle">Certificates</div>
                 <div class="muted">
-                  Paste-only version saves certs and prints a certificate page (no .pptx
-                  dependency).
+                  Saved certs per person (JSON on personnel list) and print-friendly certificate page.
                 </div>
               </div>
               <div class="row">
@@ -218,14 +204,13 @@
             </div>
           </section>
 
-          <!-- Certifiers -->
-          <section class="view" id="view-certifiers" role="tabpanel">
+          <!-- Instructors (certifier name list — same source as original Instructors tab) -->
+          <section class="view" id="view-instructors" role="tabpanel">
             <div class="row row-between">
               <div>
-                <div class="sectionTitle">Certifiers</div>
+                <div class="sectionTitle">Instructors</div>
                 <div class="muted">
-                  Read-only view of certifier names sourced from a SharePoint list column
-                  named <span class="mono">certifier</span>.
+                  Names are read from your Certifiers SharePoint list (column configured under Configure lists…).
                 </div>
               </div>
               <div class="row">
@@ -234,17 +219,90 @@
             </div>
 
             <div class="card">
-              <div class="cardTitle">Names from SharePoint list</div>
+              <div class="cardTitle">Certifier names</div>
               <div class="list" id="zList"></div>
             </div>
           </section>
 
-          <!-- Settings -->
+          <!-- Scheduler -->
+          <section class="view" id="view-scheduler" role="tabpanel">
+            <div class="sectionTitle">Scheduler</div>
+            <div class="card">
+              <p class="muted">
+                In the desktop app, this view lists appointments across personnel by office. That requires an
+                appointments list (or per-person appointment rows) in SharePoint.
+              </p>
+              <p class="muted">Not wired in this paste-only build yet.</p>
+            </div>
+          </section>
+
+          <!-- Phase 1 -->
+          <section class="view" id="view-phase1" role="tabpanel">
+            <div class="row row-between">
+              <div>
+                <div class="sectionTitle">Phase 1</div>
+                <div class="muted">
+                  P1 dates and projected office on the personnel record; P1-only recall roster printout.
+                </div>
+              </div>
+              <div class="row">
+                <button type="button" class="btn" id="p1Refresh">Refresh</button>
+                <button type="button" class="btn ghost" id="p1PrintRoster">Print P1 recall roster</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="cardTitle">Phase 1 tracking</div>
+              <div class="tableWrap">
+                <table class="table" id="p1Table">
+                  <thead>
+                    <tr>
+                      <th>Rank/Name</th>
+                      <th>Date arrived</th>
+                      <th>Date Phase 1 started</th>
+                      <th>Projected office/flight</th>
+                      <th>Date release</th>
+                      <th style="width: 120px">Save</th>
+                    </tr>
+                  </thead>
+                  <tbody id="p1Body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Missed Appointments -->
+          <section class="view" id="view-missed" role="tabpanel">
+            <div class="sectionTitle">Missed Appointments</div>
+            <div class="card">
+              <p class="muted">
+                In the desktop app, this tab lists missed appointments and generates a memo. It depends on the same
+                appointment data as Scheduler.
+              </p>
+              <p class="muted">Not wired in this paste-only build yet.</p>
+            </div>
+          </section>
+
+          <!-- Reports -->
+          <section class="view" id="view-reports" role="tabpanel">
+            <div class="sectionTitle">Reports</div>
+            <div class="card">
+              <p class="muted">
+                In the desktop app, this tab builds weapons / bylaw / MQL PDF-style summaries. That pulls many lists and
+                calculated statuses.
+              </p>
+              <p class="muted">Not wired in this paste-only build yet.</p>
+            </div>
+          </section>
+
+          <!-- Settings (not a main nav tab — open via Configure lists…) -->
           <section class="view" id="view-settings" role="tabpanel">
-            <div class="sectionTitle">Settings (edit list names here)</div>
+            <div class="row row-between" style="margin-bottom: 12px">
+              <div class="sectionTitle">Configure lists</div>
+              <button type="button" class="btn ghost" id="backToHub">← Back to Hub</button>
+            </div>
             <div class="muted">
-              This snippet uses SharePoint Lists as the database via
-              <span class="mono">/_api</span>.
+              SharePoint REST (<span class="mono">/_api</span>) uses list titles and column internal names set here.
             </div>
 
             <div class="card" style="margin-top: 12px">
@@ -369,12 +427,7 @@
         opacity: 0.55;
       }
       #sp-pip-ui .topbar {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 8px 0 12px;
-        border-bottom: 1px solid var(--pb-line);
+        padding: 8px 0 4px;
         position: relative;
         z-index: 1;
       }
@@ -389,25 +442,55 @@
         margin-top: 4px;
         letter-spacing: 0.08em;
       }
-      #sp-pip-ui .tabs {
+      #sp-pip-ui .pip-auth {
+        font-weight: 700;
+        color: var(--pb-green2);
+      }
+      #sp-pip-ui .pip-sep {
+        opacity: 0.45;
+      }
+      #sp-pip-ui .navrow {
         display: flex;
-        gap: 8px;
         flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 0 0 0;
+        margin-bottom: 1.25rem;
+        border-bottom: none;
+        position: relative;
+        z-index: 1;
       }
-      #sp-pip-ui .tab {
-        border: 1px solid var(--pb-line);
-        background: rgba(0, 0, 0, 0.25);
-        padding: 6px 10px;
-        border-radius: 6px;
+      #sp-pip-ui .navrow .tabs {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        flex: 1;
+        min-width: 0;
+      }
+      /* Match pipboy-training-hub `.pip-nav a` / `.pip-nav a.active` */
+      #sp-pip-ui .navrow .tab {
+        border: 1px solid #16c400;
+        background: #0c0f0a;
+        padding: 0.4rem 0.75rem;
+        border-radius: 4px;
         cursor: pointer;
-        font-size: 12px;
-        color: var(--pb-muted);
-        letter-spacing: 0.12em;
+        font-size: 15px;
+        line-height: 1.45;
+        letter-spacing: 0.04em;
+        color: #16c400;
+        text-shadow: 0 0 6px rgba(30, 255, 0, 0.35);
+        box-shadow: inset 0 0 12px rgba(30, 255, 0, 0.06);
       }
-      #sp-pip-ui .tab.is-active {
-        border-color: rgba(65, 255, 122, 0.5);
-        color: var(--pb-green);
-        box-shadow: 0 0 12px rgba(65, 255, 122, 0.12);
+      #sp-pip-ui .navrow .tab:hover {
+        color: #1eff00;
+        border-color: #1eff00;
+      }
+      #sp-pip-ui .navrow .tab.is-active {
+        border-color: #1eff00;
+        color: #1eff00;
+        background: rgba(30, 255, 0, 0.1);
+        box-shadow: 0 0 6px rgba(30, 255, 0, 0.35);
       }
       #sp-pip-ui .panel {
         padding-top: 12px;
@@ -742,6 +825,16 @@
           },
           true,
         );
+        $("openSettings").addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          activateTab("settings");
+        });
+        $("backToHub").addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          activateTab("hub");
+        });
         // SharePoint date helpers
         function toSpDate(dateOnly) {
           if (!dateOnly) return null;
@@ -1672,7 +1765,7 @@
             await loadCertifiers();
             setStatus("Ready.");
             // Ensure initial tab is active even if SharePoint mutates DOM.
-            activateTab("personnel");
+            activateTab("hub");
           } catch (e) {
             setStatus("Error: " + e.message);
           }
