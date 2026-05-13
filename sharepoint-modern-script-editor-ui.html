@@ -57,7 +57,7 @@
                   id="pSearch"
                   class="input"
                   type="text"
-                  placeholder="Search (rank, name, squadron, office, status)..."
+                  placeholder="Search (name, DoD ID, rank, squadron, office, status, phones, notes)..."
                 />
                 <button type="button" class="btn" id="pRefresh">Refresh</button>
               </div>
@@ -76,14 +76,46 @@
                     </div>
                   </div>
 
-                  <div class="field rank">
-                    <label>Rank</label>
-                    <select id="fRank" class="input"></select>
+                  <div class="field">
+                    <label>Last name</label>
+                    <input id="fLastName" class="input" type="text" autocomplete="family-name" />
+                  </div>
+                  <div class="field">
+                    <label>First name</label>
+                    <input id="fFirstName" class="input" type="text" autocomplete="given-name" />
+                  </div>
+                  <div class="field" style="max-width: 120px">
+                    <label>M.I.</label>
+                    <input id="fMiddleInitial" class="input" type="text" maxlength="6" />
                   </div>
 
-                  <div class="field name">
-                    <label>Name</label>
-                    <input id="fName" class="input" type="text" placeholder="Last, First M" />
+                  <div class="field">
+                    <label>DoD ID</label>
+                    <input id="fDoDID" class="input" type="text" inputmode="numeric" />
+                  </div>
+
+                  <div class="field full">
+                    <label>Address</label>
+                    <textarea id="fAddress" class="input" rows="3" spellcheck="false"></textarea>
+                  </div>
+
+                  <div class="field">
+                    <label>Work phone</label>
+                    <input id="fWorkPhone" class="input" type="text" />
+                  </div>
+                  <div class="field">
+                    <label>Cell phone</label>
+                    <input id="fCellPhone" class="input" type="text" />
+                  </div>
+
+                  <div class="field">
+                    <label>Status</label>
+                    <select id="fStatus" class="input"></select>
+                  </div>
+
+                  <div class="field">
+                    <label>Office symbol</label>
+                    <select id="fOffice" class="input"></select>
                   </div>
 
                   <div class="field">
@@ -92,31 +124,12 @@
                   </div>
 
                   <div class="field">
-                    <label>Status</label>
-                    <select id="fStatus" class="input">
-                      <option>Active</option>
-                      <option>P1</option>
-                      <option>Inactive</option>
-                    </select>
-                  </div>
-
-                  <div class="field">
-                    <label>Office symbol</label>
-                    <input id="fOffice" class="input" type="text" placeholder="S3T / S3O / etc." />
-                  </div>
-
-                  <div class="field">
-                    <label>Work phone</label>
-                    <input id="fWorkPhone" class="input" type="text" />
-                  </div>
-
-                  <div class="field">
-                    <label>Cell phone</label>
-                    <input id="fCellPhone" class="input" type="text" />
+                    <label>Rank</label>
+                    <select id="fRank" class="input"></select>
                   </div>
 
                   <div class="field full">
-                    <label>Notes (single line)</label>
+                    <label>Notes</label>
                     <input id="fNotes" class="input" type="text" />
                   </div>
 
@@ -443,6 +456,12 @@
         border-color: rgba(65, 255, 122, 0.5);
         box-shadow: 0 0 0 2px rgba(65, 255, 122, 0.12);
       }
+      #sp-pip-ui textarea.input {
+        font-family: inherit;
+        line-height: 1.35;
+        resize: vertical;
+        min-height: 68px;
+      }
       #sp-pip-ui select.input {
         padding-right: 30px;
       }
@@ -573,29 +592,33 @@
         /** Must match Site contents list name exactly — drives Hub roster + record Save/Delete. */
         const LIST_PERSONNEL = "Personnel";
         /**
-         * When true, the Hub does not read or write SharePoint’s built-in **Title** on Personnel — only your **Name**
-         * column (and the other Hub fields). Set to false if creating new items returns an error requiring Title.
+         * When true, the Hub does not read or write SharePoint’s built-in **Title** on Personnel. Names use
+         * LastName / FirstName / MiddleInitial instead. Set to false if new-item POST requires Title.
          */
         const PERSONNEL_IGNORE_SP_TITLE = true;
         const LIST_CERTIFIERS = "Certifiers";
         /** REST field key on each Certifiers row for the instructor name (falls back to Title). */
         const CERTIFIERS_NAME_FIELD = "Certifier";
         /**
-         * Optional: map logical Hub field name → SharePoint internal column key when yours differ.
-         * Example: { "Rank": "Rank0", "RecordDate": "Record_x0020_Date" }
+         * Optional: map logical Hub field → SharePoint internal column key when yours differ.
+         * "Record Date" (with a space) is usually `Record_x0020_Date` — already the default below.
          */
         const COLUMN_MAP = {};
 
-        /** Default REST keys when COLUMN_MAP has no override. */
+        /** Default REST keys when COLUMN_MAP has no override (match your Personnel list). */
         const LOGICAL_DEFAULTS = {
-          RecordDate: "RecordDate",
-          Rank: "Rank",
-          Name: "Name",
-          Squadron: "Squadron",
-          Status: "Status",
-          OfficeSymbol: "OfficeSymbol",
+          RecordDate: "Record_x0020_Date",
+          LastName: "LastName",
+          FirstName: "FirstName",
+          MiddleInitial: "MiddleInitial",
+          DoDID: "DoDID",
+          Address: "Address",
           WorkPhone: "WorkPhone",
           CellPhone: "CellPhone",
+          Status: "Status",
+          OfficeSymbol: "OfficeSymbol",
+          Squadron: "Squadron",
+          Rank: "Rank",
           Notes: "Notes",
           P1StartDate: "P1StartDate",
           P1EndDate: "P1EndDate",
@@ -604,14 +627,18 @@
         };
 
         const PERSONNEL_FALLBACKS = {
-          RecordDate: ["RecordDate", "Record_x0020_Date", "Record0", "DateArrived", "ArrivalDate"],
-          Rank: ["Rank", "Rank0", "PayGrade"],
-          Name: ["Name", "PersonnelName", "FullName", "DisplayName"],
-          Squadron: ["Squadron", "Squadron0", "Unit"],
-          Status: ["Status", "PersonnelStatus", "Personnel_x0020_Status"],
-          OfficeSymbol: ["OfficeSymbol", "Office0", "Office_x0020_Symbol", "Office"],
+          RecordDate: ["Record_x0020_Date", "RecordDate", "Record0", "DateArrived"],
+          LastName: ["LastName", "Last_x0020_Name"],
+          FirstName: ["FirstName", "First_x0020_Name"],
+          MiddleInitial: ["MiddleInitial", "Middle_x0020_Initial", "MI"],
+          DoDID: ["DoDID", "DoD_x0020_ID", "DODID"],
+          Address: ["Address", "StreetAddress", "PersonnelAddress"],
           WorkPhone: ["WorkPhone", "Work_x0020_Phone", "WorkPhone0"],
           CellPhone: ["CellPhone", "Cell_x0020_Phone", "CellPhone0"],
+          Status: ["Status", "PersonnelStatus", "Personnel_x0020_Status"],
+          OfficeSymbol: ["OfficeSymbol", "Office0", "Office_x0020_Symbol"],
+          Squadron: ["Squadron", "Squadron0", "Unit"],
+          Rank: ["Rank", "Rank0", "PayGrade"],
           Notes: ["Notes", "Comments", "PersonnelNotes"],
           P1StartDate: ["P1StartDate", "P1_x0020_Start_x0020_Date", "Phase1Start"],
           P1EndDate: ["P1EndDate", "P1_x0020_End_x0020_Date", "Phase1End", "DateRelease"],
@@ -645,16 +672,26 @@
 
         const SQUADRONS = ["21 SFS", "34 SFS", "56 SFS", "633 SFS"];
 
+        /** Must match SharePoint Status choice values exactly (edit to your list). */
+        const STATUS_OPTIONS = ["Active", "P1", "Inactive"];
+
+        /** Must match SharePoint Office symbol choice values exactly (edit to your list). */
+        const OFFICE_SYMBOLS = ["S3T", "S3O", "S1", "S3", "S4", "DOU", "Other"];
+
         /** Logical names the Hub Save POST/MERGE sends (must exist on list or be mapped in COLUMN_MAP). */
         const HUB_SAVE_LOGICALS = [
           "RecordDate",
-          "Rank",
-          "Name",
-          "Squadron",
-          "Status",
-          "OfficeSymbol",
+          "LastName",
+          "FirstName",
+          "MiddleInitial",
+          "DoDID",
+          "Address",
           "WorkPhone",
           "CellPhone",
+          "Status",
+          "OfficeSymbol",
+          "Squadron",
+          "Rank",
           "Notes",
         ];
 
@@ -825,10 +862,15 @@
           return "";
         }
 
-        /** Personnel list: use Name column only for labels (not SharePoint Title when ignoring Title). */
+        /** Roster / sort label: Last, First + middle (SharePoint Title not used when ignored). */
         function personnelDisplayName(p) {
-          const n = readFromItem(p, "Name");
-          return n != null && String(n).trim() !== "" ? String(n).trim() : "";
+          const ln = String(readFromItem(p, "LastName") || "").trim();
+          const fn = String(readFromItem(p, "FirstName") || "").trim();
+          const mi = String(readFromItem(p, "MiddleInitial") || "").trim();
+          if (!ln && !fn && !mi) return "";
+          const main = [ln, fn].filter(Boolean).join(", ");
+          if (main && mi) return main + " " + mi;
+          return main || mi;
         }
 
         function formatRestError(e) {
@@ -941,32 +983,59 @@
           });
         }
 
-        fillSelect($("fRank"), RANKS);
+        function ensureSelectHasValue(sel, val, fallbackList) {
+          if (!sel) return;
+          const v = val != null ? String(val).trim() : "";
+          if (v) {
+            const opts = Array.from(sel.options).map((o) => o.value);
+            if (!opts.includes(v)) {
+              const o = document.createElement("option");
+              o.value = v;
+              o.textContent = v + " (from list)";
+              sel.appendChild(o);
+            }
+            sel.value = v;
+          } else if (fallbackList && fallbackList.length) {
+            sel.value = fallbackList[0];
+          }
+        }
+
+        fillSelect($("fStatus"), STATUS_OPTIONS);
+        fillSelect($("fOffice"), OFFICE_SYMBOLS);
         fillSelect($("fSquadron"), SQUADRONS);
+        fillSelect($("fRank"), RANKS);
 
         const f = {
           id: $("fId"),
           recordDate: $("fRecordDate"),
-          rank: $("fRank"),
-          name: $("fName"),
-          squadron: $("fSquadron"),
-          status: $("fStatus"),
-          office: $("fOffice"),
+          lastName: $("fLastName"),
+          firstName: $("fFirstName"),
+          middleInitial: $("fMiddleInitial"),
+          dodId: $("fDoDID"),
+          address: $("fAddress"),
           work: $("fWorkPhone"),
           cell: $("fCellPhone"),
+          status: $("fStatus"),
+          office: $("fOffice"),
+          squadron: $("fSquadron"),
+          rank: $("fRank"),
           notes: $("fNotes"),
         };
 
         function resetForm() {
           f.id.value = "";
           f.recordDate.value = todayIso();
-          f.rank.value = RANKS[0];
-          f.name.value = "";
-          f.squadron.value = SQUADRONS[0];
-          f.status.value = "Active";
-          f.office.value = "";
+          f.lastName.value = "";
+          f.firstName.value = "";
+          f.middleInitial.value = "";
+          f.dodId.value = "";
+          f.address.value = "";
           f.work.value = "";
           f.cell.value = "";
+          f.status.value = STATUS_OPTIONS[0];
+          f.office.value = OFFICE_SYMBOLS[0];
+          f.squadron.value = SQUADRONS[0];
+          f.rank.value = RANKS[0];
           f.notes.value = "";
           $("pEditingLabel").textContent = "New record";
         }
@@ -983,7 +1052,7 @@
 
         function rosterHay(p) {
           const nm = personnelDisplayName(p);
-          return `${readFromItem(p, "Rank")} ${nm} ${readFromItem(p, "Squadron")} ${readFromItem(p, "OfficeSymbol")} ${readFromItem(p, "Status")} ${readFromItem(p, "WorkPhone")} ${readFromItem(p, "CellPhone")} ${readFromItem(p, "Notes")}`.toLowerCase();
+          return `${readFromItem(p, "Rank")} ${nm} ${readFromItem(p, "DoDID")} ${readFromItem(p, "Squadron")} ${readFromItem(p, "OfficeSymbol")} ${readFromItem(p, "Status")} ${readFromItem(p, "WorkPhone")} ${readFromItem(p, "CellPhone")} ${readFromItem(p, "Address")} ${readFromItem(p, "Notes")}`.toLowerCase();
         }
 
         function renderRoster() {
@@ -1015,7 +1084,7 @@
             title.textContent = `${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${personnelDisplayName(p) || "(no name)"}`;
             const meta = document.createElement("div");
             meta.className = "itemMeta";
-            meta.textContent = `Squadron: ${readFromItem(p, "Squadron") || "—"} · Office: ${readFromItem(p, "OfficeSymbol") || "—"} · Status: ${readFromItem(p, "Status") || "—"} · Record: ${fromSpDate(readFromItem(p, "RecordDate")) || "—"}`;
+            meta.textContent = `DoD ID: ${readFromItem(p, "DoDID") || "—"} · Squadron: ${readFromItem(p, "Squadron") || "—"} · Office: ${readFromItem(p, "OfficeSymbol") || "—"} · Status: ${readFromItem(p, "Status") || "—"} · Record: ${fromSpDate(readFromItem(p, "RecordDate")) || "—"}`;
             left.appendChild(title);
             left.appendChild(meta);
 
@@ -1060,17 +1129,18 @@
         function loadIntoForm(p) {
           f.id.value = String(p.Id);
           f.recordDate.value = fromSpDate(readFromItem(p, "RecordDate")) || todayIso();
-          const rk = readFromItem(p, "Rank");
-          f.rank.value = RANKS.includes(rk) ? rk : RANKS[0];
-          f.name.value = personnelDisplayName(p);
-          const sq = readFromItem(p, "Squadron");
-          f.squadron.value = SQUADRONS.includes(sq) ? sq : SQUADRONS[0];
-          const st = readFromItem(p, "Status");
-          f.status.value = ["Active", "P1", "Inactive"].includes(st) ? st : "Active";
-          f.office.value = readFromItem(p, "OfficeSymbol");
+          f.lastName.value = readFromItem(p, "LastName");
+          f.firstName.value = readFromItem(p, "FirstName");
+          f.middleInitial.value = readFromItem(p, "MiddleInitial");
+          f.dodId.value = readFromItem(p, "DoDID");
+          f.address.value = readFromItem(p, "Address");
           f.work.value = readFromItem(p, "WorkPhone");
           f.cell.value = readFromItem(p, "CellPhone");
           f.notes.value = readFromItem(p, "Notes");
+          ensureSelectHasValue(f.status, readFromItem(p, "Status"), STATUS_OPTIONS);
+          ensureSelectHasValue(f.office, readFromItem(p, "OfficeSymbol"), OFFICE_SYMBOLS);
+          ensureSelectHasValue(f.squadron, readFromItem(p, "Squadron"), SQUADRONS);
+          ensureSelectHasValue(f.rank, readFromItem(p, "Rank"), RANKS);
           $("pEditingLabel").textContent = "Editing ID " + p.Id;
         }
 
@@ -1105,16 +1175,24 @@
             __metadata: { type: entityType },
           };
           if (!PERSONNEL_IGNORE_SP_TITLE) {
-            payload.Title = f.name.value.trim() || "(no name)";
+            const t =
+              [f.lastName.value.trim(), f.firstName.value.trim()].filter(Boolean).join(", ") ||
+              f.dodId.value.trim() ||
+              "(no name)";
+            payload.Title = t;
           }
           payload[spField("RecordDate")] = toSpDate(isNew ? todayIso() : f.recordDate.value || todayIso());
-          payload[spField("Rank")] = f.rank.value || "";
-          payload[spField("Name")] = f.name.value.trim();
-          payload[spField("Squadron")] = f.squadron.value || "";
-          payload[spField("Status")] = f.status.value || "";
-          payload[spField("OfficeSymbol")] = f.office.value.trim();
+          payload[spField("LastName")] = f.lastName.value.trim();
+          payload[spField("FirstName")] = f.firstName.value.trim();
+          payload[spField("MiddleInitial")] = f.middleInitial.value.trim();
+          payload[spField("DoDID")] = f.dodId.value.trim();
+          payload[spField("Address")] = f.address.value.trim();
           payload[spField("WorkPhone")] = f.work.value.trim();
           payload[spField("CellPhone")] = f.cell.value.trim();
+          payload[spField("Status")] = f.status.value || "";
+          payload[spField("OfficeSymbol")] = f.office.value || "";
+          payload[spField("Squadron")] = f.squadron.value || "";
+          payload[spField("Rank")] = f.rank.value || "";
           payload[spField("Notes")] = f.notes.value.trim();
 
           const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items`;

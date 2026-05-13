@@ -21,11 +21,13 @@ Minimum:
 
 List titles and the certifier field key are set in the snippet source (`LIST_PERSONNEL`, `LIST_CERTIFIERS`, `CERTIFIERS_NAME_FIELD`). Change those constants if your site uses different names.
 
-For **Personnel**, `PERSONNEL_IGNORE_SP_TITLE` (default `true`) means the Hub does not send or display SharePoint’s built-in **Title** — only your **Name** column. Set it to `false` if **Save** on a new row fails because the list requires Title.
+For **Personnel**, `PERSONNEL_IGNORE_SP_TITLE` (default `true`) means the Hub does not send SharePoint’s built-in **Title**; it uses **LastName**, **FirstName**, **MiddleInitial** instead. Set it to `false` if **Save** on a new row fails because the list requires Title (then Title is filled from last/first name or DoD ID).
 
-**Hub Save** creates or updates rows using these SharePoint columns (internal names, or map them in `COLUMN_MAP` in the snippet): `Title`, `RecordDate`, `Rank`, `Name`, `Squadron`, `Status`, `OfficeSymbol`, `WorkPhone`, `CellPhone`, `Notes`. After load, the Hub shows a **check line** if any of those are missing or need `COLUMN_MAP`.
+**Hub Save** writes these fields (REST internal keys; override with `COLUMN_MAP` if yours differ): **RecordDate** (default internal `Record_x0020_Date` for a “Record Date” column), **LastName**, **FirstName**, **MiddleInitial**, **DoDID**, **Address**, **WorkPhone**, **CellPhone**, **Status**, **OfficeSymbol**, **Squadron**, **Rank**, **Notes**. System columns (**Modified**, **Created**, **Created by**, **Modified by**) are not sent.
 
-**Existing rows:** Put the web part on a page in the **same site** as the list. On load (and Refresh), the Hub calls SharePoint REST and lists every item in **Personnel** (up to 5000). You do not import anything separately; if the roster is empty, the list title usually does not match `LIST_PERSONNEL`, the list is on another site, or the browser user lacks **Read** on that list.
+**Choice dropdowns:** Edit `STATUS_OPTIONS`, `OFFICE_SYMBOLS`, `RANKS`, and `SQUADRONS` in the snippet so every option string **exactly matches** the choices configured on the SharePoint columns.
+
+**Existing rows:** Put the web part on a page in the **same site** as the list. On load (and Refresh), the Hub calls SharePoint REST and lists every item in **Personnel** (up to 5000). If the roster is empty, the list title usually does not match `LIST_PERSONNEL`, the list is on another site, or the browser user lacks **Read** on that list.
 
 The UI uses `/_api` calls and expects to run on the SharePoint site so your signed-in session provides auth cookies.
 
