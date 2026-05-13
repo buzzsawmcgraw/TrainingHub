@@ -130,17 +130,25 @@
         const LIST_PERSONNEL_GUID = "";
 
         /**
-         * Roster table columns — **recommended** so order and headers match your list.
-         *
-         * 1) Leave this as `[]` once, load the page, open **Diagnostics**, find “Table columns (auto union)” or the
-         *    first row JSON — copy the **exact** REST property names (e.g. `Record_x0020_Date`, `Last_x0020_Name`).
-         * 2) Paste them below in the order you want. Each entry is either:
-         *    - A string: `"LastName"` → column header shows that same text
-         *    - An object: `{ key: "Record_x0020_Date", label: "Record date" }` → header shows “Record date”
-         *
-         * Empty array `[]` = auto mode (one column per field returned on the rows — often messy).
+         * Roster columns — fixed order for 88thSFS Personnel. Remove the `Id` row if you do not want Personnel ID.
+         * If a column is always blank, open Diagnostics and change that row’s `key` to match REST (e.g. Last_x0020_Name).
          */
-        const ROSTER_COLUMNS = [];
+        const ROSTER_COLUMNS = [
+          { key: "Id", label: "Personnel ID" },
+          { key: "Record_x0020_Date", label: "Record Date" },
+          { key: "LastName", label: "LastName" },
+          { key: "FirstName", label: "FirstName" },
+          { key: "MiddleInitial", label: "MiddleInitial" },
+          { key: "DoDID", label: "DoDID" },
+          { key: "Address", label: "Address" },
+          { key: "WorkPhone", label: "WorkPhone" },
+          { key: "CellPhone", label: "CellPhone" },
+          { key: "Status", label: "Status" },
+          { key: "OfficeSymbol", label: "OfficeSymbol" },
+          { key: "Squadron", label: "Squadron" },
+          { key: "Rank", label: "Rank" },
+          { key: "Notes", label: "Notes" },
+        ];
 
         // ============================================================
 
