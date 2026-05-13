@@ -572,6 +572,11 @@
         // -------- SharePoint lists on this web (edit source if titles differ) --------
         /** Must match Site contents list name exactly — drives Hub roster + record Save/Delete. */
         const LIST_PERSONNEL = "Personnel";
+        /**
+         * When true, the Hub does not read or write SharePoint’s built-in **Title** on Personnel — only your **Name**
+         * column (and the other Hub fields). Set to false if creating new items returns an error requiring Title.
+         */
+        const PERSONNEL_IGNORE_SP_TITLE = true;
         const LIST_CERTIFIERS = "Certifiers";
         /** REST field key on each Certifiers row for the instructor name (falls back to Title). */
         const CERTIFIERS_NAME_FIELD = "Certifier";
@@ -820,6 +825,12 @@
           return "";
         }
 
+        /** Personnel list: use Name column only for labels (not SharePoint Title when ignoring Title). */
+        function personnelDisplayName(p) {
+          const n = readFromItem(p, "Name");
+          return n != null && String(n).trim() !== "" ? String(n).trim() : "";
+        }
+
         function formatRestError(e) {
           const m = e && e.message ? String(e.message) : String(e);
           if (/\b403\b/.test(m)) {
@@ -971,7 +982,7 @@
         }
 
         function rosterHay(p) {
-          const nm = readFromItem(p, "Name") || p.Title || "";
+          const nm = personnelDisplayName(p);
           return `${readFromItem(p, "Rank")} ${nm} ${readFromItem(p, "Squadron")} ${readFromItem(p, "OfficeSymbol")} ${readFromItem(p, "Status")} ${readFromItem(p, "WorkPhone")} ${readFromItem(p, "CellPhone")} ${readFromItem(p, "Notes")}`.toLowerCase();
         }
 
@@ -1001,7 +1012,7 @@
             const left = document.createElement("div");
             const title = document.createElement("div");
             title.className = "itemTitle";
-            title.textContent = `${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${readFromItem(p, "Name") || p.Title || "(no name)"}`;
+            title.textContent = `${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${personnelDisplayName(p) || "(no name)"}`;
             const meta = document.createElement("div");
             meta.className = "itemMeta";
             meta.textContent = `Squadron: ${readFromItem(p, "Squadron") || "—"} · Office: ${readFromItem(p, "OfficeSymbol") || "—"} · Status: ${readFromItem(p, "Status") || "—"} · Record: ${fromSpDate(readFromItem(p, "RecordDate")) || "—"}`;
@@ -1051,7 +1062,7 @@
           f.recordDate.value = fromSpDate(readFromItem(p, "RecordDate")) || todayIso();
           const rk = readFromItem(p, "Rank");
           f.rank.value = RANKS.includes(rk) ? rk : RANKS[0];
-          f.name.value = readFromItem(p, "Name") || p.Title || "";
+          f.name.value = personnelDisplayName(p);
           const sq = readFromItem(p, "Squadron");
           f.squadron.value = SQUADRONS.includes(sq) ? sq : SQUADRONS[0];
           const st = readFromItem(p, "Status");
@@ -1092,8 +1103,10 @@
           const isNew = !f.id.value;
           const payload = {
             __metadata: { type: entityType },
-            Title: f.name.value.trim() || "(no name)",
           };
+          if (!PERSONNEL_IGNORE_SP_TITLE) {
+            payload.Title = f.name.value.trim() || "(no name)";
+          }
           payload[spField("RecordDate")] = toSpDate(isNew ? todayIso() : f.recordDate.value || todayIso());
           payload[spField("Rank")] = f.rank.value || "";
           payload[spField("Name")] = f.name.value.trim();
@@ -1185,9 +1198,7 @@
             return;
           }
 
-          rows.sort((a, b) =>
-            String(readFromItem(a, "Name") || a.Title || "").localeCompare(String(readFromItem(b, "Name") || b.Title || "")),
-          );
+          rows.sort((a, b) => personnelDisplayName(a).localeCompare(personnelDisplayName(b)));
 
           rows.forEach((p) => {
             const tr = document.createElement("tr");
@@ -1199,7 +1210,7 @@
             }
 
             tr.appendChild(
-              tdText(`${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${readFromItem(p, "Name") || p.Title || ""}`.trim()),
+              tdText(`${readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : ""}${personnelDisplayName(p)}`.trim()),
             );
             tr.appendChild(tdText(fromSpDate(readFromItem(p, "RecordDate")) || ""));
 
@@ -1262,9 +1273,7 @@
         $("p1PrintRoster").addEventListener("click", () => {
           const p1 = personnel
             .filter(isActiveP1)
-            .sort((a, b) =>
-              String(readFromItem(a, "Name") || a.Title || "").localeCompare(String(readFromItem(b, "Name") || b.Title || "")),
-            );
+            .sort((a, b) => personnelDisplayName(a).localeCompare(personnelDisplayName(b)));
           const w = window.open("", "_blank");
           const html = `
             <html><head><title>P1 Recall Roster</title>
@@ -1286,7 +1295,7 @@
                   .map(
                     (p) => `
                   <tr>
-                    <td>${(readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : "") + (readFromItem(p, "Name") || p.Title || "")}</td>
+                    <td>${(readFromItem(p, "Rank") ? readFromItem(p, "Rank") + " " : "") + personnelDisplayName(p)}</td>
                     <td>${fromSpDate(readFromItem(p, "RecordDate")) || "—"}</td>
                     <td>${fromSpDate(readFromItem(p, "P1StartDate")) || "—"}</td>
                     <td>${readFromItem(p, "ProjectedOffice") || "—"}</td>
