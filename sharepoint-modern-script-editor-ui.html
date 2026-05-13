@@ -431,11 +431,31 @@
         grid-template-columns: 1fr;
         gap: 14px 0;
       }
-      #sp-pip-ui .add-form-split--primary .add-field--notes textarea {
-        min-height: 96px;
-        max-height: 220px;
+      #sp-pip-ui .add-form-contact-bundle {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 0;
+      }
+      #sp-pip-ui .add-form-contact-status-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px 12px;
+        align-items: end;
+      }
+      #sp-pip-ui .add-form-contact-status-row .add-field {
+        min-width: 0;
+      }
+      #sp-pip-ui .add-form-contact-status-row .add-field select {
+        width: 100%;
+        max-width: 100%;
+      }
+      #sp-pip-ui .add-form-contact-bundle .add-field--notes textarea {
+        min-height: 48px;
+        max-height: 160px;
         height: auto;
-        resize: vertical;
+        resize: none;
+        overflow-y: auto;
       }
       #sp-pip-ui .add-field--address textarea {
         min-height: 48px;
@@ -668,8 +688,8 @@
         ];
 
         /**
-         * Training Hub form (`Id` omitted). Identity | Contact in one panel. Contact includes phones, then
-         * Status / OfficeSymbol / Squadron, then Notes.
+         * Training Hub form (`Id` omitted). Identity | Contact. Contact: Address / phones, then Status · OfficeSymbol ·
+         * Squadron on one row, then Notes (height trimmed to align column bottoms with Identity).
          */
         const ADD_FORM_FIELD_GROUPS = [
           { title: "Identity & record", keys: ["RecordDate", "DoDID", "Rank", "LastName", "FirstName", "MiddleInitial"], split: "left", layout: "stack" },
@@ -677,7 +697,7 @@
             title: "Contact",
             keys: ["Address", "CellPhone", "WorkPhone", "Status", "OfficeSymbol", "Squadron", "Notes"],
             split: "right",
-            layout: "stack",
+            layout: "contact-stack",
           },
         ];
 
@@ -1243,7 +1263,8 @@
           root.querySelectorAll("select.add-field-select--autosize").forEach((el) => applySelectAutosize(el));
         }
 
-        function buildAddFieldWrap(col, sampleRow) {
+        function buildAddFieldWrap(col, sampleRow, opt) {
+          opt = opt || {};
           if (col.key === "Id") return null;
           const writeKey = resolveWriteKey(col, sampleRow);
           const fwrap = document.createElement("div");
@@ -1260,7 +1281,7 @@
           let input;
           if (isDrop) {
             input = document.createElement("select");
-            input.className = "add-field-select--autosize";
+            if (!opt.fullWidthSelect) input.className = "add-field-select--autosize";
             input.id = "nf_" + col.key;
             input.dataset.writeKey = writeKey;
             const opt0 = document.createElement("option");
@@ -1287,8 +1308,81 @@
           return fwrap;
         }
 
+        function balanceContactNotesToIdentityColumn(form) {
+          const split = form.querySelector(".add-form-split--primary");
+          if (!split) return;
+          const fsets = split.querySelectorAll(":scope > fieldset.add-form-group");
+          if (fsets.length < 2) return;
+          const leftCol = fsets[0];
+          const rightCol = fsets[1];
+          const notesTa = document.getElementById("nf_Notes");
+          if (!notesTa || notesTa.tagName !== "TEXTAREA") return;
+          notesTa.style.maxHeight = "";
+          void split.offsetHeight;
+          let leftH = leftCol.getBoundingClientRect().height;
+          let rightH = rightCol.getBoundingClientRect().height;
+          if (rightH <= leftH + 2) return;
+          let guard = 0;
+          while (rightH > leftH + 2 && guard < 14) {
+            guard++;
+            const diff = rightH - leftH;
+            const nh = notesTa.getBoundingClientRect().height;
+            const next = Math.max(40, nh - diff - 8);
+            notesTa.style.maxHeight = next + "px";
+            void rightCol.offsetHeight;
+            leftH = leftCol.getBoundingClientRect().height;
+            rightH = rightCol.getBoundingClientRect().height;
+          }
+        }
+
         function buildGroupFieldset(group, cols, sampleRow) {
           if (!group || !group.title || !Array.isArray(group.keys)) return null;
+
+          if (group.layout === "contact-stack") {
+            const keys = group.keys;
+            if (keys.length < 7) return null;
+            const topKeys = keys.slice(0, 3);
+            const statusKeys = keys.slice(3, 6);
+            const notesKey = keys[6];
+            const bundle = document.createElement("div");
+            bundle.className = "add-form-contact-bundle";
+
+            const topGrid = document.createElement("div");
+            topGrid.className = "add-form-grid add-form-grid--stack add-form-contact-stack-top";
+            topKeys.forEach((key) => {
+              const col = cols.find((c) => c.key === key);
+              if (!col) return;
+              const f = buildAddFieldWrap(col, sampleRow);
+              if (f) topGrid.appendChild(f);
+            });
+
+            const statusRow = document.createElement("div");
+            statusRow.className = "add-form-contact-status-row";
+            statusKeys.forEach((key) => {
+              const col = cols.find((c) => c.key === key);
+              if (!col) return;
+              const f = buildAddFieldWrap(col, sampleRow, { fullWidthSelect: true });
+              if (f) statusRow.appendChild(f);
+            });
+
+            const notesCol = cols.find((c) => c.key === notesKey);
+            const notesWrap = notesCol ? buildAddFieldWrap(notesCol, sampleRow) : null;
+
+            bundle.appendChild(topGrid);
+            bundle.appendChild(statusRow);
+            if (notesWrap) bundle.appendChild(notesWrap);
+
+            const fs = document.createElement("fieldset");
+            fs.className = "add-form-group";
+            if (group.compact) fs.classList.add("add-form-group--compact");
+            const leg = document.createElement("legend");
+            leg.className = "add-form-group-legend";
+            leg.textContent = group.title;
+            fs.appendChild(leg);
+            fs.appendChild(bundle);
+            return fs;
+          }
+
           const grid = document.createElement("div");
           grid.className = "add-form-grid";
           if (group.layout === "stack") grid.classList.add("add-form-grid--stack");
@@ -1430,6 +1524,11 @@
             applySelectAutosize(sel);
           }
           applyAllSelectAutosizes(form);
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              balanceContactNotesToIdentityColumn(form);
+            });
+          });
           primeRecordDateDefault();
         }
 
