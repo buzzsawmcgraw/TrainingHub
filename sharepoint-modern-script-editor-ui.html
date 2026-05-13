@@ -45,6 +45,37 @@
         border-bottom: 2px solid var(--pip-border);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
       }
+      #sp-pip-ui .hub-header-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 18px 24px;
+      }
+      #sp-pip-ui .hub-logo-wrap {
+        flex: 0 0 auto;
+        line-height: 0;
+        border: 2px solid var(--pip-border);
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.35);
+        box-shadow: 0 0 16px rgba(30, 255, 69, 0.12);
+        padding: 4px;
+      }
+      #sp-pip-ui .hub-logo-wrap[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui .hub-logo {
+        display: block;
+        max-width: min(160px, 32vw);
+        max-height: 96px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        vertical-align: middle;
+      }
+      #sp-pip-ui .hub-header-titles {
+        flex: 1 1 200px;
+        min-width: 0;
+      }
       #sp-pip-ui .hub-org {
         margin: 0;
         font-size: clamp(1.25rem, 2.8vw, 1.75rem);
@@ -365,8 +396,15 @@
     <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
     <div id="sp-pip-ui">
       <header class="hub-header">
-        <h1 class="hub-org">88th Security Forces Squadron</h1>
-        <p class="hub-banner">Authorized Personnel Only</p>
+        <div class="hub-header-row">
+          <div class="hub-logo-wrap" id="hubLogoWrap" hidden>
+            <img id="hubLogoImg" class="hub-logo" src="" alt="" decoding="async" />
+          </div>
+          <div class="hub-header-titles">
+            <h1 class="hub-org">88th Security Forces Squadron</h1>
+            <p class="hub-banner">Authorized Personnel Only</p>
+          </div>
+        </div>
       </header>
       <main class="hub-main">
         <section class="hub-section hub-section--form" aria-label="Training Hub entry">
@@ -428,6 +466,16 @@
         const LIST_PERSONNEL_GUID = "";
 
         /**
+         * Optional masthead PNG/JPEG/SVG. Upload the file to this SharePoint site (e.g. **Site Assets** or a document
+         * library), copy the file’s link, and paste the full URL here. Leave "" to hide the logo.
+         * Example: https://usaf.dps.mil/sites/88thSFS/SiteAssets/88sfs-emblem.png
+         * (You can also use a `data:image/png;base64,...` data URL if size and policy allow.)
+         */
+        const HUB_LOGO_URL = "";
+        /** Alt text when the logo is shown (accessibility). */
+        const HUB_LOGO_ALT = "88th Security Forces Squadron";
+
+        /**
          * Roster column `key` values that render as dropdowns. Options are loaded from SharePoint field **Choices**
          * (same internal name as used for save — see `resolveWriteKey` / first data row).
          */
@@ -462,6 +510,16 @@
         ];
 
         // ============================================================
+
+        (function initHubLogo() {
+          const wrap = document.getElementById("hubLogoWrap");
+          const img = document.getElementById("hubLogoImg");
+          const url = typeof HUB_LOGO_URL === "string" ? HUB_LOGO_URL.trim() : "";
+          if (!wrap || !img || !url) return;
+          img.src = url;
+          img.alt = typeof HUB_LOGO_ALT === "string" && HUB_LOGO_ALT.trim() ? HUB_LOGO_ALT.trim() : "Squadron emblem";
+          wrap.hidden = false;
+        })();
 
         const out = document.getElementById("probeOut");
         const btn = document.getElementById("probeRun");
