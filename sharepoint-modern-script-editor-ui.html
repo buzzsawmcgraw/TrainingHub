@@ -131,11 +131,15 @@
 
         /**
          * Roster columns — fixed order for 88thSFS Personnel. Remove the `Id` row if you do not want Personnel ID.
-         * If a column is always blank, open Diagnostics and change that row’s `key` to match REST (e.g. Last_x0020_Name).
+         * If a column is always blank, open Diagnostics and change that row’s `key` / add `altKeys` (see Record Date).
          */
         const ROSTER_COLUMNS = [
           { key: "Id", label: "Personnel ID" },
-          { key: "Record_x0020_Date", label: "Record Date" },
+          {
+            key: "RecordDate",
+            label: "Record Date",
+            altKeys: ["Record_x0020_Date", "Record0", "DateArrived", "Date_x0020_Arrived"],
+          },
           { key: "LastName", label: "LastName" },
           { key: "FirstName", label: "FirstName" },
           { key: "MiddleInitial", label: "MiddleInitial" },
@@ -164,14 +168,21 @@
             if (entry == null) return;
             if (typeof entry === "string") {
               const key = entry.trim();
-              if (key) result.push({ key: key, label: key });
+              if (key) result.push({ key: key, label: key, tryKeys: [key] });
               return;
             }
             if (typeof entry === "object") {
               const key = String(entry.key != null ? entry.key : entry.field != null ? entry.field : "").trim();
               if (!key) return;
               const label = String(entry.label != null ? entry.label : "").trim() || key;
-              result.push({ key: key, label: label });
+              const alt = Array.isArray(entry.altKeys)
+                ? entry.altKeys.map((x) => String(x).trim()).filter(Boolean)
+                : [];
+              const tryKeys = [key];
+              alt.forEach((a) => {
+                if (a && tryKeys.indexOf(a) === -1) tryKeys.push(a);
+              });
+              result.push({ key: key, label: label, tryKeys: tryKeys });
             }
           });
           return result;
@@ -182,7 +193,7 @@
           const explicit = normalizedRosterColumns();
           if (explicit.length > 0) return { mode: "explicit", columns: explicit };
           const keys = collectColumnKeys(rows);
-          return { mode: "auto", columns: keys.map((k) => ({ key: k, label: k })) };
+          return { mode: "auto", columns: keys.map((k) => ({ key: k, label: k, tryKeys: [k] })) };
         }
 
         /** Skip OData / navigation noise; every other property becomes a table column. */
@@ -225,8 +236,10 @@
             const m = val.match(/^\/Date\((\d+)\)\/$/);
             if (m) {
               const d = new Date(parseInt(m[1], 10));
-              if (!isNaN(d.getTime())) return d.toISOString();
+              if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
             }
+            const isoDay = val.match(/^(\d{4}-\d{2}-\d{2})(?:T|$)/);
+            if (isoDay) return isoDay[1];
             return val;
           }
           try {
@@ -234,6 +247,21 @@
           } catch (_) {
             return String(val);
           }
+        }
+
+        function valueFromItemByKeys(item, tryKeys) {
+          if (!item || !tryKeys || !tryKeys.length) return undefined;
+          for (let i = 0; i < tryKeys.length; i++) {
+            const k = tryKeys[i];
+            if (!k || !Object.prototype.hasOwnProperty.call(item, k)) continue;
+            const v = item[k];
+            if (v !== null && v !== undefined && v !== "") return v;
+          }
+          for (let i = 0; i < tryKeys.length; i++) {
+            const k = tryKeys[i];
+            if (k && Object.prototype.hasOwnProperty.call(item, k)) return item[k];
+          }
+          return undefined;
         }
 
         function setReadState(kind, message) {
@@ -258,7 +286,7 @@
           columns.forEach((col) => {
             const th = document.createElement("th");
             th.textContent = col.label;
-            th.title = col.key;
+            th.title = (col.tryKeys || [col.key]).join(" · ");
             trHead.appendChild(th);
           });
           thead.appendChild(trHead);
@@ -268,8 +296,9 @@
             const tr = document.createElement("tr");
             columns.forEach((col) => {
               const td = document.createElement("td");
-              const raw = item[col.key];
-              const text = formatCellValue(raw);
+              const tryKeys = col.tryKeys || [col.key];
+              const raw = valueFromItemByKeys(item, tryKeys);
+              const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
               td.textContent = text === "" ? "—" : text;
               tr.appendChild(td);
             });
