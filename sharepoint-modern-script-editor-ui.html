@@ -672,7 +672,14 @@
         const PERSONNEL_ITEMS_ORDERBY = "LastName asc,FirstName asc";
 
         /**
-         * Roster columns — fixed order for 88thSFS Personnel. Add `{ key: "Id", label: "Personnel ID" }` if you want list item IDs visible.
+         * When false, the SharePoint list item `Id` is never shown as a roster column (covers stale Script Editor copies
+         * that still list `Id` / "Personnel ID" in ROSTER_COLUMNS). Delete still uses `item.Id`. Set true to allow an Id column.
+         */
+        const SHOW_LIST_ITEM_ID_IN_ROSTER = false;
+
+        /**
+         * Roster columns — fixed order for 88thSFS Personnel. List item Id is hidden unless SHOW_LIST_ITEM_ID_IN_ROSTER is true
+         * and you include `{ key: "Id", label: "…" }` here.
          * If a column is always blank, open Diagnostics and change that row’s `key` / add `altKeys` (see Record Date).
          */
         const ROSTER_COLUMNS = [
@@ -807,6 +814,15 @@
           return { mode: "auto", columns: keys.map((k) => ({ key: k, label: k, tryKeys: [k], saveKey: null })) };
         }
 
+        /** Columns actually drawn in the roster table (optionally strips list item Id). */
+        function rosterColumnsForDisplay(plan) {
+          if (!plan || !plan.columns) return [];
+          if (SHOW_LIST_ITEM_ID_IN_ROSTER) return plan.columns.slice();
+          return plan.columns.filter(function (c) {
+            return c.key !== "Id";
+          });
+        }
+
         /** Skip OData / navigation noise; every other property becomes a table column. */
         function isODataOrMetaKey(k) {
           if (!k || typeof k !== "string") return true;
@@ -815,17 +831,17 @@
           return k === "odata.type" || k === "odata.id" || k === "odata.editLink" || k === "odata.metadata";
         }
 
-        /** Union of field names across all loaded rows (order: Id, Title, then A–Z). */
+        /** Union of field names across all loaded rows (order: Title, then A–Z). List item `Id` is omitted from the table. */
         function collectColumnKeys(rows) {
           const set = new Set();
           rows.forEach((item) => {
             if (!item || typeof item !== "object") return;
             Object.keys(item).forEach((k) => {
-              if (!isODataOrMetaKey(k)) set.add(k);
+              if (!isODataOrMetaKey(k) && k !== "Id") set.add(k);
             });
           });
           const keys = Array.from(set);
-          const priority = ["Id", "Title"];
+          const priority = ["Title"];
           keys.sort((a, b) => {
             const ia = priority.indexOf(a);
             const ib = priority.indexOf(b);
@@ -875,15 +891,29 @@
           return undefined;
         }
 
+        function sortKeysForPersonnelName(fieldKey) {
+          if (fieldKey === "LastName") return ["LastName", "Last_x0020_Name", "LastName0"];
+          if (fieldKey === "FirstName") return ["FirstName", "First_x0020_Name", "FirstName0"];
+          return [fieldKey];
+        }
+
         function sortPersonnelRowsAlphabetical(rows) {
           if (!Array.isArray(rows) || rows.length < 2) return rows;
           const cols = normalizedRosterColumns();
-          const lastCol = cols.find(function (c) {
-            return c.key === "LastName";
-          });
-          const firstCol = cols.find(function (c) {
-            return c.key === "FirstName";
-          });
+          function columnSpecForSort(fieldKey) {
+            const fromRoster = cols.find(function (c) {
+              return c.key === fieldKey;
+            });
+            if (fromRoster) return fromRoster;
+            return {
+              key: fieldKey,
+              label: fieldKey,
+              tryKeys: sortKeysForPersonnelName(fieldKey),
+              saveKey: null,
+            };
+          }
+          const lastCol = columnSpecForSort("LastName");
+          const firstCol = columnSpecForSort("FirstName");
           function nameVal(item, col) {
             if (!col) return "";
             const keys = col.tryKeys || [col.key];
@@ -951,7 +981,7 @@
           const thead = document.getElementById("rosterThead");
           if (!rosterTableBody || !thead) return;
           const plan = resolveRosterColumnPlan(rows);
-          const columns = plan.columns;
+          const columns = rosterColumnsForDisplay(plan);
           const showDelete = pw && seg;
           const trHead = document.createElement("tr");
           columns.forEach((col) => {
@@ -1732,11 +1762,12 @@
             log("List is empty (ItemCount may still be > 0 if filtered view — this is default view items).");
           } else {
             if (plan.mode === "explicit") {
+              const dispCols = rosterColumnsForDisplay(plan);
               log(
                 "Roster mode: **explicit** ROSTER_COLUMNS (" +
-                  plan.columns.length +
-                  "):\n" +
-                  plan.columns.map((c) => c.key + (c.label !== c.key ? "  (header: " + c.label + ")" : "")).join("\n"),
+                  dispCols.length +
+                  " displayed):\n" +
+                  dispCols.map((c) => c.key + (c.label !== c.key ? "  (header: " + c.label + ")" : "")).join("\n"),
                 "ok",
               );
             } else {
