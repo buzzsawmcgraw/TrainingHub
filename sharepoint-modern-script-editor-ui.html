@@ -47,22 +47,24 @@
       (function () {
         // ============ EDIT THESE (URLs remove ambiguity) ============
         /**
-         * (A) Site root where the Personnel list lives — no trailing slash. Example:
-         * https://yourtenant.sharepoint.com/sites/88thSFS
-         * If set, ALL REST calls use this host/path (not _spPageContextInfo).
+         * 88thSFS deployment reference:
+         * - Site page: https://usaf.dps.mil/sites/88thSFS/SitePages/S3T.aspx
+         * - List view: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
+         *
+         * (A) Site root — no trailing slash. REST is always: SITE_ROOT + "/_api/web/..."
          */
-        const PERSONNEL_SITE_ROOT_URL = "";
+        const PERSONNEL_SITE_ROOT_URL = "https://usaf.dps.mil/sites/88thSFS";
 
         /**
-         * (B) If you don’t have the site root handy: paste ANY full URL from that same site — list view, SitePages,
-         * home. The script derives …/sites/SiteName or …/teams/TeamName. Ignored when PERSONNEL_SITE_ROOT_URL is set.
+         * (B) Optional fallback: paste any URL under the site; derives …/sites/88thSFS. Ignored when (A) is set.
+         * Example: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
          */
         const PERSONNEL_SHAREPOINT_URL = "";
 
         /** @deprecated Same effect as PERSONNEL_SITE_ROOT_URL; kept for older copies of this file. */
         const PERSONNEL_REST_WEB_URL = "";
 
-        /** Exact list name from Site contents (ignored if LIST_PERSONNEL_GUID is set). */
+        /** Must match Site contents list title (URL …/Lists/Personnel… usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
         /** Optional: List GUID from List settings → use if getbytitle fails. */
         const LIST_PERSONNEL_GUID = "";
