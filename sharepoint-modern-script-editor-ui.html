@@ -145,15 +145,15 @@
         margin: 0;
       }
       #sp-pip-ui .hub-section--roster h2.hub-subtitle {
-        margin: 0 0 12px;
+        margin: 0 0 14px;
         padding-bottom: 10px;
         border-bottom: 1px solid var(--pip-border);
-        font-size: 14px;
+        font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.18em;
+        letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: var(--pip-green);
-        text-shadow: 0 0 8px var(--pip-green-glow);
+        color: var(--pip-amber);
+        text-shadow: 0 0 6px rgba(255, 176, 0, 0.28);
       }
       #sp-pip-ui pre span.ok {
         color: var(--pip-green);
@@ -273,41 +273,54 @@
         max-height: min(52vh, 560px);
         border: 1px solid var(--pip-border);
         margin: 0;
-        background: var(--pip-bg2);
-        border-radius: 6px;
-        box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.65);
+        background: rgba(5, 14, 10, 0.55);
+        border-radius: 8px;
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), inset 0 0 32px rgba(0, 0, 0, 0.5);
       }
       #sp-pip-ui table.roster {
         width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 13px;
         font-family: var(--pip-font);
       }
       #sp-pip-ui table.roster th,
       #sp-pip-ui table.roster td {
-        border-bottom: 1px solid var(--pip-border);
-        padding: 8px 10px;
         text-align: left;
-        vertical-align: top;
-        color: var(--pip-green);
+        vertical-align: middle;
       }
       #sp-pip-ui table.roster th {
-        background: #050805;
         position: sticky;
         top: 0;
-        z-index: 1;
-        color: var(--pip-green);
+        z-index: 2;
+        padding: 11px 14px;
+        font-weight: 600;
+        font-size: 10px;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        font-size: 11px;
-        border-bottom: 2px solid var(--pip-green-dim);
-        text-shadow: 0 0 5px var(--pip-green-glow);
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
+        background: linear-gradient(180deg, rgba(14, 36, 26, 0.98) 0%, rgba(8, 22, 16, 0.96) 100%);
+        border-bottom: 1px solid var(--pip-border);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
       }
-      #sp-pip-ui table.roster tr:nth-child(even) {
-        background: rgba(10, 30, 14, 0.35);
+      #sp-pip-ui table.roster td {
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(30, 74, 54, 0.4);
+        color: rgba(210, 255, 224, 0.92);
+        text-shadow: 0 0 1px rgba(60, 255, 122, 0.12);
       }
-      #sp-pip-ui table.roster tr:hover td {
-        background: rgba(30, 255, 69, 0.08);
+      #sp-pip-ui table.roster tbody tr:nth-child(even) td {
+        background: rgba(8, 22, 16, 0.38);
+      }
+      #sp-pip-ui table.roster tbody tr:hover td {
+        background: rgba(60, 255, 122, 0.07);
+      }
+      #sp-pip-ui table.roster thead th:first-child {
+        border-top-left-radius: 7px;
+      }
+      #sp-pip-ui table.roster thead th:last-child {
+        border-top-right-radius: 7px;
       }
       #sp-pip-ui details {
         margin-top: 0;
@@ -336,23 +349,15 @@
         box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.06), inset 0 0 28px rgba(0, 0, 0, 0.45);
       }
       #sp-pip-ui .add-person-panel h2.hub-subtitle {
-        margin: 0 0 8px;
+        margin: 0 0 14px;
         padding-bottom: 12px;
         border-bottom: 1px solid var(--pip-border);
-        font-size: 14px;
+        font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.18em;
+        letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: var(--pip-green);
-        text-shadow: 0 0 8px var(--pip-green-glow);
-      }
-      #sp-pip-ui .add-panel-lead {
-        margin: 0 0 16px;
-        font-size: 12px;
-        line-height: 1.55;
-        color: var(--pip-green-dim);
-        letter-spacing: 0.02em;
-        max-width: 72ch;
+        color: var(--pip-amber);
+        text-shadow: 0 0 6px rgba(255, 176, 0, 0.28);
       }
       #sp-pip-ui form#newPersonForm.add-form-stack {
         display: flex;
@@ -1234,12 +1239,6 @@
           h.className = "hub-subtitle";
           h.textContent = "Training Hub";
           panel.appendChild(h);
-
-          const lead = document.createElement("p");
-          lead.className = "add-panel-lead";
-          lead.textContent =
-            "New personnel entry — Last name and First name are required before save. Choice fields use SharePoint allowed values. Use Clear form to reset.";
-          panel.appendChild(lead);
 
           const form = document.createElement("form");
           form.id = "newPersonForm";
