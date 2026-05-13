@@ -42,7 +42,10 @@
             <div class="row row-between">
               <div>
                 <div class="sectionTitle">Command hub</div>
-                <div class="muted">Personnel list <strong>Personnel</strong> on this site — all tracked fields below.</div>
+                <div class="muted">
+                  Reads and saves the <strong>Personnel</strong> list on this SharePoint site (same site as this page).
+                  List title must match exactly — see <span class="mono">LIST_PERSONNEL</span> in the snippet source.
+                </div>
               </div>
               <div class="row">
                 <input
@@ -110,23 +113,6 @@
                   <div class="field full">
                     <label>Notes (single line)</label>
                     <input id="fNotes" class="input" type="text" />
-                  </div>
-
-                  <div class="field">
-                    <label>P1 start date</label>
-                    <input id="fP1Start" class="input" type="date" />
-                  </div>
-                  <div class="field">
-                    <label>P1 end date</label>
-                    <input id="fP1End" class="input" type="date" />
-                  </div>
-                  <div class="field full">
-                    <label>Projected office / flight</label>
-                    <input id="fProjectedOffice" class="input" type="text" />
-                  </div>
-                  <div class="field full">
-                    <label>Certifications (JSON)</label>
-                    <textarea id="fCertsJson" class="input" rows="4" spellcheck="false" placeholder="[]"></textarea>
                   </div>
 
                   <div class="row full row-between">
@@ -204,7 +190,7 @@
               <div>
                 <div class="sectionTitle">Phase 1</div>
                 <div class="muted">
-                  Same data as Hub — quick table edits here, or edit the full row on <strong>Hub</strong>.
+                  Edits P1 columns on the <strong>Personnel</strong> list only (not shown on Hub).
                 </div>
               </div>
               <div class="row">
@@ -448,12 +434,6 @@
       #sp-pip-ui .input:focus {
         border-color: rgba(65, 255, 122, 0.5);
         box-shadow: 0 0 0 2px rgba(65, 255, 122, 0.12);
-      }
-      #sp-pip-ui textarea.input {
-        font-family: inherit;
-        line-height: 1.35;
-        resize: vertical;
-        min-height: 72px;
       }
       #sp-pip-ui select.input {
         padding-right: 30px;
@@ -817,28 +797,6 @@
         function todayIso() {
           return new Date().toISOString().slice(0, 10);
         }
-        function stringifyJson(obj) {
-          try {
-            return JSON.stringify(obj);
-          } catch (_) {
-            return "[]";
-          }
-        }
-
-        function certsJsonForForm(p) {
-          const certKey = spField("CertificationsJson");
-          const raw0 = p[certKey];
-          const raw =
-            raw0 != null && String(raw0).trim() !== ""
-              ? String(raw0)
-              : String(readFromItem(p, "CertificationsJson") || "");
-          const t = raw.trim() || "[]";
-          try {
-            return JSON.stringify(JSON.parse(t), null, 2);
-          } catch (_) {
-            return t;
-          }
-        }
 
         // Populate dropdowns
         function fillSelect(sel, values) {
@@ -865,10 +823,6 @@
           work: $("fWorkPhone"),
           cell: $("fCellPhone"),
           notes: $("fNotes"),
-          p1Start: $("fP1Start"),
-          p1End: $("fP1End"),
-          projected: $("fProjectedOffice"),
-          certsJson: $("fCertsJson"),
         };
 
         function resetForm() {
@@ -882,10 +836,6 @@
           f.work.value = "";
           f.cell.value = "";
           f.notes.value = "";
-          f.p1Start.value = "";
-          f.p1End.value = "";
-          f.projected.value = "";
-          f.certsJson.value = "[]";
           $("pEditingLabel").textContent = "New record";
         }
         resetForm();
@@ -899,7 +849,7 @@
 
         function rosterHay(p) {
           const nm = readFromItem(p, "Name") || p.Title || "";
-          return `${readFromItem(p, "Rank")} ${nm} ${readFromItem(p, "Squadron")} ${readFromItem(p, "OfficeSymbol")} ${readFromItem(p, "Status")} ${readFromItem(p, "WorkPhone")} ${readFromItem(p, "CellPhone")} ${readFromItem(p, "Notes")} ${readFromItem(p, "ProjectedOffice")}`.toLowerCase();
+          return `${readFromItem(p, "Rank")} ${nm} ${readFromItem(p, "Squadron")} ${readFromItem(p, "OfficeSymbol")} ${readFromItem(p, "Status")} ${readFromItem(p, "WorkPhone")} ${readFromItem(p, "CellPhone")} ${readFromItem(p, "Notes")}`.toLowerCase();
         }
 
         function renderRoster() {
@@ -959,10 +909,6 @@
           f.work.value = readFromItem(p, "WorkPhone");
           f.cell.value = readFromItem(p, "CellPhone");
           f.notes.value = readFromItem(p, "Notes");
-          f.p1Start.value = fromSpDate(readFromItem(p, "P1StartDate")) || "";
-          f.p1End.value = fromSpDate(readFromItem(p, "P1EndDate")) || "";
-          f.projected.value = readFromItem(p, "ProjectedOffice");
-          f.certsJson.value = certsJsonForForm(p);
           $("pEditingLabel").textContent = "Editing ID " + p.Id;
         }
 
@@ -982,17 +928,6 @@
           const listTitle = LIST_PERSONNEL;
           const entityType = await getEntityType(listTitle);
 
-          const certKey = spField("CertificationsJson");
-          const rawCerts = f.certsJson.value.trim();
-          let certJson = "[]";
-          if (rawCerts) {
-            try {
-              certJson = stringifyJson(JSON.parse(rawCerts));
-            } catch (e) {
-              throw new Error("Certifications (JSON) must be valid JSON.");
-            }
-          }
-
           const isNew = !f.id.value;
           const payload = {
             __metadata: { type: entityType },
@@ -1007,10 +942,6 @@
           payload[spField("WorkPhone")] = f.work.value.trim();
           payload[spField("CellPhone")] = f.cell.value.trim();
           payload[spField("Notes")] = f.notes.value.trim();
-          payload[spField("P1StartDate")] = f.p1Start.value ? toSpDate(f.p1Start.value) : null;
-          payload[spField("P1EndDate")] = f.p1End.value ? toSpDate(f.p1End.value) : null;
-          payload[spField("ProjectedOffice")] = f.projected.value.trim();
-          payload[certKey] = certJson;
 
           const base = `/_api/web/lists/getbytitle('${escListTitle(listTitle)}')/items`;
           if (f.id.value) {
