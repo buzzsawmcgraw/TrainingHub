@@ -879,11 +879,7 @@
         }
 
         async function submitNewPerson(meta, pw, seg, sampleRow) {
-          const entityType = meta && meta.ListItemEntityTypeFullName;
-          if (!entityType) {
-            setReadState("err", "Missing list type metadata. Reload the page.");
-            return;
-          }
+          /** With `application/json;odata=nometadata`, do not send `__metadata` — SharePoint treats it as a list column and returns 400. */
           const cols = normalizedRosterColumns();
           let lastName = "";
           let firstName = "";
@@ -902,7 +898,7 @@
             return;
           }
 
-          const payload = { __metadata: { type: entityType } };
+          const payload = {};
           cols.forEach((col) => {
             if (col.key === "Id") return;
             const el = document.getElementById("nf_" + col.key);
