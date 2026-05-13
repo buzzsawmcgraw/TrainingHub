@@ -667,16 +667,15 @@
 
         /**
          * OData `$orderby` for list items. Rows are always sorted again client-side by LastName, then FirstName, so the
-         * roster (and Personnel ID order down the table) follows A–Z even if this clause is rejected (400).
+         * roster follows A–Z by name even if this clause is rejected (400).
          */
         const PERSONNEL_ITEMS_ORDERBY = "LastName asc,FirstName asc";
 
         /**
-         * Roster columns — fixed order for 88thSFS Personnel. Remove the `Id` row if you do not want Personnel ID.
+         * Roster columns — fixed order for 88thSFS Personnel. Add `{ key: "Id", label: "Personnel ID" }` if you want list item IDs visible.
          * If a column is always blank, open Diagnostics and change that row’s `key` / add `altKeys` (see Record Date).
          */
         const ROSTER_COLUMNS = [
-          { key: "Id", label: "Personnel ID" },
           {
             key: "RecordDate",
             label: "Record Date",
