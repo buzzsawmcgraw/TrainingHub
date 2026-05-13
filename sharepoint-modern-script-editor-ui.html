@@ -256,11 +256,11 @@
                 </div>
                 <div class="field">
                   <label>Certifiers list title</label>
-                  <input id="sCertifiersList" class="input" type="text" />
+                  <input id="sCertifiersList" class="input" type="text" placeholder="Certifiers" />
                 </div>
                 <div class="field">
                   <label>Certifiers field internal name</label>
-                  <input id="sCertifiersField" class="input" type="text" />
+                  <input id="sCertifiersField" class="input" type="text" placeholder="Certifier" />
                 </div>
                 <div class="field full">
                   <label>Personnel column map (optional JSON)</label>
@@ -654,7 +654,7 @@
         const DEFAULTS = {
           personnelList: "Personnel",
           certifiersList: "Certifiers",
-          certifiersField: "certifier",
+          certifiersField: "Certifier",
           /** Map logical field → SharePoint internal column name (optional). */
           columnMap: {},
         };
@@ -1019,7 +1019,7 @@
               await probe("Personnel", s.personnelList);
               await probe("Certifiers", s.certifiersList);
               lines.push("Certifiers name column you configured: " + s.certifiersField);
-              lines.push("(If keys above show something like Field1 instead of certifier, put the real key in Settings.)");
+              lines.push("(If keys above show something like Field1 instead of Certifier, put the real key in Settings.)");
             } catch (e) {
               lines.push("FATAL: " + (e.message || String(e)));
             }
