@@ -231,6 +231,33 @@
         text-align: center;
         vertical-align: middle;
       }
+      #sp-pip-ui .roster-actions-inner {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      #sp-pip-ui button.btn-record {
+        margin: 0;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-family: var(--pip-font);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--pip-green);
+        background: rgba(8, 24, 14, 0.6);
+        border: 1px solid var(--pip-green-dim);
+        border-radius: 2px;
+        text-shadow: 0 0 4px var(--pip-green-glow);
+        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.06);
+      }
+      #sp-pip-ui button.btn-record:hover {
+        background: rgba(30, 255, 69, 0.12);
+        color: #7dff8f;
+      }
       #sp-pip-ui button:active {
         transform: translateY(1px);
       }
@@ -288,12 +315,15 @@
       }
       #sp-pip-ui .roster-wrap {
         overflow: auto;
-        max-height: min(52vh, 560px);
         border: 1px solid var(--pip-border);
         margin: 0;
         background: rgba(5, 14, 10, 0.55);
         border-radius: 8px;
         box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), inset 0 0 32px rgba(0, 0, 0, 0.5);
+      }
+      #sp-pip-ui .roster-wrap.roster-wrap--scroll {
+        overflow-y: auto;
+        overflow-x: auto;
       }
       #sp-pip-ui table.roster {
         width: 100%;
@@ -333,18 +363,6 @@
       }
       #sp-pip-ui table.roster tbody tr:hover td {
         background: rgba(60, 255, 122, 0.07);
-      }
-      #sp-pip-ui table.roster td a.roster-name-link {
-        color: var(--pip-green);
-        font-weight: 600;
-        text-decoration: underline;
-        text-decoration-color: rgba(60, 255, 122, 0.45);
-        text-underline-offset: 3px;
-        cursor: pointer;
-      }
-      #sp-pip-ui table.roster td a.roster-name-link:hover {
-        color: #7dff8f;
-        text-decoration-color: rgba(125, 255, 143, 0.75);
       }
       #sp-pip-ui .person-detail-panel {
         border: 1px solid var(--pip-border);
@@ -794,15 +812,13 @@
         const SHOW_LIST_ITEM_ID_IN_ROSTER = false;
 
         /**
-         * Click a roster name to open their full record. Links use `?personId=` on the hub page (or PERSONNEL_DETAIL_PAGE_URL).
-         * Set PERSONNEL_DETAIL_OPEN_NEW_TAB to false to show the detail view in the same tab instead.
+         * **Record** button opens the full personnel view via `?personId=` on this page (or PERSONNEL_DETAIL_PAGE_URL).
          */
         const PERSONNEL_DETAIL_QUERY_PARAM = "personId";
-        const PERSONNEL_DETAIL_OPEN_NEW_TAB = true;
         /** Optional SharePoint page URL for person detail (e.g. same S3T.aspx page). Empty = current page. */
         const PERSONNEL_DETAIL_PAGE_URL = "";
-        /** Roster columns rendered as links to the person detail page. */
-        const PERSONNEL_NAME_LINK_COLUMNS = ["LastName", "FirstName"];
+        /** When roster row count exceeds this, the table body scrolls instead of growing the page. */
+        const ROSTER_SCROLL_AFTER_ROWS = 10;
 
         /**
          * Local demo when not on SharePoint. `"auto"` = on for localhost / 127.0.0.1 / file://; `true` = always; `false` = never.
@@ -1633,10 +1649,11 @@
         function renderRosterTable(rows, meta, pw, seg) {
           clearRosterTable();
           const thead = document.getElementById("rosterThead");
+          const rosterWrap = document.querySelector("#sp-pip-ui .roster-wrap");
           if (!rosterTableBody || !thead) return;
           const plan = resolveRosterColumnPlan(rows);
           const columns = rosterColumnsForDisplay(plan);
-          const showDelete = pw && seg;
+          const showRowActions = pw && seg;
           const trHead = document.createElement("tr");
           columns.forEach((col) => {
             const th = document.createElement("th");
@@ -1644,11 +1661,11 @@
             th.title = (col.tryKeys || [col.key]).join(" · ");
             trHead.appendChild(th);
           });
-          if (showDelete) {
+          if (showRowActions) {
             const thx = document.createElement("th");
             thx.className = "roster-actions";
             thx.textContent = " ";
-            thx.title = "Delete row";
+            thx.title = "Record / delete";
             trHead.appendChild(thx);
           }
           thead.appendChild(trHead);
@@ -1661,29 +1678,23 @@
               const tryKeys = col.tryKeys || [col.key];
               const raw = valueFromItemByKeys(item, tryKeys);
               const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-              const isNameLink =
-                item.Id != null &&
-                Array.isArray(PERSONNEL_NAME_LINK_COLUMNS) &&
-                PERSONNEL_NAME_LINK_COLUMNS.indexOf(col.key) !== -1;
-              if (isNameLink) {
-                const a = document.createElement("a");
-                a.className = "roster-name-link";
-                a.href = personDetailUrl(item.Id);
-                if (PERSONNEL_DETAIL_OPEN_NEW_TAB) {
-                  a.target = "_blank";
-                  a.rel = "noopener noreferrer";
-                }
-                a.textContent = text === "" ? "—" : text;
-                a.title = "View full record for " + formatPersonDisplayName(item);
-                td.appendChild(a);
-              } else {
-                td.textContent = text === "" ? "—" : text;
-              }
+              td.textContent = text === "" ? "—" : text;
               tr.appendChild(td);
             });
-            if (showDelete && item.Id != null) {
+            if (showRowActions && item.Id != null) {
               const tdAct = document.createElement("td");
               tdAct.className = "roster-actions";
+              const inner = document.createElement("div");
+              inner.className = "roster-actions-inner";
+              const recordBtn = document.createElement("button");
+              recordBtn.type = "button";
+              recordBtn.className = "btn-record";
+              recordBtn.textContent = "Record";
+              recordBtn.title = "View full record for " + formatPersonDisplayName(item);
+              recordBtn.addEventListener("click", () => {
+                location.assign(personDetailUrl(item.Id));
+              });
+              inner.appendChild(recordBtn);
               const delBtn = document.createElement("button");
               delBtn.type = "button";
               delBtn.className = "btn-danger";
@@ -1692,9 +1703,10 @@
               delBtn.addEventListener("click", () => {
                 void deletePersonnelRow(item.Id, pw, seg);
               });
-              tdAct.appendChild(delBtn);
+              inner.appendChild(delBtn);
+              tdAct.appendChild(inner);
               tr.appendChild(tdAct);
-            } else if (showDelete) {
+            } else if (showRowActions) {
               const tdAct = document.createElement("td");
               tdAct.className = "roster-actions";
               tdAct.textContent = "—";
@@ -1703,6 +1715,21 @@
             frag.appendChild(tr);
           });
           rosterTableBody.appendChild(frag);
+
+          if (rosterWrap) {
+            const scrollAfter = Number(ROSTER_SCROLL_AFTER_ROWS) > 0 ? Number(ROSTER_SCROLL_AFTER_ROWS) : 10;
+            if (rows.length > scrollAfter) {
+              rosterWrap.classList.add("roster-wrap--scroll");
+              const headerRow = thead.querySelector("tr");
+              const sampleRow = rosterTableBody.querySelector("tr");
+              const headerH = headerRow ? headerRow.getBoundingClientRect().height : 42;
+              const rowH = sampleRow ? sampleRow.getBoundingClientRect().height : 42;
+              rosterWrap.style.maxHeight = Math.ceil(headerH + rowH * scrollAfter + 4) + "px";
+            } else {
+              rosterWrap.classList.remove("roster-wrap--scroll");
+              rosterWrap.style.maxHeight = "";
+            }
+          }
 
           const listTitle = meta && meta.Title ? String(meta.Title) : personnelListTitle();
           const ic = meta && meta.ItemCount != null ? meta.ItemCount : "?";
