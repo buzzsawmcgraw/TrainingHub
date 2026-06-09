@@ -749,11 +749,97 @@
           opacity: 1;
         }
       }
+      #sp-pip-ui .hub-access-gate {
+        position: absolute;
+        inset: 0;
+        z-index: 300;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: radial-gradient(120% 80% at 50% 0%, #0d1f16 0%, var(--pip-bg) 55%);
+        border-radius: 8px;
+      }
+      #sp-pip-ui .hub-access-gate[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui .hub-access-panel {
+        width: min(100%, 360px);
+        padding: 22px 22px 20px;
+        border: 1px solid var(--pip-border);
+        border-radius: 8px;
+        background: rgba(5, 14, 10, 0.88);
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), 0 0 28px rgba(0, 0, 0, 0.45);
+      }
+      #sp-pip-ui .hub-access-panel h2 {
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
+      }
+      #sp-pip-ui .hub-access-panel p {
+        margin: 0 0 14px;
+        font-size: 12px;
+        line-height: 1.45;
+        color: rgba(210, 255, 224, 0.82);
+      }
+      #sp-pip-ui .hub-access-panel label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui #hubAccessInput {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 14px;
+        padding: 10px 12px;
+        font: 13px var(--pip-font);
+        color: rgba(210, 255, 224, 0.92);
+        background: rgba(5, 14, 10, 0.72);
+        border: 1px solid rgba(30, 74, 54, 0.5);
+        border-radius: var(--pip-control-radius);
+      }
+      #sp-pip-ui #hubAccessInput:focus {
+        outline: none;
+        border-color: var(--pip-green-dim);
+        box-shadow: 0 0 10px var(--pip-green-glow);
+      }
+      #sp-pip-ui #hubAccessSubmit {
+        width: 100%;
+        margin: 0;
+      }
+      #sp-pip-ui .hub-access-error {
+        margin: 12px 0 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--pip-red);
+        text-shadow: 0 0 6px rgba(255, 77, 45, 0.45);
+      }
+      #sp-pip-ui .hub-access-error[hidden] {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
     <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
     <div id="sp-pip-ui">
+      <div id="hubAccessGate" class="hub-access-gate" aria-label="Training Hub access">
+        <div class="hub-access-panel">
+          <h2>Authorized access</h2>
+          <p>Enter the Training Hub password to continue.</p>
+          <label for="hubAccessInput">Password</label>
+          <input type="password" id="hubAccessInput" autocomplete="current-password" />
+          <button type="button" id="hubAccessSubmit">Continue</button>
+          <p id="hubAccessError" class="hub-access-error" hidden>Incorrect password.</p>
+        </div>
+      </div>
       <div id="hubBootOverlay" class="hub-boot-overlay" aria-live="polite">
         <p class="hub-boot-text">Loading Training Hub…</p>
       </div>
@@ -846,6 +932,13 @@
         const PERSONNEL_SITE_ROOT_URL = "https://usaf.dps.mil/sites/88thSFS";
 
         /**
+         * Page access gate — users must enter this password before the hub loads. Set "" to disable.
+         * Session lasts until the browser tab is closed (sessionStorage).
+         */
+        const HUB_ACCESS_PASSWORD = "Training2026";
+        const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
+
+        /**
          * (B) Optional fallback: paste any URL under the site; derives …/sites/88thSFS. Ignored when (A) is set.
          * Example: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
          */
@@ -932,6 +1025,14 @@
         const LIST_APPOINTMENTS = "Appointments";
         const LIST_APPOINTMENTS_GUID = "";
         const APPOINTMENTS_PERSON_FIELD = "PersonnelId";
+        /** Additional REST filter field names to try if the primary name fails (lookup / casing variants). */
+        const APPOINTMENTS_PERSON_FIELD_ALT = [
+          "PersonnelID",
+          "PersonnelIdId",
+          "Personnel_x0020_Id",
+          "Personnel_x0020_ID",
+          "Personnel/Id",
+        ];
         const APPOINTMENTS_ITEMS_ORDERBY = "AppointmentDate asc";
         const APPOINTMENTS_COLUMNS = [
           {
@@ -1105,6 +1206,8 @@
           pw: null,
           seg: null,
           sampleRow: null,
+          appointmentsPersonFilterField: null,
+          appointmentsPersonFilterFields: null,
         };
 
         /** Active personnel record view (read / edit). */
@@ -1730,6 +1833,153 @@
           }
         }
 
+        function appointmentsPersonFilterFieldCandidates() {
+          const primary = String(APPOINTMENTS_PERSON_FIELD || "PersonnelId").trim();
+          const out = [];
+          if (primary) out.push(primary);
+          const alts = Array.isArray(APPOINTMENTS_PERSON_FIELD_ALT) ? APPOINTMENTS_PERSON_FIELD_ALT : [];
+          alts.forEach(function (name) {
+            const n = String(name || "").trim();
+            if (n && out.indexOf(n) === -1) out.push(n);
+          });
+          return out;
+        }
+
+        function appointmentPersonnelIdFromItem(item) {
+          if (!item || typeof item !== "object") return null;
+          const keys = appointmentsPersonFilterFieldCandidates().concat([
+            "PersonnelId",
+            "PersonnelID",
+            "PersonnelIdId",
+            "Personnel_x0020_Id",
+          ]);
+          for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            if (!k || k.indexOf("/") !== -1) continue;
+            if (Object.prototype.hasOwnProperty.call(item, k) && item[k] !== null && item[k] !== "") {
+              return String(item[k]);
+            }
+          }
+          if (item.Personnel && typeof item.Personnel === "object" && item.Personnel.Id != null) {
+            return String(item.Personnel.Id);
+          }
+          return null;
+        }
+
+        function appointmentRowsMatchPersonnel(rows, personnelId) {
+          const want = String(personnelId);
+          return (Array.isArray(rows) ? rows : []).filter(function (item) {
+            return appointmentPersonnelIdFromItem(item) === want;
+          });
+        }
+
+        async function discoverAppointmentsPersonFilterFields(seg, pw) {
+          if (hubSession.appointmentsPersonFilterFields && hubSession.appointmentsPersonFilterFields.length) {
+            return hubSession.appointmentsPersonFilterFields.slice();
+          }
+          const out = [];
+          try {
+            const data = await spFetch(
+              `/_api/web/${seg}/fields?$select=InternalName,Title,EntityPropertyName,StaticName,TypeAsString&$filter=Hidden eq false&$top=200`,
+              {},
+              pw,
+            );
+            const fields = (data && data.value) || [];
+            const want = String(APPOINTMENTS_PERSON_FIELD || "PersonnelId").trim().toLowerCase();
+            let hit = fields.find(function (f) {
+              const title = String(f.Title || "").trim().toLowerCase();
+              const internal = String(f.InternalName || f.StaticName || f.EntityPropertyName || "").trim();
+              const internalLower = internal.toLowerCase();
+              return (
+                internalLower === want ||
+                title === want ||
+                title === "personnel id" ||
+                internalLower === "personnelid" ||
+                internalLower === "personnelidid"
+              );
+            });
+            if (!hit) {
+              hit = fields.find(function (f) {
+                const internal = String(f.InternalName || f.StaticName || "").toLowerCase();
+                return internal.indexOf("personnel") !== -1 && internal.indexOf("id") !== -1;
+              });
+            }
+            if (hit) {
+              const internal = String(hit.InternalName || hit.StaticName || hit.EntityPropertyName || "").trim();
+              const type = String(hit.TypeAsString || "");
+              if (internal) out.push(internal);
+              if (/lookup/i.test(type) && internal) {
+                const lookupIdField = internal.endsWith("Id") ? internal + "Id" : internal + "Id";
+                if (out.indexOf(lookupIdField) === -1) out.push(lookupIdField);
+                const slashField = internal + "/Id";
+                if (out.indexOf(slashField) === -1) out.push(slashField);
+              }
+            }
+          } catch (_) {}
+          hubSession.appointmentsPersonFilterFields = out.slice();
+          return out;
+        }
+
+        async function fetchAppointmentsForPersonnel(seg, pw, personnelId) {
+          const id = parseInt(String(personnelId), 10);
+          if (!id || isNaN(id)) return [];
+          const orderByClause = String(APPOINTMENTS_ITEMS_ORDERBY || "").trim();
+          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
+          const tried = [];
+          const candidates = appointmentsPersonFilterFieldCandidates().slice();
+
+          const discovered = await discoverAppointmentsPersonFilterFields(seg, pw);
+          discovered.forEach(function (name) {
+            if (name && candidates.indexOf(name) === -1) candidates.unshift(name);
+          });
+          if (discovered.length) {
+            discovered.slice().reverse().forEach(function (name) {
+              if (name && candidates.indexOf(name) !== -1) {
+                candidates.splice(candidates.indexOf(name), 1);
+                candidates.unshift(name);
+              }
+            });
+          }
+
+          for (let i = 0; i < candidates.length; i++) {
+            const personField = candidates[i];
+            if (!personField || tried.indexOf(personField) !== -1) continue;
+            tried.push(personField);
+            const filterRaw = personField + " eq " + id;
+            const filter = encodeURIComponent(filterRaw);
+            try {
+              let data = null;
+              try {
+                data = await spFetch(`/_api/web/${seg}/items?$top=500&$filter=${filter}` + orderByQs, {}, pw);
+              } catch (e0) {
+                if (/\b400\b/.test(String(e0.message || "")) && orderByQs) {
+                  data = await spFetch(`/_api/web/${seg}/items?$top=500&$filter=${filter}`, {}, pw);
+                } else {
+                  throw e0;
+                }
+              }
+              hubSession.appointmentsPersonFilterField = personField;
+              return (data && data.value) || [];
+            } catch (e1) {
+              if (!/\b400\b/.test(String(e1.message || "")) && !/does not exist/i.test(String(e1.message || ""))) {
+                throw e1;
+              }
+            }
+          }
+
+          let data = null;
+          try {
+            data = await spFetch(`/_api/web/${seg}/items?$top=500` + orderByQs, {}, pw);
+          } catch (e2) {
+            if (/\b400\b/.test(String(e2.message || "")) && orderByQs) {
+              data = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
+            } else {
+              throw e2;
+            }
+          }
+          return appointmentRowsMatchPersonnel((data && data.value) || [], id);
+        }
+
         async function loadPersonAppointments(personnelId, pw) {
           if (!personnelId) return;
           setAppointmentsState("", "");
@@ -1737,7 +1987,6 @@
           if (personAppointmentsEmpty) personAppointmentsEmpty.hidden = true;
 
           const seg = appointmentsListApiPath();
-          const personField = String(APPOINTMENTS_PERSON_FIELD || "PersonnelId").trim();
           if (!appointmentsListTitle() && !appointmentsListUsesGuid()) {
             renderAppointmentsTable([]);
             if (personAppointmentsEmpty) {
@@ -1748,20 +1997,7 @@
           }
 
           try {
-            const filter = encodeURIComponent(personField + " eq " + parseInt(String(personnelId), 10));
-            const orderByClause = String(APPOINTMENTS_ITEMS_ORDERBY || "").trim();
-            const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
-            let data = null;
-            try {
-              data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}` + orderByQs, {}, pw);
-            } catch (e0) {
-              if (/\b400\b/.test(String(e0.message || "")) && orderByQs) {
-                data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}`, {}, pw);
-              } else {
-                throw e0;
-              }
-            }
-            const rows = (data && data.value) || [];
+            const rows = await fetchAppointmentsForPersonnel(seg, pw, personnelId);
             const dateKeys = ["AppointmentDate", "Appointment_x0020_Date", "Date"];
             rows.sort(function (a, b) {
               const da = formatCellValue(valueFromItemByKeys(a, dateKeys) || "");
@@ -1777,7 +2013,8 @@
             setAppointmentsState("warn", "Could not load appointments: " + (e.message || String(e)).slice(0, 220));
             if (personAppointmentsEmpty) {
               personAppointmentsEmpty.hidden = false;
-              personAppointmentsEmpty.textContent = "No appointments loaded. Confirm the Appointments list exists and field names match APPOINTMENTS_COLUMNS.";
+              personAppointmentsEmpty.textContent =
+                "No appointments loaded. If PersonnelId exists on the list, check that values match the personnel record Id.";
             }
           }
         }
@@ -2358,10 +2595,11 @@
               if (filterMatch) {
                 try {
                   const decoded = decodeURIComponent(filterMatch[1].replace(/\+/g, " "));
-                  const fm = decoded.match(/PersonnelId eq (\d+)/i);
+                  const fm = decoded.match(/([A-Za-z0-9_/x]+)\s+eq\s+(\d+)/i);
                   if (fm) {
+                    const want = fm[2];
                     rows = rows.filter(function (r) {
-                      return String(r.PersonnelId) === fm[1];
+                      return appointmentPersonnelIdFromItem(r) === want;
                     });
                   }
                 } catch (_) {}
@@ -3510,11 +3748,86 @@
           });
         }
 
+        function initHubAccessGate() {
+          const gate = document.getElementById("hubAccessGate");
+          const input = document.getElementById("hubAccessInput");
+          const submit = document.getElementById("hubAccessSubmit");
+          const err = document.getElementById("hubAccessError");
+          const boot = document.getElementById("hubBootOverlay");
+          const password = String(HUB_ACCESS_PASSWORD || "").trim();
+
+          function isHubAccessGranted() {
+            try {
+              return sessionStorage.getItem(HUB_ACCESS_STORAGE_KEY) === "1";
+            } catch (_) {
+              return false;
+            }
+          }
+
+          function grantHubAccess() {
+            try {
+              sessionStorage.setItem(HUB_ACCESS_STORAGE_KEY, "1");
+            } catch (_) {}
+          }
+
+          function startHubApp() {
+            if (boot) boot.hidden = false;
+            runProbe().catch(function (e) {
+              setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
+              log("UNCAUGHT:\n" + (e.message || String(e)), "err");
+            });
+          }
+
+          if (!password) {
+            if (gate) gate.hidden = true;
+            startHubApp();
+            return;
+          }
+
+          function tryUnlock() {
+            if (!input) return;
+            if (String(input.value || "") === password) {
+              grantHubAccess();
+              if (err) err.hidden = true;
+              if (gate) gate.hidden = true;
+              startHubApp();
+              return;
+            }
+            if (err) {
+              err.hidden = false;
+              err.textContent = "Incorrect password.";
+            }
+            input.value = "";
+            input.focus();
+          }
+
+          if (isHubAccessGranted()) {
+            if (gate) gate.hidden = true;
+            startHubApp();
+            return;
+          }
+
+          if (boot) boot.hidden = true;
+          if (gate) gate.hidden = false;
+          if (input) {
+            input.value = "";
+            window.setTimeout(function () {
+              input.focus();
+            }, 0);
+          }
+          if (submit) submit.addEventListener("click", tryUnlock);
+          if (input) {
+            input.addEventListener("keydown", function (ev) {
+              if (ev.key === "Enter") {
+                ev.preventDefault();
+                tryUnlock();
+              }
+            });
+          }
+        }
+
         updateDemoModeBanner();
-        runProbe().catch((e) => {
-          setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
-          log("UNCAUGHT:\n" + (e.message || String(e)), "err");
-        });
+        initHubAccessGate();
       })();
     </script>
   </body>
