@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Personnel — PIP-Boy style (Script Editor)</title>
     <style>
-      /* Page shell when viewing this file directly (Script Editor may only embed #sp-pip-ui) */
-      body {
+      /* Page shell when viewing this file directly (Script Editor should only embed #sp-pip-ui). */
+      body:has(> #sp-pip-ui) {
         margin: 0;
         padding: 12px;
         background: #000;
@@ -750,17 +750,20 @@
         }
       }
       #sp-pip-ui .hub-access-gate {
-        position: absolute;
-        inset: 0;
-        z-index: 300;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
+        padding: 24px 22px;
+        border-bottom: 2px solid var(--pip-border);
         background: radial-gradient(120% 80% at 50% 0%, #0d1f16 0%, var(--pip-bg) 55%);
-        border-radius: 8px;
       }
-      #sp-pip-ui .hub-access-gate[hidden] {
+      #sp-pip-ui .hub-access-gate .hub-access-panel {
+        margin: 0 auto;
+      }
+      #sp-pip-ui.hub-access-unlocked .hub-access-gate {
+        display: none !important;
+      }
+      #sp-pip-ui:not(.hub-access-unlocked) .hub-top-banner-wrap,
+      #sp-pip-ui:not(.hub-access-unlocked) .hub-header,
+      #sp-pip-ui:not(.hub-access-unlocked) .hub-main,
+      #sp-pip-ui:not(.hub-access-unlocked) .hub-boot-overlay {
         display: none !important;
       }
       #sp-pip-ui .hub-access-panel {
@@ -825,6 +828,29 @@
       #sp-pip-ui .hub-access-error[hidden] {
         display: none !important;
       }
+      #sp-pip-ui .hub-authoring-placeholder {
+        margin: 0;
+        padding: 22px 24px 24px;
+        font-size: 12px;
+        line-height: 1.55;
+        color: rgba(210, 255, 224, 0.88);
+        background: rgba(5, 14, 10, 0.55);
+        border-top: 1px solid rgba(30, 74, 54, 0.45);
+      }
+      #sp-pip-ui .hub-authoring-placeholder strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui.hub-authoring-mode .hub-main,
+      #sp-pip-ui.hub-authoring-mode .hub-access-gate,
+      #sp-pip-ui.hub-authoring-mode .hub-boot-overlay {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
@@ -842,6 +868,10 @@
       </div>
       <div id="hubBootOverlay" class="hub-boot-overlay" aria-live="polite">
         <p class="hub-boot-text">Loading Training Hub…</p>
+      </div>
+      <div id="hubAuthoringPlaceholder" class="hub-authoring-placeholder" hidden>
+        <strong>Page edit mode</strong>
+        Training Hub preview is paused while this page is being edited. Publish or view the page normally to use the roster.
       </div>
       <div class="hub-top-banner-wrap" id="hubTopBannerWrap" hidden>
         <img id="hubTopBannerImg" class="hub-top-banner-img" src="" alt="" decoding="async" />
@@ -1227,6 +1257,50 @@
           if (hubRoot) hubRoot.classList.add("hub-ready");
         }
 
+        function isSharePointAuthoringMode() {
+          const wins = [];
+          try {
+            wins.push(window);
+          } catch (_) {}
+          try {
+            if (window.parent && window.parent !== window) wins.push(window.parent);
+          } catch (_) {}
+          try {
+            if (window.top && window.top !== window) wins.push(window.top);
+          } catch (_) {}
+
+          for (let w = 0; w < wins.length; w++) {
+            const win = wins[w];
+            try {
+              const search = String((win.location && win.location.search) || "").toLowerCase();
+              const href = String((win.location && win.location.href) || "").toLowerCase();
+              if (search.indexOf("mode=edit") !== -1 || href.indexOf("mode=edit") !== -1) return true;
+              if (search.indexOf("action=edit") !== -1 || href.indexOf("action=edit") !== -1) return true;
+              const doc = win.document;
+              if (!doc) continue;
+              if (doc.querySelector('[data-automation-id="publishButton"]')) return true;
+              if (doc.querySelector('[data-automation-id="toolboxButton"]')) return true;
+              if (doc.querySelector('[data-automation-id="pageCommandBar"]')) return true;
+              if (doc.querySelector("#spPropertyPaneContainer")) return true;
+              if (doc.querySelector('[data-automation-id="propertyPanePageContent"]')) return true;
+              if (doc.querySelector(".CanvasSection--edit")) return true;
+            } catch (_) {}
+          }
+          return false;
+        }
+
+        function initSharePointAuthoringSafeMode() {
+          if (!isSharePointAuthoringMode()) return false;
+          const gate = document.getElementById("hubAccessGate");
+          const boot = document.getElementById("hubBootOverlay");
+          const placeholder = document.getElementById("hubAuthoringPlaceholder");
+          if (gate) gate.hidden = true;
+          if (boot) boot.hidden = true;
+          if (placeholder) placeholder.hidden = false;
+          if (hubRoot) hubRoot.classList.add("hub-ready", "hub-authoring-mode");
+          return true;
+        }
+
         function rosterTableIsRendered() {
           return !!(rosterTableBody && rosterTableBody.querySelector("tr"));
         }
@@ -1239,24 +1313,14 @@
         }
 
         function updateHubHistoryForPerson(itemId, replace) {
-          try {
-            const param = String(PERSONNEL_DETAIL_QUERY_PARAM || "personId").trim() || "personId";
-            const u = new URL(location.href);
-            if (itemId) u.searchParams.set(param, String(itemId));
-            else u.searchParams.delete(param);
-            const state = { hubPersonId: itemId ? String(itemId) : null };
-            if (replace) history.replaceState(state, "", u.href);
-            else history.pushState(state, "", u.href);
-          } catch (_) {}
+          /* No-op: do not change the browser URL on SharePoint pages (breaks page edit / Script Editor). */
         }
 
         function navigateToPersonDetail(itemId) {
-          updateHubHistoryForPerson(itemId, false);
           void showPersonDetailById(itemId, hubSession.meta, hubSession.pw, hubSession.seg, hubSession.rows);
         }
 
         async function navigateToRoster() {
-          updateHubHistoryForPerson(null, true);
           if (personDetailSection) personDetailSection.hidden = true;
           personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           setPersonDetailEditMode(false);
@@ -2246,19 +2310,6 @@
             void renderPersonDetailView(personDetailSession.item, false);
           });
         }
-
-        window.addEventListener("popstate", function () {
-          const pid = getPersonIdFromUrl();
-          if (pid) {
-            void openPersonDetailRecord(pid, hubSession.meta, hubSession.pw, hubSession.seg, hubSession.rows, hubSession.sampleRow);
-            return;
-          }
-          if (personDetailSection) personDetailSection.hidden = true;
-          personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
-          setPersonDetailEditMode(false);
-          setHubListViewVisible(true);
-          void ensureRosterViewRendered();
-        });
 
         let demoPersonnelStore = null;
 
@@ -3722,7 +3773,6 @@
           };
 
           if (personIdFromUrl) {
-            updateHubHistoryForPerson(personIdFromUrl, true);
             await showPersonDetailById(personIdFromUrl, meta, pw, seg2, rows);
           } else {
             await renderAddPersonForm(meta, pw, seg2, sampleRow);
@@ -3756,6 +3806,10 @@
           const boot = document.getElementById("hubBootOverlay");
           const password = String(HUB_ACCESS_PASSWORD || "").trim();
 
+          function markHubAccessUnlocked() {
+            if (hubRoot) hubRoot.classList.add("hub-access-unlocked");
+          }
+
           function isHubAccessGranted() {
             try {
               return sessionStorage.getItem(HUB_ACCESS_STORAGE_KEY) === "1";
@@ -3768,9 +3822,11 @@
             try {
               sessionStorage.setItem(HUB_ACCESS_STORAGE_KEY, "1");
             } catch (_) {}
+            markHubAccessUnlocked();
           }
 
           function startHubApp() {
+            if (isSharePointAuthoringMode()) return;
             if (boot) boot.hidden = false;
             runProbe().catch(function (e) {
               setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
@@ -3779,7 +3835,7 @@
           }
 
           if (!password) {
-            if (gate) gate.hidden = true;
+            markHubAccessUnlocked();
             startHubApp();
             return;
           }
@@ -3789,7 +3845,6 @@
             if (String(input.value || "") === password) {
               grantHubAccess();
               if (err) err.hidden = true;
-              if (gate) gate.hidden = true;
               startHubApp();
               return;
             }
@@ -3798,23 +3853,17 @@
               err.textContent = "Incorrect password.";
             }
             input.value = "";
-            input.focus();
           }
 
           if (isHubAccessGranted()) {
-            if (gate) gate.hidden = true;
+            markHubAccessUnlocked();
             startHubApp();
             return;
           }
 
           if (boot) boot.hidden = true;
-          if (gate) gate.hidden = false;
-          if (input) {
-            input.value = "";
-            window.setTimeout(function () {
-              input.focus();
-            }, 0);
-          }
+          if (err) err.hidden = true;
+          if (input) input.value = "";
           if (submit) submit.addEventListener("click", tryUnlock);
           if (input) {
             input.addEventListener("keydown", function (ev) {
@@ -3827,7 +3876,9 @@
         }
 
         updateDemoModeBanner();
-        initHubAccessGate();
+        if (!initSharePointAuthoringSafeMode()) {
+          initHubAccessGate();
+        }
       })();
     </script>
   </body>
