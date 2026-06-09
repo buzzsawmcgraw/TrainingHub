@@ -828,29 +828,6 @@
       #sp-pip-ui .hub-access-error[hidden] {
         display: none !important;
       }
-      #sp-pip-ui .hub-authoring-placeholder {
-        margin: 0;
-        padding: 22px 24px 24px;
-        font-size: 12px;
-        line-height: 1.55;
-        color: rgba(210, 255, 224, 0.88);
-        background: rgba(5, 14, 10, 0.55);
-        border-top: 1px solid rgba(30, 74, 54, 0.45);
-      }
-      #sp-pip-ui .hub-authoring-placeholder strong {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--pip-amber);
-      }
-      #sp-pip-ui.hub-authoring-mode .hub-main,
-      #sp-pip-ui.hub-authoring-mode .hub-access-gate,
-      #sp-pip-ui.hub-authoring-mode .hub-boot-overlay {
-        display: none !important;
-      }
     </style>
   </head>
   <body>
@@ -868,10 +845,6 @@
       </div>
       <div id="hubBootOverlay" class="hub-boot-overlay" aria-live="polite">
         <p class="hub-boot-text">Loading Training Hub…</p>
-      </div>
-      <div id="hubAuthoringPlaceholder" class="hub-authoring-placeholder" hidden>
-        <strong>Page edit mode</strong>
-        Training Hub preview is paused while this page is being edited. Publish or view the page normally to use the roster.
       </div>
       <div class="hub-top-banner-wrap" id="hubTopBannerWrap" hidden>
         <img id="hubTopBannerImg" class="hub-top-banner-img" src="" alt="" decoding="async" />
@@ -1255,50 +1228,6 @@
         function dismissHubBootOverlay() {
           if (hubBootOverlay) hubBootOverlay.hidden = true;
           if (hubRoot) hubRoot.classList.add("hub-ready");
-        }
-
-        function isSharePointAuthoringMode() {
-          const wins = [];
-          try {
-            wins.push(window);
-          } catch (_) {}
-          try {
-            if (window.parent && window.parent !== window) wins.push(window.parent);
-          } catch (_) {}
-          try {
-            if (window.top && window.top !== window) wins.push(window.top);
-          } catch (_) {}
-
-          for (let w = 0; w < wins.length; w++) {
-            const win = wins[w];
-            try {
-              const search = String((win.location && win.location.search) || "").toLowerCase();
-              const href = String((win.location && win.location.href) || "").toLowerCase();
-              if (search.indexOf("mode=edit") !== -1 || href.indexOf("mode=edit") !== -1) return true;
-              if (search.indexOf("action=edit") !== -1 || href.indexOf("action=edit") !== -1) return true;
-              const doc = win.document;
-              if (!doc) continue;
-              if (doc.querySelector('[data-automation-id="publishButton"]')) return true;
-              if (doc.querySelector('[data-automation-id="toolboxButton"]')) return true;
-              if (doc.querySelector('[data-automation-id="pageCommandBar"]')) return true;
-              if (doc.querySelector("#spPropertyPaneContainer")) return true;
-              if (doc.querySelector('[data-automation-id="propertyPanePageContent"]')) return true;
-              if (doc.querySelector(".CanvasSection--edit")) return true;
-            } catch (_) {}
-          }
-          return false;
-        }
-
-        function initSharePointAuthoringSafeMode() {
-          if (!isSharePointAuthoringMode()) return false;
-          const gate = document.getElementById("hubAccessGate");
-          const boot = document.getElementById("hubBootOverlay");
-          const placeholder = document.getElementById("hubAuthoringPlaceholder");
-          if (gate) gate.hidden = true;
-          if (boot) boot.hidden = true;
-          if (placeholder) placeholder.hidden = false;
-          if (hubRoot) hubRoot.classList.add("hub-ready", "hub-authoring-mode");
-          return true;
         }
 
         function rosterTableIsRendered() {
@@ -2284,7 +2213,7 @@
         }
 
         if (personDetailBackLink) {
-          personDetailBackLink.href = rosterPageUrl();
+          personDetailBackLink.href = "#";
           personDetailBackLink.addEventListener("click", function (ev) {
             ev.preventDefault();
             void navigateToRoster();
@@ -3826,7 +3755,6 @@
           }
 
           function startHubApp() {
-            if (isSharePointAuthoringMode()) return;
             if (boot) boot.hidden = false;
             runProbe().catch(function (e) {
               setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
@@ -3876,9 +3804,7 @@
         }
 
         updateDemoModeBanner();
-        if (!initSharePointAuthoringSafeMode()) {
-          initHubAccessGate();
-        }
+        initHubAccessGate();
       })();
     </script>
   </body>
