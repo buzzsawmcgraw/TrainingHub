@@ -270,6 +270,22 @@
         border-color: #5c1a0a;
         text-shadow: 0 0 6px rgba(255, 77, 45, 0.45);
       }
+      #sp-pip-ui .demo-mode-banner {
+        margin: 0 0 16px;
+        padding: 12px 14px;
+        border-radius: 6px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        border: 1px solid #5c4500;
+        background: #121005;
+        color: var(--pip-amber);
+        text-shadow: 0 0 6px rgba(255, 176, 0, 0.35);
+        font-family: var(--pip-font);
+        font-size: 13px;
+      }
+      #sp-pip-ui .demo-mode-banner[hidden] {
+        display: none !important;
+      }
       #sp-pip-ui .roster-wrap {
         overflow: auto;
         max-height: min(52vh, 560px);
@@ -317,6 +333,93 @@
       }
       #sp-pip-ui table.roster tbody tr:hover td {
         background: rgba(60, 255, 122, 0.07);
+      }
+      #sp-pip-ui table.roster td a.roster-name-link {
+        color: var(--pip-green);
+        font-weight: 600;
+        text-decoration: underline;
+        text-decoration-color: rgba(60, 255, 122, 0.45);
+        text-underline-offset: 3px;
+        cursor: pointer;
+      }
+      #sp-pip-ui table.roster td a.roster-name-link:hover {
+        color: #7dff8f;
+        text-decoration-color: rgba(125, 255, 143, 0.75);
+      }
+      #sp-pip-ui .person-detail-panel {
+        border: 1px solid var(--pip-border);
+        border-radius: 8px;
+        padding: 18px 20px 20px;
+        margin: 0;
+        background: rgba(5, 14, 10, 0.55);
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), inset 0 0 32px rgba(0, 0, 0, 0.5);
+      }
+      #sp-pip-ui .person-detail-toolbar {
+        margin-bottom: 14px;
+      }
+      #sp-pip-ui a.person-detail-back {
+        display: inline-block;
+        padding: 9px 18px;
+        font-family: var(--pip-font);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--pip-green);
+        background: rgba(8, 24, 14, 0.6);
+        border: 1px solid var(--pip-green-dim);
+        border-radius: 4px;
+        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.06);
+        text-shadow: 0 0 4px var(--pip-green-glow);
+      }
+      #sp-pip-ui a.person-detail-back:hover {
+        background: rgba(30, 255, 69, 0.12);
+        color: #7dff8f;
+      }
+      #sp-pip-ui h2.person-detail-title {
+        margin: 0 0 16px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--pip-border);
+        font-size: clamp(1rem, 2.2vw, 1.35rem);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--pip-green);
+        text-shadow: 0 0 10px var(--pip-green-glow);
+      }
+      #sp-pip-ui .person-detail-content .add-form-split--primary {
+        padding: 12px 14px 14px;
+        margin-bottom: 0;
+        border: 1px solid rgba(30, 74, 54, 0.4);
+        border-radius: 8px;
+        background: rgba(8, 22, 16, 0.38);
+      }
+      #sp-pip-ui .person-detail-label {
+        display: block;
+        font-size: 10px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.18);
+      }
+      #sp-pip-ui .person-detail-value {
+        font: 13px var(--pip-font);
+        padding: 8px 10px;
+        border: 1px solid rgba(30, 74, 54, 0.35);
+        border-radius: var(--pip-control-radius);
+        background: rgba(5, 14, 10, 0.72);
+        color: rgba(210, 255, 224, 0.92);
+        text-shadow: 0 0 1px rgba(60, 255, 122, 0.12);
+        white-space: pre-wrap;
+        word-break: break-word;
+        min-height: var(--pip-control-h);
+      }
+      #sp-pip-ui .person-detail-field.add-field--notes .person-detail-value,
+      #sp-pip-ui .person-detail-field.add-field--address .person-detail-value {
+        min-height: 52px;
       }
       #sp-pip-ui table.roster thead th:first-child {
         border-top-left-radius: 7px;
@@ -573,6 +676,9 @@
         </div>
       </header>
       <main class="hub-main">
+        <div id="demoModeBanner" class="demo-mode-banner" hidden>
+          Local demo mode — sample personnel data only. Add, delete, and name links work in memory; nothing is saved to SharePoint.
+        </div>
         <section class="hub-section hub-section--form" aria-label="Training Hub entry">
           <div id="addPersonPanel" class="add-person-panel" aria-live="polite"></div>
         </section>
@@ -589,6 +695,16 @@
               <thead id="rosterThead"></thead>
               <tbody id="rosterTableBody"></tbody>
             </table>
+          </div>
+        </section>
+        <section id="personDetailSection" class="hub-section hub-section--person-detail" hidden aria-label="Personnel record detail">
+          <div class="person-detail-panel">
+            <div class="person-detail-toolbar">
+              <a id="personDetailBackLink" class="person-detail-back" href="#">← Back to roster</a>
+            </div>
+            <h2 id="personDetailTitle" class="hub-subtitle person-detail-title">Personnel record</h2>
+            <div id="personDetailReadState" class="read-state loading" hidden></div>
+            <div id="personDetailContent" class="person-detail-content"></div>
           </div>
         </section>
         <section class="hub-section hub-section--diag">
@@ -676,6 +792,31 @@
          * that still list `Id` / "Personnel ID" in ROSTER_COLUMNS). Delete still uses `item.Id`. Set true to allow an Id column.
          */
         const SHOW_LIST_ITEM_ID_IN_ROSTER = false;
+
+        /**
+         * Click a roster name to open their full record. Links use `?personId=` on the hub page (or PERSONNEL_DETAIL_PAGE_URL).
+         * Set PERSONNEL_DETAIL_OPEN_NEW_TAB to false to show the detail view in the same tab instead.
+         */
+        const PERSONNEL_DETAIL_QUERY_PARAM = "personId";
+        const PERSONNEL_DETAIL_OPEN_NEW_TAB = true;
+        /** Optional SharePoint page URL for person detail (e.g. same S3T.aspx page). Empty = current page. */
+        const PERSONNEL_DETAIL_PAGE_URL = "";
+        /** Roster columns rendered as links to the person detail page. */
+        const PERSONNEL_NAME_LINK_COLUMNS = ["LastName", "FirstName"];
+
+        /**
+         * Local demo when not on SharePoint. `"auto"` = on for localhost / 127.0.0.1 / file://; `true` = always; `false` = never.
+         * Demo uses in-memory sample rows — roster, detail pages, add, and delete all work without REST.
+         */
+        const LOCAL_DEMO_MODE = "auto";
+
+        /** Choice values for dropdown columns in local demo (Status, Rank, etc.). */
+        const DEMO_FIELD_CHOICES = {
+          Status: ["Active", "Pending", "Inactive", "TDY"],
+          OfficeSymbol: ["S3T", "SFOPS", "CP", "CC"],
+          Squadron: ["88 SFS", "88 OSS", "88 MDG"],
+          Rank: ["AB", "Amn", "A1C", "SrA", "SSgt", "TSgt", "MSgt", "SMSgt", "CMSgt", "2d Lt", "1st Lt", "Capt", "Maj"],
+        };
 
         /**
          * Roster columns — fixed order for 88thSFS Personnel. List item Id is hidden unless SHOW_LIST_ITEM_ID_IN_ROSTER is true
@@ -777,6 +918,519 @@
         const btn = document.getElementById("probeRun");
         const rosterReadState = document.getElementById("rosterReadState");
         const rosterTableBody = document.getElementById("rosterTableBody");
+        const personDetailSection = document.getElementById("personDetailSection");
+        const personDetailTitle = document.getElementById("personDetailTitle");
+        const personDetailContent = document.getElementById("personDetailContent");
+        const personDetailReadState = document.getElementById("personDetailReadState");
+        const personDetailBackLink = document.getElementById("personDetailBackLink");
+
+        function hubPageBaseUrl() {
+          const explicit = String(PERSONNEL_DETAIL_PAGE_URL || "").trim();
+          const raw = explicit || String(location.href).split("#")[0].split("?")[0];
+          try {
+            return new URL(raw, location.href).href.split("#")[0].split("?")[0];
+          } catch (_) {
+            return raw;
+          }
+        }
+
+        function rosterPageUrl() {
+          return hubPageBaseUrl();
+        }
+
+        function personDetailUrl(itemId) {
+          const param = String(PERSONNEL_DETAIL_QUERY_PARAM || "personId").trim() || "personId";
+          const u = new URL(hubPageBaseUrl(), location.href);
+          u.searchParams.set(param, String(itemId));
+          return u.href;
+        }
+
+        function getPersonIdFromUrl() {
+          const param = String(PERSONNEL_DETAIL_QUERY_PARAM || "personId").trim() || "personId";
+          try {
+            const v = new URL(location.href).searchParams.get(param);
+            if (v != null && /^\d+$/.test(String(v).trim())) return String(v).trim();
+          } catch (_) {}
+          return null;
+        }
+
+        function setHubListViewVisible(visible) {
+          document.querySelectorAll(".hub-section--form, .hub-section--status, .hub-section--roster").forEach(function (el) {
+            el.hidden = !visible;
+          });
+          if (personDetailSection) personDetailSection.hidden = visible;
+        }
+
+        function setPersonDetailState(kind, message) {
+          if (!personDetailReadState) return;
+          if (!message) {
+            personDetailReadState.hidden = true;
+            personDetailReadState.textContent = "";
+            return;
+          }
+          personDetailReadState.hidden = false;
+          personDetailReadState.className = "read-state " + kind;
+          personDetailReadState.textContent = message;
+        }
+
+        function itemFieldText(item, fieldKey) {
+          const cols = normalizedRosterColumns();
+          const col = cols.find(function (c) {
+            return c.key === fieldKey;
+          });
+          const keys = col ? col.tryKeys || [col.key] : sortKeysForPersonnelName(fieldKey);
+          const raw = valueFromItemByKeys(item, keys);
+          return raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+        }
+
+        function formatPersonDisplayName(item) {
+          const rank = itemFieldText(item, "Rank");
+          const last = itemFieldText(item, "LastName");
+          const first = itemFieldText(item, "FirstName");
+          const mi = itemFieldText(item, "MiddleInitial");
+          let name = [last, first].filter(Boolean).join(", ");
+          if (mi) name = name ? name + " " + mi + "." : mi + ".";
+          if (rank && name) return rank + " " + name;
+          return rank || name || "Personnel record";
+        }
+
+        function buildDetailFieldWrap(col, item) {
+          const tryKeys = col.tryKeys || [col.key];
+          const raw = valueFromItemByKeys(item, tryKeys);
+          const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+          const fwrap = document.createElement("div");
+          fwrap.className = "add-field person-detail-field";
+          if (col.key === "Address") fwrap.classList.add("add-field--address");
+          if (col.key === "Notes") fwrap.classList.add("add-field--notes");
+          const lab = document.createElement("div");
+          lab.className = "person-detail-label";
+          lab.textContent = col.label;
+          const val = document.createElement("div");
+          val.className = "person-detail-value";
+          val.textContent = text === "" ? "—" : text;
+          fwrap.appendChild(lab);
+          fwrap.appendChild(val);
+          return fwrap;
+        }
+
+        function buildDetailGroupFieldset(group, cols, item) {
+          if (!group || !group.title || !Array.isArray(group.keys)) return null;
+
+          if (group.layout === "contact-stack") {
+            const keys = group.keys;
+            if (keys.length < 7) return null;
+            const topKeys = keys.slice(0, 3);
+            const statusKeys = keys.slice(3, 6);
+            const notesKey = keys[6];
+            const bundle = document.createElement("div");
+            bundle.className = "add-form-contact-bundle";
+
+            const topGrid = document.createElement("div");
+            topGrid.className = "add-form-grid add-form-grid--stack add-form-contact-stack-top";
+            topKeys.forEach(function (key) {
+              const col = cols.find(function (c) {
+                return c.key === key;
+              });
+              if (!col) return;
+              const f = buildDetailFieldWrap(col, item);
+              if (f) topGrid.appendChild(f);
+            });
+
+            const statusRow = document.createElement("div");
+            statusRow.className = "add-form-contact-status-row";
+            statusKeys.forEach(function (key) {
+              const col = cols.find(function (c) {
+                return c.key === key;
+              });
+              if (!col) return;
+              const f = buildDetailFieldWrap(col, item);
+              if (f) statusRow.appendChild(f);
+            });
+
+            const notesCol = cols.find(function (c) {
+              return c.key === notesKey;
+            });
+            const notesWrap = notesCol ? buildDetailFieldWrap(notesCol, item) : null;
+
+            bundle.appendChild(topGrid);
+            bundle.appendChild(statusRow);
+            if (notesWrap) bundle.appendChild(notesWrap);
+
+            const fs = document.createElement("fieldset");
+            fs.className = "add-form-group";
+            const leg = document.createElement("legend");
+            leg.className = "add-form-group-legend";
+            leg.textContent = group.title;
+            fs.appendChild(leg);
+            fs.appendChild(bundle);
+            return fs;
+          }
+
+          const grid = document.createElement("div");
+          grid.className = "add-form-grid";
+          if (group.layout === "stack") grid.classList.add("add-form-grid--stack");
+          group.keys.forEach(function (key) {
+            const col = cols.find(function (c) {
+              return c.key === key;
+            });
+            if (!col) return;
+            const fwrap = buildDetailFieldWrap(col, item);
+            if (fwrap) grid.appendChild(fwrap);
+          });
+          if (!grid.childElementCount) return null;
+          const fs = document.createElement("fieldset");
+          fs.className = "add-form-group";
+          const leg = document.createElement("legend");
+          leg.className = "add-form-group-legend";
+          leg.textContent = group.title;
+          fs.appendChild(leg);
+          fs.appendChild(grid);
+          return fs;
+        }
+
+        function renderPersonDetailContent(item) {
+          if (!personDetailContent) return;
+          personDetailContent.innerHTML = "";
+          const cols = normalizedRosterColumns().filter(function (c) {
+            return c.key !== "Id";
+          });
+          if (!cols.length) {
+            setPersonDetailState("warn", "No columns configured to display.");
+            return;
+          }
+          setPersonDetailState("", "");
+          if (personDetailTitle) personDetailTitle.textContent = formatPersonDisplayName(item);
+
+          const splitWrap = document.createElement("div");
+          splitWrap.className = "add-form-split add-form-split--primary";
+
+          if (Array.isArray(ADD_FORM_FIELD_GROUPS)) {
+            ADD_FORM_FIELD_GROUPS.forEach(function (group) {
+              const fs = buildDetailGroupFieldset(group, cols, item);
+              if (fs) splitWrap.appendChild(fs);
+            });
+          }
+
+          if (!splitWrap.childElementCount) {
+            const grid = document.createElement("div");
+            grid.className = "add-form-grid add-form-grid--stack";
+            cols.forEach(function (col) {
+              grid.appendChild(buildDetailFieldWrap(col, item));
+            });
+            personDetailContent.appendChild(grid);
+            return;
+          }
+
+          personDetailContent.appendChild(splitWrap);
+        }
+
+        async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {
+          if (!personDetailSection || !personDetailContent) return;
+          setHubListViewVisible(false);
+          personDetailSection.hidden = false;
+          personDetailContent.innerHTML = "";
+          setPersonDetailState("loading", "Loading personnel record…");
+          if (personDetailTitle) personDetailTitle.textContent = "Personnel record";
+
+          let item = null;
+          if (Array.isArray(cachedRows)) {
+            item = cachedRows.find(function (r) {
+              return r && String(r.Id) === String(itemId);
+            });
+          }
+          if (!item) {
+            try {
+              item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
+            } catch (e) {
+              setPersonDetailState("err", "Cannot load personnel record: " + (e.message || String(e)).slice(0, 280));
+              return;
+            }
+          }
+
+          renderPersonDetailContent(item);
+        }
+
+        if (personDetailBackLink) {
+          personDetailBackLink.href = rosterPageUrl();
+        }
+
+        let demoPersonnelStore = null;
+
+        function isLocalDemoMode() {
+          const mode = LOCAL_DEMO_MODE;
+          if (mode === true || String(mode).toLowerCase() === "true") return true;
+          if (mode === false || String(mode).toLowerCase() === "false") return false;
+          const h = String(location.hostname || "").toLowerCase();
+          if (h === "localhost" || h === "127.0.0.1" || h === "[::1]") return true;
+          if (location.protocol === "file:") return true;
+          try {
+            if (new URL(location.href).searchParams.get("demo") === "1") return true;
+          } catch (_) {}
+          return false;
+        }
+
+        function updateDemoModeBanner() {
+          const banner = document.getElementById("demoModeBanner");
+          if (banner) banner.hidden = !isLocalDemoMode();
+        }
+
+        function createDemoPersonnelSeed() {
+          return [
+            {
+              Id: 1,
+              RecordDate: "2024-03-12",
+              DoDID: "1234567890",
+              Rank: "TSgt",
+              LastName: "Anderson",
+              FirstName: "James",
+              MiddleInitial: "R",
+              Address: "123 Main St, Wright-Patterson AFB, OH 45433",
+              CellPhone: "937-555-0101",
+              WorkPhone: "937-555-1001",
+              Status: "Active",
+              OfficeSymbol: "S3T",
+              Squadron: "88 SFS",
+              Notes: "Training coordinator. Primary POC for annual certs.",
+              Title: "Anderson, James",
+            },
+            {
+              Id: 2,
+              RecordDate: "2023-11-02",
+              DoDID: "2345678901",
+              Rank: "SSgt",
+              LastName: "Baker",
+              FirstName: "Maria",
+              MiddleInitial: "L",
+              Address: "456 Oak Ave, Dayton, OH 45431",
+              CellPhone: "937-555-0102",
+              WorkPhone: "937-555-1002",
+              Status: "Active",
+              OfficeSymbol: "SFOPS",
+              Squadron: "88 SFS",
+              Notes: "Range safety certified.",
+              Title: "Baker, Maria",
+            },
+            {
+              Id: 3,
+              RecordDate: "2025-01-08",
+              DoDID: "3456789012",
+              Rank: "SrA",
+              LastName: "Chen",
+              FirstName: "David",
+              MiddleInitial: "K",
+              Address: "789 Elm Dr, Beavercreek, OH 45440",
+              CellPhone: "937-555-0103",
+              WorkPhone: "937-555-1003",
+              Status: "Pending",
+              OfficeSymbol: "S3T",
+              Squadron: "88 SFS",
+              Notes: "Awaiting final background check.",
+              Title: "Chen, David",
+            },
+            {
+              Id: 4,
+              RecordDate: "2022-06-20",
+              DoDID: "4567890123",
+              Rank: "MSgt",
+              LastName: "Davis",
+              FirstName: "Robert",
+              MiddleInitial: "A",
+              Address: "321 Pine Rd, Fairborn, OH 45324",
+              CellPhone: "937-555-0104",
+              WorkPhone: "937-555-1004",
+              Status: "Active",
+              OfficeSymbol: "CP",
+              Squadron: "88 SFS",
+              Notes: "NCOIC, patrol section.",
+              Title: "Davis, Robert",
+            },
+            {
+              Id: 5,
+              RecordDate: "2024-09-15",
+              DoDID: "5678901234",
+              Rank: "A1C",
+              LastName: "Evans",
+              FirstName: "Sarah",
+              MiddleInitial: "M",
+              Address: "654 Maple Ln, Huber Heights, OH 45424",
+              CellPhone: "937-555-0105",
+              WorkPhone: "937-555-1005",
+              Status: "TDY",
+              OfficeSymbol: "S3T",
+              Squadron: "88 OSS",
+              Notes: "Deployed — return date TBD.",
+              Title: "Evans, Sarah",
+            },
+            {
+              Id: 6,
+              RecordDate: "2021-02-28",
+              DoDID: "6789012345",
+              Rank: "Capt",
+              LastName: "Foster",
+              FirstName: "Michael",
+              MiddleInitial: "J",
+              Address: "987 Cedar Ct, Wright-Patterson AFB, OH 45433",
+              CellPhone: "937-555-0106",
+              WorkPhone: "937-555-1006",
+              Status: "Active",
+              OfficeSymbol: "CC",
+              Squadron: "88 SFS",
+              Notes: "Commander, 88 SFS.",
+              Title: "Foster, Michael",
+            },
+            {
+              Id: 7,
+              RecordDate: "2023-07-04",
+              DoDID: "7890123456",
+              Rank: "Amn",
+              LastName: "Garcia",
+              FirstName: "Elena",
+              MiddleInitial: "S",
+              Address: "147 Birch Way, Kettering, OH 45429",
+              CellPhone: "937-555-0107",
+              WorkPhone: "937-555-1007",
+              Status: "Active",
+              OfficeSymbol: "S3T",
+              Squadron: "88 SFS",
+              Notes: "New hire — in-process training.",
+              Title: "Garcia, Elena",
+            },
+            {
+              Id: 8,
+              RecordDate: "2020-12-01",
+              DoDID: "8901234567",
+              Rank: "SMSgt",
+              LastName: "Harris",
+              FirstName: "William",
+              MiddleInitial: "T",
+              Address: "258 Spruce St, Centerville, OH 45458",
+              CellPhone: "937-555-0108",
+              WorkPhone: "937-555-1008",
+              Status: "Inactive",
+              OfficeSymbol: "SFOPS",
+              Squadron: "88 SFS",
+              Notes: "Retired — archive record only.",
+              Title: "Harris, William",
+            },
+          ];
+        }
+
+        function initDemoPersonnelStore() {
+          if (!demoPersonnelStore) {
+            demoPersonnelStore = createDemoPersonnelSeed();
+          }
+          return demoPersonnelStore;
+        }
+
+        function demoChoicesForField(fieldName) {
+          const name = String(fieldName || "").trim();
+          if (DEMO_FIELD_CHOICES[name]) return DEMO_FIELD_CHOICES[name].slice();
+          const cols = normalizedRosterColumns();
+          const col = cols.find(function (c) {
+            const keys = c.tryKeys || [c.key];
+            return keys.indexOf(name) !== -1 || c.key === name;
+          });
+          if (col && DEMO_FIELD_CHOICES[col.key]) return DEMO_FIELD_CHOICES[col.key].slice();
+          return [];
+        }
+
+        function demoPayloadToItem(body) {
+          const item = {};
+          const cols = normalizedRosterColumns();
+          Object.keys(body || {}).forEach(function (key) {
+            if (key === "Title") {
+              item.Title = body[key];
+              return;
+            }
+            const col = cols.find(function (c) {
+              const writeKey = c.saveKey || c.key;
+              const tryKeys = c.tryKeys || [c.key];
+              return writeKey === key || tryKeys.indexOf(key) !== -1 || c.key === key;
+            });
+            const targetKey = col ? col.key : key;
+            let val = body[key];
+            if (typeof val === "string" && /T00:00:00Z$/.test(val)) val = val.slice(0, 10);
+            item[targetKey] = val;
+          });
+          if (!item.Title && item.LastName && item.FirstName) {
+            item.Title = item.LastName + ", " + item.FirstName;
+          }
+          return item;
+        }
+
+        function demoCloneStore() {
+          return JSON.parse(JSON.stringify(initDemoPersonnelStore()));
+        }
+
+        async function demoSpFetch(path, opts, method) {
+          opts = opts || {};
+          method = method || (opts.method || "GET").toUpperCase();
+          const store = initDemoPersonnelStore();
+          await new Promise(function (resolve) {
+            setTimeout(resolve, 120);
+          });
+
+          if (method === "GET" && /\/fields\/getbyinternalnameortitle\('/.test(path)) {
+            const m = path.match(/getbyinternalnameortitle\('([^']*)'\)/);
+            const fieldName = m ? m[1] : "";
+            return {
+              Choices: demoChoicesForField(fieldName),
+              Title: fieldName,
+              InternalName: fieldName,
+              TypeAsString: "Choice",
+            };
+          }
+
+          if (method === "GET" && /\/lists\?\$select=Title,Id,ItemCount,Hidden/.test(path)) {
+            return {
+              value: [{ Title: personnelListTitle(), Id: 101, ItemCount: store.length, Hidden: false }],
+            };
+          }
+
+          if (method === "GET" && /\/lists\/(guid'[^']+'|getbytitle\([^)]+\))\?\$select=/.test(path)) {
+            return {
+              Id: 101,
+              Title: personnelListTitle(),
+              ItemCount: store.length,
+              ListItemEntityTypeFullName: "SP.Data.PersonnelListItem",
+            };
+          }
+
+          const itemGet = path.match(/\/items\((\d+)\)(?:\?|$)/);
+          if (method === "GET" && itemGet) {
+            const hit = store.find(function (r) {
+              return String(r.Id) === itemGet[1];
+            });
+            if (!hit) throw new Error("404 Not Found The specified item does not exist.");
+            return JSON.parse(JSON.stringify(hit));
+          }
+
+          if (method === "GET" && /\/items(?:\?|$)/.test(path)) {
+            return { value: demoCloneStore() };
+          }
+
+          if (method === "POST" && /\/items(?:\?|$)/.test(path) && opts.body) {
+            const body = typeof opts.body === "object" ? opts.body : JSON.parse(opts.body);
+            const nextId =
+              store.reduce(function (max, r) {
+                return Math.max(max, Number(r.Id) || 0);
+              }, 0) + 1;
+            const item = Object.assign({ Id: nextId }, demoPayloadToItem(body));
+            store.push(item);
+            return JSON.parse(JSON.stringify(item));
+          }
+
+          if (method === "DELETE" && itemGet) {
+            const idx = store.findIndex(function (r) {
+              return String(r.Id) === itemGet[1];
+            });
+            if (idx === -1) throw new Error("404 Not Found The specified item does not exist.");
+            store.splice(idx, 1);
+            return null;
+          }
+
+          throw new Error("Demo mode: unhandled " + method + " " + path);
+        }
 
         function normalizedRosterColumns() {
           const arr = Array.isArray(ROSTER_COLUMNS) ? ROSTER_COLUMNS : [];
@@ -1007,7 +1661,24 @@
               const tryKeys = col.tryKeys || [col.key];
               const raw = valueFromItemByKeys(item, tryKeys);
               const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-              td.textContent = text === "" ? "—" : text;
+              const isNameLink =
+                item.Id != null &&
+                Array.isArray(PERSONNEL_NAME_LINK_COLUMNS) &&
+                PERSONNEL_NAME_LINK_COLUMNS.indexOf(col.key) !== -1;
+              if (isNameLink) {
+                const a = document.createElement("a");
+                a.className = "roster-name-link";
+                a.href = personDetailUrl(item.Id);
+                if (PERSONNEL_DETAIL_OPEN_NEW_TAB) {
+                  a.target = "_blank";
+                  a.rel = "noopener noreferrer";
+                }
+                a.textContent = text === "" ? "—" : text;
+                a.title = "View full record for " + formatPersonDisplayName(item);
+                td.appendChild(a);
+              } else {
+                td.textContent = text === "" ? "—" : text;
+              }
               tr.appendChild(td);
             });
             if (showDelete && item.Id != null) {
@@ -1175,20 +1846,24 @@
 
         async function spFetch(path, opts, baseUrlOverride) {
           opts = opts || {};
+          const method = (opts.method || "GET").toUpperCase();
+          if (isLocalDemoMode()) {
+            return demoSpFetch(path, opts, method);
+          }
           const base =
             baseUrlOverride != null && String(baseUrlOverride).trim()
               ? String(baseUrlOverride).trim().replace(/\/$/, "")
               : resolvedPersonnelRestBase();
           const headers = Object.assign({}, opts.headers || {});
           headers["Accept"] = "application/json;odata=nometadata";
-          const method = (opts.method || "GET").toUpperCase();
-          if (method !== "GET" && method !== "DELETE") {
+          const methodUpper = method;
+          if (methodUpper !== "GET" && methodUpper !== "DELETE") {
             headers["Content-Type"] = "application/json;odata=nometadata";
           }
 
-          const isPostWithBody = method === "POST" && opts.body != null;
+          const isPostWithBody = methodUpper === "POST" && opts.body != null;
           const needsWriteDigest =
-            !opts.skipAntiForgery && (method === "MERGE" || method === "DELETE" || isPostWithBody);
+            !opts.skipAntiForgery && (methodUpper === "MERGE" || methodUpper === "DELETE" || isPostWithBody);
 
           let digest = "";
           if (needsWriteDigest) {
@@ -1203,9 +1878,9 @@
           }
           if (digest) headers["X-RequestDigest"] = digest;
 
-          let realMethod = method;
-          if (method === "MERGE" || method === "DELETE") {
-            headers["X-HTTP-Method"] = method;
+          let realMethod = methodUpper;
+          if (methodUpper === "MERGE" || methodUpper === "DELETE") {
+            headers["X-HTTP-Method"] = methodUpper;
             headers["IF-MATCH"] = "*";
             realMethod = "POST";
           }
@@ -1659,9 +2334,11 @@
         async function runProbe() {
           out.innerHTML = "";
           clearRosterTable();
+          updateDemoModeBanner();
           const addPanel = document.getElementById("addPersonPanel");
           if (addPanel) addPanel.innerHTML = "";
-          setReadState("loading", "Loading Personnel list from SharePoint…");
+          const demo = isLocalDemoMode();
+          setReadState("loading", demo ? "Loading demo personnel roster…" : "Loading Personnel list from SharePoint…");
 
           const ctx = getCtx();
           const pageWeb = ctx && ctx.webAbsoluteUrl ? String(ctx.webAbsoluteUrl).replace(/\/$/, "") : "";
@@ -1700,6 +2377,9 @@
           );
           log("List API segment:\n/_api/web/" + seg);
           log("LIST_PERSONNEL (trimmed):\n" + JSON.stringify(personnelListTitle()));
+          if (demo) {
+            log("LOCAL DEMO MODE — in-memory sample data (hostname: " + location.hostname + ")", "ok");
+          }
 
           let meta = null;
           try {
@@ -1792,8 +2472,14 @@
             );
           }
 
-          await renderAddPersonForm(meta, pw, seg2, sampleRow);
-          renderRosterTable(rows, meta, pw, seg2);
+          const personIdFromUrl = getPersonIdFromUrl();
+          if (personIdFromUrl) {
+            await showPersonDetailById(personIdFromUrl, meta, pw, seg2, rows);
+          } else {
+            await renderAddPersonForm(meta, pw, seg2, sampleRow);
+            renderRosterTable(rows, meta, pw, seg2);
+            setHubListViewVisible(true);
+          }
         }
 
         btn.addEventListener("click", () => {
@@ -1803,6 +2489,7 @@
           });
         });
 
+        updateDemoModeBanner();
         runProbe().catch((e) => {
           setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
           log("UNCAUGHT:\n" + (e.message || String(e)), "err");
