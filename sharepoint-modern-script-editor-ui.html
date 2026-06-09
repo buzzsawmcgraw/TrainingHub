@@ -27,6 +27,8 @@
         box-sizing: border-box;
         padding: 0;
         max-width: 100%;
+        min-height: 320px;
+        position: relative;
         font-family: var(--pip-font);
         font-size: 14px;
         line-height: 1.45;
@@ -157,22 +159,43 @@
         color: var(--pip-amber);
         text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
       }
-      #sp-pip-ui pre span.ok {
-        color: var(--pip-green);
+      #sp-pip-ui .hub-section--recall {
+        margin-top: 8px;
+        padding-top: 18px;
+        border-top: 1px solid var(--pip-border);
       }
-      #sp-pip-ui pre {
-        white-space: pre-wrap;
-        word-break: break-word;
-        background: var(--pip-bg2);
-        padding: 12px;
+      #sp-pip-ui .recall-roster-panel {
         border: 1px solid var(--pip-border);
-        max-height: 70vh;
-        overflow: auto;
-        color: var(--pip-green);
-        font-family: var(--pip-font);
+        border-radius: 8px;
+        padding: 18px 20px 20px;
+        background: rgba(5, 14, 10, 0.55);
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), inset 0 0 32px rgba(0, 0, 0, 0.5);
+      }
+      #sp-pip-ui .recall-roster-panel h2.hub-subtitle {
+        margin: 0 0 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--pip-border);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
+      }
+      #sp-pip-ui .recall-roster-desc {
+        margin: 0 0 16px;
         font-size: 12px;
-        line-height: 1.4;
-        text-shadow: 0 0 4px var(--pip-green-glow);
+        line-height: 1.5;
+        color: rgba(210, 255, 224, 0.82);
+      }
+      #sp-pip-ui .recall-roster-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+      }
+      #sp-pip-ui .recall-roster-actions button {
+        margin: 0;
       }
       #sp-pip-ui button {
         margin: 8px 8px 8px 0;
@@ -445,24 +468,6 @@
       #sp-pip-ui table.roster thead th:last-child {
         border-top-right-radius: 7px;
       }
-      #sp-pip-ui details {
-        margin-top: 0;
-        padding-top: 8px;
-        border-top: 1px solid var(--pip-border);
-        color: var(--pip-green);
-      }
-      #sp-pip-ui summary {
-        cursor: pointer;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        font-size: 12px;
-        color: var(--pip-green);
-        text-shadow: 0 0 4px var(--pip-green-glow);
-      }
-      #sp-pip-ui summary:hover {
-        color: #7dff8f;
-      }
       #sp-pip-ui .add-person-panel {
         border: 1px solid var(--pip-border);
         border-radius: 8px;
@@ -674,11 +679,47 @@
         color: var(--pip-amber);
         text-shadow: 0 0 4px rgba(255, 176, 0, 0.25);
       }
+      #sp-pip-ui .hub-boot-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--pip-bg);
+        border-radius: 8px;
+      }
+      #sp-pip-ui .hub-boot-overlay[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui .hub-boot-text {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--pip-green-dim);
+        text-shadow: 0 0 6px var(--pip-green-glow);
+      }
+      #sp-pip-ui.hub-ready .hub-main {
+        animation: hub-fade-in 0.22s ease-out;
+      }
+      @keyframes hub-fade-in {
+        from {
+          opacity: 0.55;
+        }
+        to {
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body>
     <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
     <div id="sp-pip-ui">
+      <div id="hubBootOverlay" class="hub-boot-overlay" aria-live="polite">
+        <p class="hub-boot-text">Loading Training Hub…</p>
+      </div>
       <div class="hub-top-banner-wrap" id="hubTopBannerWrap" hidden>
         <img id="hubTopBannerImg" class="hub-top-banner-img" src="" alt="" decoding="async" />
       </div>
@@ -701,7 +742,7 @@
           <div id="addPersonPanel" class="add-person-panel" aria-live="polite"></div>
         </section>
         <section class="hub-section hub-section--status" aria-label="Connection status and refresh">
-          <div id="rosterReadState" class="read-state loading">Loading list…</div>
+          <div id="rosterReadState" class="read-state" hidden></div>
           <div class="hub-toolbar">
             <button type="button" id="probeRun">Refresh list</button>
           </div>
@@ -725,11 +766,16 @@
             <div id="personDetailContent" class="person-detail-content"></div>
           </div>
         </section>
-        <section class="hub-section hub-section--diag">
-          <details>
-            <summary>Diagnostics (REST details &amp; raw JSON)</summary>
-            <pre id="probeOut"></pre>
-          </details>
+        <section class="hub-section hub-section--recall" aria-label="Recall roster">
+          <div class="recall-roster-panel">
+            <h2 class="hub-subtitle">Recall roster</h2>
+            <p class="recall-roster-desc">
+              Download a PDF with every person on the personnel list — name, address, cell phone, and work phone — sorted A–Z by last name.
+            </p>
+            <div class="recall-roster-actions">
+              <button type="button" id="recallRosterBtn">Save recall roster (PDF)</button>
+            </div>
+          </div>
         </section>
       </main>
     </div>
@@ -819,6 +865,11 @@
         const PERSONNEL_DETAIL_PAGE_URL = "";
         /** When roster row count exceeds this, the table body scrolls instead of growing the page. */
         const ROSTER_SCROLL_AFTER_ROWS = 10;
+
+        /** Recall roster PDF — header text and download file name. */
+        const RECALL_ROSTER_ORG_TITLE = "88th Security Forces Squadron";
+        const RECALL_ROSTER_DOC_TITLE = "Recall Roster";
+        const RECALL_ROSTER_FILENAME = "88SFS-Recall-Roster.pdf";
 
         /**
          * Local demo when not on SharePoint. `"auto"` = on for localhost / 127.0.0.1 / file://; `true` = always; `false` = never.
@@ -932,6 +983,7 @@
 
         const out = document.getElementById("probeOut");
         const btn = document.getElementById("probeRun");
+        const recallRosterBtn = document.getElementById("recallRosterBtn");
         const rosterReadState = document.getElementById("rosterReadState");
         const rosterTableBody = document.getElementById("rosterTableBody");
         const personDetailSection = document.getElementById("personDetailSection");
@@ -939,6 +991,57 @@
         const personDetailContent = document.getElementById("personDetailContent");
         const personDetailReadState = document.getElementById("personDetailReadState");
         const personDetailBackLink = document.getElementById("personDetailBackLink");
+        const hubBootOverlay = document.getElementById("hubBootOverlay");
+        const hubRoot = document.getElementById("sp-pip-ui");
+
+        /** Cached roster + REST context so Record / Back never reload the SharePoint page. */
+        let hubSession = {
+          rows: null,
+          meta: null,
+          pw: null,
+          seg: null,
+          sampleRow: null,
+        };
+
+        function dismissHubBootOverlay() {
+          if (hubBootOverlay) hubBootOverlay.hidden = true;
+          if (hubRoot) hubRoot.classList.add("hub-ready");
+        }
+
+        function rosterTableIsRendered() {
+          return !!(rosterTableBody && rosterTableBody.querySelector("tr"));
+        }
+
+        async function ensureRosterViewRendered() {
+          if (!hubSession.rows || !hubSession.meta || !hubSession.pw || !hubSession.seg) return;
+          if (rosterTableIsRendered() && document.getElementById("newPersonForm")) return;
+          await renderAddPersonForm(hubSession.meta, hubSession.pw, hubSession.seg, hubSession.sampleRow);
+          renderRosterTable(hubSession.rows, hubSession.meta, hubSession.pw, hubSession.seg);
+        }
+
+        function updateHubHistoryForPerson(itemId, replace) {
+          try {
+            const param = String(PERSONNEL_DETAIL_QUERY_PARAM || "personId").trim() || "personId";
+            const u = new URL(location.href);
+            if (itemId) u.searchParams.set(param, String(itemId));
+            else u.searchParams.delete(param);
+            const state = { hubPersonId: itemId ? String(itemId) : null };
+            if (replace) history.replaceState(state, "", u.href);
+            else history.pushState(state, "", u.href);
+          } catch (_) {}
+        }
+
+        function navigateToPersonDetail(itemId) {
+          updateHubHistoryForPerson(itemId, false);
+          void showPersonDetailById(itemId, hubSession.meta, hubSession.pw, hubSession.seg, hubSession.rows);
+        }
+
+        async function navigateToRoster() {
+          updateHubHistoryForPerson(null, true);
+          if (personDetailSection) personDetailSection.hidden = true;
+          setHubListViewVisible(true);
+          await ensureRosterViewRendered();
+        }
 
         function hubPageBaseUrl() {
           const explicit = String(PERSONNEL_DETAIL_PAGE_URL || "").trim();
@@ -1008,6 +1111,184 @@
           if (mi) name = name ? name + " " + mi + "." : mi + ".";
           if (rank && name) return rank + " " + name;
           return rank || name || "Personnel record";
+        }
+
+        function escHtml(text) {
+          return String(text != null ? text : "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function recallRosterFieldText(item, fieldKey) {
+          const text = itemFieldText(item, fieldKey);
+          return text === "" ? "—" : text;
+        }
+
+        function buildRecallRosterTableRows(personnelRows) {
+          const sorted = sortPersonnelRowsAlphabetical(Array.isArray(personnelRows) ? personnelRows.slice() : []);
+          return sorted.map(function (item) {
+            return {
+              name: formatPersonDisplayName(item),
+              address: recallRosterFieldText(item, "Address"),
+              cell: recallRosterFieldText(item, "CellPhone"),
+              work: recallRosterFieldText(item, "WorkPhone"),
+            };
+          });
+        }
+
+        async function getRecallRosterPersonnelRows() {
+          if (Array.isArray(hubSession.rows) && hubSession.rows.length) {
+            return sortPersonnelRowsAlphabetical(hubSession.rows.slice());
+          }
+          const pw = hubSession.pw || resolvedPersonnelRestBase();
+          const seg = hubSession.seg || personnelListApiPath();
+          if (!pw) throw new Error("Personnel list has not loaded yet. Wait for the roster, then try again.");
+          const items = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
+          const rows = sortPersonnelRowsAlphabetical((items && items.value) || []);
+          hubSession.rows = rows;
+          hubSession.pw = pw;
+          hubSession.seg = seg;
+          return rows;
+        }
+
+        function loadExternalScript(src) {
+          return new Promise(function (resolve, reject) {
+            const existing = document.querySelector('script[data-recall-src="' + src + '"]');
+            if (existing) {
+              if (existing.getAttribute("data-loaded") === "1") resolve();
+              else existing.addEventListener("load", function () { resolve(); }, { once: true });
+              return;
+            }
+            const s = document.createElement("script");
+            s.src = src;
+            s.async = true;
+            s.setAttribute("data-recall-src", src);
+            s.onload = function () {
+              s.setAttribute("data-loaded", "1");
+              resolve();
+            };
+            s.onerror = function () {
+              reject(new Error("Could not load script: " + src));
+            };
+            document.head.appendChild(s);
+          });
+        }
+
+        async function generateRecallRosterPdf(personnelRows) {
+          await loadExternalScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+          await loadExternalScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+          if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("PDF library unavailable");
+          const recallRows = buildRecallRosterTableRows(personnelRows);
+          const doc = new window.jspdf.jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
+          const generated = new Date().toLocaleString();
+          doc.setFontSize(14);
+          doc.text(RECALL_ROSTER_ORG_TITLE, 40, 36);
+          doc.setFontSize(11);
+          doc.text(RECALL_ROSTER_DOC_TITLE, 40, 54);
+          doc.setFontSize(9);
+          doc.text("Generated: " + generated + "   ·   Personnel: " + recallRows.length, 40, 70);
+          doc.autoTable({
+            startY: 82,
+            head: [["Name", "Address", "Cell phone", "Work phone"]],
+            body: recallRows.map(function (r) {
+              return [r.name, r.address, r.cell, r.work];
+            }),
+            styles: { fontSize: 8, cellPadding: 4, overflow: "linebreak" },
+            headStyles: { fillColor: [14, 36, 26], textColor: [255, 204, 102] },
+            columnStyles: {
+              0: { cellWidth: 130 },
+              1: { cellWidth: 250 },
+              2: { cellWidth: 90 },
+              3: { cellWidth: 90 },
+            },
+            margin: { left: 40, right: 40 },
+          });
+          doc.save(RECALL_ROSTER_FILENAME);
+        }
+
+        function printRecallRosterFallback(personnelRows) {
+          const recallRows = buildRecallRosterTableRows(personnelRows);
+          const generated = new Date().toLocaleString();
+          const rowsHtml = recallRows
+            .map(function (r) {
+              return (
+                "<tr><td>" +
+                escHtml(r.name) +
+                "</td><td>" +
+                escHtml(r.address) +
+                "</td><td>" +
+                escHtml(r.cell) +
+                "</td><td>" +
+                escHtml(r.work) +
+                "</td></tr>"
+              );
+            })
+            .join("");
+          const html =
+            "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\" /><title>" +
+            escHtml(RECALL_ROSTER_DOC_TITLE) +
+            "</title><style>" +
+            "body{font-family:Arial,sans-serif;margin:24px;color:#111;}" +
+            "h1{font-size:18px;margin:0 0 4px;}" +
+            "h2{font-size:14px;margin:0 0 12px;font-weight:normal;}" +
+            ".meta{font-size:11px;color:#444;margin-bottom:16px;}" +
+            "table{width:100%;border-collapse:collapse;font-size:11px;}" +
+            "th,td{border:1px solid #333;padding:6px 8px;text-align:left;vertical-align:top;}" +
+            "th{background:#1e4a36;color:#ffcc66;}" +
+            "tr:nth-child(even) td{background:#f4f4f4;}" +
+            "</style></head><body>" +
+            "<h1>" +
+            escHtml(RECALL_ROSTER_ORG_TITLE) +
+            "</h1>" +
+            "<h2>" +
+            escHtml(RECALL_ROSTER_DOC_TITLE) +
+            "</h2>" +
+            "<p class=\"meta\">Generated: " +
+            escHtml(generated) +
+            " · Personnel: " +
+            recallRows.length +
+            "</p>" +
+            "<table><thead><tr><th>Name</th><th>Address</th><th>Cell phone</th><th>Work phone</th></tr></thead><tbody>" +
+            rowsHtml +
+            "</tbody></table></body></html>";
+          const w = window.open("", "_blank");
+          if (!w) {
+            throw new Error("Pop-up blocked. Allow pop-ups, then try again.");
+          }
+          w.document.open();
+          w.document.write(html);
+          w.document.close();
+          w.focus();
+          w.onload = function () {
+            w.print();
+          };
+        }
+
+        async function handleRecallRosterDownload() {
+          if (!recallRosterBtn) return;
+          const labelDefault = "Save recall roster (PDF)";
+          recallRosterBtn.disabled = true;
+          recallRosterBtn.textContent = "Building PDF…";
+          try {
+            const rows = await getRecallRosterPersonnelRows();
+            if (!rows.length) {
+              setReadState("warn", "No personnel on the list. Add people first, then try again.");
+              return;
+            }
+            try {
+              await generateRecallRosterPdf(rows);
+            } catch (pdfErr) {
+              log("PDF library unavailable; opening print view:\n" + (pdfErr.message || String(pdfErr)), "err");
+              printRecallRosterFallback(rows);
+            }
+          } catch (e) {
+            setReadState("err", "Recall roster failed: " + (e.message || String(e)).slice(0, 280));
+          } finally {
+            recallRosterBtn.disabled = false;
+            recallRosterBtn.textContent = labelDefault;
+          }
         }
 
         function buildDetailFieldWrap(col, item) {
@@ -1144,23 +1425,28 @@
           if (!personDetailSection || !personDetailContent) return;
           setHubListViewVisible(false);
           personDetailSection.hidden = false;
+
+          const rows = Array.isArray(cachedRows) ? cachedRows : hubSession.rows;
+          let item =
+            Array.isArray(rows) &&
+            rows.find(function (r) {
+              return r && String(r.Id) === String(itemId);
+            });
+
+          if (item) {
+            renderPersonDetailContent(item);
+            return;
+          }
+
           personDetailContent.innerHTML = "";
           setPersonDetailState("loading", "Loading personnel record…");
           if (personDetailTitle) personDetailTitle.textContent = "Personnel record";
 
-          let item = null;
-          if (Array.isArray(cachedRows)) {
-            item = cachedRows.find(function (r) {
-              return r && String(r.Id) === String(itemId);
-            });
-          }
-          if (!item) {
-            try {
-              item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
-            } catch (e) {
-              setPersonDetailState("err", "Cannot load personnel record: " + (e.message || String(e)).slice(0, 280));
-              return;
-            }
+          try {
+            item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
+          } catch (e) {
+            setPersonDetailState("err", "Cannot load personnel record: " + (e.message || String(e)).slice(0, 280));
+            return;
           }
 
           renderPersonDetailContent(item);
@@ -1168,7 +1454,22 @@
 
         if (personDetailBackLink) {
           personDetailBackLink.href = rosterPageUrl();
+          personDetailBackLink.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            void navigateToRoster();
+          });
         }
+
+        window.addEventListener("popstate", function () {
+          const pid = getPersonIdFromUrl();
+          if (pid) {
+            void showPersonDetailById(pid, hubSession.meta, hubSession.pw, hubSession.seg, hubSession.rows);
+            return;
+          }
+          if (personDetailSection) personDetailSection.hidden = true;
+          setHubListViewVisible(true);
+          void ensureRosterViewRendered();
+        });
 
         let demoPersonnelStore = null;
 
@@ -1617,6 +1918,12 @@
 
         function setReadState(kind, message) {
           if (!rosterReadState) return;
+          if (!message || kind === "ok" || kind === "loading") {
+            rosterReadState.hidden = true;
+            rosterReadState.textContent = "";
+            return;
+          }
+          rosterReadState.hidden = false;
           rosterReadState.className = "read-state " + kind;
           rosterReadState.textContent = message;
         }
@@ -1692,7 +1999,7 @@
               recordBtn.textContent = "Record";
               recordBtn.title = "View full record for " + formatPersonDisplayName(item);
               recordBtn.addEventListener("click", () => {
-                location.assign(personDetailUrl(item.Id));
+                navigateToPersonDetail(item.Id);
               });
               inner.appendChild(recordBtn);
               const delBtn = document.createElement("button");
@@ -1731,27 +2038,10 @@
             }
           }
 
-          const listTitle = meta && meta.Title ? String(meta.Title) : personnelListTitle();
-          const ic = meta && meta.ItemCount != null ? meta.ItemCount : "?";
-          if (rows.length > 0) {
-            setReadState(
-              "ok",
-              "Loaded " +
-                rows.length +
-                " row(s), " +
-                columns.length +
-                " column(s) (" +
-                (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
-                "). List \"" +
-                listTitle +
-                "\" — ItemCount " +
-                ic +
-                ".",
-            );
-          }
         }
 
         function log(msg, cls) {
+          if (!out) return;
           const line = typeof msg === "string" ? msg : JSON.stringify(msg, null, 2);
           const span = document.createElement("span");
           if (cls) span.className = cls;
@@ -2359,7 +2649,8 @@
         }
 
         async function runProbe() {
-          out.innerHTML = "";
+          try {
+          if (out) out.innerHTML = "";
           clearRosterTable();
           updateDemoModeBanner();
           const addPanel = document.getElementById("addPersonPanel");
@@ -2415,7 +2706,7 @@
             log(meta);
           } catch (e) {
             log("LIST METADATA FAILED:\n" + (e.message || String(e)), "err");
-            setReadState("err", "Cannot read this list (metadata request failed). Open Diagnostics for details and list names.");
+            setReadState("err", "Cannot read this list (metadata request failed). Check list name and permissions.");
             try {
               await enumerateListTitles(pw);
             } catch (e2) {
@@ -2500,12 +2791,25 @@
           }
 
           const personIdFromUrl = getPersonIdFromUrl();
+          hubSession = {
+            rows: rows,
+            meta: meta,
+            pw: pw,
+            seg: seg2,
+            sampleRow: sampleRow,
+          };
+
           if (personIdFromUrl) {
+            updateHubHistoryForPerson(personIdFromUrl, true);
             await showPersonDetailById(personIdFromUrl, meta, pw, seg2, rows);
           } else {
             await renderAddPersonForm(meta, pw, seg2, sampleRow);
             renderRosterTable(rows, meta, pw, seg2);
             setHubListViewVisible(true);
+          }
+          setReadState("", "");
+          } finally {
+            dismissHubBootOverlay();
           }
         }
 
@@ -2515,6 +2819,12 @@
             log("UNCAUGHT:\n" + (e.message || String(e)), "err");
           });
         });
+
+        if (recallRosterBtn) {
+          recallRosterBtn.addEventListener("click", function () {
+            void handleRecallRosterDownload();
+          });
+        }
 
         updateDemoModeBanner();
         runProbe().catch((e) => {
