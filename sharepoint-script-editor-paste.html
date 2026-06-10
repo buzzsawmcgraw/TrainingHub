@@ -1,6 +1,7 @@
-﻿<!-- STEP 1: Upload training-hub.css and training-hub.js to Site Assets on your SharePoint site. -->
-<!-- STEP 2: Paste ONLY this block into Modern Script Editor (about 5 KB â€” do NOT paste training-hub.js). -->
-<link rel="stylesheet" href="/sites/88thSFS/SiteAssets/training-hub.css">
+﻿<!-- STEP 1: Upload these two files to Site Assets (same library, site root /sites/88thSFS): -->
+<!--       training-hub-styles.txt  and  training-hub-script.txt -->
+<!--       Download the .txt files from GitHub if .js is blocked on your network. -->
+<!-- STEP 2: Paste ONLY this block into Modern Script Editor. -->
 <div id="sp-pip-ui">
 <div id="hubAccessGate" class="hub-access-gate" aria-label="Training Hub access">
         <div class="hub-access-panel">
@@ -90,4 +91,42 @@
       </main>
       </div>
 </div>
-<script src="/sites/88thSFS/SiteAssets/training-hub.js"></script>
+<script>
+(function () {
+  var base = "/sites/88thSFS/SiteAssets";
+  var cssUrl = base + "/training-hub-styles.txt";
+  var jsUrl = base + "/training-hub-script.txt";
+  function fail(msg) {
+    var root = document.getElementById("sp-pip-ui");
+    if (root) {
+      root.innerHTML =
+        '<p style="font-family:Consolas,monospace;color:#ff5a45;padding:16px;">Training Hub failed to load: ' +
+        String(msg || "unknown error") +
+        "</p>";
+    }
+  }
+  fetch(cssUrl, { credentials: "same-origin", cache: "no-cache" })
+    .then(function (res) {
+      if (!res.ok) throw new Error("Upload " + cssUrl + " to Site Assets.");
+      return res.text();
+    })
+    .then(function (css) {
+      var tag = document.createElement("style");
+      tag.textContent = css;
+      document.head.appendChild(tag);
+      return fetch(jsUrl, { credentials: "same-origin", cache: "no-cache" });
+    })
+    .then(function (res) {
+      if (!res.ok) throw new Error("Upload " + jsUrl + " to Site Assets.");
+      return res.text();
+    })
+    .then(function (code) {
+      var s = document.createElement("script");
+      s.text = code;
+      document.body.appendChild(s);
+    })
+    .catch(function (err) {
+      fail(err && err.message ? err.message : err);
+    });
+})();
+</script>
