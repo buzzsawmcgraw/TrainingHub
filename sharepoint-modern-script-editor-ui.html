@@ -3,21 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Personnel â€” PIP-Boy style (Script Editor)</title>
-        <style>
-      /* Page shell when viewing this file directly (Script Editor should only embed #sp-pip-ui). */
-      body:has(> #sp-pip-ui) {
+    <title>Personnel — PIP-Boy style (Script Editor)</title>
+    <style>
+      /* Page shell when viewing this file directly (Script Editor may only embed #sp-pip-ui) */
+      body {
         margin: 0;
         padding: 12px;
         background: #000;
       }
-    </style>
-  </head>
-  <body>
-    <!-- Paste everything inside <body> â€¦ </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
-        <div id="sp-pip-ui">
-      <style>
-#sp-pip-ui {
+      #sp-pip-ui {
         --pip-bg: #050807;
         --pip-bg2: #0a1410;
         --pip-surface: #07120d;
@@ -403,43 +397,6 @@
       }
       #sp-pip-ui .person-detail-toolbar {
         margin-bottom: 14px;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-      #sp-pip-ui .person-detail-toolbar-actions {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-      }
-      #sp-pip-ui .person-detail-toolbar-actions button {
-        margin: 0;
-      }
-      #sp-pip-ui .person-appointments-wrap {
-        margin-top: 22px;
-        padding-top: 18px;
-        border-top: 1px solid var(--pip-border);
-      }
-      #sp-pip-ui h3.person-appointments-title {
-        margin: 0 0 12px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--pip-amber);
-        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
-      }
-      #sp-pip-ui .appointments-empty {
-        margin: 0;
-        padding: 12px 14px;
-        font-size: 12px;
-        color: rgba(210, 255, 224, 0.72);
-        border: 1px dashed rgba(30, 74, 54, 0.55);
-        border-radius: 6px;
-        background: rgba(8, 22, 16, 0.35);
       }
       #sp-pip-ui a.person-detail-back {
         display: inline-block;
@@ -755,88 +712,11 @@
           opacity: 1;
         }
       }
-      #sp-pip-ui .hub-access-gate {
-        padding: 24px 22px;
-        border-bottom: 2px solid var(--pip-border);
-        background: radial-gradient(120% 80% at 50% 0%, #0d1f16 0%, var(--pip-bg) 55%);
-      }
-      #sp-pip-ui .hub-access-gate .hub-access-panel {
-        margin: 0 auto;
-      }
-      #sp-pip-ui .hub-access-panel {
-        width: min(100%, 360px);
-        padding: 22px 22px 20px;
-        border: 1px solid var(--pip-border);
-        border-radius: 8px;
-        background: rgba(5, 14, 10, 0.88);
-        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), 0 0 28px rgba(0, 0, 0, 0.45);
-      }
-      #sp-pip-ui .hub-access-panel h2 {
-        margin: 0 0 8px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--pip-amber);
-        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
-      }
-      #sp-pip-ui .hub-access-panel p {
-        margin: 0 0 14px;
-        font-size: 12px;
-        line-height: 1.45;
-        color: rgba(210, 255, 224, 0.82);
-      }
-      #sp-pip-ui .hub-access-panel label {
-        display: block;
-        margin-bottom: 6px;
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--pip-amber);
-      }
-      #sp-pip-ui #hubAccessInput {
-        width: 100%;
-        box-sizing: border-box;
-        margin-bottom: 14px;
-        padding: 10px 12px;
-        font: 13px var(--pip-font);
-        color: rgba(210, 255, 224, 0.92);
-        background: rgba(5, 14, 10, 0.72);
-        border: 1px solid rgba(30, 74, 54, 0.5);
-        border-radius: var(--pip-control-radius);
-      }
-      #sp-pip-ui #hubAccessInput:focus {
-        outline: none;
-        border-color: var(--pip-green-dim);
-        box-shadow: 0 0 10px var(--pip-green-glow);
-      }
-      #sp-pip-ui #hubAccessSubmit {
-        width: 100%;
-        margin: 0;
-      }
-      #sp-pip-ui .hub-access-error {
-        margin: 12px 0 0;
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--pip-red);
-        text-shadow: 0 0 6px rgba(255, 77, 45, 0.45);
-      }
-      #sp-pip-ui .hub-access-error[hidden] {
-        display: none !important;
-      }
-      </style>
-      <div id="hubAccessGate" class="hub-access-gate" aria-label="Training Hub access">
-        <div class="hub-access-panel">
-          <h2>Authorized access</h2>
-          <p>Enter the Training Hub password to continue.</p>
-          <label for="hubAccessInput">Password</label>
-          <input type="password" id="hubAccessInput" autocomplete="current-password" />
-          <button type="button" id="hubAccessSubmit">Continue</button>
-          <p id="hubAccessError" class="hub-access-error" hidden>Incorrect password.</p>
-        </div>
-      </div>
-      <div id="hubAppContent" hidden>
+    </style>
+  </head>
+  <body>
+    <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
+    <div id="sp-pip-ui">
       <div id="hubBootOverlay" class="hub-boot-overlay" aria-live="polite">
         <p class="hub-boot-text">Loading Training Hub…</p>
       </div>
@@ -855,7 +735,9 @@
         </div>
       </header>
       <main class="hub-main">
-        <div id="demoModeBanner" class="demo-mode-banner" hidden aria-hidden="true"></div>
+        <div id="demoModeBanner" class="demo-mode-banner" hidden>
+          Local demo mode — sample personnel data only. Add, delete, and name links work in memory; nothing is saved to SharePoint.
+        </div>
         <section class="hub-section hub-section--form" aria-label="Training Hub entry">
           <div id="addPersonPanel" class="add-person-panel" aria-live="polite"></div>
         </section>
@@ -877,34 +759,18 @@
         <section id="personDetailSection" class="hub-section hub-section--person-detail" hidden aria-label="Personnel record detail">
           <div class="person-detail-panel">
             <div class="person-detail-toolbar">
-              <a id="personDetailBackLink" class="person-detail-back" href="#">â† Back to roster</a>
-              <div class="person-detail-toolbar-actions">
-                <button type="button" id="personDetailEditBtn" class="btn-secondary">Edit record</button>
-                <button type="button" id="personDetailSaveBtn" hidden>Save changes</button>
-                <button type="button" id="personDetailCancelBtn" class="btn-secondary" hidden>Cancel</button>
-              </div>
+              <a id="personDetailBackLink" class="person-detail-back" href="#">← Back to roster</a>
             </div>
             <h2 id="personDetailTitle" class="hub-subtitle person-detail-title">Personnel record</h2>
             <div id="personDetailReadState" class="read-state loading" hidden></div>
             <div id="personDetailContent" class="person-detail-content"></div>
-            <div id="personAppointmentsWrap" class="person-appointments-wrap">
-              <h3 class="person-appointments-title">Appointments</h3>
-              <div id="personAppointmentsState" class="read-state" hidden></div>
-              <div class="roster-wrap appointments-roster-wrap">
-                <table class="roster appointments-table" aria-label="Personnel appointments">
-                  <thead id="personAppointmentsThead"></thead>
-                  <tbody id="personAppointmentsBody"></tbody>
-                </table>
-              </div>
-              <p id="personAppointmentsEmpty" class="appointments-empty" hidden>No appointments on file for this person.</p>
-            </div>
           </div>
         </section>
-        <section id="recallRosterSection" class="hub-section hub-section--recall" aria-label="Recall roster">
+        <section class="hub-section hub-section--recall" aria-label="Recall roster">
           <div class="recall-roster-panel">
             <h2 class="hub-subtitle">Recall roster</h2>
             <p class="recall-roster-desc">
-              Download a PDF with every person on the personnel list â€” name, address, cell phone, and work phone â€” sorted Aâ€“Z by last name.
+              Download a PDF with every person on the personnel list — name, address, cell phone, and work phone — sorted A–Z by last name.
             </p>
             <div class="recall-roster-actions">
               <button type="button" id="recallRosterBtn">Save recall roster (PDF)</button>
@@ -912,130 +778,22 @@
           </div>
         </section>
       </main>
-      </div>
     </div>
 
     <script>
       (function () {
-        var PW = "Training2026";
-        var KEY = "trainingHubAccessGranted";
-
-        function showApp() {
-          var gate = document.getElementById("hubAccessGate");
-          var app = document.getElementById("hubAppContent");
-          if (gate) {
-            gate.hidden = true;
-            gate.setAttribute("hidden", "hidden");
-          }
-          if (app) {
-            app.removeAttribute("hidden");
-            app.hidden = false;
-            app.style.display = "";
-          }
-        }
-
-        function showGate() {
-          var gate = document.getElementById("hubAccessGate");
-          var app = document.getElementById("hubAppContent");
-          if (gate) {
-            gate.removeAttribute("hidden");
-            gate.hidden = false;
-          }
-          if (app) {
-            app.hidden = true;
-            app.setAttribute("hidden", "hidden");
-          }
-        }
-
-        function tryUnlock() {
-          var input = document.getElementById("hubAccessInput");
-          var err = document.getElementById("hubAccessError");
-          var typed = input ? String(input.value || "").trim() : "";
-          if (typed === PW) {
-            try {
-              sessionStorage.setItem(KEY, "1");
-            } catch (e0) {}
-            showApp();
-            if (err) err.hidden = true;
-            window.__trainingHubPendingStart = true;
-            try {
-              document.dispatchEvent(new CustomEvent("trainingHubUnlocked"));
-            } catch (e1) {}
-            return;
-          }
-          if (err) {
-            err.hidden = false;
-            err.textContent = "Incorrect password.";
-          }
-          if (input) {
-            input.value = "";
-            input.focus();
-          }
-        }
-
-        window.__trainingHubTryUnlock = tryUnlock;
-
-        function wirePasswordGate() {
-          var submit = document.getElementById("hubAccessSubmit");
-          var input = document.getElementById("hubAccessInput");
-          if (submit) {
-            submit.type = "button";
-            submit.addEventListener(
-              "click",
-              function (ev) {
-                ev.preventDefault();
-                ev.stopPropagation();
-                tryUnlock();
-              },
-              true,
-            );
-          }
-          if (input) {
-            input.addEventListener(
-              "keydown",
-              function (ev) {
-                if (ev.key === "Enter") {
-                  ev.preventDefault();
-                  ev.stopPropagation();
-                  tryUnlock();
-                }
-              },
-              true,
-            );
-          }
-          var granted = false;
-          try {
-            granted = sessionStorage.getItem(KEY) === "1";
-          } catch (e2) {}
-          if (!PW || granted) {
-            showApp();
-            window.__trainingHubPendingStart = true;
-          } else {
-            showGate();
-          }
-        }
-
-        wirePasswordGate();
-
         // ============ EDIT THESE (URLs remove ambiguity) ============
         /**
          * 88thSFS deployment reference:
          * - Site page: https://usaf.dps.mil/sites/88thSFS/SitePages/S3T.aspx
          * - List view: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
          *
-         * (A) Site root â€” no trailing slash. REST is always: SITE_ROOT + "/_api/web/..."
+         * (A) Site root — no trailing slash. REST is always: SITE_ROOT + "/_api/web/..."
          */
         const PERSONNEL_SITE_ROOT_URL = "https://usaf.dps.mil/sites/88thSFS";
 
         /**
-         * Page access gate â€” users must enter this password before the hub loads. Set "" to disable.
-         * Session lasts until the browser tab is closed (sessionStorage).
-         */
-        const HUB_ACCESS_PASSWORD = "Training2026";
-        const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
-
-        /**
-         * (B) Optional fallback: paste any URL under the site; derives â€¦/sites/88thSFS. Ignored when (A) is set.
+         * (B) Optional fallback: paste any URL under the site; derives …/sites/88thSFS. Ignored when (A) is set.
          * Example: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
          */
         const PERSONNEL_SHAREPOINT_URL = "";
@@ -1043,14 +801,14 @@
         /** @deprecated Same effect as PERSONNEL_SITE_ROOT_URL; kept for older copies of this file. */
         const PERSONNEL_REST_WEB_URL = "";
 
-        /** Must match Site contents list title (URL â€¦/Lists/Personnelâ€¦ usually means title "Personnel"). */
+        /** Must match Site contents list title (URL …/Lists/Personnel… usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
-        /** Optional: List GUID from List settings â†’ use if getbytitle fails. */
+        /** Optional: List GUID from List settings → use if getbytitle fails. */
         const LIST_PERSONNEL_GUID = "";
 
         /**
          * Circular profile image to the left of the squadron header (default: **S3T Files** / **Fallout Guy.png**).
-         * `HUB_PROFILE_IMAGE_URL` â€” full URL override. `HUB_LOGO_URL` â€” legacy override if profile URL is empty.
+         * `HUB_PROFILE_IMAGE_URL` — full URL override. `HUB_LOGO_URL` — legacy override if profile URL is empty.
          * Otherwise built from `PERSONNEL_SITE_ROOT_URL` + `HUB_PROFILE_SITE_RELATIVE_PATH`.
          */
         const HUB_PROFILE_IMAGE_URL = "";
@@ -1070,7 +828,7 @@
          * Full-width image across the top of the web part (default: **S3T Files** / **banner.png** on this site).
          * Paste a full file URL here to override. Leave "" to build from `PERSONNEL_SITE_ROOT_URL` +
          * `HUB_BANNER_SITE_RELATIVE_PATH`. If the image does not load, open the file in SharePoint, copy the browser
-         * address, and set `HUB_TOP_BANNER_URL` to that value (or fix `HUB_BANNER_SITE_RELATIVE_PATH` â€” e.g. add
+         * address, and set `HUB_TOP_BANNER_URL` to that value (or fix `HUB_BANNER_SITE_RELATIVE_PATH` — e.g. add
          * `Shared%20Documents/` if **S3T Files** is a folder inside Documents, not the library root).
          */
         const HUB_TOP_BANNER_URL = "";
@@ -1080,7 +838,7 @@
 
         /**
          * Roster column `key` values that render as dropdowns. Options are loaded from SharePoint field **Choices**
-         * (same internal name as used for save â€” see `resolveWriteKey` / first data row).
+         * (same internal name as used for save — see `resolveWriteKey` / first data row).
          */
         const DROPDOWN_COLUMN_KEYS = ["Status", "OfficeSymbol", "Squadron", "Rank"];
 
@@ -1089,7 +847,7 @@
 
         /**
          * OData `$orderby` for list items. Rows are always sorted again client-side by LastName, then FirstName, so the
-         * roster follows Aâ€“Z by name even if this clause is rejected (400).
+         * roster follows A–Z by name even if this clause is rejected (400).
          */
         const PERSONNEL_ITEMS_ORDERBY = "LastName asc,FirstName asc";
 
@@ -1108,68 +866,30 @@
         /** When roster row count exceeds this, the table body scrolls instead of growing the page. */
         const ROSTER_SCROLL_AFTER_ROWS = 10;
 
-        /** Recall roster PDF â€” header text and download file name. */
+        /** Recall roster PDF — header text and download file name. */
         const RECALL_ROSTER_ORG_TITLE = "88th Security Forces Squadron";
         const RECALL_ROSTER_DOC_TITLE = "Recall Roster";
         const RECALL_ROSTER_FILENAME = "88SFS-Recall-Roster.pdf";
 
         /**
-         * Appointments list (SharePoint title **Appointments**). Rows are filtered by PersonnelId = personnel list item Id.
-         * List columns: PersonnelId, AppointmentDate, Location, ProviderOffice, ReasonType, InstructorInitials,
-         * MissedAppointment, CreatedAt. PersonnelId is used for filtering only (not shown in the table on the record page).
+         * Local demo when not on SharePoint. `"auto"` = on for localhost / 127.0.0.1 / file://; `true` = always; `false` = never.
+         * Demo uses in-memory sample rows — roster, detail pages, add, and delete all work without REST.
          */
-        const LIST_APPOINTMENTS = "Appointments";
-        const LIST_APPOINTMENTS_GUID = "";
-        const APPOINTMENTS_PERSON_FIELD = "PersonnelId";
-        /** Additional REST filter field names to try if the primary name fails (lookup / casing variants). */
-        const APPOINTMENTS_PERSON_FIELD_ALT = [
-          "PersonnelID",
-          "PersonnelIdId",
-          "Personnel_x0020_Id",
-          "Personnel_x0020_ID",
-          "Personnel/Id",
-        ];
-        const APPOINTMENTS_ITEMS_ORDERBY = "AppointmentDate asc";
-        const APPOINTMENTS_COLUMNS = [
-          {
-            key: "AppointmentDate",
-            label: "Appointment date",
-            altKeys: ["Appointment_x0020_Date", "Date"],
-          },
-          { key: "Location", label: "Location", altKeys: ["Location0"] },
-          {
-            key: "ProviderOffice",
-            label: "Provider office",
-            altKeys: ["Provider_x0020_Office", "ProviderOffice0"],
-          },
-          {
-            key: "ReasonType",
-            label: "Reason type",
-            altKeys: ["Reason_x0020_Type", "ReasonType0"],
-          },
-          {
-            key: "InstructorInitials",
-            label: "Instructor initials",
-            altKeys: ["Instructor_x0020_Initials", "InstructorInitials0"],
-          },
-          {
-            key: "MissedAppointment",
-            label: "Missed appointment",
-            altKeys: ["Missed_x0020_Appointment", "MissedAppointment0"],
-          },
-          {
-            key: "CreatedAt",
-            label: "Created at",
-            altKeys: ["Created", "Created_x0020_At"],
-          },
-        ];
+        const LOCAL_DEMO_MODE = "auto";
+
+        /** Choice values for dropdown columns in local demo (Status, Rank, etc.). */
+        const DEMO_FIELD_CHOICES = {
+          Status: ["Active", "Pending", "Inactive", "TDY"],
+          OfficeSymbol: ["S3T", "SFOPS", "CP", "CC"],
+          Squadron: ["88 SFS", "88 OSS", "88 MDG"],
+          Rank: ["AB", "Amn", "A1C", "SrA", "SSgt", "TSgt", "MSgt", "SMSgt", "CMSgt", "2d Lt", "1st Lt", "Capt", "Maj"],
+        };
 
         /**
-         * Upload training-hub-embed.html to Site Assets and paste sharepoint-script-editor-loader.html
-         * into Script Editor if the full inline snippet fails to save (SharePoint size limit).
+         * Roster columns — fixed order for 88thSFS Personnel. List item Id is hidden unless SHOW_LIST_ITEM_ID_IN_ROSTER is true
+         * and you include `{ key: "Id", label: "…" }` here.
+         * If a column is always blank, open Diagnostics and change that row’s `key` / add `altKeys` (see Record Date).
          */
-        const HUB_SITE_ASSETS_FILE = "/sites/88thSFS/SiteAssets/training-hub-embed.html";
-
         const ROSTER_COLUMNS = [
           {
             key: "RecordDate",
@@ -1191,7 +911,7 @@
         ];
 
         /**
-         * Training Hub form (`Id` omitted). Identity | Contact. Contact: Address / phones, then Status Â· OfficeSymbol Â·
+         * Training Hub form (`Id` omitted). Identity | Contact. Contact: Address / phones, then Status · OfficeSymbol ·
          * Squadron on one row, then Notes (height trimmed to align column bottoms with Identity).
          */
         const ADD_FORM_FIELD_GROUPS = [
@@ -1271,14 +991,6 @@
         const personDetailContent = document.getElementById("personDetailContent");
         const personDetailReadState = document.getElementById("personDetailReadState");
         const personDetailBackLink = document.getElementById("personDetailBackLink");
-        const personDetailEditBtn = document.getElementById("personDetailEditBtn");
-        const personDetailSaveBtn = document.getElementById("personDetailSaveBtn");
-        const personDetailCancelBtn = document.getElementById("personDetailCancelBtn");
-        const recallRosterSection = document.getElementById("recallRosterSection");
-        const personAppointmentsThead = document.getElementById("personAppointmentsThead");
-        const personAppointmentsBody = document.getElementById("personAppointmentsBody");
-        const personAppointmentsEmpty = document.getElementById("personAppointmentsEmpty");
-        const personAppointmentsState = document.getElementById("personAppointmentsState");
         const hubBootOverlay = document.getElementById("hubBootOverlay");
         const hubRoot = document.getElementById("sp-pip-ui");
 
@@ -1289,32 +1001,11 @@
           pw: null,
           seg: null,
           sampleRow: null,
-          appointmentsPersonFilterField: null,
-          appointmentsPersonFilterFields: null,
         };
-
-        /** Active personnel record view (read / edit). */
-        let personDetailSession = {
-          item: null,
-          editing: false,
-          meta: null,
-          pw: null,
-          seg: null,
-          sampleRow: null,
-        };
-
-        function isSharePointPageEditUrl() {
-          try {
-            return /[?&]mode=edit/i.test(String(location.search || ""));
-          } catch (_) {
-            return false;
-          }
-        }
 
         function dismissHubBootOverlay() {
           if (hubBootOverlay) hubBootOverlay.hidden = true;
-          const root = getHubRoot();
-          if (root) root.classList.add("hub-ready");
+          if (hubRoot) hubRoot.classList.add("hub-ready");
         }
 
         function rosterTableIsRendered() {
@@ -1329,7 +1020,7 @@
         }
 
         function updateHubHistoryForPerson(itemId, replace) {
-          /* No-op: do not change the browser URL on SharePoint pages (breaks page edit / Script Editor). */
+          /* No-op: changing the URL breaks SharePoint page save/edit. */
         }
 
         function navigateToPersonDetail(itemId) {
@@ -1338,8 +1029,6 @@
 
         async function navigateToRoster() {
           if (personDetailSection) personDetailSection.hidden = true;
-          personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
-          setPersonDetailEditMode(false);
           setHubListViewVisible(true);
           await ensureRosterViewRendered();
         }
@@ -1379,18 +1068,6 @@
             el.hidden = !visible;
           });
           if (personDetailSection) personDetailSection.hidden = visible;
-          setRecallSectionVisible(visible);
-        }
-
-        function setRecallSectionVisible(visible) {
-          if (recallRosterSection) recallRosterSection.hidden = !visible;
-        }
-
-        function setPersonDetailEditMode(editing) {
-          personDetailSession.editing = !!editing;
-          if (personDetailEditBtn) personDetailEditBtn.hidden = !!editing;
-          if (personDetailSaveBtn) personDetailSaveBtn.hidden = !editing;
-          if (personDetailCancelBtn) personDetailCancelBtn.hidden = !editing;
         }
 
         function setPersonDetailState(kind, message) {
@@ -1436,7 +1113,7 @@
 
         function recallRosterFieldText(item, fieldKey) {
           const text = itemFieldText(item, fieldKey);
-          return text === "" ? "â€”" : text;
+          return text === "" ? "—" : text;
         }
 
         function buildRecallRosterTableRows(personnelRows) {
@@ -1501,7 +1178,7 @@
           doc.setFontSize(11);
           doc.text(RECALL_ROSTER_DOC_TITLE, 40, 54);
           doc.setFontSize(9);
-          doc.text("Generated: " + generated + "   Â·   Personnel: " + recallRows.length, 40, 70);
+          doc.text("Generated: " + generated + "   ·   Personnel: " + recallRows.length, 40, 70);
           doc.autoTable({
             startY: 82,
             head: [["Name", "Address", "Cell phone", "Work phone"]],
@@ -1542,10 +1219,16 @@
           const html =
             "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\" /><title>" +
             escHtml(RECALL_ROSTER_DOC_TITLE) +
-            "</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}" +
-            "h1,h2{margin:0 0 8px}table{border-collapse:collapse;width:100%;margin-top:16px}" +
-            "th,td{border:1px solid #333;padding:6px 8px;text-align:left;font-size:12px}" +
-            "th{background:#eee}.meta{color:#444;font-size:12px;margin:8px 0 0}</style></head><body>" +
+            "</title><style>" +
+            "body{font-family:Arial,sans-serif;margin:24px;color:#111;}" +
+            "h1{font-size:18px;margin:0 0 4px;}" +
+            "h2{font-size:14px;margin:0 0 12px;font-weight:normal;}" +
+            ".meta{font-size:11px;color:#444;margin-bottom:16px;}" +
+            "table{width:100%;border-collapse:collapse;font-size:11px;}" +
+            "th,td{border:1px solid #333;padding:6px 8px;text-align:left;vertical-align:top;}" +
+            "th{background:#1e4a36;color:#ffcc66;}" +
+            "tr:nth-child(even) td{background:#f4f4f4;}" +
+            "</style></head><body>" +
             "<h1>" +
             escHtml(RECALL_ROSTER_ORG_TITLE) +
             "</h1>" +
@@ -1577,7 +1260,7 @@
           if (!recallRosterBtn) return;
           const labelDefault = "Save recall roster (PDF)";
           recallRosterBtn.disabled = true;
-          recallRosterBtn.textContent = "Building PDFâ€¦";
+          recallRosterBtn.textContent = "Building PDF…";
           try {
             const rows = await getRecallRosterPersonnelRows();
             if (!rows.length) {
@@ -1611,559 +1294,10 @@
           lab.textContent = col.label;
           const val = document.createElement("div");
           val.className = "person-detail-value";
-          val.textContent = text === "" ? "â€”" : text;
+          val.textContent = text === "" ? "—" : text;
           fwrap.appendChild(lab);
           fwrap.appendChild(val);
           return fwrap;
-        }
-
-        function setFieldValueFromItem(el, col, item) {
-          if (!el || !item) return;
-          const tryKeys = col.tryKeys || [col.key];
-          const raw = valueFromItemByKeys(item, tryKeys);
-          if (raw === undefined || raw === null || raw === "") return;
-          const text = formatCellValue(raw);
-          if (el.type === "date") {
-            const m = text.match(/^(\d{4}-\d{2}-\d{2})/);
-            if (m) el.value = m[1];
-            return;
-          }
-          el.value = text;
-        }
-
-        function buildEditGroupFieldset(group, cols, sampleRow, item) {
-          if (!group || !group.title || !Array.isArray(group.keys)) return null;
-          const fieldOpt = { idPrefix: "pf_", sampleRow: sampleRow };
-
-          if (group.layout === "contact-stack") {
-            const keys = group.keys;
-            if (keys.length < 7) return null;
-            const topKeys = keys.slice(0, 3);
-            const statusKeys = keys.slice(3, 6);
-            const notesKey = keys[6];
-            const bundle = document.createElement("div");
-            bundle.className = "add-form-contact-bundle";
-
-            const topGrid = document.createElement("div");
-            topGrid.className = "add-form-grid add-form-grid--stack add-form-contact-stack-top";
-            topKeys.forEach(function (key) {
-              const col = cols.find(function (c) {
-                return c.key === key;
-              });
-              if (!col) return;
-              const f = buildAddFieldWrap(col, sampleRow, fieldOpt);
-              if (!f) return;
-              const input = f.querySelector("input, select, textarea");
-              if (input) setFieldValueFromItem(input, col, item);
-              topGrid.appendChild(f);
-            });
-
-            const statusRow = document.createElement("div");
-            statusRow.className = "add-form-contact-status-row";
-            statusKeys.forEach(function (key) {
-              const col = cols.find(function (c) {
-                return c.key === key;
-              });
-              if (!col) return;
-              const f = buildAddFieldWrap(col, sampleRow, Object.assign({ fullWidthSelect: true }, fieldOpt));
-              if (!f) return;
-              const input = f.querySelector("input, select, textarea");
-              if (input) setFieldValueFromItem(input, col, item);
-              statusRow.appendChild(f);
-            });
-
-            const notesCol = cols.find(function (c) {
-              return c.key === notesKey;
-            });
-            let notesWrap = null;
-            if (notesCol) {
-              notesWrap = buildAddFieldWrap(notesCol, sampleRow, fieldOpt);
-              if (notesWrap) {
-                const input = notesWrap.querySelector("textarea");
-                if (input) setFieldValueFromItem(input, notesCol, item);
-              }
-            }
-
-            bundle.appendChild(topGrid);
-            bundle.appendChild(statusRow);
-            if (notesWrap) bundle.appendChild(notesWrap);
-
-            const fs = document.createElement("fieldset");
-            fs.className = "add-form-group";
-            const leg = document.createElement("legend");
-            leg.className = "add-form-group-legend";
-            leg.textContent = group.title;
-            fs.appendChild(leg);
-            fs.appendChild(bundle);
-            return fs;
-          }
-
-          const grid = document.createElement("div");
-          grid.className = "add-form-grid";
-          if (group.layout === "stack") grid.classList.add("add-form-grid--stack");
-          group.keys.forEach(function (key) {
-            const col = cols.find(function (c) {
-              return c.key === key;
-            });
-            if (!col) return;
-            const fwrap = buildAddFieldWrap(col, sampleRow, fieldOpt);
-            if (!fwrap) return;
-            const input = fwrap.querySelector("input, select, textarea");
-            if (input) setFieldValueFromItem(input, col, item);
-            grid.appendChild(fwrap);
-          });
-          if (!grid.childElementCount) return null;
-          const fs = document.createElement("fieldset");
-          fs.className = "add-form-group";
-          const leg = document.createElement("legend");
-          leg.className = "add-form-group-legend";
-          leg.textContent = group.title;
-          fs.appendChild(leg);
-          fs.appendChild(grid);
-          return fs;
-        }
-
-        async function populatePersonEditDropdowns(seg, pw, sampleRow, root) {
-          const cols = normalizedRosterColumns();
-          for (let i = 0; i < cols.length; i++) {
-            const col = cols[i];
-            if (col.key === "Id") continue;
-            if (DROPDOWN_COLUMN_KEYS.indexOf(col.key) === -1) continue;
-            const writeKey = resolveWriteKey(col, sampleRow);
-            const sel = root.querySelector("#pf_" + col.key);
-            if (!sel || sel.tagName !== "SELECT") continue;
-            const keepValue = sel.value;
-            while (sel.options.length > 1) sel.remove(1);
-            try {
-              const r = await fetchChoiceOptions(seg, pw, writeKey);
-              if (r.choices && r.choices.length) {
-                r.choices.forEach(function (c) {
-                  const o = document.createElement("option");
-                  o.value = c;
-                  o.textContent = c;
-                  sel.appendChild(o);
-                });
-              }
-            } catch (_) {}
-            if (keepValue) sel.value = keepValue;
-            applySelectAutosize(sel);
-          }
-          applyAllSelectAutosizes(root);
-        }
-
-        function buildPersonDetailFields(item, editing) {
-          const cols = normalizedRosterColumns().filter(function (c) {
-            return c.key !== "Id";
-          });
-          const splitWrap = document.createElement("div");
-          splitWrap.className = "add-form-split add-form-split--primary";
-          const sampleRow = personDetailSession.sampleRow || item;
-
-          if (Array.isArray(ADD_FORM_FIELD_GROUPS)) {
-            ADD_FORM_FIELD_GROUPS.forEach(function (group) {
-              const fs = editing
-                ? buildEditGroupFieldset(group, cols, sampleRow, item)
-                : buildDetailGroupFieldset(group, cols, item);
-              if (fs) splitWrap.appendChild(fs);
-            });
-          }
-
-          if (!splitWrap.childElementCount) {
-            const grid = document.createElement("div");
-            grid.className = "add-form-grid add-form-grid--stack";
-            cols.forEach(function (col) {
-              if (editing) {
-                const f = buildAddFieldWrap(col, sampleRow, { idPrefix: "pf_" });
-                if (!f) return;
-                const input = f.querySelector("input, select, textarea");
-                if (input) setFieldValueFromItem(input, col, item);
-                grid.appendChild(f);
-              } else {
-                grid.appendChild(buildDetailFieldWrap(col, item));
-              }
-            });
-            return grid;
-          }
-
-          return splitWrap;
-        }
-
-        async function renderPersonDetailView(item, editing) {
-          if (!personDetailContent || !item) return;
-          personDetailContent.innerHTML = "";
-          const cols = normalizedRosterColumns().filter(function (c) {
-            return c.key !== "Id";
-          });
-          if (!cols.length) {
-            setPersonDetailState("warn", "No columns configured to display.");
-            return;
-          }
-          setPersonDetailEditMode(!!editing);
-          setPersonDetailState("", "");
-          if (personDetailTitle) personDetailTitle.textContent = formatPersonDisplayName(item);
-
-          const fields = buildPersonDetailFields(item, editing);
-          if (editing) {
-            const form = document.createElement("div");
-            form.id = "personEditForm";
-            form.className = "add-form-stack";
-            form.setAttribute("role", "form");
-            form.appendChild(fields);
-            personDetailContent.appendChild(form);
-            await populatePersonEditDropdowns(personDetailSession.seg, personDetailSession.pw, personDetailSession.sampleRow, form);
-            requestAnimationFrame(function () {
-              requestAnimationFrame(function () {
-                balanceContactNotesToIdentityColumn(form);
-              });
-            });
-          } else {
-            personDetailContent.appendChild(fields);
-          }
-        }
-
-        function normalizedAppointmentsColumns() {
-          const arr = Array.isArray(APPOINTMENTS_COLUMNS) ? APPOINTMENTS_COLUMNS : [];
-          return arr
-            .map(function (entry) {
-              if (!entry || !entry.key) return null;
-              const key = String(entry.key).trim();
-              const label = String(entry.label || key).trim() || key;
-              const alt = Array.isArray(entry.altKeys) ? entry.altKeys.map(function (x) { return String(x).trim(); }).filter(Boolean) : [];
-              const tryKeys = [key];
-              alt.forEach(function (a) {
-                if (tryKeys.indexOf(a) === -1) tryKeys.push(a);
-              });
-              return { key: key, label: label, tryKeys: tryKeys };
-            })
-            .filter(Boolean);
-        }
-
-        function appointmentsListTitle() {
-          return String(LIST_APPOINTMENTS || "").trim();
-        }
-
-        function appointmentsGuidRaw() {
-          return String(LIST_APPOINTMENTS_GUID || "").trim();
-        }
-
-        function appointmentsListUsesGuid() {
-          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(appointmentsGuidRaw());
-        }
-
-        function appointmentsListApiPath() {
-          if (appointmentsListUsesGuid()) return "lists(guid'" + appointmentsGuidRaw() + "')";
-          return "lists/getbytitle('" + escListTitle(appointmentsListTitle()) + "')";
-        }
-
-        function setAppointmentsState(kind, message) {
-          if (!personAppointmentsState) return;
-          if (!message) {
-            personAppointmentsState.hidden = true;
-            personAppointmentsState.textContent = "";
-            return;
-          }
-          personAppointmentsState.hidden = false;
-          personAppointmentsState.className = "read-state " + kind;
-          personAppointmentsState.textContent = message;
-        }
-
-        function clearAppointmentsTable() {
-          if (personAppointmentsThead) personAppointmentsThead.innerHTML = "";
-          if (personAppointmentsBody) personAppointmentsBody.innerHTML = "";
-        }
-
-        function renderAppointmentsTable(rows) {
-          clearAppointmentsTable();
-          const columns = normalizedAppointmentsColumns();
-          if (!personAppointmentsThead || !personAppointmentsBody || !columns.length) return;
-
-          const trHead = document.createElement("tr");
-          columns.forEach(function (col) {
-            const th = document.createElement("th");
-            th.textContent = col.label;
-            trHead.appendChild(th);
-          });
-          personAppointmentsThead.appendChild(trHead);
-
-          const frag = document.createDocumentFragment();
-          rows.forEach(function (item) {
-            const tr = document.createElement("tr");
-            columns.forEach(function (col) {
-              const td = document.createElement("td");
-              const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
-              const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-              td.textContent = text === "" ? "â€”" : text;
-              tr.appendChild(td);
-            });
-            frag.appendChild(tr);
-          });
-          personAppointmentsBody.appendChild(frag);
-
-          if (personAppointmentsEmpty) {
-            personAppointmentsEmpty.hidden = rows.length > 0;
-          }
-        }
-
-        function appointmentsPersonFilterFieldCandidates() {
-          const primary = String(APPOINTMENTS_PERSON_FIELD || "PersonnelId").trim();
-          const out = [];
-          if (primary) out.push(primary);
-          const alts = Array.isArray(APPOINTMENTS_PERSON_FIELD_ALT) ? APPOINTMENTS_PERSON_FIELD_ALT : [];
-          alts.forEach(function (name) {
-            const n = String(name || "").trim();
-            if (n && out.indexOf(n) === -1) out.push(n);
-          });
-          return out;
-        }
-
-        function appointmentPersonnelIdFromItem(item) {
-          if (!item || typeof item !== "object") return null;
-          const keys = appointmentsPersonFilterFieldCandidates().concat([
-            "PersonnelId",
-            "PersonnelID",
-            "PersonnelIdId",
-            "Personnel_x0020_Id",
-          ]);
-          for (let i = 0; i < keys.length; i++) {
-            const k = keys[i];
-            if (!k || k.indexOf("/") !== -1) continue;
-            if (Object.prototype.hasOwnProperty.call(item, k) && item[k] !== null && item[k] !== "") {
-              return String(item[k]);
-            }
-          }
-          if (item.Personnel && typeof item.Personnel === "object" && item.Personnel.Id != null) {
-            return String(item.Personnel.Id);
-          }
-          return null;
-        }
-
-        function appointmentRowsMatchPersonnel(rows, personnelId) {
-          const want = String(personnelId);
-          return (Array.isArray(rows) ? rows : []).filter(function (item) {
-            return appointmentPersonnelIdFromItem(item) === want;
-          });
-        }
-
-        async function discoverAppointmentsPersonFilterFields(seg, pw) {
-          if (hubSession.appointmentsPersonFilterFields && hubSession.appointmentsPersonFilterFields.length) {
-            return hubSession.appointmentsPersonFilterFields.slice();
-          }
-          const out = [];
-          try {
-            const data = await spFetch(
-              `/_api/web/${seg}/fields?$select=InternalName,Title,EntityPropertyName,StaticName,TypeAsString&$filter=Hidden eq false&$top=200`,
-              {},
-              pw,
-            );
-            const fields = (data && data.value) || [];
-            const want = String(APPOINTMENTS_PERSON_FIELD || "PersonnelId").trim().toLowerCase();
-            let hit = fields.find(function (f) {
-              const title = String(f.Title || "").trim().toLowerCase();
-              const internal = String(f.InternalName || f.StaticName || f.EntityPropertyName || "").trim();
-              const internalLower = internal.toLowerCase();
-              return (
-                internalLower === want ||
-                title === want ||
-                title === "personnel id" ||
-                internalLower === "personnelid" ||
-                internalLower === "personnelidid"
-              );
-            });
-            if (!hit) {
-              hit = fields.find(function (f) {
-                const internal = String(f.InternalName || f.StaticName || "").toLowerCase();
-                return internal.indexOf("personnel") !== -1 && internal.indexOf("id") !== -1;
-              });
-            }
-            if (hit) {
-              const internal = String(hit.InternalName || hit.StaticName || hit.EntityPropertyName || "").trim();
-              const type = String(hit.TypeAsString || "");
-              if (internal) out.push(internal);
-              if (/lookup/i.test(type) && internal) {
-                const lookupIdField = internal.endsWith("Id") ? internal + "Id" : internal + "Id";
-                if (out.indexOf(lookupIdField) === -1) out.push(lookupIdField);
-                const slashField = internal + "/Id";
-                if (out.indexOf(slashField) === -1) out.push(slashField);
-              }
-            }
-          } catch (_) {}
-          hubSession.appointmentsPersonFilterFields = out.slice();
-          return out;
-        }
-
-        async function fetchAppointmentsForPersonnel(seg, pw, personnelId) {
-          const id = parseInt(String(personnelId), 10);
-          if (!id || isNaN(id)) return [];
-          const orderByClause = String(APPOINTMENTS_ITEMS_ORDERBY || "").trim();
-          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
-          const tried = [];
-          const candidates = appointmentsPersonFilterFieldCandidates().slice();
-
-          const discovered = await discoverAppointmentsPersonFilterFields(seg, pw);
-          discovered.forEach(function (name) {
-            if (name && candidates.indexOf(name) === -1) candidates.unshift(name);
-          });
-          if (discovered.length) {
-            discovered.slice().reverse().forEach(function (name) {
-              if (name && candidates.indexOf(name) !== -1) {
-                candidates.splice(candidates.indexOf(name), 1);
-                candidates.unshift(name);
-              }
-            });
-          }
-
-          for (let i = 0; i < candidates.length; i++) {
-            const personField = candidates[i];
-            if (!personField || tried.indexOf(personField) !== -1) continue;
-            tried.push(personField);
-            const filterRaw = personField + " eq " + id;
-            const filter = encodeURIComponent(filterRaw);
-            try {
-              let data = null;
-              try {
-                data = await spFetch(`/_api/web/${seg}/items?$top=500&$filter=${filter}` + orderByQs, {}, pw);
-              } catch (e0) {
-                if (/\b400\b/.test(String(e0.message || "")) && orderByQs) {
-                  data = await spFetch(`/_api/web/${seg}/items?$top=500&$filter=${filter}`, {}, pw);
-                } else {
-                  throw e0;
-                }
-              }
-              hubSession.appointmentsPersonFilterField = personField;
-              return (data && data.value) || [];
-            } catch (e1) {
-              if (!/\b400\b/.test(String(e1.message || "")) && !/does not exist/i.test(String(e1.message || ""))) {
-                throw e1;
-              }
-            }
-          }
-
-          let data = null;
-          try {
-            data = await spFetch(`/_api/web/${seg}/items?$top=500` + orderByQs, {}, pw);
-          } catch (e2) {
-            if (/\b400\b/.test(String(e2.message || "")) && orderByQs) {
-              data = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
-            } else {
-              throw e2;
-            }
-          }
-          return appointmentRowsMatchPersonnel((data && data.value) || [], id);
-        }
-
-        async function loadPersonAppointments(personnelId, pw) {
-          if (!personnelId) return;
-          setAppointmentsState("", "");
-          clearAppointmentsTable();
-          if (personAppointmentsEmpty) personAppointmentsEmpty.hidden = true;
-
-          const seg = appointmentsListApiPath();
-          if (!appointmentsListTitle() && !appointmentsListUsesGuid()) {
-            renderAppointmentsTable([]);
-            if (personAppointmentsEmpty) {
-              personAppointmentsEmpty.hidden = false;
-              personAppointmentsEmpty.textContent = "Appointments list is not configured.";
-            }
-            return;
-          }
-
-          try {
-            const rows = await fetchAppointmentsForPersonnel(seg, pw, personnelId);
-            const dateKeys = ["AppointmentDate", "Appointment_x0020_Date", "Date"];
-            rows.sort(function (a, b) {
-              const da = formatCellValue(valueFromItemByKeys(a, dateKeys) || "");
-              const db = formatCellValue(valueFromItemByKeys(b, dateKeys) || "");
-              if (da !== db) return String(da).localeCompare(String(db));
-              const ca = formatCellValue(valueFromItemByKeys(a, ["CreatedAt", "Created"]) || "");
-              const cb = formatCellValue(valueFromItemByKeys(b, ["CreatedAt", "Created"]) || "");
-              return String(ca).localeCompare(String(cb));
-            });
-            renderAppointmentsTable(rows);
-          } catch (e) {
-            renderAppointmentsTable([]);
-            setAppointmentsState("warn", "Could not load appointments: " + (e.message || String(e)).slice(0, 220));
-            if (personAppointmentsEmpty) {
-              personAppointmentsEmpty.hidden = false;
-              personAppointmentsEmpty.textContent =
-                "No appointments loaded. If PersonnelId exists on the list, check that values match the personnel record Id.";
-            }
-          }
-        }
-
-        function syncPersonInHubSession(updatedItem) {
-          if (!updatedItem || updatedItem.Id == null) return;
-          if (!Array.isArray(hubSession.rows)) hubSession.rows = [];
-          const idx = hubSession.rows.findIndex(function (r) {
-            return r && String(r.Id) === String(updatedItem.Id);
-          });
-          if (idx === -1) hubSession.rows.push(updatedItem);
-          else hubSession.rows[idx] = Object.assign({}, hubSession.rows[idx], updatedItem);
-          hubSession.rows = sortPersonnelRowsAlphabetical(hubSession.rows);
-          if (rosterTableIsRendered() && hubSession.meta && hubSession.pw && hubSession.seg) {
-            renderRosterTable(hubSession.rows, hubSession.meta, hubSession.pw, hubSession.seg);
-          }
-        }
-
-        async function savePersonDetailEdits() {
-          const s = personDetailSession;
-          if (!s.item || s.item.Id == null || !s.pw || !s.seg) return;
-          const cols = normalizedRosterColumns();
-          let lastName = "";
-          let firstName = "";
-          let dod = "";
-          cols.forEach(function (col) {
-            if (col.key === "Id") return;
-            const el = document.getElementById("pf_" + col.key);
-            if (!el) return;
-            const v = String(el.value || "").trim();
-            if (col.key === "LastName") lastName = v;
-            if (col.key === "FirstName") firstName = v;
-            if (col.key === "DoDID") dod = v;
-          });
-          if (!lastName || !firstName) {
-            setPersonDetailState("err", "Last name and First name are required.");
-            return;
-          }
-
-          const payload = {};
-          cols.forEach(function (col) {
-            if (col.key === "Id") return;
-            const el = document.getElementById("pf_" + col.key);
-            if (!el) return;
-            const writeKey = el.dataset.writeKey || resolveWriteKey(col, s.sampleRow);
-            let v = String(el.value || "").trim();
-            if (v === "") return;
-            if (el.type === "date") {
-              payload[writeKey] = v + "T00:00:00Z";
-              return;
-            }
-            payload[writeKey] = v;
-          });
-
-          if (SET_TITLE_ON_CREATE) {
-            payload.Title = [lastName, firstName].filter(Boolean).join(", ") || dod || "Personnel record";
-          }
-
-          try {
-            setPersonDetailState("loading", "Saving changesâ€¦");
-            if (personDetailSaveBtn) personDetailSaveBtn.disabled = true;
-            await spFetch(`/_api/web/${s.seg}/items(${s.item.Id})`, { method: "MERGE", body: payload }, s.pw);
-            const updated = Object.assign({}, s.item, payloadToItemFields(payload));
-            updated.Id = s.item.Id;
-            personDetailSession.item = updated;
-            syncPersonInHubSession(updated);
-            if (personDetailTitle) personDetailTitle.textContent = formatPersonDisplayName(updated);
-            await renderPersonDetailView(updated, false);
-            await loadPersonAppointments(updated.Id, s.pw);
-            setPersonDetailState("ok", "Record saved.");
-            window.setTimeout(function () {
-              setPersonDetailState("", "");
-            }, 2500);
-          } catch (e) {
-            setPersonDetailState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
-          } finally {
-            if (personDetailSaveBtn) personDetailSaveBtn.disabled = false;
-          }
         }
 
         function buildDetailGroupFieldset(group, cols, item) {
@@ -2242,15 +1376,45 @@
         }
 
         function renderPersonDetailContent(item) {
-          void renderPersonDetailView(item, false);
+          if (!personDetailContent) return;
+          personDetailContent.innerHTML = "";
+          const cols = normalizedRosterColumns().filter(function (c) {
+            return c.key !== "Id";
+          });
+          if (!cols.length) {
+            setPersonDetailState("warn", "No columns configured to display.");
+            return;
+          }
+          setPersonDetailState("", "");
+          if (personDetailTitle) personDetailTitle.textContent = formatPersonDisplayName(item);
+
+          const splitWrap = document.createElement("div");
+          splitWrap.className = "add-form-split add-form-split--primary";
+
+          if (Array.isArray(ADD_FORM_FIELD_GROUPS)) {
+            ADD_FORM_FIELD_GROUPS.forEach(function (group) {
+              const fs = buildDetailGroupFieldset(group, cols, item);
+              if (fs) splitWrap.appendChild(fs);
+            });
+          }
+
+          if (!splitWrap.childElementCount) {
+            const grid = document.createElement("div");
+            grid.className = "add-form-grid add-form-grid--stack";
+            cols.forEach(function (col) {
+              grid.appendChild(buildDetailFieldWrap(col, item));
+            });
+            personDetailContent.appendChild(grid);
+            return;
+          }
+
+          personDetailContent.appendChild(splitWrap);
         }
 
-        async function openPersonDetailRecord(itemId, meta, pw, seg, cachedRows, sampleRow) {
+        async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {
           if (!personDetailSection || !personDetailContent) return;
           setHubListViewVisible(false);
           personDetailSection.hidden = false;
-          setRecallSectionVisible(false);
-          setPersonDetailEditMode(false);
 
           const rows = Array.isArray(cachedRows) ? cachedRows : hubSession.rows;
           let item =
@@ -2259,35 +1423,23 @@
               return r && String(r.Id) === String(itemId);
             });
 
-          if (!item) {
-            personDetailContent.innerHTML = "";
-            setPersonDetailState("loading", "Loading personnel recordâ€¦");
-            if (personDetailTitle) personDetailTitle.textContent = "Personnel record";
-            try {
-              item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
-            } catch (e) {
-              setPersonDetailState("err", "Cannot load personnel record: " + (e.message || String(e)).slice(0, 280));
-              return;
-            }
+          if (item) {
+            renderPersonDetailContent(item);
+            return;
           }
 
-          personDetailSession = {
-            item: item,
-            editing: false,
-            meta: meta || hubSession.meta,
-            pw: pw || hubSession.pw,
-            seg: seg || hubSession.seg,
-            sampleRow: sampleRow || (Array.isArray(rows) && rows.length ? rows[0] : item),
-          };
+          personDetailContent.innerHTML = "";
+          setPersonDetailState("loading", "Loading personnel record…");
+          if (personDetailTitle) personDetailTitle.textContent = "Personnel record";
 
-          await renderPersonDetailView(item, false);
-          await loadPersonAppointments(item.Id, personDetailSession.pw);
-        }
+          try {
+            item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
+          } catch (e) {
+            setPersonDetailState("err", "Cannot load personnel record: " + (e.message || String(e)).slice(0, 280));
+            return;
+          }
 
-        async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {
-          const sampleRow =
-            (Array.isArray(cachedRows) && cachedRows.length ? cachedRows[0] : null) || hubSession.sampleRow;
-          await openPersonDetailRecord(itemId, meta, pw, seg, cachedRows, sampleRow);
+          renderPersonDetailContent(item);
         }
 
         if (personDetailBackLink) {
@@ -2298,27 +1450,187 @@
           });
         }
 
-        if (personDetailEditBtn) {
-          personDetailEditBtn.addEventListener("click", function () {
-            if (!personDetailSession.item) return;
-            void renderPersonDetailView(personDetailSession.item, true);
-          });
+        let demoPersonnelStore = null;
+
+        function isLocalDemoMode() {
+          const mode = LOCAL_DEMO_MODE;
+          if (mode === true || String(mode).toLowerCase() === "true") return true;
+          if (mode === false || String(mode).toLowerCase() === "false") return false;
+          const h = String(location.hostname || "").toLowerCase();
+          if (h === "localhost" || h === "127.0.0.1" || h === "[::1]") return true;
+          if (location.protocol === "file:") return true;
+          try {
+            if (new URL(location.href).searchParams.get("demo") === "1") return true;
+          } catch (_) {}
+          return false;
         }
 
-        if (personDetailSaveBtn) {
-          personDetailSaveBtn.addEventListener("click", function () {
-            void savePersonDetailEdits();
-          });
+        function updateDemoModeBanner() {
+          const banner = document.getElementById("demoModeBanner");
+          if (banner) banner.hidden = !isLocalDemoMode();
         }
 
-        if (personDetailCancelBtn) {
-          personDetailCancelBtn.addEventListener("click", function () {
-            if (!personDetailSession.item) return;
-            void renderPersonDetailView(personDetailSession.item, false);
-          });
+        function createDemoPersonnelSeed() {
+          return [
+            {
+              Id: 1,
+              RecordDate: "2024-03-12",
+              DoDID: "1234567890",
+              Rank: "TSgt",
+              LastName: "Anderson",
+              FirstName: "James",
+              MiddleInitial: "R",
+              Address: "123 Main St, Wright-Patterson AFB, OH 45433",
+              CellPhone: "937-555-0101",
+              WorkPhone: "937-555-1001",
+              Status: "Active",
+              OfficeSymbol: "S3T",
+              Squadron: "88 SFS",
+              Notes: "Training coordinator. Primary POC for annual certs.",
+              Title: "Anderson, James",
+            },
+            {
+              Id: 2,
+              RecordDate: "2023-11-02",
+              DoDID: "2345678901",
+              Rank: "SSgt",
+              LastName: "Baker",
+              FirstName: "Maria",
+              MiddleInitial: "L",
+              Address: "456 Oak Ave, Dayton, OH 45431",
+              CellPhone: "937-555-0102",
+              WorkPhone: "937-555-1002",
+              Status: "Active",
+              OfficeSymbol: "SFOPS",
+              Squadron: "88 SFS",
+              Notes: "Range safety certified.",
+              Title: "Baker, Maria",
+            },
+            {
+              Id: 3,
+              RecordDate: "2025-01-08",
+              DoDID: "3456789012",
+              Rank: "SrA",
+              LastName: "Chen",
+              FirstName: "David",
+              MiddleInitial: "K",
+              Address: "789 Elm Dr, Beavercreek, OH 45440",
+              CellPhone: "937-555-0103",
+              WorkPhone: "937-555-1003",
+              Status: "Pending",
+              OfficeSymbol: "S3T",
+              Squadron: "88 SFS",
+              Notes: "Awaiting final background check.",
+              Title: "Chen, David",
+            },
+            {
+              Id: 4,
+              RecordDate: "2022-06-20",
+              DoDID: "4567890123",
+              Rank: "MSgt",
+              LastName: "Davis",
+              FirstName: "Robert",
+              MiddleInitial: "A",
+              Address: "321 Pine Rd, Fairborn, OH 45324",
+              CellPhone: "937-555-0104",
+              WorkPhone: "937-555-1004",
+              Status: "Active",
+              OfficeSymbol: "CP",
+              Squadron: "88 SFS",
+              Notes: "NCOIC, patrol section.",
+              Title: "Davis, Robert",
+            },
+            {
+              Id: 5,
+              RecordDate: "2024-09-15",
+              DoDID: "5678901234",
+              Rank: "A1C",
+              LastName: "Evans",
+              FirstName: "Sarah",
+              MiddleInitial: "M",
+              Address: "654 Maple Ln, Huber Heights, OH 45424",
+              CellPhone: "937-555-0105",
+              WorkPhone: "937-555-1005",
+              Status: "TDY",
+              OfficeSymbol: "S3T",
+              Squadron: "88 OSS",
+              Notes: "Deployed — return date TBD.",
+              Title: "Evans, Sarah",
+            },
+            {
+              Id: 6,
+              RecordDate: "2021-02-28",
+              DoDID: "6789012345",
+              Rank: "Capt",
+              LastName: "Foster",
+              FirstName: "Michael",
+              MiddleInitial: "J",
+              Address: "987 Cedar Ct, Wright-Patterson AFB, OH 45433",
+              CellPhone: "937-555-0106",
+              WorkPhone: "937-555-1006",
+              Status: "Active",
+              OfficeSymbol: "CC",
+              Squadron: "88 SFS",
+              Notes: "Commander, 88 SFS.",
+              Title: "Foster, Michael",
+            },
+            {
+              Id: 7,
+              RecordDate: "2023-07-04",
+              DoDID: "7890123456",
+              Rank: "Amn",
+              LastName: "Garcia",
+              FirstName: "Elena",
+              MiddleInitial: "S",
+              Address: "147 Birch Way, Kettering, OH 45429",
+              CellPhone: "937-555-0107",
+              WorkPhone: "937-555-1007",
+              Status: "Active",
+              OfficeSymbol: "S3T",
+              Squadron: "88 SFS",
+              Notes: "New hire — in-process training.",
+              Title: "Garcia, Elena",
+            },
+            {
+              Id: 8,
+              RecordDate: "2020-12-01",
+              DoDID: "8901234567",
+              Rank: "SMSgt",
+              LastName: "Harris",
+              FirstName: "William",
+              MiddleInitial: "T",
+              Address: "258 Spruce St, Centerville, OH 45458",
+              CellPhone: "937-555-0108",
+              WorkPhone: "937-555-1008",
+              Status: "Inactive",
+              OfficeSymbol: "SFOPS",
+              Squadron: "88 SFS",
+              Notes: "Retired — archive record only.",
+              Title: "Harris, William",
+            },
+          ];
         }
 
-        function payloadToItemFields(body) {
+        function initDemoPersonnelStore() {
+          if (!demoPersonnelStore) {
+            demoPersonnelStore = createDemoPersonnelSeed();
+          }
+          return demoPersonnelStore;
+        }
+
+        function demoChoicesForField(fieldName) {
+          const name = String(fieldName || "").trim();
+          if (DEMO_FIELD_CHOICES[name]) return DEMO_FIELD_CHOICES[name].slice();
+          const cols = normalizedRosterColumns();
+          const col = cols.find(function (c) {
+            const keys = c.tryKeys || [c.key];
+            return keys.indexOf(name) !== -1 || c.key === name;
+          });
+          if (col && DEMO_FIELD_CHOICES[col.key]) return DEMO_FIELD_CHOICES[col.key].slice();
+          return [];
+        }
+
+        function demoPayloadToItem(body) {
           const item = {};
           const cols = normalizedRosterColumns();
           Object.keys(body || {}).forEach(function (key) {
@@ -2340,6 +1652,80 @@
             item.Title = item.LastName + ", " + item.FirstName;
           }
           return item;
+        }
+
+        function demoCloneStore() {
+          return JSON.parse(JSON.stringify(initDemoPersonnelStore()));
+        }
+
+        async function demoSpFetch(path, opts, method) {
+          opts = opts || {};
+          method = method || (opts.method || "GET").toUpperCase();
+          const store = initDemoPersonnelStore();
+          await new Promise(function (resolve) {
+            setTimeout(resolve, 120);
+          });
+
+          if (method === "GET" && /\/fields\/getbyinternalnameortitle\('/.test(path)) {
+            const m = path.match(/getbyinternalnameortitle\('([^']*)'\)/);
+            const fieldName = m ? m[1] : "";
+            return {
+              Choices: demoChoicesForField(fieldName),
+              Title: fieldName,
+              InternalName: fieldName,
+              TypeAsString: "Choice",
+            };
+          }
+
+          if (method === "GET" && /\/lists\?\$select=Title,Id,ItemCount,Hidden/.test(path)) {
+            return {
+              value: [{ Title: personnelListTitle(), Id: 101, ItemCount: store.length, Hidden: false }],
+            };
+          }
+
+          if (method === "GET" && /\/lists\/(guid'[^']+'|getbytitle\([^)]+\))\?\$select=/.test(path)) {
+            return {
+              Id: 101,
+              Title: personnelListTitle(),
+              ItemCount: store.length,
+              ListItemEntityTypeFullName: "SP.Data.PersonnelListItem",
+            };
+          }
+
+          const itemGet = path.match(/\/items\((\d+)\)(?:\?|$)/);
+          if (method === "GET" && itemGet) {
+            const hit = store.find(function (r) {
+              return String(r.Id) === itemGet[1];
+            });
+            if (!hit) throw new Error("404 Not Found The specified item does not exist.");
+            return JSON.parse(JSON.stringify(hit));
+          }
+
+          if (method === "GET" && /\/items(?:\?|$)/.test(path)) {
+            return { value: demoCloneStore() };
+          }
+
+          if (method === "POST" && /\/items(?:\?|$)/.test(path) && opts.body) {
+            const body = typeof opts.body === "object" ? opts.body : JSON.parse(opts.body);
+            const nextId =
+              store.reduce(function (max, r) {
+                return Math.max(max, Number(r.Id) || 0);
+              }, 0) + 1;
+            const item = Object.assign({ Id: nextId }, demoPayloadToItem(body));
+            store.push(item);
+            return JSON.parse(JSON.stringify(item));
+          }
+
+          if (method === "DELETE" && itemGet) {
+            const idx = store.findIndex(function (r) {
+              return String(r.Id) === itemGet[1];
+            });
+            if (idx === -1) throw new Error("404 Not Found The specified item does not exist.");
+            store.splice(idx, 1);
+            return null;
+          }
+
+          throw new Error("Demo mode: unhandled " + method + " " + path);
         }
 
         function normalizedRosterColumns() {
@@ -2395,7 +1781,7 @@
           return k === "odata.type" || k === "odata.id" || k === "odata.editLink" || k === "odata.metadata";
         }
 
-        /** Union of field names across all loaded rows (order: Title, then Aâ€“Z). List item `Id` is omitted from the table. */
+        /** Union of field names across all loaded rows (order: Title, then A–Z). List item `Id` is omitted from the table. */
         function collectColumnKeys(rows) {
           const set = new Set();
           rows.forEach((item) => {
@@ -2535,7 +1921,7 @@
           }
           if (!confirm("Delete personnel record Id " + sid + "? This cannot be undone.")) return;
           try {
-            setReadState("loading", "Deleting recordâ€¦");
+            setReadState("loading", "Deleting record…");
             await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
             log("DELETE Id " + sid + " OK", "ok");
             await runProbe();
@@ -2558,7 +1944,7 @@
           columns.forEach((col) => {
             const th = document.createElement("th");
             th.textContent = col.label;
-            th.title = (col.tryKeys || [col.key]).join(" Â· ");
+            th.title = (col.tryKeys || [col.key]).join(" · ");
             trHead.appendChild(th);
           });
           if (showRowActions) {
@@ -2578,7 +1964,7 @@
               const tryKeys = col.tryKeys || [col.key];
               const raw = valueFromItemByKeys(item, tryKeys);
               const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-              td.textContent = text === "" ? "â€”" : text;
+              td.textContent = text === "" ? "—" : text;
               tr.appendChild(td);
             });
             if (showRowActions && item.Id != null) {
@@ -2609,7 +1995,7 @@
             } else if (showRowActions) {
               const tdAct = document.createElement("td");
               tdAct.className = "roster-actions";
-              tdAct.textContent = "â€”";
+              tdAct.textContent = "—";
               tr.appendChild(tdAct);
             }
             frag.appendChild(tr);
@@ -2757,6 +2143,9 @@
         async function spFetch(path, opts, baseUrlOverride) {
           opts = opts || {};
           const method = (opts.method || "GET").toUpperCase();
+          if (isLocalDemoMode()) {
+            return demoSpFetch(path, opts, method);
+          }
           const base =
             baseUrlOverride != null && String(baseUrlOverride).trim()
               ? String(baseUrlOverride).trim().replace(/\/$/, "")
@@ -2822,7 +2211,7 @@
         }
 
         async function enumerateListTitles(pw) {
-          log("--- Listing lists on this web (first 200, not hidden) â€” find exact Title for LIST_PERSONNEL ---");
+          log("--- Listing lists on this web (first 200, not hidden) — find exact Title for LIST_PERSONNEL ---");
           const data = await spFetch(
             "/_api/web/lists?$select=Title,Id,ItemCount,Hidden&$filter=Hidden eq false&$orderby=Title&$top=200",
             {},
@@ -2830,7 +2219,7 @@
           );
           const rows = (data && data.value) || [];
           rows.forEach((r) => {
-            log("  â€¢ " + (r.Title || "") + "  (Id=" + r.Id + ", ItemCount=" + (r.ItemCount != null ? r.ItemCount : "?") + ")");
+            log("  • " + (r.Title || "") + "  (Id=" + r.Id + ", ItemCount=" + (r.ItemCount != null ? r.ItemCount : "?") + ")");
           });
         }
 
@@ -2916,14 +2305,13 @@
         function buildAddFieldWrap(col, sampleRow, opt) {
           opt = opt || {};
           if (col.key === "Id") return null;
-          const idPrefix = opt.idPrefix || "nf_";
-          const writeKey = resolveWriteKey(col, sampleRow || opt.sampleRow);
+          const writeKey = resolveWriteKey(col, sampleRow);
           const fwrap = document.createElement("div");
           fwrap.className = "add-field";
           if (col.key === "Address") fwrap.classList.add("add-field--address");
           if (col.key === "Notes") fwrap.classList.add("add-field--notes");
           const lab = document.createElement("label");
-          lab.setAttribute("for", idPrefix + col.key);
+          lab.setAttribute("for", "nf_" + col.key);
           lab.textContent = col.label;
           lab.title = "REST write key: " + writeKey;
           fwrap.appendChild(lab);
@@ -2933,7 +2321,7 @@
           if (isDrop) {
             input = document.createElement("select");
             if (!opt.fullWidthSelect) input.className = "add-field-select--autosize";
-            input.id = idPrefix + col.key;
+            input.id = "nf_" + col.key;
             input.dataset.writeKey = writeKey;
             const opt0 = document.createElement("option");
             opt0.value = "";
@@ -2941,18 +2329,18 @@
             input.appendChild(opt0);
           } else if (col.key === "Address" || col.key === "Notes") {
             input = document.createElement("textarea");
-            input.id = idPrefix + col.key;
+            input.id = "nf_" + col.key;
             input.dataset.writeKey = writeKey;
             input.rows = col.key === "Address" ? 2 : 2;
           } else if (col.key === "RecordDate") {
             input = document.createElement("input");
             input.type = "date";
-            input.id = idPrefix + col.key;
+            input.id = "nf_" + col.key;
             input.dataset.writeKey = writeKey;
           } else {
             input = document.createElement("input");
             input.type = "text";
-            input.id = idPrefix + col.key;
+            input.id = "nf_" + col.key;
             input.dataset.writeKey = writeKey;
           }
           fwrap.appendChild(input);
@@ -2966,7 +2354,7 @@
           if (fsets.length < 2) return;
           const leftCol = fsets[0];
           const rightCol = fsets[1];
-          const notesTa = document.getElementById("nf_Notes") || document.getElementById("pf_Notes");
+          const notesTa = document.getElementById("nf_Notes");
           if (!notesTa || notesTa.tagName !== "TEXTAREA") return;
           notesTa.style.maxHeight = "";
           void split.offsetHeight;
@@ -3160,7 +2548,7 @@
               } else {
                 const o = document.createElement("option");
                 o.value = "";
-                o.textContent = "(no choices â€” check field internal name: " + writeKey + ")";
+                o.textContent = "(no choices — check field internal name: " + writeKey + ")";
                 o.disabled = true;
                 sel.appendChild(o);
               }
@@ -3184,7 +2572,7 @@
         }
 
         async function submitNewPerson(meta, pw, seg, sampleRow) {
-          /** With `application/json;odata=nometadata`, do not send `__metadata` â€” SharePoint treats it as a list column and returns 400. */
+          /** With `application/json;odata=nometadata`, do not send `__metadata` — SharePoint treats it as a list column and returns 400. */
           const cols = normalizedRosterColumns();
           let lastName = "";
           let firstName = "";
@@ -3224,7 +2612,7 @@
           }
 
           try {
-            setReadState("loading", "Submittingâ€¦");
+            setReadState("loading", "Submitting…");
             const created = await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
             const newId = parseCreatedItemId(created);
             log("POST created item Id: " + (newId || "?"), "ok");
@@ -3243,9 +2631,11 @@
           try {
           if (out) out.innerHTML = "";
           clearRosterTable();
+          updateDemoModeBanner();
           const addPanel = document.getElementById("addPersonPanel");
           if (addPanel) addPanel.innerHTML = "";
-          setReadState("loading", "Loading Personnel list from SharePointâ€¦");
+          const demo = isLocalDemoMode();
+          setReadState("loading", demo ? "Loading demo personnel roster…" : "Loading Personnel list from SharePoint…");
 
           const ctx = getCtx();
           const pageWeb = ctx && ctx.webAbsoluteUrl ? String(ctx.webAbsoluteUrl).replace(/\/$/, "") : "";
@@ -3274,16 +2664,19 @@
                   : "unknown";
           log("How REST base was chosen: " + baseSource);
           log("location.href:\n" + String(location.href));
-          log("Page web from context (informational only):\n" + (pageWeb || "(no _spPageContextInfo â€” OK if explicit URLs are set)"));
+          log("Page web from context (informational only):\n" + (pageWeb || "(no _spPageContextInfo — OK if explicit URLs are set)"));
           log(
             "REST base used for ALL API calls below:\n" +
               pw +
               (pageWeb && pw === pageWeb
-                ? "  (same as page â€” from context or your URL matched the page site)"
-                : "  (explicit URL / derived from PERSONNEL_SHAREPOINT_URL â€” not necessarily this pageâ€™s site)"),
+                ? "  (same as page — from context or your URL matched the page site)"
+                : "  (explicit URL / derived from PERSONNEL_SHAREPOINT_URL — not necessarily this page’s site)"),
           );
           log("List API segment:\n/_api/web/" + seg);
           log("LIST_PERSONNEL (trimmed):\n" + JSON.stringify(personnelListTitle()));
+          if (demo) {
+            log("LOCAL DEMO MODE — in-memory sample data (hostname: " + location.hostname + ")", "ok");
+          }
 
           let meta = null;
           try {
@@ -3315,7 +2708,7 @@
             items = await spFetch(`/_api/web/${seg2}/items?$top=500` + orderByQs, {}, pw);
           } catch (e0) {
             if (/\b400\b/.test(String(e0.message || ""))) {
-              log("orderby failed with 400; retry without orderbyâ€¦", "err");
+              log("orderby failed with 400; retry without orderby…", "err");
               try {
                 items = await spFetch(`/_api/web/${seg2}/items?$top=500`, {}, pw);
               } catch (e1) {
@@ -3343,7 +2736,7 @@
                 (meta && meta.ItemCount != null ? meta.ItemCount : "?") +
                 "). You can still add a person below; refresh after the first item exists.",
             );
-            log("List is empty (ItemCount may still be > 0 if filtered view â€” this is default view items).");
+            log("List is empty (ItemCount may still be > 0 if filtered view — this is default view items).");
           } else {
             if (plan.mode === "explicit") {
               const dispCols = rosterColumnsForDisplay(plan);
@@ -3411,88 +2804,12 @@
           });
         }
 
-        function getHubRoot() {
-          return document.getElementById("sp-pip-ui");
-        }
-
-        function showHubApp() {
-          const gate = document.getElementById("hubAccessGate");
-          const app = document.getElementById("hubAppContent");
-          if (gate) {
-            gate.hidden = true;
-            gate.setAttribute("hidden", "hidden");
-          }
-          if (app) {
-            app.removeAttribute("hidden");
-            app.hidden = false;
-            app.style.display = "";
-          }
-        }
-
-        function showHubGate() {
-          const gate = document.getElementById("hubAccessGate");
-          const app = document.getElementById("hubAppContent");
-          if (gate) {
-            gate.removeAttribute("hidden");
-            gate.hidden = false;
-          }
-          if (app) {
-            app.hidden = true;
-            app.setAttribute("hidden", "hidden");
-          }
-        }
-
-        function initHubAccessGate() {
-          const boot = document.getElementById("hubBootOverlay");
-          const password = String(HUB_ACCESS_PASSWORD || "").trim();
-
-          function isHubAccessGranted() {
-            try {
-              return sessionStorage.getItem(HUB_ACCESS_STORAGE_KEY) === "1";
-            } catch (_) {
-              return false;
-            }
-          }
-
-          function startHubApp() {
-            if (isSharePointPageEditUrl()) {
-              if (boot) boot.hidden = true;
-              dismissHubBootOverlay();
-              setReadState("warn", "Publish the page, then click Refresh list to load the roster.");
-              return;
-            }
-            if (boot) boot.hidden = false;
-            runProbe().catch(function (e) {
-              setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
-              log("UNCAUGHT:\n" + (e.message || String(e)), "err");
-            });
-          }
-
-          document.addEventListener("trainingHubUnlocked", function () {
-            startHubApp();
-          });
-
-          if (!password || isHubAccessGranted() || window.__trainingHubPendingStart) {
-            showHubApp();
-            startHubApp();
-            return;
-          }
-
-          showHubGate();
-          if (boot) boot.hidden = true;
-        }
-
-        function bootTrainingHub() {
-          if (!getHubRoot()) {
-            window.setTimeout(bootTrainingHub, 50);
-            return;
-          }
-          initHubAccessGate();
-        }
-
-        bootTrainingHub();
+        updateDemoModeBanner();
+        runProbe().catch((e) => {
+          setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
+          log("UNCAUGHT:\n" + (e.message || String(e)), "err");
+        });
       })();
     </script>
   </body>
 </html>
-

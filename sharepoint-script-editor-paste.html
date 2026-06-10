@@ -1,19 +1,6 @@
-﻿<!-- STEP 1: Upload these two files to Site Assets (same library, site root /sites/88thSFS): -->
-<!--       training-hub-styles.txt  and  training-hub-script.txt -->
-<!--       Download the .txt files from GitHub if .js is blocked on your network. -->
-<!-- STEP 2: Paste ONLY this block into Modern Script Editor. -->
+﻿<!-- STEP 1: Upload training-hub-styles.txt and training-hub-script.txt to Site Assets. -->
+<!-- STEP 2: Paste ONLY this block into Modern Script Editor (~6 KB). -->
 <div id="sp-pip-ui">
-<div id="hubAccessGate" class="hub-access-gate" aria-label="Training Hub access">
-        <div class="hub-access-panel">
-          <h2>Authorized access</h2>
-          <p>Enter the Training Hub password to continue.</p>
-          <label for="hubAccessInput">Password</label>
-          <input type="password" id="hubAccessInput" autocomplete="current-password" />
-          <button type="button" id="hubAccessSubmit">Continue</button>
-          <p id="hubAccessError" class="hub-access-error" hidden>Incorrect password.</p>
-        </div>
-      </div>
-      <div id="hubAppContent" hidden>
       <div id="hubBootOverlay" class="hub-boot-overlay" aria-live="polite">
         <p class="hub-boot-text">Loading Training Hub…</p>
       </div>
@@ -32,7 +19,9 @@
         </div>
       </header>
       <main class="hub-main">
-        <div id="demoModeBanner" class="demo-mode-banner" hidden aria-hidden="true"></div>
+        <div id="demoModeBanner" class="demo-mode-banner" hidden>
+          Local demo mode — sample personnel data only. Add, delete, and name links work in memory; nothing is saved to SharePoint.
+        </div>
         <section class="hub-section hub-section--form" aria-label="Training Hub entry">
           <div id="addPersonPanel" class="add-person-panel" aria-live="polite"></div>
         </section>
@@ -54,34 +43,18 @@
         <section id="personDetailSection" class="hub-section hub-section--person-detail" hidden aria-label="Personnel record detail">
           <div class="person-detail-panel">
             <div class="person-detail-toolbar">
-              <a id="personDetailBackLink" class="person-detail-back" href="#">â† Back to roster</a>
-              <div class="person-detail-toolbar-actions">
-                <button type="button" id="personDetailEditBtn" class="btn-secondary">Edit record</button>
-                <button type="button" id="personDetailSaveBtn" hidden>Save changes</button>
-                <button type="button" id="personDetailCancelBtn" class="btn-secondary" hidden>Cancel</button>
-              </div>
+              <a id="personDetailBackLink" class="person-detail-back" href="#">← Back to roster</a>
             </div>
             <h2 id="personDetailTitle" class="hub-subtitle person-detail-title">Personnel record</h2>
             <div id="personDetailReadState" class="read-state loading" hidden></div>
             <div id="personDetailContent" class="person-detail-content"></div>
-            <div id="personAppointmentsWrap" class="person-appointments-wrap">
-              <h3 class="person-appointments-title">Appointments</h3>
-              <div id="personAppointmentsState" class="read-state" hidden></div>
-              <div class="roster-wrap appointments-roster-wrap">
-                <table class="roster appointments-table" aria-label="Personnel appointments">
-                  <thead id="personAppointmentsThead"></thead>
-                  <tbody id="personAppointmentsBody"></tbody>
-                </table>
-              </div>
-              <p id="personAppointmentsEmpty" class="appointments-empty" hidden>No appointments on file for this person.</p>
-            </div>
           </div>
         </section>
-        <section id="recallRosterSection" class="hub-section hub-section--recall" aria-label="Recall roster">
+        <section class="hub-section hub-section--recall" aria-label="Recall roster">
           <div class="recall-roster-panel">
             <h2 class="hub-subtitle">Recall roster</h2>
             <p class="recall-roster-desc">
-              Download a PDF with every person on the personnel list â€” name, address, cell phone, and work phone â€” sorted Aâ€“Z by last name.
+              Download a PDF with every person on the personnel list — name, address, cell phone, and work phone — sorted A–Z by last name.
             </p>
             <div class="recall-roster-actions">
               <button type="button" id="recallRosterBtn">Save recall roster (PDF)</button>
@@ -89,8 +62,7 @@
           </div>
         </section>
       </main>
-      </div>
-</div>
+    </div>
 <script>
 (function () {
   var base = "/sites/88thSFS/SiteAssets";
@@ -98,12 +70,7 @@
   var jsUrl = base + "/training-hub-script.txt";
   function fail(msg) {
     var root = document.getElementById("sp-pip-ui");
-    if (root) {
-      root.innerHTML =
-        '<p style="font-family:Consolas,monospace;color:#ff5a45;padding:16px;">Training Hub failed to load: ' +
-        String(msg || "unknown error") +
-        "</p>";
-    }
+    if (root) root.innerHTML = '<p style="font-family:Consolas,monospace;color:#ff5a45;padding:16px;">Training Hub failed to load: ' + String(msg || "unknown error") + '</p>';
   }
   fetch(cssUrl, { credentials: "same-origin", cache: "no-cache" })
     .then(function (res) {
