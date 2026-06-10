@@ -1,12 +1,6 @@
-﻿<!-- Training Hub - paste this entire file into Modern Script Editor (one copy/paste, no Site Assets). -->
-<!-- Source: sharepoint-modern-script-editor-ui.html -->
+﻿<!-- Training Hub — paste this ENTIRE file into Modern Script Editor (PnP). -->
+<!-- Fragment only: <style> + #sp-pip-ui + <script>. No <!doctype>, <html>, <head>, or <body> wrapper. -->
 <style>
-/* Page shell when viewing this file directly (Script Editor may only embed #sp-pip-ui) */
-      body {
-        margin: 0;
-        padding: 12px;
-        background: #000;
-      }
       #sp-pip-ui {
         --pip-bg: #050807;
         --pip-bg2: #0a1410;
@@ -976,20 +970,6 @@
           return root + "/" + rel;
         }
 
-        (function initHubTopBanner() {
-          const wrap = document.getElementById("hubTopBannerWrap");
-          const img = document.getElementById("hubTopBannerImg");
-          const url = resolveTopBannerImageUrl();
-          if (!wrap || !img) return;
-          if (!url) return;
-          img.src = url;
-          img.alt =
-            typeof HUB_TOP_BANNER_ALT === "string" && HUB_TOP_BANNER_ALT.trim()
-              ? HUB_TOP_BANNER_ALT.trim()
-              : "Squadron banner";
-          wrap.hidden = false;
-        })();
-
         function resolveProfileImageUrl() {
           const profileExplicit =
             typeof HUB_PROFILE_IMAGE_URL === "string" ? HUB_PROFILE_IMAGE_URL.trim() : "";
@@ -1005,18 +985,6 @@
           if (!root || !rel) return "";
           return root + "/" + rel;
         }
-
-        (function initHubLogo() {
-          const wrap = document.getElementById("hubLogoWrap");
-          const img = document.getElementById("hubLogoImg");
-          const url = resolveProfileImageUrl();
-          if (!wrap || !img || !url) return;
-          img.src = url;
-          const altProfile = typeof HUB_PROFILE_ALT === "string" ? HUB_PROFILE_ALT.trim() : "";
-          const altLogo = typeof HUB_LOGO_ALT === "string" ? HUB_LOGO_ALT.trim() : "";
-          img.alt = altProfile || altLogo || "Profile image";
-          wrap.hidden = false;
-        })();
 
         const out = document.getElementById("probeOut");
         const btn = document.getElementById("probeRun");
@@ -3206,14 +3174,44 @@
         }
 
         function startHubApp() {
-          if (initSharePointAuthoringSafeMode()) return;
           runProbe().catch((e) => {
             setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
             log("UNCAUGHT:\n" + (e.message || String(e)), "err");
           });
         }
 
-        updateDemoModeBanner();
-        startHubApp();
+        function bootHub() {
+          if (initSharePointAuthoringSafeMode()) {
+            updateDemoModeBanner();
+            return;
+          }
+          (function initHubTopBanner() {
+            const wrap = document.getElementById("hubTopBannerWrap");
+            const img = document.getElementById("hubTopBannerImg");
+            const url = resolveTopBannerImageUrl();
+            if (!wrap || !img || !url) return;
+            img.src = url;
+            img.alt =
+              typeof HUB_TOP_BANNER_ALT === "string" && HUB_TOP_BANNER_ALT.trim()
+                ? HUB_TOP_BANNER_ALT.trim()
+                : "Squadron banner";
+            wrap.hidden = false;
+          })();
+          (function initHubLogo() {
+            const wrap = document.getElementById("hubLogoWrap");
+            const img = document.getElementById("hubLogoImg");
+            const url = resolveProfileImageUrl();
+            if (!wrap || !img || !url) return;
+            img.src = url;
+            const altProfile = typeof HUB_PROFILE_ALT === "string" ? HUB_PROFILE_ALT.trim() : "";
+            const altLogo = typeof HUB_LOGO_ALT === "string" ? HUB_LOGO_ALT.trim() : "";
+            img.alt = altProfile || altLogo || "Profile image";
+            wrap.hidden = false;
+          })();
+          updateDemoModeBanner();
+          startHubApp();
+        }
+
+        bootHub();
       })();
 </script>
