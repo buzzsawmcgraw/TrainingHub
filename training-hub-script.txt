@@ -251,8 +251,18 @@
             if (doc.querySelector('[data-automation-id="publishButton"]')) return true;
             if (doc.querySelector('[data-automation-id="SaveAndCloseButton"]')) return true;
             if (doc.querySelector('[data-automation-id="pageCommandBar"]')) return true;
+            if (doc.querySelector('[data-automation-id="CanvasControl"]')) return true;
             if (doc.querySelector(".CanvasZone--edit")) return true;
+            if (doc.querySelector(".CanvasZoneEdit") || doc.querySelector(".CanvasSection--edit")) return true;
+            if (doc.querySelector("#spPageCanvasContent[contenteditable='true']")) return true;
           }
+          try {
+            if (window.frameElement && window.parent && window.parent !== window && window.parent.document) {
+              const pdoc = window.parent.document;
+              if (pdoc.querySelector('[data-automation-id="publishButton"]')) return true;
+              if (pdoc.querySelector('[data-automation-id="pageCommandBar"]')) return true;
+            }
+          } catch (_) {}
           const ctxs = [];
           try {
             if (window._spPageContextInfo) ctxs.push(window._spPageContextInfo);
@@ -270,13 +280,18 @@
           return false;
         }
 
-        function initSharePointAuthoringSafeMode() {
-          if (!isSharePointAuthoringContext()) return false;
+        function enterAuthoringSafeMode() {
           const boot = document.getElementById("hubBootOverlay");
           const placeholder = document.getElementById("hubAuthoringPlaceholder");
+          const root = document.getElementById("sp-pip-ui");
           if (boot) boot.hidden = true;
           if (placeholder) placeholder.hidden = false;
-          if (hubRoot) hubRoot.classList.add("hub-ready", "hub-authoring-mode");
+          if (root) root.classList.add("hub-ready", "hub-authoring-mode");
+        }
+
+        function initSharePointAuthoringSafeMode() {
+          if (!isSharePointAuthoringContext()) return false;
+          enterAuthoringSafeMode();
           return true;
         }
 
@@ -444,7 +459,8 @@
             s.onerror = function () {
               reject(new Error("Could not load script: " + src));
             };
-            document.head.appendChild(s);
+            const host = document.getElementById("sp-pip-ui") || document.body;
+            host.appendChild(s);
           });
         }
 
@@ -1624,6 +1640,7 @@
           try {
             if (window._spPageContextInfo && window._spPageContextInfo.webAbsoluteUrl) return window._spPageContextInfo;
           } catch (_) {}
+          if (isSharePointAuthoringContext()) return null;
           try {
             if (window.parent && window.parent._spPageContextInfo && window.parent._spPageContextInfo.webAbsoluteUrl)
               return window.parent._spPageContextInfo;
@@ -1635,23 +1652,18 @@
         }
 
         function getDigest() {
-          const el =
-            document.getElementById("__REQUESTDIGEST") ||
-            (function () {
-              try {
-                return window.parent.document.getElementById("__REQUESTDIGEST");
-              } catch (_) {
-                return null;
-              }
-            })() ||
-            (function () {
-              try {
-                return window.top.document.getElementById("__REQUESTDIGEST");
-              } catch (_) {
-                return null;
-              }
-            })();
-          return el && el.value ? el.value : "";
+          const el = document.getElementById("__REQUESTDIGEST");
+          if (el && el.value) return el.value;
+          if (isSharePointAuthoringContext()) return "";
+          try {
+            const parentEl = window.parent && window.parent.document && window.parent.document.getElementById("__REQUESTDIGEST");
+            if (parentEl && parentEl.value) return parentEl.value;
+          } catch (_) {}
+          try {
+            const topEl = window.top && window.top.document && window.top.document.getElementById("__REQUESTDIGEST");
+            if (topEl && topEl.value) return topEl.value;
+          } catch (_) {}
+          return "";
         }
 
         function deriveSiteRootFromSharePointUrl(raw) {
@@ -1740,10 +1752,8 @@
               digest = "";
             }
             if (!digest) digest = getDigest();
-          } else {
-            digest = getDigest();
+            if (digest) headers["X-RequestDigest"] = digest;
           }
-          if (digest) headers["X-RequestDigest"] = digest;
 
           let realMethod = methodUpper;
           if (methodUpper === "MERGE" || methodUpper === "DELETE") {
@@ -2399,11 +2409,10 @@
           });
         }
 
+        /** Defer boot so SharePoint edit chrome can mount before we run REST (avoids locking the page editor). */
+        const HUB_BOOT_DEFER_MS = 450;
+
         function bootHub() {
-          if (initSharePointAuthoringSafeMode()) {
-            updateDemoModeBanner();
-            return;
-          }
           (function initHubTopBanner() {
             const wrap = document.getElementById("hubTopBannerWrap");
             const img = document.getElementById("hubTopBannerImg");
@@ -2431,5 +2440,21 @@
           startHubApp();
         }
 
-        bootHub();
+        function scheduleBootHub() {
+          if (isSharePointAuthoringContext()) {
+            enterAuthoringSafeMode();
+            updateDemoModeBanner();
+            return;
+          }
+          setTimeout(function () {
+            if (isSharePointAuthoringContext()) {
+              enterAuthoringSafeMode();
+              updateDemoModeBanner();
+              return;
+            }
+            bootHub();
+          }, HUB_BOOT_DEFER_MS);
+        }
+
+        scheduleBootHub();
       })();
