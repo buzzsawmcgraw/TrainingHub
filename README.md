@@ -1,40 +1,67 @@
 # TrainingHub
 
-This repo contains a **paste-only UI** intended for use with a SharePoint **Modern Script Editor** web part.
+Paste-only UI for SharePoint **Modern Script Editor** (PnP).
 
-## What to paste into SharePoint
+## Deploy (recommended — small paste)
 
-1. Open **`sharepoint-script-editor-paste.html`** on GitHub (or locally).
-2. Select **all** of it and paste into your Modern Script Editor web part.
-3. Save and publish the page.
+Large all-in-one pastes (~130 KB) can **corrupt the SharePoint page** after save: the hub may work once, then the page shows “Cannot edit at this time” and stays locked. Use the **small loader** instead.
 
-That file is **one self-contained block** — HTML, CSS, and JavaScript together. You do **not** need to upload anything to Site Assets.
+### Step 1 — Upload Site Assets files
 
-**Personnel records:** Open a row with **Record**, then **Edit record** to change fields (status, phone, address, etc.) and **Save changes**. Updates go to the SharePoint Personnel list via REST.
+On the **same site** as your page (e.g. `https://usaf.dps.mil/sites/88thSFS`), upload to **Site Assets**:
 
-**Alternative:** You can paste from `sharepoint-modern-script-editor-ui.html` instead (same content, wrapped in a full HTML document for local browser preview).
+| File | Purpose |
+|------|---------|
+| `training-hub-styles.txt` | Full hub CSS |
+| `training-hub-script.txt` | Full hub JavaScript |
 
-After editing the hub, run `build-sharepoint-deploy.ps1` to regenerate `sharepoint-script-editor-paste.html`.
+Download both from this repo (or run `build-sharepoint-deploy.ps1` after editing the source).
 
-### Size note
+Default URLs the loader expects:
 
-The paste file is about **110 KB**. Some SharePoint tenants truncate very large Script Editor pastes, which can blank the page or lock it on save. If that happens, use the optional split files (`training-hub-styles.txt` + `training-hub-script.txt` in Site Assets) — ask for help switching back to that layout.
+- `/sites/88thSFS/SiteAssets/training-hub-styles.txt`
+- `/sites/88thSFS/SiteAssets/training-hub-script.txt`
 
-## SharePoint lists required
+If your site path differs, edit `SITE_ASSETS_BASE` in `sharepoint-script-editor-paste.html` before pasting.
 
-Minimum:
+### Step 2 — Paste into Script Editor
 
-- **Personnel** list (title must be `Personnel` on the same site as the page)
-- **Certifiers** list (title `Certifiers`; names read from field `Certifier`, then `Title` if empty)
+1. Open **`sharepoint-script-editor-paste.html`** (~5 KB).
+2. Select all, paste into Modern Script Editor.
+3. Save the web part, **publish** the page.
+4. View the **published** page to load the roster (not page edit mode).
 
-List titles and the certifier field key are set in the snippet source (`LIST_PERSONNEL`, `LIST_CERTIFIERS`, `CERTIFIERS_NAME_FIELD`). Change those constants if your site uses different names.
+### Step 3 — Regenerate after code changes
 
-For **Personnel**, `PERSONNEL_IGNORE_SP_TITLE` (default `true`) means the Hub does not send SharePoint’s built-in **Title**; it uses **LastName**, **FirstName**, **MiddleInitial** instead. Set it to `false` if **Save** on a new row fails because the list requires Title (then Title is filled from last/first name or DoD ID).
+Edit `sharepoint-modern-script-editor-ui.html`, then run:
 
-**Hub Save** writes these fields (REST internal keys; override with `COLUMN_MAP` if yours differ): **RecordDate** (default internal `Record_x0020_Date` for a “Record Date” column), **LastName**, **FirstName**, **MiddleInitial**, **DoDID**, **Address**, **WorkPhone**, **CellPhone**, **Status**, **OfficeSymbol**, **Squadron**, **Rank**, **Notes**. System columns (**Modified**, **Created**, **Created by**, **Modified by**) are not sent.
+```powershell
+.\build-sharepoint-deploy.ps1
+```
 
-**Choice dropdowns:** Edit `STATUS_OPTIONS`, `OFFICE_SYMBOLS`, `RANKS`, and `SQUADRONS` in the snippet so every option string **exactly matches** the choices configured on the SharePoint columns.
+Re-upload the two `.txt` files to Site Assets and re-publish the page. You usually **do not** need to change the Script Editor paste unless the HTML shell changed.
 
-**Existing rows:** Put the web part on a page in the **same site** as the list. On load (and Refresh), the Hub calls SharePoint REST and lists every item in **Personnel** (up to 5000). If the roster is empty, the list title usually does not match `LIST_PERSONNEL`, the list is on another site, or the browser user lacks **Read** on that list.
+## If the page is already locked
 
-The UI uses `/_api` calls and expects to run on the SharePoint site so your signed-in session provides auth cookies.
+Symptoms: worked once, then **Cannot edit at this time**, comment panel on reload.
+
+1. **Page version history** — Site Pages library → your page → Version history → restore a version from **before** the large paste.
+2. Or delete the broken page and recreate it with the **small loader** paste only.
+3. Remove any old ~130 KB inline script from Script Editor; do not re-paste the all-in-one file.
+
+## Features
+
+- **Personnel roster** from SharePoint **Personnel** list (REST)
+- **Record** → view full row; **Edit record** → **Save changes**
+- **Recall roster** PDF export
+- Hub **pauses during page edit** so Script Editor stays usable
+
+## Local preview
+
+Open `sharepoint-modern-script-editor-ui.html` in a browser (full HTML document with demo data on localhost).
+
+## Lists required
+
+- **Personnel** (title must match `LIST_PERSONNEL` in the script, default `Personnel`)
+
+Hub uses `/_api` on the signed-in SharePoint session. Set `PERSONNEL_SITE_ROOT_URL` in the script if the list is on a known site root.

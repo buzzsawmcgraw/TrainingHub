@@ -1,10 +1,4 @@
-﻿/* Page shell when viewing this file directly (Script Editor may only embed #sp-pip-ui) */
-      body {
-        margin: 0;
-        padding: 12px;
-        background: #000;
-      }
-      #sp-pip-ui {
+﻿#sp-pip-ui {
         --pip-bg: #050807;
         --pip-bg2: #0a1410;
         --pip-surface: #07120d;

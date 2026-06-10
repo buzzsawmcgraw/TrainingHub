@@ -984,20 +984,6 @@
           return root + "/" + rel;
         }
 
-        (function initHubTopBanner() {
-          const wrap = document.getElementById("hubTopBannerWrap");
-          const img = document.getElementById("hubTopBannerImg");
-          const url = resolveTopBannerImageUrl();
-          if (!wrap || !img) return;
-          if (!url) return;
-          img.src = url;
-          img.alt =
-            typeof HUB_TOP_BANNER_ALT === "string" && HUB_TOP_BANNER_ALT.trim()
-              ? HUB_TOP_BANNER_ALT.trim()
-              : "Squadron banner";
-          wrap.hidden = false;
-        })();
-
         function resolveProfileImageUrl() {
           const profileExplicit =
             typeof HUB_PROFILE_IMAGE_URL === "string" ? HUB_PROFILE_IMAGE_URL.trim() : "";
@@ -1013,18 +999,6 @@
           if (!root || !rel) return "";
           return root + "/" + rel;
         }
-
-        (function initHubLogo() {
-          const wrap = document.getElementById("hubLogoWrap");
-          const img = document.getElementById("hubLogoImg");
-          const url = resolveProfileImageUrl();
-          if (!wrap || !img || !url) return;
-          img.src = url;
-          const altProfile = typeof HUB_PROFILE_ALT === "string" ? HUB_PROFILE_ALT.trim() : "";
-          const altLogo = typeof HUB_LOGO_ALT === "string" ? HUB_LOGO_ALT.trim() : "";
-          img.alt = altProfile || altLogo || "Profile image";
-          wrap.hidden = false;
-        })();
 
         const out = document.getElementById("probeOut");
         const btn = document.getElementById("probeRun");
@@ -1067,8 +1041,9 @@
           if (hubRoot) hubRoot.classList.add("hub-ready");
         }
 
-        /** URL-only check — avoids false positives from command bar elements on published pages. */
-        function isSharePointPageEditUrl() {
+        /** True when SharePoint page canvas is in authoring/edit — hub must not run REST or heavy DOM work. */
+        function isSharePointAuthoringContext() {
+          const urlPatterns = [/mode=edit/i, /action=edit/i, /layoutview=edit/i, /preview=1/i, /[?&]e=[a-f0-9-]{8,}/i];
           const wins = [];
           try {
             wins.push(window);
@@ -1082,17 +1057,49 @@
           for (let w = 0; w < wins.length; w++) {
             const win = wins[w];
             try {
-              const search = String((win.location && win.location.search) || "").toLowerCase();
-              const href = String((win.location && win.location.href) || "").toLowerCase();
-              if (search.indexOf("mode=edit") !== -1 || href.indexOf("mode=edit") !== -1) return true;
-              if (search.indexOf("action=edit") !== -1 || href.indexOf("action=edit") !== -1) return true;
+              const combined = String((win.location && win.location.href) || "") + String((win.location && win.location.hash) || "");
+              for (let p = 0; p < urlPatterns.length; p++) {
+                if (urlPatterns[p].test(combined)) return true;
+              }
             } catch (_) {}
+          }
+          const docs = [];
+          try {
+            docs.push(document);
+          } catch (_) {}
+          try {
+            if (window.parent && window.parent.document) docs.push(window.parent.document);
+          } catch (_) {}
+          try {
+            if (window.top && window.top.document) docs.push(window.top.document);
+          } catch (_) {}
+          for (let d = 0; d < docs.length; d++) {
+            const doc = docs[d];
+            if (!doc || !doc.querySelector) continue;
+            if (doc.querySelector('[data-automation-id="publishButton"]')) return true;
+            if (doc.querySelector('[data-automation-id="SaveAndCloseButton"]')) return true;
+            if (doc.querySelector('[data-automation-id="pageCommandBar"]')) return true;
+            if (doc.querySelector(".CanvasZone--edit")) return true;
+          }
+          const ctxs = [];
+          try {
+            if (window._spPageContextInfo) ctxs.push(window._spPageContextInfo);
+          } catch (_) {}
+          try {
+            if (window.parent && window.parent._spPageContextInfo) ctxs.push(window.parent._spPageContextInfo);
+          } catch (_) {}
+          try {
+            if (window.top && window.top._spPageContextInfo) ctxs.push(window.top._spPageContextInfo);
+          } catch (_) {}
+          for (let c = 0; c < ctxs.length; c++) {
+            const ctx = ctxs[c];
+            if (ctx && (ctx.isWebEditor || ctx.isSiteEditor || ctx.inWikiEditMode)) return true;
           }
           return false;
         }
 
         function initSharePointAuthoringSafeMode() {
-          if (!isSharePointPageEditUrl()) return false;
+          if (!isSharePointAuthoringContext()) return false;
           const boot = document.getElementById("hubBootOverlay");
           const placeholder = document.getElementById("hubAuthoringPlaceholder");
           if (boot) boot.hidden = true;
@@ -3029,7 +3036,7 @@
         }
 
         async function runProbe() {
-          if (isSharePointPageEditUrl()) {
+          if (isSharePointAuthoringContext()) {
             initSharePointAuthoringSafeMode();
             return;
           }
@@ -3197,7 +3204,7 @@
         }
 
         btn.addEventListener("click", () => {
-          if (isSharePointPageEditUrl()) {
+          if (isSharePointAuthoringContext()) {
             setReadState("warn", "Publish the page first, then click Refresh list.");
             return;
           }
@@ -3214,15 +3221,45 @@
         }
 
         function startHubApp() {
-          if (initSharePointAuthoringSafeMode()) return;
           runProbe().catch((e) => {
             setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
             log("UNCAUGHT:\n" + (e.message || String(e)), "err");
           });
         }
 
-        updateDemoModeBanner();
-        startHubApp();
+        function bootHub() {
+          if (initSharePointAuthoringSafeMode()) {
+            updateDemoModeBanner();
+            return;
+          }
+          (function initHubTopBanner() {
+            const wrap = document.getElementById("hubTopBannerWrap");
+            const img = document.getElementById("hubTopBannerImg");
+            const url = resolveTopBannerImageUrl();
+            if (!wrap || !img || !url) return;
+            img.src = url;
+            img.alt =
+              typeof HUB_TOP_BANNER_ALT === "string" && HUB_TOP_BANNER_ALT.trim()
+                ? HUB_TOP_BANNER_ALT.trim()
+                : "Squadron banner";
+            wrap.hidden = false;
+          })();
+          (function initHubLogo() {
+            const wrap = document.getElementById("hubLogoWrap");
+            const img = document.getElementById("hubLogoImg");
+            const url = resolveProfileImageUrl();
+            if (!wrap || !img || !url) return;
+            img.src = url;
+            const altProfile = typeof HUB_PROFILE_ALT === "string" ? HUB_PROFILE_ALT.trim() : "";
+            const altLogo = typeof HUB_LOGO_ALT === "string" ? HUB_LOGO_ALT.trim() : "";
+            img.alt = altProfile || altLogo || "Profile image";
+            wrap.hidden = false;
+          })();
+          updateDemoModeBanner();
+          startHubApp();
+        }
+
+        bootHub();
       })();
     </script>
   </body>
