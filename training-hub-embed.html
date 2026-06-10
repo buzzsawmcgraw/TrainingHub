@@ -1209,7 +1209,8 @@
 
         function dismissHubBootOverlay() {
           if (hubBootOverlay) hubBootOverlay.hidden = true;
-          if (hubRoot) hubRoot.classList.add("hub-ready");
+          const root = getHubRoot();
+          if (root) root.classList.add("hub-ready");
         }
 
         function rosterTableIsRendered() {
@@ -3312,6 +3313,17 @@
           });
         }
 
+        function getHubRoot() {
+          return document.getElementById("sp-pip-ui");
+        }
+
+        function markHubAccessUnlocked() {
+          const root = getHubRoot();
+          if (root) root.classList.add("hub-access-unlocked");
+          const gate = document.getElementById("hubAccessGate");
+          if (gate) gate.hidden = true;
+        }
+
         function initHubAccessGate() {
           const gate = document.getElementById("hubAccessGate");
           const input = document.getElementById("hubAccessInput");
@@ -3319,10 +3331,6 @@
           const err = document.getElementById("hubAccessError");
           const boot = document.getElementById("hubBootOverlay");
           const password = String(HUB_ACCESS_PASSWORD || "").trim();
-
-          function markHubAccessUnlocked() {
-            if (hubRoot) hubRoot.classList.add("hub-access-unlocked");
-          }
 
           function isHubAccessGranted() {
             try {
@@ -3361,7 +3369,8 @@
 
           function tryUnlock() {
             if (!input) return;
-            if (String(input.value || "") === password) {
+            const typed = String(input.value || "").trim();
+            if (typed === password) {
               grantHubAccess();
               if (err) err.hidden = true;
               startHubApp();
@@ -3372,6 +3381,7 @@
               err.textContent = "Incorrect password.";
             }
             input.value = "";
+            input.focus();
           }
 
           if (isHubAccessGranted()) {
@@ -3380,20 +3390,37 @@
             return;
           }
 
+          if (gate) gate.hidden = false;
           if (boot) boot.hidden = true;
           if (err) err.hidden = true;
           if (input) input.value = "";
-          if (submit) submit.addEventListener("click", tryUnlock);
+          if (submit) {
+            submit.type = "button";
+            submit.addEventListener("click", function (ev) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              tryUnlock();
+            });
+          }
           if (input) {
             input.addEventListener("keydown", function (ev) {
               if (ev.key === "Enter") {
                 ev.preventDefault();
+                ev.stopPropagation();
                 tryUnlock();
               }
             });
           }
         }
 
-        initHubAccessGate();
+        function bootTrainingHub() {
+          if (!getHubRoot()) {
+            window.setTimeout(bootTrainingHub, 50);
+            return;
+          }
+          initHubAccessGate();
+        }
+
+        bootTrainingHub();
       })();
     </script>
