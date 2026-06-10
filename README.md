@@ -2,15 +2,23 @@
 
 This repo contains a **paste-only UI** intended for use with a SharePoint **Modern Script Editor** web part.
 
-It is based on requirements gathered from prior agent conversations:
-
-- Paste-only SharePoint UI constraints: `3bfc4a27-4b7a-4f2c-a443-7b178d95bb0a`
-- List-backed CRUD pattern over SharePoint REST: `83d6288b-4e99-48ca-8607-724e3b411498`
-- Personnel / Phase 1 / Certificates / Certifiers scope: `33d5f28e-e092-49e4-a9ea-8a650ef6ac95` and `8dc4d435-3539-464b-aaf4-7a7b53a442bb`
-
 ## What to paste into SharePoint
 
-Open `sharepoint-modern-script-editor-ui.html` and paste the contents into your Modern Script Editor web part.
+1. Open **`sharepoint-script-editor-paste.html`** on GitHub (or locally).
+2. Select **all** of it and paste into your Modern Script Editor web part.
+3. Save and publish the page.
+
+That file is **one self-contained block** — HTML, CSS, and JavaScript together. You do **not** need to upload anything to Site Assets.
+
+**Personnel records:** Open a row with **Record**, then **Edit record** to change fields (status, phone, address, etc.) and **Save changes**. Updates go to the SharePoint Personnel list via REST.
+
+**Alternative:** You can paste from `sharepoint-modern-script-editor-ui.html` instead (same content, wrapped in a full HTML document for local browser preview).
+
+After editing the hub, run `build-sharepoint-deploy.ps1` to regenerate `sharepoint-script-editor-paste.html`.
+
+### Size note
+
+The paste file is about **110 KB**. Some SharePoint tenants truncate very large Script Editor pastes, which can blank the page or lock it on save. If that happens, use the optional split files (`training-hub-styles.txt` + `training-hub-script.txt` in Site Assets) — ask for help switching back to that layout.
 
 ## SharePoint lists required
 
@@ -30,4 +38,3 @@ For **Personnel**, `PERSONNEL_IGNORE_SP_TITLE` (default `true`) means the Hub do
 **Existing rows:** Put the web part on a page in the **same site** as the list. On load (and Refresh), the Hub calls SharePoint REST and lists every item in **Personnel** (up to 5000). If the roster is empty, the list title usually does not match `LIST_PERSONNEL`, the list is on another site, or the browser user lacks **Read** on that list.
 
 The UI uses `/_api` calls and expects to run on the SharePoint site so your signed-in session provides auth cookies.
-

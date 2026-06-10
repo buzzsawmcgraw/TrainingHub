@@ -21,57 +21,25 @@ $close = $scriptBlock.LastIndexOf('})();')
 if (-not $open.Success -or $close -lt 0) { throw "Could not parse script wrapper" }
 $js = $scriptBlock.Substring($open.Index, $close - $open.Index + '})();'.Length)
 
-$assetBase = "/sites/88thSFS/SiteAssets"
-$cssFile = "training-hub-styles.txt"
-$jsFile = "training-hub-script.txt"
-
-Set-Content -Path (Join-Path $root $cssFile) -Value $css -Encoding UTF8
-Set-Content -Path (Join-Path $root $jsFile) -Value $js -Encoding UTF8
 Set-Content -Path (Join-Path $root "training-hub.css") -Value $css -Encoding UTF8
 Set-Content -Path (Join-Path $root "training-hub.js") -Value $js -Encoding UTF8
+Set-Content -Path (Join-Path $root "training-hub-styles.txt") -Value $css -Encoding UTF8
+Set-Content -Path (Join-Path $root "training-hub-script.txt") -Value $js -Encoding UTF8
 
 $paste = @"
-<!-- STEP 1: Upload training-hub-styles.txt and training-hub-script.txt to Site Assets. -->
-<!-- STEP 2: Paste ONLY this block into Modern Script Editor (~6 KB). -->
+<!-- Training Hub - paste this entire file into Modern Script Editor (one copy/paste, no Site Assets). -->
+<!-- Source: sharepoint-modern-script-editor-ui.html -->
+<style>
+$css
+</style>
 $hubHtml
 <script>
-(function () {
-  var base = "$assetBase";
-  var cssUrl = base + "/$cssFile";
-  var jsUrl = base + "/$jsFile";
-  function fail(msg) {
-    var root = document.getElementById("sp-pip-ui");
-    if (root) root.innerHTML = '<p style="font-family:Consolas,monospace;color:#ff5a45;padding:16px;">Training Hub failed to load: ' + String(msg || "unknown error") + '</p>';
-  }
-  fetch(cssUrl, { credentials: "same-origin", cache: "no-cache" })
-    .then(function (res) {
-      if (!res.ok) throw new Error("Upload " + cssUrl + " to Site Assets.");
-      return res.text();
-    })
-    .then(function (css) {
-      var tag = document.createElement("style");
-      tag.textContent = css;
-      document.head.appendChild(tag);
-      return fetch(jsUrl, { credentials: "same-origin", cache: "no-cache" });
-    })
-    .then(function (res) {
-      if (!res.ok) throw new Error("Upload " + jsUrl + " to Site Assets.");
-      return res.text();
-    })
-    .then(function (code) {
-      var s = document.createElement("script");
-      s.text = code;
-      document.body.appendChild(s);
-    })
-    .catch(function (err) {
-      fail(err && err.message ? err.message : err);
-    });
-})();
+$js
 </script>
 "@
 
 Set-Content -Path (Join-Path $root "sharepoint-script-editor-paste.html") -Value $paste -Encoding UTF8
 
-Write-Host "Wrote $cssFile ($((Get-Item (Join-Path $root $cssFile)).Length) bytes)"
-Write-Host "Wrote $jsFile ($((Get-Item (Join-Path $root $jsFile)).Length) bytes)"
-Write-Host "Wrote sharepoint-script-editor-paste.html ($((Get-Item (Join-Path $root 'sharepoint-script-editor-paste.html')).Length) bytes)"
+$pasteBytes = (Get-Item (Join-Path $root "sharepoint-script-editor-paste.html")).Length
+Write-Host "Wrote sharepoint-script-editor-paste.html ($pasteBytes bytes)"
+Write-Host "Wrote training-hub.css / training-hub.js (optional local preview)"

@@ -390,6 +390,20 @@
       }
       #sp-pip-ui .person-detail-toolbar {
         margin-bottom: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      #sp-pip-ui .person-detail-toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+      #sp-pip-ui .person-detail-toolbar-actions button {
+        margin: 0;
       }
       #sp-pip-ui a.person-detail-back {
         display: inline-block;
@@ -696,6 +710,28 @@
       }
       #sp-pip-ui.hub-ready .hub-main {
         animation: hub-fade-in 0.22s ease-out;
+      }
+      #sp-pip-ui .hub-authoring-placeholder {
+        margin: 0;
+        padding: 22px 24px 24px;
+        font-size: 12px;
+        line-height: 1.55;
+        color: rgba(210, 255, 224, 0.88);
+        background: rgba(5, 14, 10, 0.55);
+        border-top: 1px solid rgba(30, 74, 54, 0.45);
+      }
+      #sp-pip-ui .hub-authoring-placeholder strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui.hub-authoring-mode .hub-main,
+      #sp-pip-ui.hub-authoring-mode .hub-boot-overlay {
+        display: none !important;
       }
       @keyframes hub-fade-in {
         from {
