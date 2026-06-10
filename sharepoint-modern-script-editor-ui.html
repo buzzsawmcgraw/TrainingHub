@@ -832,7 +832,7 @@
           <p>Enter the Training Hub password to continue.</p>
           <label for="hubAccessInput">Password</label>
           <input type="password" id="hubAccessInput" autocomplete="current-password" />
-          <button type="button" id="hubAccessSubmit" onclick="if(window.__trainingHubTryUnlock){window.__trainingHubTryUnlock();}">Continue</button>
+          <button type="button" id="hubAccessSubmit">Continue</button>
           <p id="hubAccessError" class="hub-access-error" hidden>Incorrect password.</p>
         </div>
       </div>
@@ -914,6 +914,110 @@
       </main>
       </div>
     </div>
+
+    <script>
+      (function () {
+        var PW = "Training2026";
+        var KEY = "trainingHubAccessGranted";
+
+        function showApp() {
+          var gate = document.getElementById("hubAccessGate");
+          var app = document.getElementById("hubAppContent");
+          if (gate) {
+            gate.hidden = true;
+            gate.setAttribute("hidden", "hidden");
+          }
+          if (app) {
+            app.removeAttribute("hidden");
+            app.hidden = false;
+            app.style.display = "";
+          }
+        }
+
+        function showGate() {
+          var gate = document.getElementById("hubAccessGate");
+          var app = document.getElementById("hubAppContent");
+          if (gate) {
+            gate.removeAttribute("hidden");
+            gate.hidden = false;
+          }
+          if (app) {
+            app.hidden = true;
+            app.setAttribute("hidden", "hidden");
+          }
+        }
+
+        function tryUnlock() {
+          var input = document.getElementById("hubAccessInput");
+          var err = document.getElementById("hubAccessError");
+          var typed = input ? String(input.value || "").trim() : "";
+          if (typed === PW) {
+            try {
+              sessionStorage.setItem(KEY, "1");
+            } catch (e0) {}
+            showApp();
+            if (err) err.hidden = true;
+            window.__trainingHubPendingStart = true;
+            try {
+              document.dispatchEvent(new CustomEvent("trainingHubUnlocked"));
+            } catch (e1) {}
+            return;
+          }
+          if (err) {
+            err.hidden = false;
+            err.textContent = "Incorrect password.";
+          }
+          if (input) {
+            input.value = "";
+            input.focus();
+          }
+        }
+
+        window.__trainingHubTryUnlock = tryUnlock;
+
+        function wirePasswordGate() {
+          var submit = document.getElementById("hubAccessSubmit");
+          var input = document.getElementById("hubAccessInput");
+          if (submit) {
+            submit.type = "button";
+            submit.addEventListener(
+              "click",
+              function (ev) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                tryUnlock();
+              },
+              true,
+            );
+          }
+          if (input) {
+            input.addEventListener(
+              "keydown",
+              function (ev) {
+                if (ev.key === "Enter") {
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                  tryUnlock();
+                }
+              },
+              true,
+            );
+          }
+          var granted = false;
+          try {
+            granted = sessionStorage.getItem(KEY) === "1";
+          } catch (e2) {}
+          if (!PW || granted) {
+            showApp();
+            window.__trainingHubPendingStart = true;
+          } else {
+            showGate();
+          }
+        }
+
+        wirePasswordGate();
+      })();
+    </script>
 
     <script>
       (function () {
@@ -3323,22 +3427,31 @@
         function showHubApp() {
           const gate = document.getElementById("hubAccessGate");
           const app = document.getElementById("hubAppContent");
-          if (gate) gate.hidden = true;
-          if (app) app.hidden = false;
+          if (gate) {
+            gate.hidden = true;
+            gate.setAttribute("hidden", "hidden");
+          }
+          if (app) {
+            app.removeAttribute("hidden");
+            app.hidden = false;
+            app.style.display = "";
+          }
         }
 
         function showHubGate() {
           const gate = document.getElementById("hubAccessGate");
           const app = document.getElementById("hubAppContent");
-          if (gate) gate.hidden = false;
-          if (app) app.hidden = true;
+          if (gate) {
+            gate.removeAttribute("hidden");
+            gate.hidden = false;
+          }
+          if (app) {
+            app.hidden = true;
+            app.setAttribute("hidden", "hidden");
+          }
         }
 
         function initHubAccessGate() {
-          const gate = document.getElementById("hubAccessGate");
-          const input = document.getElementById("hubAccessInput");
-          const submit = document.getElementById("hubAccessSubmit");
-          const err = document.getElementById("hubAccessError");
           const boot = document.getElementById("hubBootOverlay");
           const password = String(HUB_ACCESS_PASSWORD || "").trim();
 
@@ -3348,13 +3461,6 @@
             } catch (_) {
               return false;
             }
-          }
-
-          function grantHubAccess() {
-            try {
-              sessionStorage.setItem(HUB_ACCESS_STORAGE_KEY, "1");
-            } catch (_) {}
-            showHubApp();
           }
 
           function startHubApp() {
@@ -3371,32 +3477,11 @@
             });
           }
 
-          function tryUnlock() {
-            if (!input) return;
-            const typed = String(input.value || "").trim();
-            if (typed === password) {
-              grantHubAccess();
-              if (err) err.hidden = true;
-              startHubApp();
-              return;
-            }
-            if (err) {
-              err.hidden = false;
-              err.textContent = "Incorrect password.";
-            }
-            input.value = "";
-            input.focus();
-          }
-
-          window.__trainingHubTryUnlock = tryUnlock;
-
-          if (!password) {
-            showHubApp();
+          document.addEventListener("trainingHubUnlocked", function () {
             startHubApp();
-            return;
-          }
+          });
 
-          if (isHubAccessGranted()) {
+          if (!password || isHubAccessGranted() || window.__trainingHubPendingStart) {
             showHubApp();
             startHubApp();
             return;
@@ -3404,25 +3489,6 @@
 
           showHubGate();
           if (boot) boot.hidden = true;
-          if (err) err.hidden = true;
-          if (input) input.value = "";
-          if (submit) {
-            submit.type = "button";
-            submit.addEventListener("click", function (ev) {
-              ev.preventDefault();
-              ev.stopPropagation();
-              tryUnlock();
-            });
-          }
-          if (input) {
-            input.addEventListener("keydown", function (ev) {
-              if (ev.key === "Enter") {
-                ev.preventDefault();
-                ev.stopPropagation();
-                tryUnlock();
-              }
-            });
-          }
         }
 
         function bootTrainingHub() {

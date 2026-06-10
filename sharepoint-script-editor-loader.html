@@ -17,25 +17,57 @@
   }
 
   function tryLoad(i) {
-    if (i >= urls.length) {
-      throw new Error("Upload training-hub-embed.html to Site Assets.");
-    }
+    if (i >= urls.length) throw new Error("Upload training-hub-embed.html to Site Assets.");
     return loadFrom(urls[i]).catch(function () {
       return tryLoad(i + 1);
+    });
+  }
+
+  function runScriptNode(node, done) {
+    var s = document.createElement("script");
+    if (node.src) {
+      s.src = node.src;
+      s.onload = function () { done(); };
+      s.onerror = function () { done(new Error("Could not load " + node.src)); };
+    } else {
+      s.text = node.textContent || node.innerText || "";
+    }
+    mount.parentNode.insertBefore(s, mount);
+    if (!node.src) done();
+  }
+
+  function runScriptsInOrder(nodes, index, cb) {
+    if (index >= nodes.length) {
+      cb();
+      return;
+    }
+    runScriptNode(nodes[index], function (err) {
+      if (err) {
+        cb(err);
+        return;
+      }
+      runScriptsInOrder(nodes, index + 1, cb);
     });
   }
 
   tryLoad(0)
     .then(function (markup) {
       var parent = mount.parentNode;
-      var scriptMatch = markup.match(/<script\b[^>]*>([\s\S]*?)<\/script>\s*$/i);
-      if (!scriptMatch) throw new Error("Hub file is missing its script block.");
-      var htmlPart = markup.slice(0, scriptMatch.index);
-      parent.insertAdjacentHTML("beforebegin", htmlPart);
-      var s = document.createElement("script");
-      s.text = scriptMatch[1];
-      parent.insertBefore(s, mount);
-      if (mount.parentNode) mount.parentNode.removeChild(mount);
+      var parsed = new DOMParser().parseFromString(markup, "text/html");
+      var scriptNodes = Array.prototype.slice.call(parsed.body.querySelectorAll("script"));
+      Array.prototype.slice.call(parsed.body.childNodes).forEach(function (node) {
+        if (node.nodeType !== 1 || node.tagName === "SCRIPT") return;
+        parent.insertBefore(node.cloneNode(true), mount);
+      });
+      return new Promise(function (resolve, reject) {
+        runScriptsInOrder(scriptNodes, 0, function (err) {
+          if (err) reject(err);
+          else resolve(parent);
+        });
+      });
+    })
+    .then(function (parent) {
+      if (parent && mount.parentNode === parent) parent.removeChild(mount);
     })
     .catch(function (err) {
       mount.textContent = "Training Hub failed to load: " + (err.message || String(err));
