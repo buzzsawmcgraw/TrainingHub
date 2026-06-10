@@ -1,17 +1,23 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Personnel — PIP-Boy style (Script Editor)</title>
-    <style>
+    <title>Personnel â€” PIP-Boy style (Script Editor)</title>
+        <style>
       /* Page shell when viewing this file directly (Script Editor should only embed #sp-pip-ui). */
       body:has(> #sp-pip-ui) {
         margin: 0;
         padding: 12px;
         background: #000;
       }
-      #sp-pip-ui {
+    </style>
+  </head>
+  <body>
+    <!-- Paste everything inside <body> â€¦ </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
+        <div id="sp-pip-ui">
+      <style>
+#sp-pip-ui {
         --pip-bg: #050807;
         --pip-bg2: #0a1410;
         --pip-surface: #07120d;
@@ -757,15 +763,6 @@
       #sp-pip-ui .hub-access-gate .hub-access-panel {
         margin: 0 auto;
       }
-      #sp-pip-ui.hub-access-unlocked .hub-access-gate {
-        display: none !important;
-      }
-      #sp-pip-ui:not(.hub-access-unlocked) .hub-top-banner-wrap,
-      #sp-pip-ui:not(.hub-access-unlocked) .hub-header,
-      #sp-pip-ui:not(.hub-access-unlocked) .hub-main,
-      #sp-pip-ui:not(.hub-access-unlocked) .hub-boot-overlay {
-        display: none !important;
-      }
       #sp-pip-ui .hub-access-panel {
         width: min(100%, 360px);
         padding: 22px 22px 20px;
@@ -828,21 +825,18 @@
       #sp-pip-ui .hub-access-error[hidden] {
         display: none !important;
       }
-    </style>
-  </head>
-  <body>
-    <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
-    <div id="sp-pip-ui">
+      </style>
       <div id="hubAccessGate" class="hub-access-gate" aria-label="Training Hub access">
         <div class="hub-access-panel">
           <h2>Authorized access</h2>
           <p>Enter the Training Hub password to continue.</p>
           <label for="hubAccessInput">Password</label>
           <input type="password" id="hubAccessInput" autocomplete="current-password" />
-          <button type="button" id="hubAccessSubmit">Continue</button>
+          <button type="button" id="hubAccessSubmit" onclick="if(window.__trainingHubTryUnlock){window.__trainingHubTryUnlock();}">Continue</button>
           <p id="hubAccessError" class="hub-access-error" hidden>Incorrect password.</p>
         </div>
       </div>
+      <div id="hubAppContent" hidden>
       <div id="hubBootOverlay" class="hub-boot-overlay" aria-live="polite">
         <p class="hub-boot-text">Loading Training Hub…</p>
       </div>
@@ -883,7 +877,7 @@
         <section id="personDetailSection" class="hub-section hub-section--person-detail" hidden aria-label="Personnel record detail">
           <div class="person-detail-panel">
             <div class="person-detail-toolbar">
-              <a id="personDetailBackLink" class="person-detail-back" href="#">← Back to roster</a>
+              <a id="personDetailBackLink" class="person-detail-back" href="#">â† Back to roster</a>
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="personDetailEditBtn" class="btn-secondary">Edit record</button>
                 <button type="button" id="personDetailSaveBtn" hidden>Save changes</button>
@@ -910,7 +904,7 @@
           <div class="recall-roster-panel">
             <h2 class="hub-subtitle">Recall roster</h2>
             <p class="recall-roster-desc">
-              Download a PDF with every person on the personnel list — name, address, cell phone, and work phone — sorted A–Z by last name.
+              Download a PDF with every person on the personnel list â€” name, address, cell phone, and work phone â€” sorted Aâ€“Z by last name.
             </p>
             <div class="recall-roster-actions">
               <button type="button" id="recallRosterBtn">Save recall roster (PDF)</button>
@@ -918,6 +912,7 @@
           </div>
         </section>
       </main>
+      </div>
     </div>
 
     <script>
@@ -928,19 +923,19 @@
          * - Site page: https://usaf.dps.mil/sites/88thSFS/SitePages/S3T.aspx
          * - List view: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
          *
-         * (A) Site root — no trailing slash. REST is always: SITE_ROOT + "/_api/web/..."
+         * (A) Site root â€” no trailing slash. REST is always: SITE_ROOT + "/_api/web/..."
          */
         const PERSONNEL_SITE_ROOT_URL = "https://usaf.dps.mil/sites/88thSFS";
 
         /**
-         * Page access gate — users must enter this password before the hub loads. Set "" to disable.
+         * Page access gate â€” users must enter this password before the hub loads. Set "" to disable.
          * Session lasts until the browser tab is closed (sessionStorage).
          */
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
 
         /**
-         * (B) Optional fallback: paste any URL under the site; derives …/sites/88thSFS. Ignored when (A) is set.
+         * (B) Optional fallback: paste any URL under the site; derives â€¦/sites/88thSFS. Ignored when (A) is set.
          * Example: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
          */
         const PERSONNEL_SHAREPOINT_URL = "";
@@ -948,14 +943,14 @@
         /** @deprecated Same effect as PERSONNEL_SITE_ROOT_URL; kept for older copies of this file. */
         const PERSONNEL_REST_WEB_URL = "";
 
-        /** Must match Site contents list title (URL …/Lists/Personnel… usually means title "Personnel"). */
+        /** Must match Site contents list title (URL â€¦/Lists/Personnelâ€¦ usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
-        /** Optional: List GUID from List settings → use if getbytitle fails. */
+        /** Optional: List GUID from List settings â†’ use if getbytitle fails. */
         const LIST_PERSONNEL_GUID = "";
 
         /**
          * Circular profile image to the left of the squadron header (default: **S3T Files** / **Fallout Guy.png**).
-         * `HUB_PROFILE_IMAGE_URL` — full URL override. `HUB_LOGO_URL` — legacy override if profile URL is empty.
+         * `HUB_PROFILE_IMAGE_URL` â€” full URL override. `HUB_LOGO_URL` â€” legacy override if profile URL is empty.
          * Otherwise built from `PERSONNEL_SITE_ROOT_URL` + `HUB_PROFILE_SITE_RELATIVE_PATH`.
          */
         const HUB_PROFILE_IMAGE_URL = "";
@@ -975,7 +970,7 @@
          * Full-width image across the top of the web part (default: **S3T Files** / **banner.png** on this site).
          * Paste a full file URL here to override. Leave "" to build from `PERSONNEL_SITE_ROOT_URL` +
          * `HUB_BANNER_SITE_RELATIVE_PATH`. If the image does not load, open the file in SharePoint, copy the browser
-         * address, and set `HUB_TOP_BANNER_URL` to that value (or fix `HUB_BANNER_SITE_RELATIVE_PATH` — e.g. add
+         * address, and set `HUB_TOP_BANNER_URL` to that value (or fix `HUB_BANNER_SITE_RELATIVE_PATH` â€” e.g. add
          * `Shared%20Documents/` if **S3T Files** is a folder inside Documents, not the library root).
          */
         const HUB_TOP_BANNER_URL = "";
@@ -985,7 +980,7 @@
 
         /**
          * Roster column `key` values that render as dropdowns. Options are loaded from SharePoint field **Choices**
-         * (same internal name as used for save — see `resolveWriteKey` / first data row).
+         * (same internal name as used for save â€” see `resolveWriteKey` / first data row).
          */
         const DROPDOWN_COLUMN_KEYS = ["Status", "OfficeSymbol", "Squadron", "Rank"];
 
@@ -994,7 +989,7 @@
 
         /**
          * OData `$orderby` for list items. Rows are always sorted again client-side by LastName, then FirstName, so the
-         * roster follows A–Z by name even if this clause is rejected (400).
+         * roster follows Aâ€“Z by name even if this clause is rejected (400).
          */
         const PERSONNEL_ITEMS_ORDERBY = "LastName asc,FirstName asc";
 
@@ -1013,7 +1008,7 @@
         /** When roster row count exceeds this, the table body scrolls instead of growing the page. */
         const ROSTER_SCROLL_AFTER_ROWS = 10;
 
-        /** Recall roster PDF — header text and download file name. */
+        /** Recall roster PDF â€” header text and download file name. */
         const RECALL_ROSTER_ORG_TITLE = "88th Security Forces Squadron";
         const RECALL_ROSTER_DOC_TITLE = "Recall Roster";
         const RECALL_ROSTER_FILENAME = "88SFS-Recall-Roster.pdf";
@@ -1096,7 +1091,7 @@
         ];
 
         /**
-         * Training Hub form (`Id` omitted). Identity | Contact. Contact: Address / phones, then Status · OfficeSymbol ·
+         * Training Hub form (`Id` omitted). Identity | Contact. Contact: Address / phones, then Status Â· OfficeSymbol Â·
          * Squadron on one row, then Notes (height trimmed to align column bottoms with Identity).
          */
         const ADD_FORM_FIELD_GROUPS = [
@@ -1341,7 +1336,7 @@
 
         function recallRosterFieldText(item, fieldKey) {
           const text = itemFieldText(item, fieldKey);
-          return text === "" ? "—" : text;
+          return text === "" ? "â€”" : text;
         }
 
         function buildRecallRosterTableRows(personnelRows) {
@@ -1406,7 +1401,7 @@
           doc.setFontSize(11);
           doc.text(RECALL_ROSTER_DOC_TITLE, 40, 54);
           doc.setFontSize(9);
-          doc.text("Generated: " + generated + "   ·   Personnel: " + recallRows.length, 40, 70);
+          doc.text("Generated: " + generated + "   Â·   Personnel: " + recallRows.length, 40, 70);
           doc.autoTable({
             startY: 82,
             head: [["Name", "Address", "Cell phone", "Work phone"]],
@@ -1447,16 +1442,15 @@
           const html =
             "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\" /><title>" +
             escHtml(RECALL_ROSTER_DOC_TITLE) +
-            "</title><style>" +
-            "body{font-family:Arial,sans-serif;margin:24px;color:#111;}" +
-            "h1{font-size:18px;margin:0 0 4px;}" +
-            "h2{font-size:14px;margin:0 0 12px;font-weight:normal;}" +
-            ".meta{font-size:11px;color:#444;margin-bottom:16px;}" +
-            "table{width:100%;border-collapse:collapse;font-size:11px;}" +
-            "th,td{border:1px solid #333;padding:6px 8px;text-align:left;vertical-align:top;}" +
-            "th{background:#1e4a36;color:#ffcc66;}" +
-            "tr:nth-child(even) td{background:#f4f4f4;}" +
-            "</style></head><body>" +
+            "</title>    <style>
+      /* Page shell when viewing this file directly (Script Editor should only embed #sp-pip-ui). */
+      body:has(> #sp-pip-ui) {
+        margin: 0;
+        padding: 12px;
+        background: #000;
+      }
+    </style>
+  </head><body>" +
             "<h1>" +
             escHtml(RECALL_ROSTER_ORG_TITLE) +
             "</h1>" +
@@ -1465,7 +1459,7 @@
             "</h2>" +
             "<p class=\"meta\">Generated: " +
             escHtml(generated) +
-            " · Personnel: " +
+            " Â· Personnel: " +
             recallRows.length +
             "</p>" +
             "<table><thead><tr><th>Name</th><th>Address</th><th>Cell phone</th><th>Work phone</th></tr></thead><tbody>" +
@@ -1488,7 +1482,7 @@
           if (!recallRosterBtn) return;
           const labelDefault = "Save recall roster (PDF)";
           recallRosterBtn.disabled = true;
-          recallRosterBtn.textContent = "Building PDF…";
+          recallRosterBtn.textContent = "Building PDFâ€¦";
           try {
             const rows = await getRecallRosterPersonnelRows();
             if (!rows.length) {
@@ -1522,7 +1516,7 @@
           lab.textContent = col.label;
           const val = document.createElement("div");
           val.className = "person-detail-value";
-          val.textContent = text === "" ? "—" : text;
+          val.textContent = text === "" ? "â€”" : text;
           fwrap.appendChild(lab);
           fwrap.appendChild(val);
           return fwrap;
@@ -1803,7 +1797,7 @@
               const td = document.createElement("td");
               const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
               const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-              td.textContent = text === "" ? "—" : text;
+              td.textContent = text === "" ? "â€”" : text;
               tr.appendChild(td);
             });
             frag.appendChild(tr);
@@ -2056,7 +2050,7 @@
           }
 
           try {
-            setPersonDetailState("loading", "Saving changes…");
+            setPersonDetailState("loading", "Saving changesâ€¦");
             if (personDetailSaveBtn) personDetailSaveBtn.disabled = true;
             await spFetch(`/_api/web/${s.seg}/items(${s.item.Id})`, { method: "MERGE", body: payload }, s.pw);
             const updated = Object.assign({}, s.item, payloadToItemFields(payload));
@@ -2172,7 +2166,7 @@
 
           if (!item) {
             personDetailContent.innerHTML = "";
-            setPersonDetailState("loading", "Loading personnel record…");
+            setPersonDetailState("loading", "Loading personnel recordâ€¦");
             if (personDetailTitle) personDetailTitle.textContent = "Personnel record";
             try {
               item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
@@ -2306,7 +2300,7 @@
           return k === "odata.type" || k === "odata.id" || k === "odata.editLink" || k === "odata.metadata";
         }
 
-        /** Union of field names across all loaded rows (order: Title, then A–Z). List item `Id` is omitted from the table. */
+        /** Union of field names across all loaded rows (order: Title, then Aâ€“Z). List item `Id` is omitted from the table. */
         function collectColumnKeys(rows) {
           const set = new Set();
           rows.forEach((item) => {
@@ -2446,7 +2440,7 @@
           }
           if (!confirm("Delete personnel record Id " + sid + "? This cannot be undone.")) return;
           try {
-            setReadState("loading", "Deleting record…");
+            setReadState("loading", "Deleting recordâ€¦");
             await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
             log("DELETE Id " + sid + " OK", "ok");
             await runProbe();
@@ -2469,7 +2463,7 @@
           columns.forEach((col) => {
             const th = document.createElement("th");
             th.textContent = col.label;
-            th.title = (col.tryKeys || [col.key]).join(" · ");
+            th.title = (col.tryKeys || [col.key]).join(" Â· ");
             trHead.appendChild(th);
           });
           if (showRowActions) {
@@ -2489,7 +2483,7 @@
               const tryKeys = col.tryKeys || [col.key];
               const raw = valueFromItemByKeys(item, tryKeys);
               const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-              td.textContent = text === "" ? "—" : text;
+              td.textContent = text === "" ? "â€”" : text;
               tr.appendChild(td);
             });
             if (showRowActions && item.Id != null) {
@@ -2520,7 +2514,7 @@
             } else if (showRowActions) {
               const tdAct = document.createElement("td");
               tdAct.className = "roster-actions";
-              tdAct.textContent = "—";
+              tdAct.textContent = "â€”";
               tr.appendChild(tdAct);
             }
             frag.appendChild(tr);
@@ -2733,7 +2727,7 @@
         }
 
         async function enumerateListTitles(pw) {
-          log("--- Listing lists on this web (first 200, not hidden) — find exact Title for LIST_PERSONNEL ---");
+          log("--- Listing lists on this web (first 200, not hidden) â€” find exact Title for LIST_PERSONNEL ---");
           const data = await spFetch(
             "/_api/web/lists?$select=Title,Id,ItemCount,Hidden&$filter=Hidden eq false&$orderby=Title&$top=200",
             {},
@@ -2741,7 +2735,7 @@
           );
           const rows = (data && data.value) || [];
           rows.forEach((r) => {
-            log("  • " + (r.Title || "") + "  (Id=" + r.Id + ", ItemCount=" + (r.ItemCount != null ? r.ItemCount : "?") + ")");
+            log("  â€¢ " + (r.Title || "") + "  (Id=" + r.Id + ", ItemCount=" + (r.ItemCount != null ? r.ItemCount : "?") + ")");
           });
         }
 
@@ -3071,7 +3065,7 @@
               } else {
                 const o = document.createElement("option");
                 o.value = "";
-                o.textContent = "(no choices — check field internal name: " + writeKey + ")";
+                o.textContent = "(no choices â€” check field internal name: " + writeKey + ")";
                 o.disabled = true;
                 sel.appendChild(o);
               }
@@ -3095,7 +3089,7 @@
         }
 
         async function submitNewPerson(meta, pw, seg, sampleRow) {
-          /** With `application/json;odata=nometadata`, do not send `__metadata` — SharePoint treats it as a list column and returns 400. */
+          /** With `application/json;odata=nometadata`, do not send `__metadata` â€” SharePoint treats it as a list column and returns 400. */
           const cols = normalizedRosterColumns();
           let lastName = "";
           let firstName = "";
@@ -3135,7 +3129,7 @@
           }
 
           try {
-            setReadState("loading", "Submitting…");
+            setReadState("loading", "Submittingâ€¦");
             const created = await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
             const newId = parseCreatedItemId(created);
             log("POST created item Id: " + (newId || "?"), "ok");
@@ -3156,7 +3150,7 @@
           clearRosterTable();
           const addPanel = document.getElementById("addPersonPanel");
           if (addPanel) addPanel.innerHTML = "";
-          setReadState("loading", "Loading Personnel list from SharePoint…");
+          setReadState("loading", "Loading Personnel list from SharePointâ€¦");
 
           const ctx = getCtx();
           const pageWeb = ctx && ctx.webAbsoluteUrl ? String(ctx.webAbsoluteUrl).replace(/\/$/, "") : "";
@@ -3185,13 +3179,13 @@
                   : "unknown";
           log("How REST base was chosen: " + baseSource);
           log("location.href:\n" + String(location.href));
-          log("Page web from context (informational only):\n" + (pageWeb || "(no _spPageContextInfo — OK if explicit URLs are set)"));
+          log("Page web from context (informational only):\n" + (pageWeb || "(no _spPageContextInfo â€” OK if explicit URLs are set)"));
           log(
             "REST base used for ALL API calls below:\n" +
               pw +
               (pageWeb && pw === pageWeb
-                ? "  (same as page — from context or your URL matched the page site)"
-                : "  (explicit URL / derived from PERSONNEL_SHAREPOINT_URL — not necessarily this page’s site)"),
+                ? "  (same as page â€” from context or your URL matched the page site)"
+                : "  (explicit URL / derived from PERSONNEL_SHAREPOINT_URL â€” not necessarily this pageâ€™s site)"),
           );
           log("List API segment:\n/_api/web/" + seg);
           log("LIST_PERSONNEL (trimmed):\n" + JSON.stringify(personnelListTitle()));
@@ -3226,7 +3220,7 @@
             items = await spFetch(`/_api/web/${seg2}/items?$top=500` + orderByQs, {}, pw);
           } catch (e0) {
             if (/\b400\b/.test(String(e0.message || ""))) {
-              log("orderby failed with 400; retry without orderby…", "err");
+              log("orderby failed with 400; retry without orderbyâ€¦", "err");
               try {
                 items = await spFetch(`/_api/web/${seg2}/items?$top=500`, {}, pw);
               } catch (e1) {
@@ -3254,7 +3248,7 @@
                 (meta && meta.ItemCount != null ? meta.ItemCount : "?") +
                 "). You can still add a person below; refresh after the first item exists.",
             );
-            log("List is empty (ItemCount may still be > 0 if filtered view — this is default view items).");
+            log("List is empty (ItemCount may still be > 0 if filtered view â€” this is default view items).");
           } else {
             if (plan.mode === "explicit") {
               const dispCols = rosterColumnsForDisplay(plan);
@@ -3326,11 +3320,18 @@
           return document.getElementById("sp-pip-ui");
         }
 
-        function markHubAccessUnlocked() {
-          const root = getHubRoot();
-          if (root) root.classList.add("hub-access-unlocked");
+        function showHubApp() {
           const gate = document.getElementById("hubAccessGate");
+          const app = document.getElementById("hubAppContent");
           if (gate) gate.hidden = true;
+          if (app) app.hidden = false;
+        }
+
+        function showHubGate() {
+          const gate = document.getElementById("hubAccessGate");
+          const app = document.getElementById("hubAppContent");
+          if (gate) gate.hidden = false;
+          if (app) app.hidden = true;
         }
 
         function initHubAccessGate() {
@@ -3353,7 +3354,7 @@
             try {
               sessionStorage.setItem(HUB_ACCESS_STORAGE_KEY, "1");
             } catch (_) {}
-            markHubAccessUnlocked();
+            showHubApp();
           }
 
           function startHubApp() {
@@ -3368,12 +3369,6 @@
               setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
               log("UNCAUGHT:\n" + (e.message || String(e)), "err");
             });
-          }
-
-          if (!password) {
-            markHubAccessUnlocked();
-            startHubApp();
-            return;
           }
 
           function tryUnlock() {
@@ -3393,13 +3388,21 @@
             input.focus();
           }
 
-          if (isHubAccessGranted()) {
-            markHubAccessUnlocked();
+          window.__trainingHubTryUnlock = tryUnlock;
+
+          if (!password) {
+            showHubApp();
             startHubApp();
             return;
           }
 
-          if (gate) gate.hidden = false;
+          if (isHubAccessGranted()) {
+            showHubApp();
+            startHubApp();
+            return;
+          }
+
+          showHubGate();
           if (boot) boot.hidden = true;
           if (err) err.hidden = true;
           if (input) input.value = "";
@@ -3435,3 +3438,4 @@
     </script>
   </body>
 </html>
+

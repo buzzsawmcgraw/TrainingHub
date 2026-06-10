@@ -1,11 +1,6 @@
-﻿<style>
-      /* Page shell when viewing this file directly (Script Editor should only embed #sp-pip-ui). */
-      body:has(> #sp-pip-ui) {
-        margin: 0;
-        padding: 12px;
-        background: #000;
-      }
-      #sp-pip-ui {
+﻿<div id="sp-pip-ui">
+      <style>
+#sp-pip-ui {
         --pip-bg: #050807;
         --pip-bg2: #0a1410;
         --pip-surface: #07120d;
@@ -751,15 +746,6 @@
       #sp-pip-ui .hub-access-gate .hub-access-panel {
         margin: 0 auto;
       }
-      #sp-pip-ui.hub-access-unlocked .hub-access-gate {
-        display: none !important;
-      }
-      #sp-pip-ui:not(.hub-access-unlocked) .hub-top-banner-wrap,
-      #sp-pip-ui:not(.hub-access-unlocked) .hub-header,
-      #sp-pip-ui:not(.hub-access-unlocked) .hub-main,
-      #sp-pip-ui:not(.hub-access-unlocked) .hub-boot-overlay {
-        display: none !important;
-      }
       #sp-pip-ui .hub-access-panel {
         width: min(100%, 360px);
         padding: 22px 22px 20px;
@@ -822,20 +808,20 @@
       #sp-pip-ui .hub-access-error[hidden] {
         display: none !important;
       }
-    </style>
-<div id="sp-pip-ui">
+      </style>
       <div id="hubAccessGate" class="hub-access-gate" aria-label="Training Hub access">
         <div class="hub-access-panel">
           <h2>Authorized access</h2>
           <p>Enter the Training Hub password to continue.</p>
           <label for="hubAccessInput">Password</label>
           <input type="password" id="hubAccessInput" autocomplete="current-password" />
-          <button type="button" id="hubAccessSubmit">Continue</button>
+          <button type="button" id="hubAccessSubmit" onclick="if(window.__trainingHubTryUnlock){window.__trainingHubTryUnlock();}">Continue</button>
           <p id="hubAccessError" class="hub-access-error" hidden>Incorrect password.</p>
         </div>
       </div>
+      <div id="hubAppContent" hidden>
       <div id="hubBootOverlay" class="hub-boot-overlay" aria-live="polite">
-        <p class="hub-boot-text">Loading Training Hubâ€¦</p>
+        <p class="hub-boot-text">Loading Training Hub…</p>
       </div>
       <div class="hub-top-banner-wrap" id="hubTopBannerWrap" hidden>
         <img id="hubTopBannerImg" class="hub-top-banner-img" src="" alt="" decoding="async" />
@@ -909,6 +895,7 @@
           </div>
         </section>
       </main>
+      </div>
     </div>
 
     <script>
@@ -1438,16 +1425,15 @@
           const html =
             "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\" /><title>" +
             escHtml(RECALL_ROSTER_DOC_TITLE) +
-            "</title><style>" +
-            "body{font-family:Arial,sans-serif;margin:24px;color:#111;}" +
-            "h1{font-size:18px;margin:0 0 4px;}" +
-            "h2{font-size:14px;margin:0 0 12px;font-weight:normal;}" +
-            ".meta{font-size:11px;color:#444;margin-bottom:16px;}" +
-            "table{width:100%;border-collapse:collapse;font-size:11px;}" +
-            "th,td{border:1px solid #333;padding:6px 8px;text-align:left;vertical-align:top;}" +
-            "th{background:#1e4a36;color:#ffcc66;}" +
-            "tr:nth-child(even) td{background:#f4f4f4;}" +
-            "</style></head><body>" +
+            "</title>    <style>
+      /* Page shell when viewing this file directly (Script Editor should only embed #sp-pip-ui). */
+      body:has(> #sp-pip-ui) {
+        margin: 0;
+        padding: 12px;
+        background: #000;
+      }
+    </style>
+  </head><body>" +
             "<h1>" +
             escHtml(RECALL_ROSTER_ORG_TITLE) +
             "</h1>" +
@@ -3317,11 +3303,18 @@
           return document.getElementById("sp-pip-ui");
         }
 
-        function markHubAccessUnlocked() {
-          const root = getHubRoot();
-          if (root) root.classList.add("hub-access-unlocked");
+        function showHubApp() {
           const gate = document.getElementById("hubAccessGate");
+          const app = document.getElementById("hubAppContent");
           if (gate) gate.hidden = true;
+          if (app) app.hidden = false;
+        }
+
+        function showHubGate() {
+          const gate = document.getElementById("hubAccessGate");
+          const app = document.getElementById("hubAppContent");
+          if (gate) gate.hidden = false;
+          if (app) app.hidden = true;
         }
 
         function initHubAccessGate() {
@@ -3344,7 +3337,7 @@
             try {
               sessionStorage.setItem(HUB_ACCESS_STORAGE_KEY, "1");
             } catch (_) {}
-            markHubAccessUnlocked();
+            showHubApp();
           }
 
           function startHubApp() {
@@ -3359,12 +3352,6 @@
               setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
               log("UNCAUGHT:\n" + (e.message || String(e)), "err");
             });
-          }
-
-          if (!password) {
-            markHubAccessUnlocked();
-            startHubApp();
-            return;
           }
 
           function tryUnlock() {
@@ -3384,13 +3371,21 @@
             input.focus();
           }
 
-          if (isHubAccessGranted()) {
-            markHubAccessUnlocked();
+          window.__trainingHubTryUnlock = tryUnlock;
+
+          if (!password) {
+            showHubApp();
             startHubApp();
             return;
           }
 
-          if (gate) gate.hidden = false;
+          if (isHubAccessGranted()) {
+            showHubApp();
+            startHubApp();
+            return;
+          }
+
+          showHubGate();
           if (boot) boot.hidden = true;
           if (err) err.hidden = true;
           if (input) input.value = "";
