@@ -1016,11 +1016,7 @@
         }
 
         wirePasswordGate();
-      })();
-    </script>
 
-    <script>
-      (function () {
         // ============ EDIT THESE (URLs remove ambiguity) ============
         /**
          * 88thSFS deployment reference:
@@ -1546,15 +1542,10 @@
           const html =
             "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\" /><title>" +
             escHtml(RECALL_ROSTER_DOC_TITLE) +
-            "</title>    <style>
-      /* Page shell when viewing this file directly (Script Editor should only embed #sp-pip-ui). */
-      body:has(> #sp-pip-ui) {
-        margin: 0;
-        padding: 12px;
-        background: #000;
-      }
-    </style>
-  </head><body>" +
+            "</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}" +
+            "h1,h2{margin:0 0 8px}table{border-collapse:collapse;width:100%;margin-top:16px}" +
+            "th,td{border:1px solid #333;padding:6px 8px;text-align:left;font-size:12px}" +
+            "th{background:#eee}.meta{color:#444;font-size:12px;margin:8px 0 0}</style></head><body>" +
             "<h1>" +
             escHtml(RECALL_ROSTER_ORG_TITLE) +
             "</h1>" +
@@ -1563,7 +1554,7 @@
             "</h2>" +
             "<p class=\"meta\">Generated: " +
             escHtml(generated) +
-            " Â· Personnel: " +
+            " · Personnel: " +
             recallRows.length +
             "</p>" +
             "<table><thead><tr><th>Name</th><th>Address</th><th>Cell phone</th><th>Work phone</th></tr></thead><tbody>" +
