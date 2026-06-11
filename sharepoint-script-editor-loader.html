@@ -146,6 +146,43 @@
             </div>
           </div>
         </section>
+        <section id="instructorsSection" class="hub-section hub-section--instructors" hidden aria-label="Instructors">
+          <div class="person-detail-panel instructors-panel">
+            <div class="person-detail-toolbar">
+              <a id="instructorsBackLink" class="person-detail-back" href="#">Back to roster</a>
+              <div class="person-detail-toolbar-actions">
+                <button type="button" id="instructorsAddBtn" class="btn-secondary">Add instructor</button>
+              </div>
+            </div>
+            <h2 class="hub-subtitle person-detail-title">Instructors</h2>
+            <p class="instructors-hint">Certifiers from the SharePoint Certifiers list. Add personnel as instructors or remove entries below.</p>
+            <div id="instructorsReadState" class="read-state" hidden></div>
+            <div class="roster-wrap instructors-roster-wrap">
+              <table class="roster instructors-table" aria-label="Instructors from Certifiers list">
+                <thead id="instructorsThead"></thead>
+                <tbody id="instructorsTableBody"></tbody>
+              </table>
+            </div>
+            <p id="instructorsEmpty" class="weapons-empty" hidden>No instructors on file.</p>
+            <div id="instructorsAddPanel" class="weapons-add-panel" hidden>
+              <h4 class="weapons-add-title">Add instructor from personnel</h4>
+              <form id="instructorsAddForm" class="weapons-add-form add-form-stack" aria-label="Add instructor">
+                <div class="add-form-grid">
+                  <div class="add-field">
+                    <label for="instructorsPersonSelect">Personnel</label>
+                    <select id="instructorsPersonSelect" class="add-field-select--autosize">
+                      <option value="">Select personnelâ€¦</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="add-form-actions">
+                  <button type="submit" id="instructorsSaveBtn">Save instructor</button>
+                  <button type="button" id="instructorsAddCancelBtn" class="btn-secondary">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
         <section class="hub-section hub-section--diag">
           <details>
             <summary>Diagnostics (REST details &amp; raw JSON)</summary>

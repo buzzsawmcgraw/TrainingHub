@@ -107,6 +107,7 @@
         /** SharePoint Certifiers list (lookup source for the Certifier field on ByLawTraining). */
         const LIST_CERTIFIERS = "Certifiers";
         const LIST_CERTIFIERS_GUID = "";
+        const CERTIFIERS_PERSON_FIELD = "PersonnelId";
         const CERTIFIERS_LIST_DISPLAY_FIELD = "Certifier";
         /** Set SharePoint Title on new rows from the Item value when the list still requires Title. */
         const BYLAW_TRAINING_SET_TITLE = true;
@@ -298,6 +299,19 @@
         const personBylawAddCancelBtn = document.getElementById("personBylawAddCancelBtn");
         const personBylawSaveBtn = document.getElementById("personBylawSaveBtn");
         const personBylawFormTitle = document.getElementById("personBylawFormTitle");
+        const hubNavInstructors = document.getElementById("hubNavInstructors");
+        const instructorsSection = document.getElementById("instructorsSection");
+        const instructorsThead = document.getElementById("instructorsThead");
+        const instructorsTableBody = document.getElementById("instructorsTableBody");
+        const instructorsEmpty = document.getElementById("instructorsEmpty");
+        const instructorsReadState = document.getElementById("instructorsReadState");
+        const instructorsBackLink = document.getElementById("instructorsBackLink");
+        const instructorsAddBtn = document.getElementById("instructorsAddBtn");
+        const instructorsAddPanel = document.getElementById("instructorsAddPanel");
+        const instructorsAddForm = document.getElementById("instructorsAddForm");
+        const instructorsPersonSelect = document.getElementById("instructorsPersonSelect");
+        const instructorsAddCancelBtn = document.getElementById("instructorsAddCancelBtn");
+        const instructorsSaveBtn = document.getElementById("instructorsSaveBtn");
 
         let hubSession = {
           rows: null,
@@ -313,6 +327,13 @@
           bylawPersonFilterField: null,
           bylawPersonFilterFields: null,
           bylawPersonPostKey: null,
+          certifiersPersonPostKey: undefined,
+          certifiersPersonDisplayKey: null,
+          certifiersSampleRow: null,
+        };
+
+        let instructorsSession = {
+          rows: null,
         };
 
         let weaponsCertEditSession = {
@@ -563,12 +584,28 @@
 
         async function navigateToRoster() {
           if (personDetailSection) personDetailSection.hidden = true;
+          if (instructorsSection) instructorsSection.hidden = true;
+          setInstructorsAddPanelVisible(false);
           personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           clearPersonWeaponsCertSection();
           clearPersonBylawTrainingSection();
           setPersonDetailEditMode(false);
           setHubListViewVisible(true);
           await ensureRosterViewRendered();
+        }
+
+        async function navigateToInstructors() {
+          setInstructorsViewVisible(true);
+          if (!hubSession.pw || !certifiersListApiSegment()) {
+            setInstructorsState(
+              "warn",
+              !certifiersListApiSegment()
+                ? "Certifiers list is not configured."
+                : "Load the personnel roster first (wait for list to load or click Refresh list).",
+            );
+            return;
+          }
+          await loadInstructorsList();
         }
 
         function normalizedWeaponsCertColumns() {
@@ -2021,6 +2058,336 @@
             el.hidden = !visible;
           });
           if (personDetailSection) personDetailSection.hidden = visible;
+          if (instructorsSection) instructorsSection.hidden = true;
+        }
+
+        function setInstructorsViewVisible(visible) {
+          document.querySelectorAll(".hub-section--form, .hub-section--status, .hub-section--roster").forEach(function (el) {
+            el.hidden = visible;
+          });
+          if (personDetailSection) personDetailSection.hidden = true;
+          if (instructorsSection) instructorsSection.hidden = !visible;
+        }
+
+        function setInstructorsState(kind, message) {
+          if (!instructorsReadState) return;
+          if (!message) {
+            instructorsReadState.hidden = true;
+            instructorsReadState.textContent = "";
+            return;
+          }
+          instructorsReadState.hidden = false;
+          instructorsReadState.className = "read-state " + kind;
+          instructorsReadState.textContent = message;
+        }
+
+        function setInstructorsAddPanelVisible(show) {
+          if (instructorsAddPanel) instructorsAddPanel.hidden = !show;
+          if (!show && instructorsAddForm) instructorsAddForm.reset();
+        }
+
+        function certifierDisplayLabel(item) {
+          if (!item) return "";
+          const personKeys = ["Personnel", "PersonnelId", "PersonnelID"];
+          if (hubSession.certifiersPersonDisplayKey) personKeys.unshift(hubSession.certifiersPersonDisplayKey);
+          for (let i = 0; i < personKeys.length; i++) {
+            const raw = valueFromItemByKeys(item, [personKeys[i]]);
+            const fromLookup = formatSharePointLookupDisplay(raw);
+            if (fromLookup) return fromLookup;
+          }
+          const label = rowLabelFromListItem(item, CERTIFIERS_LIST_DISPLAY_FIELD);
+          if (label) return label;
+          return item.Id != null ? "Instructor #" + item.Id : "Instructor";
+        }
+
+        function certifierPersonnelIdFromItem(item) {
+          if (!item) return null;
+          const keys = [];
+          if (hubSession.certifiersPersonPostKey) keys.push(hubSession.certifiersPersonPostKey);
+          if (hubSession.certifiersPersonDisplayKey) keys.push(hubSession.certifiersPersonDisplayKey);
+          keys.push("PersonnelId", "PersonnelID", "PersonnelIdId", "Personnel");
+          const seen = new Set();
+          for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            if (!k || seen.has(k)) continue;
+            seen.add(k);
+            if (item[k] == null || item[k] === "") continue;
+            const v = item[k];
+            if (typeof v === "object" && v.Id != null) {
+              const n = parseInt(String(v.Id), 10);
+              if (n && !isNaN(n)) return n;
+            }
+            const n = parseInt(String(v), 10);
+            if (n && !isNaN(n)) return n;
+          }
+          return null;
+        }
+
+        function clearInstructorsTable() {
+          if (instructorsThead) instructorsThead.innerHTML = "";
+          if (instructorsTableBody) instructorsTableBody.innerHTML = "";
+        }
+
+        function renderInstructorsTable(rows) {
+          clearInstructorsTable();
+          const pw = hubSession.pw;
+          const showActions = !!(pw && instructorsSection && !instructorsSection.hidden);
+          if (!instructorsThead || !instructorsTableBody) return;
+
+          const trHead = document.createElement("tr");
+          const thName = document.createElement("th");
+          thName.textContent = "Instructor";
+          trHead.appendChild(thName);
+          if (showActions) {
+            const thAct = document.createElement("th");
+            thAct.className = "roster-actions";
+            thAct.textContent = " ";
+            thAct.title = "Delete instructor";
+            trHead.appendChild(thAct);
+          }
+          instructorsThead.appendChild(trHead);
+
+          const sorted = (Array.isArray(rows) ? rows.slice() : []).sort(function (a, b) {
+            return certifierDisplayLabel(a).localeCompare(certifierDisplayLabel(b), undefined, { sensitivity: "base" });
+          });
+
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (item) {
+            const tr = document.createElement("tr");
+            const tdName = document.createElement("td");
+            tdName.textContent = displayCellText(certifierDisplayLabel(item));
+            tr.appendChild(tdName);
+            if (showActions && item.Id != null) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              const inner = document.createElement("div");
+              inner.className = "roster-actions-inner";
+              const delBtn = document.createElement("button");
+              delBtn.type = "button";
+              delBtn.className = "btn-danger";
+              delBtn.textContent = "Delete";
+              const label = certifierDisplayLabel(item);
+              delBtn.title = label ? "Remove " + label : "Remove instructor";
+              delBtn.addEventListener("click", function () {
+                void deleteCertifierRow(item.Id, hubSession.pw);
+              });
+              inner.appendChild(delBtn);
+              tdAct.appendChild(inner);
+              tr.appendChild(tdAct);
+            } else if (showActions) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              tdAct.textContent = "-";
+              tr.appendChild(tdAct);
+            }
+            frag.appendChild(tr);
+          });
+          instructorsTableBody.appendChild(frag);
+
+          if (instructorsEmpty) {
+            instructorsEmpty.hidden = sorted.length > 0;
+            instructorsEmpty.textContent = sorted.length ? "" : "No instructors on file.";
+          }
+        }
+
+        async function discoverCertifiersPersonnelField(pw) {
+          if (hubSession.certifiersPersonPostKey !== undefined) return hubSession.certifiersPersonPostKey;
+          const seg = certifiersListApiSegment();
+          if (!seg || !pw) {
+            hubSession.certifiersPersonPostKey = null;
+            hubSession.certifiersPersonDisplayKey = null;
+            return null;
+          }
+          const hint = String(CERTIFIERS_PERSON_FIELD || "PersonnelId").trim();
+          try {
+            const esc = hint.replace(/'/g, "''");
+            const direct = await spFetch(
+              `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=Title,InternalName,TypeAsString`,
+              {},
+              pw,
+            ).catch(function () {
+              return null;
+            });
+            if (direct && /lookup/i.test(String(direct.TypeAsString || ""))) {
+              const internal = String(direct.InternalName || hint).trim();
+              hubSession.certifiersPersonPostKey = internal.endsWith("Id") ? internal : internal + "Id";
+              hubSession.certifiersPersonDisplayKey = internal.endsWith("Id") ? internal.slice(0, -2) : internal;
+              return hubSession.certifiersPersonPostKey;
+            }
+            const data = await spFetch(
+              `/_api/web/${seg}/fields?$select=Title,InternalName,TypeAsString&$filter=Hidden eq false&$top=200`,
+              {},
+              pw,
+            );
+            const fields = (data && data.value) || [];
+            let hit = fields.find(function (f) {
+              return /lookup/i.test(String(f.TypeAsString || "")) && /personnel/i.test(String(f.Title || "") + String(f.InternalName || ""));
+            });
+            if (!hit) {
+              hit = fields.find(function (f) {
+                return /lookup/i.test(String(f.TypeAsString || "")) && /personnelid/i.test(String(f.InternalName || ""));
+              });
+            }
+            if (hit) {
+              const internal = String(hit.InternalName || "").trim();
+              hubSession.certifiersPersonPostKey = internal.endsWith("Id") ? internal : internal + "Id";
+              hubSession.certifiersPersonDisplayKey = internal.endsWith("Id") ? internal.slice(0, -2) : internal;
+              return hubSession.certifiersPersonPostKey;
+            }
+          } catch (e) {
+            log("Certifiers personnel field discovery failed: " + (e.message || String(e)), "warn");
+          }
+          hubSession.certifiersPersonPostKey = null;
+          hubSession.certifiersPersonDisplayKey = null;
+          return null;
+        }
+
+        async function fetchCertifierRows(pw) {
+          const seg = certifiersListApiSegment();
+          if (!seg) return [];
+          const data = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
+          return (data && data.value) || [];
+        }
+
+        async function loadInstructorsList() {
+          const pw = hubSession.pw;
+          const seg = certifiersListApiSegment();
+          if (!pw || !seg) {
+            renderInstructorsTable([]);
+            setInstructorsState("warn", "Certifiers list is not available.");
+            return;
+          }
+          try {
+            setInstructorsState("loading", "Loading instructorsâ€¦");
+            await discoverCertifiersPersonnelField(pw);
+            const rows = await fetchCertifierRows(pw);
+            instructorsSession.rows = rows;
+            hubSession.certifiersSampleRow = rows.length ? rows[0] : null;
+            renderInstructorsTable(rows);
+            setInstructorsState("", "");
+          } catch (e) {
+            instructorsSession.rows = [];
+            renderInstructorsTable([]);
+            setInstructorsState("err", "Could not load instructors: " + (e.message || String(e)).slice(0, 220));
+            log("Instructors load failed:\n" + (e.message || String(e)), "err");
+          }
+        }
+
+        async function deleteCertifierRow(id, pw) {
+          const sid = parseInt(String(id), 10);
+          if (!sid || isNaN(sid)) {
+            setInstructorsState("err", "Invalid instructor Id for delete.");
+            return;
+          }
+          const seg = certifiersListApiSegment();
+          if (!pw || !seg) {
+            setInstructorsState("err", "Certifiers list is not available.");
+            return;
+          }
+          if (!confirm("Remove instructor Id " + sid + " from the Certifiers list? This cannot be undone.")) return;
+          try {
+            setInstructorsState("loading", "Deleting instructorâ€¦");
+            await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
+            log("DELETE certifier Id " + sid + " OK", "ok");
+            await loadInstructorsList();
+            setInstructorsState("ok", "Instructor removed.");
+            window.setTimeout(function () {
+              setInstructorsState("", "");
+            }, 2500);
+          } catch (e) {
+            setInstructorsState("err", "Delete failed: " + (e.message || String(e)).slice(0, 280));
+            log("Certifier DELETE failed:\n" + (e.message || String(e)), "err");
+          }
+        }
+
+        function populateInstructorsPersonSelect() {
+          if (!instructorsPersonSelect) return;
+          const prior = String(instructorsPersonSelect.value || "").trim();
+          while (instructorsPersonSelect.options.length > 1) instructorsPersonSelect.remove(1);
+          const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
+          const existing = Array.isArray(instructorsSession.rows) ? instructorsSession.rows : [];
+          const takenIds = new Set();
+          const takenNames = new Set();
+          existing.forEach(function (row) {
+            const pid = certifierPersonnelIdFromItem(row);
+            if (pid) takenIds.add(String(pid));
+            const label = certifierDisplayLabel(row).toLowerCase();
+            if (label) takenNames.add(label);
+          });
+          rows.sort(function (a, b) {
+            return formatPersonDisplayName(a).localeCompare(formatPersonDisplayName(b), undefined, { sensitivity: "base" });
+          });
+          rows.forEach(function (person) {
+            if (!person || person.Id == null) return;
+            const displayName = formatPersonDisplayName(person);
+            if (!displayName) return;
+            if (takenIds.has(String(person.Id)) || takenNames.has(displayName.toLowerCase())) return;
+            const o = document.createElement("option");
+            o.value = String(person.Id);
+            o.textContent = displayName;
+            instructorsPersonSelect.appendChild(o);
+          });
+          if (prior) instructorsPersonSelect.value = prior;
+          applySelectAutosize(instructorsPersonSelect);
+        }
+
+        async function submitInstructorAdd(ev) {
+          if (ev && ev.preventDefault) ev.preventDefault();
+          const pw = hubSession.pw;
+          const seg = certifiersListApiSegment();
+          if (!pw || !seg) {
+            setInstructorsState("err", "Hub not ready. Refresh the roster first.");
+            return;
+          }
+          const personId = instructorsPersonSelect ? parseInt(String(instructorsPersonSelect.value || "").trim(), 10) : 0;
+          if (!personId || isNaN(personId)) {
+            setInstructorsState("err", "Select a person from the personnel roster.");
+            return;
+          }
+          const person = (hubSession.rows || []).find(function (r) {
+            return r && String(r.Id) === String(personId);
+          });
+          if (!person) {
+            setInstructorsState("err", "Person not found in roster. Refresh the list and try again.");
+            return;
+          }
+          const displayName = formatPersonDisplayName(person);
+          const existing = Array.isArray(instructorsSession.rows) ? instructorsSession.rows : [];
+          for (let i = 0; i < existing.length; i++) {
+            const row = existing[i];
+            const existingPid = certifierPersonnelIdFromItem(row);
+            if (existingPid && existingPid === personId) {
+              setInstructorsState("warn", displayName + " is already listed as an instructor.");
+              return;
+            }
+            if (certifierDisplayLabel(row).toLowerCase() === displayName.toLowerCase()) {
+              setInstructorsState("warn", displayName + " is already listed as an instructor.");
+              return;
+            }
+          }
+
+          const personPostKey = await discoverCertifiersPersonnelField(pw);
+          const certField = String(CERTIFIERS_LIST_DISPLAY_FIELD || "Certifier").trim();
+          const payload = { Title: displayName };
+          if (personPostKey) payload[personPostKey] = personId;
+          if (!personPostKey || certField) payload[certField] = displayName;
+
+          try {
+            setInstructorsState("loading", "Adding instructorâ€¦");
+            if (instructorsSaveBtn) instructorsSaveBtn.disabled = true;
+            await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            setInstructorsAddPanelVisible(false);
+            await loadInstructorsList();
+            setInstructorsState("ok", "Instructor added.");
+            window.setTimeout(function () {
+              setInstructorsState("", "");
+            }, 2500);
+          } catch (e) {
+            setInstructorsState("err", "Add failed: " + (e.message || String(e)).slice(0, 280));
+            log("Certifier add failed:\n" + (e.message || String(e)), "err");
+          } finally {
+            if (instructorsSaveBtn) instructorsSaveBtn.disabled = false;
+          }
         }
 
         function setPersonDetailState(kind, message) {
@@ -2508,6 +2875,44 @@
           personDetailBackLink.addEventListener("click", function (ev) {
             ev.preventDefault();
             void navigateToRoster();
+          });
+        }
+
+        if (instructorsBackLink) {
+          instructorsBackLink.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            void navigateToRoster();
+          });
+        }
+
+        if (hubNavInstructors) {
+          hubNavInstructors.addEventListener("click", function () {
+            void navigateToInstructors();
+          });
+        }
+
+        if (instructorsAddBtn) {
+          instructorsAddBtn.addEventListener("click", function () {
+            if (!hubSession.rows || !hubSession.rows.length) {
+              setInstructorsState("warn", "Personnel roster is empty. Refresh the list first.");
+              return;
+            }
+            populateInstructorsPersonSelect();
+            setInstructorsAddPanelVisible(true);
+            setInstructorsState("", "");
+            if (instructorsPersonSelect) instructorsPersonSelect.focus();
+          });
+        }
+
+        if (instructorsAddCancelBtn) {
+          instructorsAddCancelBtn.addEventListener("click", function () {
+            setInstructorsAddPanelVisible(false);
+          });
+        }
+
+        if (instructorsAddForm) {
+          instructorsAddForm.addEventListener("submit", function (ev) {
+            void submitInstructorAdd(ev);
           });
         }
 

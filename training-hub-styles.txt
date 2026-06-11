@@ -339,6 +339,12 @@
       #sp-pip-ui .person-detail-toolbar-actions button {
         margin: 0;
       }
+      #sp-pip-ui .instructors-hint {
+        margin: 0 0 14px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: rgba(210, 255, 224, 0.72);
+      }
       #sp-pip-ui a.person-detail-back {
         display: inline-block;
         padding: 9px 18px;
