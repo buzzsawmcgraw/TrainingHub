@@ -104,10 +104,10 @@
           { key: "Status", label: "Status", computed: true },
         ];
         const BYLAW_TRAINING_DROPDOWN_KEYS = ["Item", "Certifier"];
-        /** SharePoint list of certifiers (lookup source for the Certifier field on ByLawTraining). */
-        const LIST_CERTIFIERS = "Certifier";
+        /** SharePoint Certifiers list (lookup source for the Certifier field on ByLawTraining). */
+        const LIST_CERTIFIERS = "Certifiers";
         const LIST_CERTIFIERS_GUID = "";
-        const CERTIFIERS_LIST_DISPLAY_FIELD = "Title";
+        const CERTIFIERS_LIST_DISPLAY_FIELD = "Certifier";
         /** Set SharePoint Title on new rows from the Item value when the list still requires Title. */
         const BYLAW_TRAINING_SET_TITLE = true;
         const BYLAW_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "ByLaw", "TrainingName", "Training_x0020_Name"];
