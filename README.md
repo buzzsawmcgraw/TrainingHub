@@ -10,6 +10,8 @@ Paste-only UI for SharePoint **Modern Script Editor** (PnP).
 
 One self-contained block: HTML, CSS, and JavaScript together. No Site Assets upload required.
 
+**Password gate:** set `HUB_ACCESS_PASSWORD` in the script (default `Training2026`). Leave it empty to disable. Unlock lasts for the browser tab session (`sessionStorage`).
+
 **Personnel records:** **Record** opens the full row; **Edit record** then **Save changes** updates SharePoint via REST.
 
 After editing the hub, run `build-sharepoint-deploy.ps1` to regenerate `sharepoint-script-editor-paste.html`.

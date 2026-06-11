@@ -36,6 +36,7 @@
         border: 2px solid var(--pip-border);
         border-radius: 8px;
         overflow: hidden;
+        position: relative;
       }
       #sp-pip-ui *,
       #sp-pip-ui *::before,
@@ -553,11 +554,97 @@
         color: var(--pip-amber);
         text-shadow: 0 0 4px rgba(255, 176, 0, 0.25);
       }
+      #sp-pip-ui .hub-access-gate {
+        position: absolute;
+        inset: 0;
+        z-index: 300;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: radial-gradient(120% 80% at 50% 0%, #0d1f16 0%, var(--pip-bg) 55%);
+        border-radius: 8px;
+      }
+      #sp-pip-ui .hub-access-gate[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui .hub-access-panel {
+        width: min(100%, 360px);
+        padding: 22px 22px 20px;
+        border: 1px solid var(--pip-border);
+        border-radius: 8px;
+        background: rgba(5, 14, 10, 0.88);
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), 0 0 28px rgba(0, 0, 0, 0.45);
+      }
+      #sp-pip-ui .hub-access-panel h2 {
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
+      }
+      #sp-pip-ui .hub-access-panel p {
+        margin: 0 0 14px;
+        font-size: 12px;
+        line-height: 1.45;
+        color: rgba(210, 255, 224, 0.82);
+      }
+      #sp-pip-ui .hub-access-panel label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui #hubAccessInput {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 14px;
+        padding: 10px 12px;
+        font: 13px var(--pip-font);
+        color: rgba(210, 255, 224, 0.92);
+        background: rgba(5, 14, 10, 0.72);
+        border: 1px solid rgba(30, 74, 54, 0.5);
+        border-radius: var(--pip-control-radius);
+      }
+      #sp-pip-ui #hubAccessInput:focus {
+        outline: none;
+        border-color: var(--pip-green-dim);
+        box-shadow: 0 0 10px var(--pip-green-glow);
+      }
+      #sp-pip-ui #hubAccessSubmit {
+        width: 100%;
+        margin: 0;
+      }
+      #sp-pip-ui .hub-access-error {
+        margin: 12px 0 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--pip-red);
+        text-shadow: 0 0 6px rgba(255, 77, 45, 0.45);
+      }
+      #sp-pip-ui .hub-access-error[hidden] {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
     <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
     <div id="sp-pip-ui">
+      <div id="hubAccessGate" class="hub-access-gate" aria-label="Training Hub access">
+        <div class="hub-access-panel">
+          <h2>Authorized access</h2>
+          <p>Enter the Training Hub password to continue.</p>
+          <label for="hubAccessInput">Password</label>
+          <input type="password" id="hubAccessInput" autocomplete="current-password" />
+          <button type="button" id="hubAccessSubmit">Continue</button>
+          <p id="hubAccessError" class="hub-access-error" hidden>Incorrect password.</p>
+        </div>
+      </div>
       <div class="hub-top-banner-wrap" id="hubTopBannerWrap" hidden>
         <img id="hubTopBannerImg" class="hub-top-banner-img" src="" alt="" decoding="async" />
       </div>
@@ -620,6 +707,12 @@
 
         /** @deprecated Same effect as PERSONNEL_SITE_ROOT_URL; kept for older copies of this file. */
         const PERSONNEL_REST_WEB_URL = "";
+
+        /**
+         * Page access gate — users must enter this password before the hub loads. Set "" to disable.
+         */
+        const HUB_ACCESS_PASSWORD = "Training2026";
+        const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
 
         /** Must match Site contents list title (URL …/Lists/Personnel… usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -1803,10 +1896,82 @@
           });
         });
 
-        runProbe().catch((e) => {
-          setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
-          log("UNCAUGHT:\n" + (e.message || String(e)), "err");
-        });
+        function initHubAccessGate() {
+          const gate = document.getElementById("hubAccessGate");
+          const input = document.getElementById("hubAccessInput");
+          const submit = document.getElementById("hubAccessSubmit");
+          const err = document.getElementById("hubAccessError");
+          const password = String(HUB_ACCESS_PASSWORD || "").trim();
+
+          function isHubAccessGranted() {
+            try {
+              return sessionStorage.getItem(HUB_ACCESS_STORAGE_KEY) === "1";
+            } catch (_) {
+              return false;
+            }
+          }
+
+          function grantHubAccess() {
+            try {
+              sessionStorage.setItem(HUB_ACCESS_STORAGE_KEY, "1");
+            } catch (_) {}
+          }
+
+          function startHubApp() {
+            runProbe().catch(function (e) {
+              setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
+              log("UNCAUGHT:\n" + (e.message || String(e)), "err");
+            });
+          }
+
+          if (!password) {
+            if (gate) gate.hidden = true;
+            startHubApp();
+            return;
+          }
+
+          function tryUnlock() {
+            if (!input) return;
+            if (String(input.value || "") === password) {
+              grantHubAccess();
+              if (err) err.hidden = true;
+              if (gate) gate.hidden = true;
+              startHubApp();
+              return;
+            }
+            if (err) {
+              err.hidden = false;
+              err.textContent = "Incorrect password.";
+            }
+            input.value = "";
+            input.focus();
+          }
+
+          if (isHubAccessGranted()) {
+            if (gate) gate.hidden = true;
+            startHubApp();
+            return;
+          }
+
+          if (gate) gate.hidden = false;
+          if (input) {
+            input.value = "";
+            window.setTimeout(function () {
+              input.focus();
+            }, 0);
+          }
+          if (submit) submit.addEventListener("click", tryUnlock);
+          if (input) {
+            input.addEventListener("keydown", function (ev) {
+              if (ev.key === "Enter") {
+                ev.preventDefault();
+                tryUnlock();
+              }
+            });
+          }
+        }
+
+        initHubAccessGate();
       })();
     </script>
   </body>

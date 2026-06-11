@@ -1,17 +1,7 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Personnel — PIP-Boy style (Script Editor)</title>
-    <style>
-      /* Page shell when viewing this file directly (Script Editor may only embed #sp-pip-ui) */
-      body {
-        margin: 0;
-        padding: 12px;
-        background: #000;
-      }
-      #sp-pip-ui {
+﻿<!-- Training Hub - paste this entire file into Modern Script Editor (one copy/paste). -->
+<!-- Source: sharepoint-modern-script-editor-ui.html - run build-sharepoint-deploy.ps1 after edits. -->
+<style>
+#sp-pip-ui {
         --pip-bg: #050807;
         --pip-bg2: #0a1410;
         --pip-surface: #07120d;
@@ -36,6 +26,7 @@
         border: 2px solid var(--pip-border);
         border-radius: 8px;
         overflow: hidden;
+        position: relative;
       }
       #sp-pip-ui *,
       #sp-pip-ui *::before,
@@ -553,11 +544,94 @@
         color: var(--pip-amber);
         text-shadow: 0 0 4px rgba(255, 176, 0, 0.25);
       }
-    </style>
-  </head>
-  <body>
-    <!-- Paste everything inside <body> … </body>, or only the #sp-pip-ui block, into Modern Script Editor. -->
-    <div id="sp-pip-ui">
+      #sp-pip-ui .hub-access-gate {
+        position: absolute;
+        inset: 0;
+        z-index: 300;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: radial-gradient(120% 80% at 50% 0%, #0d1f16 0%, var(--pip-bg) 55%);
+        border-radius: 8px;
+      }
+      #sp-pip-ui .hub-access-gate[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui .hub-access-panel {
+        width: min(100%, 360px);
+        padding: 22px 22px 20px;
+        border: 1px solid var(--pip-border);
+        border-radius: 8px;
+        background: rgba(5, 14, 10, 0.88);
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), 0 0 28px rgba(0, 0, 0, 0.45);
+      }
+      #sp-pip-ui .hub-access-panel h2 {
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
+      }
+      #sp-pip-ui .hub-access-panel p {
+        margin: 0 0 14px;
+        font-size: 12px;
+        line-height: 1.45;
+        color: rgba(210, 255, 224, 0.82);
+      }
+      #sp-pip-ui .hub-access-panel label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui #hubAccessInput {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 14px;
+        padding: 10px 12px;
+        font: 13px var(--pip-font);
+        color: rgba(210, 255, 224, 0.92);
+        background: rgba(5, 14, 10, 0.72);
+        border: 1px solid rgba(30, 74, 54, 0.5);
+        border-radius: var(--pip-control-radius);
+      }
+      #sp-pip-ui #hubAccessInput:focus {
+        outline: none;
+        border-color: var(--pip-green-dim);
+        box-shadow: 0 0 10px var(--pip-green-glow);
+      }
+      #sp-pip-ui #hubAccessSubmit {
+        width: 100%;
+        margin: 0;
+      }
+      #sp-pip-ui .hub-access-error {
+        margin: 12px 0 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--pip-red);
+        text-shadow: 0 0 6px rgba(255, 77, 45, 0.45);
+      }
+      #sp-pip-ui .hub-access-error[hidden] {
+        display: none !important;
+      }
+</style>
+<div id="sp-pip-ui">
+      <div id="hubAccessGate" class="hub-access-gate" aria-label="Training Hub access">
+        <div class="hub-access-panel">
+          <h2>Authorized access</h2>
+          <p>Enter the Training Hub password to continue.</p>
+          <label for="hubAccessInput">Password</label>
+          <input type="password" id="hubAccessInput" autocomplete="current-password" />
+          <button type="button" id="hubAccessSubmit">Continue</button>
+          <p id="hubAccessError" class="hub-access-error" hidden>Incorrect password.</p>
+        </div>
+      </div>
       <div class="hub-top-banner-wrap" id="hubTopBannerWrap" hidden>
         <img id="hubTopBannerImg" class="hub-top-banner-img" src="" alt="" decoding="async" />
       </div>
@@ -577,7 +651,7 @@
           <div id="addPersonPanel" class="add-person-panel" aria-live="polite"></div>
         </section>
         <section class="hub-section hub-section--status" aria-label="Connection status and refresh">
-          <div id="rosterReadState" class="read-state loading">Loading list…</div>
+          <div id="rosterReadState" class="read-state loading">Loading listâ€¦</div>
           <div class="hub-toolbar">
             <button type="button" id="probeRun">Refresh list</button>
           </div>
@@ -599,21 +673,20 @@
         </section>
       </main>
     </div>
-
-    <script>
-      (function () {
+<script>
+(function () {
         // ============ EDIT THESE (URLs remove ambiguity) ============
         /**
          * 88thSFS deployment reference:
          * - Site page: https://usaf.dps.mil/sites/88thSFS/SitePages/S3T.aspx
          * - List view: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
          *
-         * (A) Site root — no trailing slash. REST is always: SITE_ROOT + "/_api/web/..."
+         * (A) Site root â€” no trailing slash. REST is always: SITE_ROOT + "/_api/web/..."
          */
         const PERSONNEL_SITE_ROOT_URL = "https://usaf.dps.mil/sites/88thSFS";
 
         /**
-         * (B) Optional fallback: paste any URL under the site; derives …/sites/88thSFS. Ignored when (A) is set.
+         * (B) Optional fallback: paste any URL under the site; derives â€¦/sites/88thSFS. Ignored when (A) is set.
          * Example: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
          */
         const PERSONNEL_SHAREPOINT_URL = "";
@@ -621,14 +694,20 @@
         /** @deprecated Same effect as PERSONNEL_SITE_ROOT_URL; kept for older copies of this file. */
         const PERSONNEL_REST_WEB_URL = "";
 
-        /** Must match Site contents list title (URL …/Lists/Personnel… usually means title "Personnel"). */
+        /**
+         * Page access gate â€” users must enter this password before the hub loads. Set "" to disable.
+         */
+        const HUB_ACCESS_PASSWORD = "Training2026";
+        const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
+
+        /** Must match Site contents list title (URL â€¦/Lists/Personnelâ€¦ usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
-        /** Optional: List GUID from List settings → use if getbytitle fails. */
+        /** Optional: List GUID from List settings â†’ use if getbytitle fails. */
         const LIST_PERSONNEL_GUID = "";
 
         /**
          * Circular profile image to the left of the squadron header (default: **S3T Files** / **Fallout Guy.png**).
-         * `HUB_PROFILE_IMAGE_URL` — full URL override. `HUB_LOGO_URL` — legacy override if profile URL is empty.
+         * `HUB_PROFILE_IMAGE_URL` â€” full URL override. `HUB_LOGO_URL` â€” legacy override if profile URL is empty.
          * Otherwise built from `PERSONNEL_SITE_ROOT_URL` + `HUB_PROFILE_SITE_RELATIVE_PATH`.
          */
         const HUB_PROFILE_IMAGE_URL = "";
@@ -648,7 +727,7 @@
          * Full-width image across the top of the web part (default: **S3T Files** / **banner.png** on this site).
          * Paste a full file URL here to override. Leave "" to build from `PERSONNEL_SITE_ROOT_URL` +
          * `HUB_BANNER_SITE_RELATIVE_PATH`. If the image does not load, open the file in SharePoint, copy the browser
-         * address, and set `HUB_TOP_BANNER_URL` to that value (or fix `HUB_BANNER_SITE_RELATIVE_PATH` — e.g. add
+         * address, and set `HUB_TOP_BANNER_URL` to that value (or fix `HUB_BANNER_SITE_RELATIVE_PATH` â€” e.g. add
          * `Shared%20Documents/` if **S3T Files** is a folder inside Documents, not the library root).
          */
         const HUB_TOP_BANNER_URL = "";
@@ -658,7 +737,7 @@
 
         /**
          * Roster column `key` values that render as dropdowns. Options are loaded from SharePoint field **Choices**
-         * (same internal name as used for save — see `resolveWriteKey` / first data row).
+         * (same internal name as used for save â€” see `resolveWriteKey` / first data row).
          */
         const DROPDOWN_COLUMN_KEYS = ["Status", "OfficeSymbol", "Squadron", "Rank"];
 
@@ -667,7 +746,7 @@
 
         /**
          * OData `$orderby` for list items. Rows are always sorted again client-side by LastName, then FirstName, so the
-         * roster follows A–Z by name even if this clause is rejected (400).
+         * roster follows Aâ€“Z by name even if this clause is rejected (400).
          */
         const PERSONNEL_ITEMS_ORDERBY = "LastName asc,FirstName asc";
 
@@ -678,9 +757,9 @@
         const SHOW_LIST_ITEM_ID_IN_ROSTER = false;
 
         /**
-         * Roster columns — fixed order for 88thSFS Personnel. List item Id is hidden unless SHOW_LIST_ITEM_ID_IN_ROSTER is true
-         * and you include `{ key: "Id", label: "…" }` here.
-         * If a column is always blank, open Diagnostics and change that row’s `key` / add `altKeys` (see Record Date).
+         * Roster columns â€” fixed order for 88thSFS Personnel. List item Id is hidden unless SHOW_LIST_ITEM_ID_IN_ROSTER is true
+         * and you include `{ key: "Id", label: "â€¦" }` here.
+         * If a column is always blank, open Diagnostics and change that rowâ€™s `key` / add `altKeys` (see Record Date).
          */
         const ROSTER_COLUMNS = [
           {
@@ -703,7 +782,7 @@
         ];
 
         /**
-         * Training Hub form (`Id` omitted). Identity | Contact. Contact: Address / phones, then Status · OfficeSymbol ·
+         * Training Hub form (`Id` omitted). Identity | Contact. Contact: Address / phones, then Status Â· OfficeSymbol Â·
          * Squadron on one row, then Notes (height trimmed to align column bottoms with Identity).
          */
         const ADD_FORM_FIELD_GROUPS = [
@@ -831,7 +910,7 @@
           return k === "odata.type" || k === "odata.id" || k === "odata.editLink" || k === "odata.metadata";
         }
 
-        /** Union of field names across all loaded rows (order: Title, then A–Z). List item `Id` is omitted from the table. */
+        /** Union of field names across all loaded rows (order: Title, then Aâ€“Z). List item `Id` is omitted from the table. */
         function collectColumnKeys(rows) {
           const set = new Set();
           rows.forEach((item) => {
@@ -965,7 +1044,7 @@
           }
           if (!confirm("Delete personnel record Id " + sid + "? This cannot be undone.")) return;
           try {
-            setReadState("loading", "Deleting record…");
+            setReadState("loading", "Deleting recordâ€¦");
             await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
             log("DELETE Id " + sid + " OK", "ok");
             await runProbe();
@@ -987,7 +1066,7 @@
           columns.forEach((col) => {
             const th = document.createElement("th");
             th.textContent = col.label;
-            th.title = (col.tryKeys || [col.key]).join(" · ");
+            th.title = (col.tryKeys || [col.key]).join(" Â· ");
             trHead.appendChild(th);
           });
           if (showDelete) {
@@ -1007,7 +1086,7 @@
               const tryKeys = col.tryKeys || [col.key];
               const raw = valueFromItemByKeys(item, tryKeys);
               const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-              td.textContent = text === "" ? "—" : text;
+              td.textContent = text === "" ? "â€”" : text;
               tr.appendChild(td);
             });
             if (showDelete && item.Id != null) {
@@ -1026,7 +1105,7 @@
             } else if (showDelete) {
               const tdAct = document.createElement("td");
               tdAct.className = "roster-actions";
-              tdAct.textContent = "—";
+              tdAct.textContent = "â€”";
               tr.appendChild(tdAct);
             }
             frag.appendChild(tr);
@@ -1046,7 +1125,7 @@
                 (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
                 "). List \"" +
                 listTitle +
-                "\" — ItemCount " +
+                "\" â€” ItemCount " +
                 ic +
                 ".",
             );
@@ -1240,7 +1319,7 @@
         }
 
         async function enumerateListTitles(pw) {
-          log("--- Listing lists on this web (first 200, not hidden) — find exact Title for LIST_PERSONNEL ---");
+          log("--- Listing lists on this web (first 200, not hidden) â€” find exact Title for LIST_PERSONNEL ---");
           const data = await spFetch(
             "/_api/web/lists?$select=Title,Id,ItemCount,Hidden&$filter=Hidden eq false&$orderby=Title&$top=200",
             {},
@@ -1248,7 +1327,7 @@
           );
           const rows = (data && data.value) || [];
           rows.forEach((r) => {
-            log("  • " + (r.Title || "") + "  (Id=" + r.Id + ", ItemCount=" + (r.ItemCount != null ? r.ItemCount : "?") + ")");
+            log("  â€¢ " + (r.Title || "") + "  (Id=" + r.Id + ", ItemCount=" + (r.ItemCount != null ? r.ItemCount : "?") + ")");
           });
         }
 
@@ -1577,7 +1656,7 @@
               } else {
                 const o = document.createElement("option");
                 o.value = "";
-                o.textContent = "(no choices — check field internal name: " + writeKey + ")";
+                o.textContent = "(no choices â€” check field internal name: " + writeKey + ")";
                 o.disabled = true;
                 sel.appendChild(o);
               }
@@ -1601,7 +1680,7 @@
         }
 
         async function submitNewPerson(meta, pw, seg, sampleRow) {
-          /** With `application/json;odata=nometadata`, do not send `__metadata` — SharePoint treats it as a list column and returns 400. */
+          /** With `application/json;odata=nometadata`, do not send `__metadata` â€” SharePoint treats it as a list column and returns 400. */
           const cols = normalizedRosterColumns();
           let lastName = "";
           let firstName = "";
@@ -1641,7 +1720,7 @@
           }
 
           try {
-            setReadState("loading", "Submitting…");
+            setReadState("loading", "Submittingâ€¦");
             const created = await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
             const newId = parseCreatedItemId(created);
             log("POST created item Id: " + (newId || "?"), "ok");
@@ -1661,7 +1740,7 @@
           clearRosterTable();
           const addPanel = document.getElementById("addPersonPanel");
           if (addPanel) addPanel.innerHTML = "";
-          setReadState("loading", "Loading Personnel list from SharePoint…");
+          setReadState("loading", "Loading Personnel list from SharePointâ€¦");
 
           const ctx = getCtx();
           const pageWeb = ctx && ctx.webAbsoluteUrl ? String(ctx.webAbsoluteUrl).replace(/\/$/, "") : "";
@@ -1690,13 +1769,13 @@
                   : "unknown";
           log("How REST base was chosen: " + baseSource);
           log("location.href:\n" + String(location.href));
-          log("Page web from context (informational only):\n" + (pageWeb || "(no _spPageContextInfo — OK if explicit URLs are set)"));
+          log("Page web from context (informational only):\n" + (pageWeb || "(no _spPageContextInfo â€” OK if explicit URLs are set)"));
           log(
             "REST base used for ALL API calls below:\n" +
               pw +
               (pageWeb && pw === pageWeb
-                ? "  (same as page — from context or your URL matched the page site)"
-                : "  (explicit URL / derived from PERSONNEL_SHAREPOINT_URL — not necessarily this page’s site)"),
+                ? "  (same as page â€” from context or your URL matched the page site)"
+                : "  (explicit URL / derived from PERSONNEL_SHAREPOINT_URL â€” not necessarily this pageâ€™s site)"),
           );
           log("List API segment:\n/_api/web/" + seg);
           log("LIST_PERSONNEL (trimmed):\n" + JSON.stringify(personnelListTitle()));
@@ -1731,7 +1810,7 @@
             items = await spFetch(`/_api/web/${seg2}/items?$top=500` + orderByQs, {}, pw);
           } catch (e0) {
             if (/\b400\b/.test(String(e0.message || ""))) {
-              log("orderby failed with 400; retry without orderby…", "err");
+              log("orderby failed with 400; retry without orderbyâ€¦", "err");
               try {
                 items = await spFetch(`/_api/web/${seg2}/items?$top=500`, {}, pw);
               } catch (e1) {
@@ -1759,7 +1838,7 @@
                 (meta && meta.ItemCount != null ? meta.ItemCount : "?") +
                 "). You can still add a person below; refresh after the first item exists.",
             );
-            log("List is empty (ItemCount may still be > 0 if filtered view — this is default view items).");
+            log("List is empty (ItemCount may still be > 0 if filtered view â€” this is default view items).");
           } else {
             if (plan.mode === "explicit") {
               const dispCols = rosterColumnsForDisplay(plan);
@@ -1803,11 +1882,81 @@
           });
         });
 
-        runProbe().catch((e) => {
-          setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
-          log("UNCAUGHT:\n" + (e.message || String(e)), "err");
-        });
+        function initHubAccessGate() {
+          const gate = document.getElementById("hubAccessGate");
+          const input = document.getElementById("hubAccessInput");
+          const submit = document.getElementById("hubAccessSubmit");
+          const err = document.getElementById("hubAccessError");
+          const password = String(HUB_ACCESS_PASSWORD || "").trim();
+
+          function isHubAccessGranted() {
+            try {
+              return sessionStorage.getItem(HUB_ACCESS_STORAGE_KEY) === "1";
+            } catch (_) {
+              return false;
+            }
+          }
+
+          function grantHubAccess() {
+            try {
+              sessionStorage.setItem(HUB_ACCESS_STORAGE_KEY, "1");
+            } catch (_) {}
+          }
+
+          function startHubApp() {
+            runProbe().catch(function (e) {
+              setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
+              log("UNCAUGHT:\n" + (e.message || String(e)), "err");
+            });
+          }
+
+          if (!password) {
+            if (gate) gate.hidden = true;
+            startHubApp();
+            return;
+          }
+
+          function tryUnlock() {
+            if (!input) return;
+            if (String(input.value || "") === password) {
+              grantHubAccess();
+              if (err) err.hidden = true;
+              if (gate) gate.hidden = true;
+              startHubApp();
+              return;
+            }
+            if (err) {
+              err.hidden = false;
+              err.textContent = "Incorrect password.";
+            }
+            input.value = "";
+            input.focus();
+          }
+
+          if (isHubAccessGranted()) {
+            if (gate) gate.hidden = true;
+            startHubApp();
+            return;
+          }
+
+          if (gate) gate.hidden = false;
+          if (input) {
+            input.value = "";
+            window.setTimeout(function () {
+              input.focus();
+            }, 0);
+          }
+          if (submit) submit.addEventListener("click", tryUnlock);
+          if (input) {
+            input.addEventListener("keydown", function (ev) {
+              if (ev.key === "Enter") {
+                ev.preventDefault();
+                tryUnlock();
+              }
+            });
+          }
+        }
+
+        initHubAccessGate();
       })();
-    </script>
-  </body>
-</html>
+</script>
