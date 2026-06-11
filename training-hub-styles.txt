@@ -60,6 +60,7 @@
         display: flex;
         flex-wrap: wrap;
         align-items: center;
+        justify-content: space-between;
         gap: 18px 24px;
       }
       #sp-pip-ui .hub-logo-wrap {
@@ -89,6 +90,22 @@
       #sp-pip-ui .hub-header-titles {
         flex: 1 1 200px;
         min-width: 0;
+      }
+      #sp-pip-ui .hub-header-nav {
+        flex: 0 1 auto;
+        margin-left: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px 10px;
+      }
+      #sp-pip-ui .hub-header-nav button {
+        margin: 0;
+        padding: 8px 14px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
       }
       #sp-pip-ui .hub-org {
         margin: 0;

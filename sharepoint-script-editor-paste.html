@@ -64,6 +64,7 @@
         display: flex;
         flex-wrap: wrap;
         align-items: center;
+        justify-content: space-between;
         gap: 18px 24px;
       }
       #sp-pip-ui .hub-logo-wrap {
@@ -93,6 +94,22 @@
       #sp-pip-ui .hub-header-titles {
         flex: 1 1 200px;
         min-width: 0;
+      }
+      #sp-pip-ui .hub-header-nav {
+        flex: 0 1 auto;
+        margin-left: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px 10px;
+      }
+      #sp-pip-ui .hub-header-nav button {
+        margin: 0;
+        padding: 8px 14px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
       }
       #sp-pip-ui .hub-org {
         margin: 0;
@@ -887,6 +904,12 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
           </div>
+          <nav class="hub-header-nav" aria-label="Hub navigation">
+            <button type="button" class="btn-secondary hub-nav-btn" id="hubNavInstructors">Instructors</button>
+            <button type="button" class="btn-secondary hub-nav-btn" id="hubNavReports">Reports</button>
+            <button type="button" class="btn-secondary hub-nav-btn" id="hubNavScheduling">Scheduling</button>
+            <button type="button" class="btn-secondary hub-nav-btn" id="hubNavPhase1Tracker">Phase-1 Tracker</button>
+          </nav>
         </div>
       </header>
       <main class="hub-main">
