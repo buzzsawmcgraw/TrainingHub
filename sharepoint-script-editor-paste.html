@@ -907,7 +907,7 @@
             altKeys: ["Record_x0020_Date", "Record0", "DateArrived", "Date_x0020_Arrived"],
           },
           { key: "DoDID", label: "DoDID" },
-          { key: "Rank", label: "Rank" },
+          { key: "Rank", label: "Rank", altKeys: ["Rank0", "PayGrade"] },
           { key: "LastName", label: "LastName" },
           { key: "FirstName", label: "FirstName" },
           { key: "MiddleInitial", label: "Middle Initial" },
@@ -1385,6 +1385,14 @@
 
         function setFieldValueFromItem(el, col, item) {
           if (!el || !item) return;
+          if (el.tagName === "SELECT" && el.dataset.writeKey && /Id$/.test(el.dataset.writeKey)) {
+            const idKey = el.dataset.writeKey;
+            if (item[idKey] != null && item[idKey] !== "") {
+              el.value = String(item[idKey]);
+              ensureSelectIncludesValue(el, el.value);
+              return;
+            }
+          }
           const tryKeys = col.tryKeys || [col.key];
           const raw = valueFromItemByKeys(item, tryKeys);
           if (raw === undefined || raw === null || raw === "") return;
@@ -1393,6 +1401,14 @@
             const m = text.match(/^(\d{4}-\d{2}-\d{2})/);
             if (m) el.value = m[1];
             return;
+          }
+          if (el.tagName === "SELECT") {
+            for (let i = 0; i < el.options.length; i++) {
+              if (el.options[i].value === text || el.options[i].textContent === text) {
+                el.value = el.options[i].value;
+                return;
+              }
+            }
           }
           el.value = text;
         }
@@ -1489,30 +1505,14 @@
           return fs;
         }
 
-        async function populatePersonEditDropdowns(seg, pw, sampleRow, root) {
+        async function populatePersonEditDropdowns(seg, pw, sampleRow, root, item) {
           const cols = normalizedRosterColumns();
           for (let i = 0; i < cols.length; i++) {
             const col = cols[i];
             if (col.key === "Id") continue;
             if (DROPDOWN_COLUMN_KEYS.indexOf(col.key) === -1) continue;
-            const writeKey = resolveWriteKey(col, sampleRow);
             const sel = root.querySelector("#pf_" + col.key);
-            if (!sel || sel.tagName !== "SELECT") continue;
-            const keepValue = sel.value;
-            while (sel.options.length > 1) sel.remove(1);
-            try {
-              const r = await fetchChoiceOptions(seg, pw, writeKey);
-              if (r.choices && r.choices.length) {
-                r.choices.forEach(function (c) {
-                  const o = document.createElement("option");
-                  o.value = c;
-                  o.textContent = c;
-                  sel.appendChild(o);
-                });
-              }
-            } catch (_) {}
-            if (keepValue) sel.value = keepValue;
-            applySelectAutosize(sel);
+            await fillDropdownSelect(sel, col, seg, pw, sampleRow, item);
           }
           applyAllSelectAutosizes(root);
         }
@@ -1576,7 +1576,13 @@
             form.setAttribute("role", "form");
             form.appendChild(fields);
             personDetailContent.appendChild(form);
-            await populatePersonEditDropdowns(personDetailSession.seg, personDetailSession.pw, personDetailSession.sampleRow, form);
+            await populatePersonEditDropdowns(
+              personDetailSession.seg,
+              personDetailSession.pw,
+              personDetailSession.sampleRow,
+              form,
+              item,
+            );
             requestAnimationFrame(function () {
               requestAnimationFrame(function () {
                 balanceContactNotesToIdentityColumn(form);
@@ -1649,12 +1655,8 @@
             const el = document.getElementById("pf_" + col.key);
             if (!el) return;
             const writeKey = el.dataset.writeKey || resolveWriteKey(col, s.sampleRow);
-            let v = String(el.value || "").trim();
-            if (v === "") return;
-            if (el.type === "date") {
-              payload[writeKey] = v + "T00:00:00Z";
-              return;
-            }
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
             payload[writeKey] = v;
           });
 
@@ -2057,11 +2059,44 @@
           });
         }
 
+        async function fetchLookupListChoices(pw, fieldMeta) {
+          let listId = fieldMeta && fieldMeta.LookupList;
+          if (!listId) return [];
+          listId = String(listId).replace(/[{}' ]/g, "");
+          const lookupField = (fieldMeta.LookupField || "Title").trim();
+          const path =
+            `/_api/web/lists(guid'${listId}')/items?$select=Id,${lookupField}&$top=500`;
+          let rows = [];
+          try {
+            const data = await spFetch(path + "&$orderby=" + encodeURIComponent(lookupField), {}, pw);
+            rows = (data && data.value) || [];
+          } catch (_) {
+            const data = await spFetch(path, {}, pw);
+            rows = (data && data.value) || [];
+          }
+          const seen = new Set();
+          const out = [];
+          rows.forEach(function (row) {
+            if (!row) return;
+            const text = row[lookupField];
+            if (text == null || text === "") return;
+            const label = String(text).trim();
+            const id = row.Id;
+            if (!label || id == null || seen.has(String(id))) return;
+            seen.add(String(id));
+            out.push({ id: id, text: label });
+          });
+          out.sort(function (a, b) {
+            return String(a.text).localeCompare(String(b.text), undefined, { sensitivity: "base" });
+          });
+          return out;
+        }
+
         async function fetchChoiceOptions(seg, pw, fieldInternalOrTitle) {
           const esc = String(fieldInternalOrTitle || "").replace(/'/g, "''");
           if (!esc) return { choices: [], error: "empty field name" };
           const data = await spFetch(
-            `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=Choices,Title,InternalName,TypeAsString`,
+            `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=Choices,Title,InternalName,TypeAsString,LookupList,LookupField`,
             {},
             pw,
           );
@@ -2070,7 +2105,172 @@
           else if (data.Choices && typeof data.Choices === "object" && Array.isArray(data.Choices.results))
             choices = data.Choices.results;
           choices = choices.map((c) => String(c).trim()).filter(Boolean);
-          return { choices: choices, field: data };
+          let lookupEntries = [];
+          if (!choices.length && data.TypeAsString && /lookup/i.test(String(data.TypeAsString))) {
+            lookupEntries = await fetchLookupListChoices(pw, data);
+            choices = lookupEntries.map(function (e) {
+              return e.text;
+            });
+          }
+          return { choices: choices, lookupEntries: lookupEntries, field: data };
+        }
+
+        function choiceFieldCandidateNames(col, sampleRow) {
+          const seen = new Set();
+          const out = [];
+          function add(k) {
+            const s = String(k || "").trim();
+            if (!s || seen.has(s)) return;
+            seen.add(s);
+            out.push(s);
+          }
+          add(resolveWriteKey(col, sampleRow));
+          add(col.key);
+          if (col.saveKey) add(col.saveKey);
+          (col.altKeys || []).forEach(add);
+          (col.tryKeys || []).forEach(add);
+          if (sampleRow && typeof sampleRow === "object") {
+            Object.keys(sampleRow).forEach(function (k) {
+              if (isODataOrMetaKey(k)) return;
+              const ck = String(col.key).toLowerCase();
+              const kl = String(k).toLowerCase();
+              if (k === col.key || kl === ck || kl.indexOf(ck) === 0) add(k);
+            });
+          }
+          return out;
+        }
+
+        async function fetchChoiceOptionsForColumn(col, seg, pw, sampleRow) {
+          const candidates = choiceFieldCandidateNames(col, sampleRow);
+          for (let i = 0; i < candidates.length; i++) {
+            try {
+              const r = await fetchChoiceOptions(seg, pw, candidates[i]);
+              if ((r.choices && r.choices.length) || (r.lookupEntries && r.lookupEntries.length)) {
+                return {
+                  choices: r.choices || [],
+                  lookupEntries: r.lookupEntries || [],
+                  fieldKey: candidates[i],
+                  field: r.field,
+                };
+              }
+            } catch (_) {}
+          }
+          try {
+            const data = await spFetch(
+              `/_api/web/${seg}/fields?$select=Title,InternalName,Choices,TypeAsString,LookupList,LookupField&$filter=Hidden eq false&$top=200`,
+              {},
+              pw,
+            );
+            const fields = (data && data.value) || [];
+            const label = String(col.label || col.key).trim().toLowerCase();
+            const keyLower = String(col.key).trim().toLowerCase();
+            for (let j = 0; j < fields.length; j++) {
+              const f = fields[j];
+              const title = String(f.Title || "").trim().toLowerCase();
+              const internal = String(f.InternalName || "").trim().toLowerCase();
+              if (title !== label && internal !== keyLower && title !== keyLower) continue;
+              if (f.TypeAsString && /lookup/i.test(String(f.TypeAsString)) && f.LookupList) {
+                const lookupEntries = await fetchLookupListChoices(pw, f);
+                if (lookupEntries.length) {
+                  return {
+                    choices: lookupEntries.map(function (e) {
+                      return e.text;
+                    }),
+                    lookupEntries: lookupEntries,
+                    fieldKey: f.InternalName || f.Title,
+                    field: f,
+                  };
+                }
+              }
+              let choices = [];
+              if (Array.isArray(f.Choices)) choices = f.Choices;
+              else if (f.Choices && typeof f.Choices === "object" && Array.isArray(f.Choices.results))
+                choices = f.Choices.results;
+              choices = choices.map(function (c) {
+                return String(c).trim();
+              }).filter(Boolean);
+              if (choices.length) {
+                return { choices: choices, fieldKey: f.InternalName || f.Title, field: f };
+              }
+            }
+          } catch (_) {}
+          return { choices: [], fieldKey: candidates[0] || col.key };
+        }
+
+        function formFieldPayloadValue(el, writeKey) {
+          const v = String(el.value || "").trim();
+          if (v === "") return null;
+          if (el.type === "date") return v + "T00:00:00Z";
+          if (el.tagName === "SELECT" && /Id$/.test(writeKey)) {
+            const n = parseInt(v, 10);
+            return isNaN(n) ? v : n;
+          }
+          return v;
+        }
+
+        function ensureSelectIncludesValue(sel, value) {
+          if (!sel || sel.tagName !== "SELECT") return;
+          const v = String(value != null ? value : "").trim();
+          if (!v) return;
+          for (let i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === v) return;
+          }
+          const o = document.createElement("option");
+          o.value = v;
+          o.textContent = v;
+          sel.appendChild(o);
+        }
+
+        async function fillDropdownSelect(sel, col, seg, pw, sampleRow, item) {
+          if (!sel || sel.tagName !== "SELECT") return;
+          const priorValue = String(sel.value || "").trim();
+          while (sel.options.length > 1) sel.remove(1);
+          let loaded = false;
+          try {
+            const r = await fetchChoiceOptionsForColumn(col, seg, pw, sampleRow);
+            const fieldMeta = r.field || {};
+            const internal = fieldMeta.InternalName || r.fieldKey || col.key;
+            if (r.lookupEntries && r.lookupEntries.length) {
+              sel.dataset.writeKey = internal + "Id";
+              sel.dataset.lookupDisplayKey = internal;
+              r.lookupEntries.forEach(function (entry) {
+                const o = document.createElement("option");
+                o.value = String(entry.id);
+                o.textContent = entry.text;
+                sel.appendChild(o);
+              });
+              loaded = true;
+            } else if (r.fieldKey) {
+              sel.dataset.writeKey = r.fieldKey;
+              delete sel.dataset.lookupDisplayKey;
+            }
+            if (!loaded && r.choices && r.choices.length) {
+              r.choices.forEach(function (c) {
+                const o = document.createElement("option");
+                o.value = c;
+                o.textContent = c;
+                sel.appendChild(o);
+              });
+              loaded = true;
+            } else if (!loaded) {
+              const o = document.createElement("option");
+              o.value = "";
+              o.textContent = "(no choices â€” tried: " + choiceFieldCandidateNames(col, sampleRow).join(", ") + ")";
+              o.disabled = true;
+              sel.appendChild(o);
+            }
+          } catch (e) {
+            log("Choices for " + col.key + ": " + (e.message || String(e)), "err");
+            const o = document.createElement("option");
+            o.value = "";
+            o.textContent = "(error loading choices)";
+            o.disabled = true;
+            sel.appendChild(o);
+          }
+          if (priorValue) sel.value = priorValue;
+          else if (item) setFieldValueFromItem(sel, col, item);
+          ensureSelectIncludesValue(sel, sel.value);
+          applySelectAutosize(sel);
         }
 
         function primeRecordDateDefault() {
@@ -2368,34 +2568,8 @@
             const col = cols[i];
             if (col.key === "Id") continue;
             if (DROPDOWN_COLUMN_KEYS.indexOf(col.key) === -1) continue;
-            const writeKey = resolveWriteKey(col, sampleRow);
             const sel = document.getElementById("nf_" + col.key);
-            if (!sel || sel.tagName !== "SELECT") continue;
-            try {
-              const r = await fetchChoiceOptions(seg, pw, writeKey);
-              if (r.choices && r.choices.length) {
-                r.choices.forEach((c) => {
-                  const o = document.createElement("option");
-                  o.value = c;
-                  o.textContent = c;
-                  sel.appendChild(o);
-                });
-              } else {
-                const o = document.createElement("option");
-                o.value = "";
-                o.textContent = "(no choices â€” check field internal name: " + writeKey + ")";
-                o.disabled = true;
-                sel.appendChild(o);
-              }
-            } catch (e) {
-              log("Choices for " + writeKey + ": " + (e.message || String(e)), "err");
-              const o = document.createElement("option");
-              o.value = "";
-              o.textContent = "(error loading choices)";
-              o.disabled = true;
-              sel.appendChild(o);
-            }
-            applySelectAutosize(sel);
+            await fillDropdownSelect(sel, col, seg, pw, sampleRow, sampleRow);
           }
           applyAllSelectAutosizes(form);
           requestAnimationFrame(function () {
@@ -2432,12 +2606,8 @@
             const el = document.getElementById("nf_" + col.key);
             if (!el) return;
             const writeKey = el.dataset.writeKey || resolveWriteKey(col, sampleRow);
-            let v = String(el.value || "").trim();
-            if (v === "") return;
-            if (el.type === "date") {
-              payload[writeKey] = v + "T00:00:00Z";
-              return;
-            }
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
             payload[writeKey] = v;
           });
 
