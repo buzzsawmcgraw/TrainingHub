@@ -890,7 +890,7 @@
           "Personnel_x0020_ID",
           "Personnel/Id",
         ];
-        const WEAPONS_CERT_ITEMS_ORDERBY = "CertificationDate desc";
+        const WEAPONS_CERT_ITEMS_ORDERBY = "QualDate desc";
         const WEAPONS_CERT_COLUMNS = [
           {
             key: "Weapon",
@@ -898,9 +898,9 @@
             altKeys: ["WeaponName", "Weapon_x0020_Name", "WeaponType", "Title"],
           },
           {
-            key: "CertificationDate",
+            key: "QualDate",
             label: "Cert date",
-            altKeys: ["Certification_x0020_Date", "CertDate", "QualificationDate", "Qualification_x0020_Date"],
+            altKeys: ["QualificationDate", "Qualification_x0020_Date", "CertificationDate", "Certification_x0020_Date", "CertDate"],
           },
           {
             key: "ExpiryDate",
@@ -1580,11 +1580,12 @@
           try {
             const rows = await fetchWeaponsCertificationsForPersonnel(seg, pw, personId);
             const dateKeys = [
+              "QualDate",
+              "QualificationDate",
+              "Qualification_x0020_Date",
               "CertificationDate",
               "Certification_x0020_Date",
               "CertDate",
-              "QualificationDate",
-              "Qualification_x0020_Date",
             ];
             rows.sort(function (a, b) {
               const da = formatCellValue(valueFromItemByKeys(a, dateKeys) || "");
