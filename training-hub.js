@@ -1327,13 +1327,14 @@
         function buildAddFieldWrap(col, sampleRow, opt) {
           opt = opt || {};
           if (col.key === "Id") return null;
+          const idPrefix = opt.idPrefix || "nf_";
           const writeKey = resolveWriteKey(col, sampleRow);
           const fwrap = document.createElement("div");
           fwrap.className = "add-field";
           if (col.key === "Address") fwrap.classList.add("add-field--address");
           if (col.key === "Notes") fwrap.classList.add("add-field--notes");
           const lab = document.createElement("label");
-          lab.setAttribute("for", "nf_" + col.key);
+          lab.setAttribute("for", idPrefix + col.key);
           lab.textContent = col.label;
           lab.title = "REST write key: " + writeKey;
           fwrap.appendChild(lab);
@@ -1343,7 +1344,7 @@
           if (isDrop) {
             input = document.createElement("select");
             if (!opt.fullWidthSelect) input.className = "add-field-select--autosize";
-            input.id = "nf_" + col.key;
+            input.id = idPrefix + col.key;
             input.dataset.writeKey = writeKey;
             const opt0 = document.createElement("option");
             opt0.value = "";
@@ -1351,18 +1352,18 @@
             input.appendChild(opt0);
           } else if (col.key === "Address" || col.key === "Notes") {
             input = document.createElement("textarea");
-            input.id = "nf_" + col.key;
+            input.id = idPrefix + col.key;
             input.dataset.writeKey = writeKey;
             input.rows = col.key === "Address" ? 2 : 2;
           } else if (col.key === "RecordDate") {
             input = document.createElement("input");
             input.type = "date";
-            input.id = "nf_" + col.key;
+            input.id = idPrefix + col.key;
             input.dataset.writeKey = writeKey;
           } else {
             input = document.createElement("input");
             input.type = "text";
-            input.id = "nf_" + col.key;
+            input.id = idPrefix + col.key;
             input.dataset.writeKey = writeKey;
           }
           fwrap.appendChild(input);
