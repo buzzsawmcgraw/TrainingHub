@@ -64,7 +64,7 @@ If you see a red error about uploading files, the `.txt` files are missing or `S
 
 Use only if Site Assets upload is not possible.
 
-1. Open **`sharepoint-script-editor-paste.html`**.
+1. Open **`archive/sharepoint-script-editor-paste.html`**.
 2. Select all → paste into Modern Script Editor.
 3. Save and publish.
 

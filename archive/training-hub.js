@@ -5,12 +5,12 @@
          * - Site page: https://usaf.dps.mil/sites/88thSFS/SitePages/S3T.aspx
          * - List view: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
          *
-         * (A) Site root â€” no trailing slash. REST is always: SITE_ROOT + "/_api/web/..."
+         * (A) Site root - no trailing slash. REST is always: SITE_ROOT + "/_api/web/..."
          */
         const PERSONNEL_SITE_ROOT_URL = "https://usaf.dps.mil/sites/88thSFS";
 
         /**
-         * (B) Optional fallback: paste any URL under the site; derives â€¦/sites/88thSFS. Ignored when (A) is set.
+         * (B) Optional fallback: paste any URL under the site; derives .../sites/88thSFS. Ignored when (A) is set.
          * Example: https://usaf.dps.mil/sites/88thSFS/Lists/Personnel.AllItems.aspx
          */
         const PERSONNEL_SHAREPOINT_URL = "";
@@ -19,14 +19,14 @@
         const PERSONNEL_REST_WEB_URL = "";
 
         /**
-         * Page access gate â€” users must enter this password before the hub loads. Set "" to disable.
+         * Page access gate - users must enter this password before the hub loads. Set "" to disable.
          */
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
 
-        /** Must match Site contents list title (URL â€¦/Lists/Personnelâ€¦ usually means title "Personnel"). */
+        /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
-        /** Optional: List GUID from List settings â†’ use if getbytitle fails. */
+        /** Optional: List GUID from List settings -> use if getbytitle fails. */
         const LIST_PERSONNEL_GUID = "";
 
         /**
@@ -79,7 +79,7 @@
           "Personnel/Id",
         ];
         const BYLAW_TRAINING_ITEMS_ORDERBY = "QualDate desc";
-        /** ByLawTraining list: PersonnelId Â· Item Â· QualDate Â· ExpirationDate Â· Certifier (+ computed Status in hub). */
+        /** ByLawTraining list: PersonnelId * Item * QualDate * ExpirationDate * Certifier (+ computed Status in hub). */
         const BYLAW_TRAINING_COLUMNS = [
           {
             key: "Item",
@@ -115,7 +115,7 @@
 
         /**
          * Circular profile image to the left of the squadron header (default: **S3T Files** / **Fallout Guy.png**).
-         * `HUB_PROFILE_IMAGE_URL` â€” full URL override. `HUB_LOGO_URL` â€” legacy override if profile URL is empty.
+         * `HUB_PROFILE_IMAGE_URL` - full URL override. `HUB_LOGO_URL` - legacy override if profile URL is empty.
          * Otherwise built from `PERSONNEL_SITE_ROOT_URL` + `HUB_PROFILE_SITE_RELATIVE_PATH`.
          */
         const HUB_PROFILE_IMAGE_URL = "";
@@ -135,7 +135,7 @@
          * Full-width image across the top of the web part (default: **S3T Files** / **banner.png** on this site).
          * Paste a full file URL here to override. Leave "" to build from `PERSONNEL_SITE_ROOT_URL` +
          * `HUB_BANNER_SITE_RELATIVE_PATH`. If the image does not load, open the file in SharePoint, copy the browser
-         * address, and set `HUB_TOP_BANNER_URL` to that value (or fix `HUB_BANNER_SITE_RELATIVE_PATH` â€” e.g. add
+         * address, and set `HUB_TOP_BANNER_URL` to that value (or fix `HUB_BANNER_SITE_RELATIVE_PATH` - e.g. add
          * `Shared%20Documents/` if **S3T Files** is a folder inside Documents, not the library root).
          */
         const HUB_TOP_BANNER_URL = "";
@@ -145,7 +145,7 @@
 
         /**
          * Roster column `key` values that render as dropdowns. Options are loaded from SharePoint field **Choices**
-         * (same internal name as used for save â€” see `resolveWriteKey` / first data row).
+         * (same internal name as used for save - see `resolveWriteKey` / first data row).
          */
         const DROPDOWN_COLUMN_KEYS = ["Status", "OfficeSymbol", "Squadron", "Rank"];
 
@@ -154,7 +154,7 @@
 
         /**
          * OData `$orderby` for list items. Rows are always sorted again client-side by LastName, then FirstName, so the
-         * roster follows Aâ€“Z by name even if this clause is rejected (400).
+         * roster follows A-Z by name even if this clause is rejected (400).
          */
         const PERSONNEL_ITEMS_ORDERBY = "LastName asc,FirstName asc";
 
@@ -168,9 +168,9 @@
         const SHOW_LIST_ITEM_ID_IN_ROSTER = false;
 
         /**
-         * Roster columns â€” fixed order for 88thSFS Personnel. List item Id is hidden unless SHOW_LIST_ITEM_ID_IN_ROSTER is true
-         * and you include `{ key: "Id", label: "â€¦" }` here.
-         * If a column is always blank, open Diagnostics and change that rowâ€™s `key` / add `altKeys` (see Record Date).
+         * Roster columns - fixed order for 88thSFS Personnel. List item Id is hidden unless SHOW_LIST_ITEM_ID_IN_ROSTER is true
+         * and you include `{ key: "Id", label: "..." }` here.
+         * If a column is always blank, open Diagnostics and change that row's `key` / add `altKeys` (see Record Date).
          */
         const ROSTER_COLUMNS = [
           {
@@ -193,7 +193,7 @@
         ];
 
         /**
-         * Training Hub form (`Id` omitted). Identity | Contact. Contact: Address / phones, then Status Â· OfficeSymbol Â·
+         * Training Hub form (`Id` omitted). Identity | Contact. Contact: Address / phones, then Status * OfficeSymbol *
          * Squadron on one row, then Notes (height trimmed to align column bottoms with Identity).
          */
         const ADD_FORM_FIELD_GROUPS = [
@@ -406,7 +406,7 @@
           return k === "odata.type" || k === "odata.id" || k === "odata.editLink" || k === "odata.metadata";
         }
 
-        /** Union of field names across all loaded rows (order: Title, then Aâ€“Z). List item `Id` is omitted from the table. */
+        /** Union of field names across all loaded rows (order: Title, then A-Z). List item `Id` is omitted from the table. */
         function collectColumnKeys(rows) {
           const set = new Set();
           rows.forEach((item) => {
@@ -554,9 +554,9 @@
             setReadState("err", "Invalid row Id for delete.");
             return;
           }
-          if (!confirm("Delete personnel record Id " + sid + "? This cannot be undone.")) return;
+          if (!confirm("Delete Personnel Record Id " + sid + "? This cannot be undone.")) return;
           try {
-            setReadState("loading", "Deleting recordâ€¦");
+            setReadState("loading", "Deleting record...");
             await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
             log("DELETE Id " + sid + " OK", "ok");
             await runProbe();
@@ -601,7 +601,7 @@
               "warn",
               !certifiersListApiSegment()
                 ? "Certifiers list is not configured."
-                : "Load the personnel roster first (wait for list to load or click Refresh list).",
+                : "Load the Personnel Roster first (wait for list to load or click Refresh list).",
             );
             return;
           }
@@ -843,7 +843,7 @@
           if (personWeaponsAddForm) personWeaponsAddForm.reset();
           if (personWeaponsEmpty) {
             personWeaponsEmpty.hidden = true;
-            personWeaponsEmpty.textContent = "No weapons qualifications on file for this person.";
+            personWeaponsEmpty.textContent = "No Weapons Qualifications on file for this person.";
           }
           if (personWeaponsWrap) personWeaponsWrap.hidden = true;
         }
@@ -860,7 +860,7 @@
         function setWeaponsCertFormMode(mode) {
           const isEdit = mode === "edit";
           if (personWeaponsFormTitle) {
-            personWeaponsFormTitle.textContent = isEdit ? "Requalify weapon" : "New weapons qualification";
+            personWeaponsFormTitle.textContent = isEdit ? "Requalify Weapon" : "New Weapons Qualification";
           }
           if (personWeaponsSaveBtn) {
             personWeaponsSaveBtn.textContent = isEdit ? "Save requalification" : "Save qualification";
@@ -1017,7 +1017,7 @@
 
         async function openWeaponsCertAddPanel() {
           if (!personDetailSession.item || personDetailSession.item.Id == null) {
-            setWeaponsCertState("warn", "Open a personnel record before adding a qualification.");
+            setWeaponsCertState("warn", "Open a Personnel Record before adding a qualification.");
             return;
           }
           weaponsCertEditSession.item = null;
@@ -1033,7 +1033,7 @@
 
         async function openWeaponsCertEditPanel(item) {
           if (!personDetailSession.item || personDetailSession.item.Id == null) {
-            setWeaponsCertState("warn", "Open a personnel record before requalifying.");
+            setWeaponsCertState("warn", "Open a Personnel Record before requalifying.");
             return;
           }
           if (!item || item.Id == null) return;
@@ -1057,9 +1057,9 @@
             setWeaponsCertState("err", "Invalid qualification Id for delete.");
             return;
           }
-          if (!confirm("Delete weapons qualification Id " + sid + "? This cannot be undone.")) return;
+          if (!confirm("Delete Weapons Qualification Id " + sid + "? This cannot be undone.")) return;
           try {
-            setWeaponsCertState("loading", "Deleting qualificationâ€¦");
+            setWeaponsCertState("loading", "Deleting qualification...");
             await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
             if (weaponsCertEditSession.item && parseInt(String(weaponsCertEditSession.item.Id), 10) === sid) {
               weaponsCertEditSession.item = null;
@@ -1113,7 +1113,7 @@
           if (!isEdit) {
             const personId = parseInt(String(personItem.Id), 10);
             if (!personId || isNaN(personId)) {
-              setWeaponsCertState("err", "Invalid personnel record Id.");
+              setWeaponsCertState("err", "Invalid Personnel Record Id.");
               return;
             }
             const personKey = await resolveWeaponsPersonPostKey(seg, pw);
@@ -1122,7 +1122,7 @@
           }
 
           try {
-            setWeaponsCertState("loading", isEdit ? "Saving requalificationâ€¦" : "Saving qualificationâ€¦");
+            setWeaponsCertState("loading", isEdit ? "Saving requalification..." : "Saving qualification...");
             if (personWeaponsSaveBtn) personWeaponsSaveBtn.disabled = true;
             if (isEdit) {
               await spFetch(`/_api/web/${seg}/items(${editItem.Id})`, { method: "MERGE", body: payload }, pw);
@@ -1381,7 +1381,7 @@
         async function loadPersonWeaponsCertifications(personId, pw) {
           if (!personId) return;
           if (personWeaponsWrap) personWeaponsWrap.hidden = false;
-          setWeaponsCertState("loading", "Loading weapons qualificationsâ€¦");
+          setWeaponsCertState("loading", "Loading Weapons Qualifications...");
           clearWeaponsCertTable();
           if (personWeaponsEmpty) personWeaponsEmpty.hidden = true;
 
@@ -1421,11 +1421,11 @@
           } catch (e) {
             hubSession.weaponsCertSampleRow = hubSession.weaponsCertSampleRow || null;
             renderWeaponsCertTable([]);
-            setWeaponsCertState("warn", "Could not load weapons qualifications: " + (e.message || String(e)).slice(0, 220));
+            setWeaponsCertState("warn", "Could not load Weapons Qualifications: " + (e.message || String(e)).slice(0, 220));
             if (personWeaponsEmpty) {
               personWeaponsEmpty.hidden = false;
               personWeaponsEmpty.textContent =
-                "No weapons qualifications loaded. If PersonnelId exists on the list, check that values match the personnel record Id.";
+                "No Weapons Qualifications loaded. If PersonnelId exists on the list, check that values match the Personnel Record Id.";
             }
           }
         }
@@ -1474,7 +1474,7 @@
           if (personBylawAddForm) personBylawAddForm.reset();
           if (personBylawEmpty) {
             personBylawEmpty.hidden = true;
-            personBylawEmpty.textContent = "No by-law training records on file for this person.";
+            personBylawEmpty.textContent = "No By-Law Training records on file for this person.";
           }
           if (personBylawWrap) personBylawWrap.hidden = true;
         }
@@ -1484,17 +1484,17 @@
           if (personBylawAddPanel && !personBylawAddPanel.hidden) {
             personBylawAddBtn.textContent = bylawTrainingEditSession.item ? "Cancel requalify" : "Cancel add";
           } else {
-            personBylawAddBtn.textContent = "Add training";
+            personBylawAddBtn.textContent = "Add Training";
           }
         }
 
         function setBylawTrainingFormMode(mode) {
           const isEdit = mode === "edit";
           if (personBylawFormTitle) {
-            personBylawFormTitle.textContent = isEdit ? "Requalify training" : "New by-law training record";
+            personBylawFormTitle.textContent = isEdit ? "Requalify Training" : "New By-Law Training Record";
           }
           if (personBylawSaveBtn) {
-            personBylawSaveBtn.textContent = isEdit ? "Save requalification" : "Save training";
+            personBylawSaveBtn.textContent = isEdit ? "Save Requalification" : "Save Training";
           }
           updateBylawTrainingToolbarLabel();
         }
@@ -1657,7 +1657,7 @@
 
         async function openBylawTrainingAddPanel() {
           if (!personDetailSession.item || personDetailSession.item.Id == null) {
-            setBylawTrainingState("warn", "Open a personnel record before adding training.");
+            setBylawTrainingState("warn", "Open a Personnel Record before adding training.");
             return;
           }
           bylawTrainingEditSession.item = null;
@@ -1673,7 +1673,7 @@
 
         async function openBylawTrainingEditPanel(item) {
           if (!personDetailSession.item || personDetailSession.item.Id == null) {
-            setBylawTrainingState("warn", "Open a personnel record before requalifying.");
+            setBylawTrainingState("warn", "Open a Personnel Record before requalifying.");
             return;
           }
           if (!item || item.Id == null) return;
@@ -1697,9 +1697,9 @@
             setBylawTrainingState("err", "Invalid training record Id for delete.");
             return;
           }
-          if (!confirm("Delete by-law training record Id " + sid + "? This cannot be undone.")) return;
+          if (!confirm("Delete By-Law Training record Id " + sid + "? This cannot be undone.")) return;
           try {
-            setBylawTrainingState("loading", "Deleting training recordâ€¦");
+            setBylawTrainingState("loading", "Deleting training record...");
             await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
             if (bylawTrainingEditSession.item && parseInt(String(bylawTrainingEditSession.item.Id), 10) === sid) {
               bylawTrainingEditSession.item = null;
@@ -1713,7 +1713,7 @@
             }, 2500);
           } catch (e) {
             setBylawTrainingState("err", "Delete failed: " + (e.message || String(e)).slice(0, 280));
-            log("By-law training DELETE failed:\n" + (e.message || String(e)), "err");
+            log("By-Law Training DELETE failed:\n" + (e.message || String(e)), "err");
           }
         }
 
@@ -1753,7 +1753,7 @@
           if (!isEdit) {
             const personId = parseInt(String(personItem.Id), 10);
             if (!personId || isNaN(personId)) {
-              setBylawTrainingState("err", "Invalid personnel record Id.");
+              setBylawTrainingState("err", "Invalid Personnel Record Id.");
               return;
             }
             const personKey = await resolveBylawPersonPostKey(seg, pw);
@@ -1762,7 +1762,7 @@
           }
 
           try {
-            setBylawTrainingState("loading", isEdit ? "Saving requalificationâ€¦" : "Saving training recordâ€¦");
+            setBylawTrainingState("loading", isEdit ? "Saving requalification..." : "Saving training record...");
             if (personBylawSaveBtn) personBylawSaveBtn.disabled = true;
             if (isEdit) {
               await spFetch(`/_api/web/${seg}/items(${editItem.Id})`, { method: "MERGE", body: payload }, pw);
@@ -1779,7 +1779,7 @@
             }, 2500);
           } catch (e) {
             setBylawTrainingState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
-            log("By-law training save failed:\n" + (e.message || String(e)), "err");
+            log("By-Law Training save failed:\n" + (e.message || String(e)), "err");
           } finally {
             if (personBylawSaveBtn) personBylawSaveBtn.disabled = false;
           }
@@ -2022,7 +2022,7 @@
         async function loadPersonBylawTraining(personId, pw) {
           if (!personId) return;
           if (personBylawWrap) personBylawWrap.hidden = false;
-          setBylawTrainingState("loading", "Loading by-law training recordsâ€¦");
+          setBylawTrainingState("loading", "Loading By-Law Training records...");
           clearBylawTrainingTable();
           if (personBylawEmpty) personBylawEmpty.hidden = true;
 
@@ -2032,7 +2032,7 @@
             setBylawTrainingState("", "");
             if (personBylawEmpty) {
               personBylawEmpty.hidden = false;
-              personBylawEmpty.textContent = "By-law training list is not configured.";
+              personBylawEmpty.textContent = "By-Law Training list is not configured.";
             }
             return;
           }
@@ -2062,11 +2062,11 @@
           } catch (e) {
             hubSession.bylawTrainingSampleRow = hubSession.bylawTrainingSampleRow || null;
             renderBylawTrainingTable([]);
-            setBylawTrainingState("warn", "Could not load by-law training records: " + (e.message || String(e)).slice(0, 220));
+            setBylawTrainingState("warn", "Could not load By-Law Training records: " + (e.message || String(e)).slice(0, 220));
             if (personBylawEmpty) {
               personBylawEmpty.hidden = false;
               personBylawEmpty.textContent =
-                "No by-law training records loaded. If PersonnelId exists on the list, check that values match the personnel record Id.";
+                "No By-Law Training records loaded. If PersonnelId exists on the list, check that values match the Personnel Record Id.";
             }
           }
         }
@@ -2277,7 +2277,7 @@
             return;
           }
           try {
-            setInstructorsState("loading", "Loading instructorsâ€¦");
+            setInstructorsState("loading", "Loading instructors...");
             await discoverCertifiersPersonnelField(pw);
             const rows = await fetchCertifierRows(pw);
             instructorsSession.rows = rows;
@@ -2305,7 +2305,7 @@
           }
           if (!confirm("Remove instructor Id " + sid + " from the Certifiers list? This cannot be undone.")) return;
           try {
-            setInstructorsState("loading", "Deleting instructorâ€¦");
+            setInstructorsState("loading", "Deleting instructor...");
             await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
             log("DELETE certifier Id " + sid + " OK", "ok");
             await loadInstructorsList();
@@ -2360,7 +2360,7 @@
           }
           const personId = instructorsPersonSelect ? parseInt(String(instructorsPersonSelect.value || "").trim(), 10) : 0;
           if (!personId || isNaN(personId)) {
-            setInstructorsState("err", "Select a person from the personnel roster.");
+            setInstructorsState("err", "Select a person from the Personnel Roster.");
             return;
           }
           const person = (hubSession.rows || []).find(function (r) {
@@ -2392,7 +2392,7 @@
           if (!personPostKey || certField) payload[certField] = displayName;
 
           try {
-            setInstructorsState("loading", "Adding instructorâ€¦");
+            setInstructorsState("loading", "Adding instructor...");
             if (instructorsSaveBtn) instructorsSaveBtn.disabled = true;
             await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
             setInstructorsAddPanelVisible(false);
@@ -2446,7 +2446,7 @@
           let name = [last, first].filter(Boolean).join(", ");
           if (mi) name = name ? name + " " + mi + "." : mi + ".";
           if (rank && name) return rank + " " + name;
-          return rank || name || "Personnel record";
+          return rank || name || "Personnel Record";
         }
 
         function buildDetailFieldWrap(col, item) {
@@ -2821,11 +2821,11 @@
           });
 
           if (SET_TITLE_ON_CREATE) {
-            payload.Title = [lastName, firstName].filter(Boolean).join(", ") || dod || "Personnel record";
+            payload.Title = [lastName, firstName].filter(Boolean).join(", ") || dod || "Personnel Record";
           }
 
           try {
-            setPersonDetailState("loading", "Saving changesâ€¦");
+            setPersonDetailState("loading", "Saving changes...");
             if (personDetailSaveBtn) personDetailSaveBtn.disabled = true;
             await spFetch(`/_api/web/${s.seg}/items(${s.item.Id})`, { method: "MERGE", body: payload }, s.pw);
             const updated = mergePayloadIntoItem(s.item, payload);
@@ -2860,12 +2860,12 @@
 
           if (!item) {
             personDetailContent.innerHTML = "";
-            setPersonDetailState("loading", "Loading personnel recordâ€¦");
-            if (personDetailTitle) personDetailTitle.textContent = "Personnel record";
+            setPersonDetailState("loading", "Loading Personnel Record...");
+            if (personDetailTitle) personDetailTitle.textContent = "Personnel Record";
             try {
               item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
             } catch (e) {
-              setPersonDetailState("err", "Cannot load personnel record: " + (e.message || String(e)).slice(0, 280));
+              setPersonDetailState("err", "Cannot load Personnel Record: " + (e.message || String(e)).slice(0, 280));
               return;
             }
           }
@@ -2913,7 +2913,7 @@
         if (instructorsAddBtn) {
           instructorsAddBtn.addEventListener("click", function () {
             if (!hubSession.rows || !hubSession.rows.length) {
-              setInstructorsState("warn", "Personnel roster is empty. Refresh the list first.");
+              setInstructorsState("warn", "Personnel Roster is empty. Refresh the list first.");
               return;
             }
             populateInstructorsPersonSelect();
@@ -3017,7 +3017,7 @@
           columns.forEach((col) => {
             const th = document.createElement("th");
             th.textContent = col.label;
-            th.title = (col.tryKeys || [col.key]).join(" Â· ");
+            th.title = (col.tryKeys || [col.key]).join(" * ");
             trHead.appendChild(th);
           });
           if (showRowActions) {
@@ -3103,7 +3103,7 @@
                 (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
                 "). List \"" +
                 listTitle +
-                "\" â€” ItemCount " +
+                "\" - ItemCount " +
                 ic +
                 ".",
             );
@@ -3297,7 +3297,7 @@
         }
 
         async function enumerateListTitles(pw) {
-          log("--- Listing lists on this web (first 200, not hidden) â€” find exact Title for LIST_PERSONNEL ---");
+          log("--- Listing lists on this web (first 200, not hidden) - find exact Title for LIST_PERSONNEL ---");
           const data = await spFetch(
             "/_api/web/lists?$select=Title,Id,ItemCount,Hidden&$filter=Hidden eq false&$orderby=Title&$top=200",
             {},
@@ -3305,7 +3305,7 @@
           );
           const rows = (data && data.value) || [];
           rows.forEach((r) => {
-            log("  â€¢ " + (r.Title || "") + "  (Id=" + r.Id + ", ItemCount=" + (r.ItemCount != null ? r.ItemCount : "?") + ")");
+            log("  * " + (r.Title || "") + "  (Id=" + r.Id + ", ItemCount=" + (r.ItemCount != null ? r.ItemCount : "?") + ")");
           });
         }
 
@@ -3478,7 +3478,7 @@
 
           const listSeg = certifiersListApiSegment();
           const errText = listSeg
-            ? "(no certifiers in list " + LIST_CERTIFIERS + " â€” check Certifier column and list permissions)"
+            ? "(no certifiers in list " + LIST_CERTIFIERS + " - check Certifier column and list permissions)"
             : "(Certifiers list not configured)";
           while (sel.options.length > 1) sel.remove(1);
           const o = document.createElement("option");
@@ -3653,7 +3653,7 @@
             } else if (!loaded) {
               const o = document.createElement("option");
               o.value = "";
-              o.textContent = "(no choices â€” tried: " + choiceFieldCandidateNames(col, sampleRow).join(", ") + ")";
+              o.textContent = "(no choices - tried: " + choiceFieldCandidateNames(col, sampleRow).join(", ") + ")";
               o.disabled = true;
               sel.appendChild(o);
             }
@@ -3979,7 +3979,7 @@
         }
 
         async function submitNewPerson(meta, pw, seg, sampleRow) {
-          /** With `application/json;odata=nometadata`, do not send `__metadata` â€” SharePoint treats it as a list column and returns 400. */
+          /** With `application/json;odata=nometadata`, do not send `__metadata` - SharePoint treats it as a list column and returns 400. */
           const cols = normalizedRosterColumns();
           let lastName = "";
           let firstName = "";
@@ -4010,12 +4010,12 @@
           });
 
           if (SET_TITLE_ON_CREATE) {
-            const title = [lastName, firstName].filter(Boolean).join(", ") || dod || "New personnel";
+            const title = [lastName, firstName].filter(Boolean).join(", ") || dod || "New Personnel";
             payload.Title = title;
           }
 
           try {
-            setReadState("loading", "Submittingâ€¦");
+            setReadState("loading", "Submitting...");
             const created = await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
             const newId = parseCreatedItemId(created);
             log("POST created item Id: " + (newId || "?"), "ok");
@@ -4035,7 +4035,7 @@
           clearRosterTable();
           const addPanel = document.getElementById("addPersonPanel");
           if (addPanel) addPanel.innerHTML = "";
-          setReadState("loading", "Loading Personnel list from SharePointâ€¦");
+          setReadState("loading", "Loading Personnel list from SharePoint...");
 
           const ctx = getCtx();
           const pageWeb = ctx && ctx.webAbsoluteUrl ? String(ctx.webAbsoluteUrl).replace(/\/$/, "") : "";
@@ -4064,13 +4064,13 @@
                   : "unknown";
           log("How REST base was chosen: " + baseSource);
           log("location.href:\n" + String(location.href));
-          log("Page web from context (informational only):\n" + (pageWeb || "(no _spPageContextInfo â€” OK if explicit URLs are set)"));
+          log("Page web from context (informational only):\n" + (pageWeb || "(no _spPageContextInfo - OK if explicit URLs are set)"));
           log(
             "REST base used for ALL API calls below:\n" +
               pw +
               (pageWeb && pw === pageWeb
-                ? "  (same as page â€” from context or your URL matched the page site)"
-                : "  (explicit URL / derived from PERSONNEL_SHAREPOINT_URL â€” not necessarily this pageâ€™s site)"),
+                ? "  (same as page - from context or your URL matched the page site)"
+                : "  (explicit URL / derived from PERSONNEL_SHAREPOINT_URL - not necessarily this page's site)"),
           );
           log("List API segment:\n/_api/web/" + seg);
           log("LIST_PERSONNEL (trimmed):\n" + JSON.stringify(personnelListTitle()));
@@ -4105,7 +4105,7 @@
             items = await spFetch(`/_api/web/${seg2}/items?$top=500` + orderByQs, {}, pw);
           } catch (e0) {
             if (/\b400\b/.test(String(e0.message || ""))) {
-              log("orderby failed with 400; retry without orderbyâ€¦", "err");
+              log("orderby failed with 400; retry without orderby...", "err");
               try {
                 items = await spFetch(`/_api/web/${seg2}/items?$top=500`, {}, pw);
               } catch (e1) {
@@ -4133,7 +4133,7 @@
                 (meta && meta.ItemCount != null ? meta.ItemCount : "?") +
                 "). You can still add a person below; refresh after the first item exists.",
             );
-            log("List is empty (ItemCount may still be > 0 if filtered view â€” this is default view items).");
+            log("List is empty (ItemCount may still be > 0 if filtered view - this is default view items).");
           } else {
             if (plan.mode === "explicit") {
               const dispCols = rosterColumnsForDisplay(plan);

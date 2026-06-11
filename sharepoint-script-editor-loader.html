@@ -69,13 +69,13 @@
           <div id="addPersonPanel" class="add-person-panel" aria-live="polite"></div>
         </section>
         <section class="hub-section hub-section--status" aria-label="Connection status and refresh">
-          <div id="rosterReadState" class="read-state loading">Loading listâ€¦</div>
+          <div id="rosterReadState" class="read-state loading">Loading list...</div>
           <div class="hub-toolbar">
             <button type="button" id="probeRun">Refresh list</button>
           </div>
         </section>
-        <section class="hub-section hub-section--roster" aria-label="Personnel roster">
-          <h2 class="hub-subtitle">Personnel roster</h2>
+        <section class="hub-section hub-section--roster" aria-label="Personnel Roster">
+          <h2 class="hub-subtitle">Personnel Roster</h2>
           <div class="roster-wrap">
             <table class="roster" aria-label="Personnel rows from SharePoint">
               <thead id="rosterThead"></thead>
@@ -83,7 +83,7 @@
             </table>
           </div>
         </section>
-        <section id="personDetailSection" class="hub-section hub-section--person-detail" hidden aria-label="Personnel record detail">
+        <section id="personDetailSection" class="hub-section hub-section--person-detail" hidden aria-label="Personnel Record Detail">
           <div class="person-detail-panel">
             <div class="person-detail-toolbar">
               <a id="personDetailBackLink" class="person-detail-back" href="#">Back to roster</a>
@@ -93,25 +93,25 @@
                 <button type="button" id="personDetailCancelBtn" class="btn-secondary" hidden>Cancel</button>
               </div>
             </div>
-            <h2 id="personDetailTitle" class="hub-subtitle person-detail-title">Personnel record</h2>
+            <h2 id="personDetailTitle" class="hub-subtitle person-detail-title">Personnel Record</h2>
             <div id="personDetailReadState" class="read-state loading" hidden></div>
             <div id="personDetailContent" class="person-detail-content"></div>
             <div id="personWeaponsWrap" class="person-weapons-wrap" hidden>
-              <h3 class="person-weapons-title">Weapons qualifications</h3>
+              <h3 class="person-weapons-title">Weapons Qualifications</h3>
               <div id="personWeaponsState" class="read-state" hidden></div>
               <div class="roster-wrap weapons-roster-wrap">
-                <table class="roster weapons-table" aria-label="Weapons qualifications">
+                <table class="roster weapons-table" aria-label="Weapons Qualifications">
                   <thead id="personWeaponsThead"></thead>
                   <tbody id="personWeaponsBody"></tbody>
                 </table>
               </div>
-              <p id="personWeaponsEmpty" class="weapons-empty" hidden>No weapons qualifications on file for this person.</p>
+              <p id="personWeaponsEmpty" class="weapons-empty" hidden>No Weapons Qualifications on file for this person.</p>
               <div class="weapons-add-toolbar">
                 <button type="button" id="personWeaponsAddBtn" class="btn-secondary">Add qualification</button>
               </div>
               <div id="personWeaponsAddPanel" class="weapons-add-panel" hidden>
-                <h4 id="personWeaponsFormTitle" class="weapons-add-title">New weapons qualification</h4>
-                <form id="personWeaponsAddForm" class="weapons-add-form add-form-stack" aria-label="Add weapons qualification">
+                <h4 id="personWeaponsFormTitle" class="weapons-add-title">New Weapons Qualification</h4>
+                <form id="personWeaponsAddForm" class="weapons-add-form add-form-stack" aria-label="Add Weapons Qualification">
                   <div id="personWeaponsAddFields" class="add-form-grid"></div>
                   <div class="add-form-actions">
                     <button type="submit" id="personWeaponsSaveBtn">Save qualification</button>
@@ -121,24 +121,24 @@
               </div>
             </div>
             <div id="personBylawWrap" class="person-bylaw-wrap" hidden>
-              <h3 class="person-bylaw-title">By-law training</h3>
+              <h3 class="person-bylaw-title">By-Law Training</h3>
               <div id="personBylawState" class="read-state" hidden></div>
               <div class="roster-wrap bylaw-roster-wrap">
-                <table class="roster bylaw-table" aria-label="By-law training records">
+                <table class="roster bylaw-table" aria-label="By-Law Training Records">
                   <thead id="personBylawThead"></thead>
                   <tbody id="personBylawBody"></tbody>
                 </table>
               </div>
-              <p id="personBylawEmpty" class="bylaw-empty" hidden>No by-law training records on file for this person.</p>
+              <p id="personBylawEmpty" class="bylaw-empty" hidden>No By-Law Training records on file for this person.</p>
               <div class="bylaw-add-toolbar">
-                <button type="button" id="personBylawAddBtn" class="btn-secondary">Add training</button>
+                <button type="button" id="personBylawAddBtn" class="btn-secondary">Add Training</button>
               </div>
               <div id="personBylawAddPanel" class="bylaw-add-panel" hidden>
-                <h4 id="personBylawFormTitle" class="bylaw-add-title">New by-law training record</h4>
-                <form id="personBylawAddForm" class="bylaw-add-form add-form-stack" aria-label="Add by-law training record">
+                <h4 id="personBylawFormTitle" class="bylaw-add-title">New By-Law Training Record</h4>
+                <form id="personBylawAddForm" class="bylaw-add-form add-form-stack" aria-label="Add By-Law Training Record">
                   <div id="personBylawAddFields" class="add-form-grid"></div>
                   <div class="add-form-actions">
-                    <button type="submit" id="personBylawSaveBtn">Save training</button>
+                    <button type="submit" id="personBylawSaveBtn">Save Training</button>
                     <button type="button" id="personBylawAddCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
                 </form>
@@ -155,7 +155,7 @@
               </div>
             </div>
             <h2 class="hub-subtitle person-detail-title">Instructors</h2>
-            <p class="instructors-hint">Certifiers from the SharePoint Certifiers list. Add personnel as instructors or remove entries below.</p>
+            <p class="instructors-hint">Certifiers from the SharePoint Certifiers list. Add Personnel as instructors or remove entries below.</p>
             <div id="instructorsReadState" class="read-state" hidden></div>
             <div class="roster-wrap instructors-roster-wrap">
               <table class="roster instructors-table" aria-label="Instructors from Certifiers list">
@@ -165,13 +165,13 @@
             </div>
             <p id="instructorsEmpty" class="weapons-empty" hidden>No instructors on file.</p>
             <div id="instructorsAddPanel" class="weapons-add-panel" hidden>
-              <h4 class="weapons-add-title">Add instructor from personnel</h4>
+              <h4 class="weapons-add-title">Add Instructor from Personnel</h4>
               <form id="instructorsAddForm" class="weapons-add-form add-form-stack" aria-label="Add instructor">
                 <div class="add-form-grid">
                   <div class="add-field">
                     <label for="instructorsPersonSelect">Personnel</label>
                     <select id="instructorsPersonSelect" class="add-field-select--autosize">
-                      <option value="">Select personnelâ€¦</option>
+                      <option value="">Select Personnel...</option>
                     </select>
                   </div>
                 </div>

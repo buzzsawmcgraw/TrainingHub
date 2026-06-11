@@ -1,18 +1,33 @@
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $root "sharepoint-modern-script-editor-ui.html"
-$raw = Get-Content $src -Raw
+$raw = Get-Content $src -Raw -Encoding UTF8
+
+function ConvertTo-SharePointAscii([string]$text) {
+  if ([string]::IsNullOrEmpty($text)) { return $text }
+  $text = $text.Replace([string][char]0x2026, '...')
+  $text = $text.Replace([string][char]0x2014, '-')
+  $text = $text.Replace([string][char]0x2013, '-')
+  $text = $text.Replace([string][char]0x2192, '->')
+  $text = $text.Replace([string][char]0x00B7, '*')
+  $text = $text.Replace([string][char]0x2022, '*')
+  $text = $text.Replace([string][char]0x2019, "'")
+  $text = $text.Replace([string][char]0x2018, "'")
+  $text = $text.Replace([string][char]0x201C, '"')
+  $text = $text.Replace([string][char]0x201D, '"')
+  return $text
+}
 
 $cssMatch = [regex]::Match($raw, '(?s)<style>(.*?)</style>')
 if (-not $cssMatch.Success) { throw "Could not extract CSS from head" }
-$css = $cssMatch.Groups[1].Value.Trim()
+$css = ConvertTo-SharePointAscii($cssMatch.Groups[1].Value.Trim())
 # Strip local-preview body shell only (kept in source for opening the .html file in a browser).
 $css = [regex]::Replace($css, '(?s)/\* Page shell when viewing this file directly.*?\*/\s*body\s*\{[^}]*\}\s*', '')
 
 $hubStart = $raw.IndexOf('<div id="sp-pip-ui">')
 $scriptIdx = $raw.IndexOf('<script>', $hubStart)
 if ($hubStart -lt 0 -or $scriptIdx -le $hubStart) { throw "Could not locate #sp-pip-ui block" }
-$hubHtml = $raw.Substring($hubStart, $scriptIdx - $hubStart).TrimEnd()
+$hubHtml = ConvertTo-SharePointAscii($raw.Substring($hubStart, $scriptIdx - $hubStart).TrimEnd())
 
 $jsStart = $raw.LastIndexOf('<script>')
 $jsEnd = $raw.LastIndexOf('</script>')
@@ -21,10 +36,13 @@ $scriptBlock = $raw.Substring($jsStart, $jsEnd - $jsStart)
 $open = [regex]::Match($scriptBlock, '\(function \(\) \{')
 $close = $scriptBlock.LastIndexOf('})();')
 if (-not $open.Success -or $close -lt 0) { throw "Could not parse script wrapper" }
-$js = $scriptBlock.Substring($open.Index, $close - $open.Index + '})();'.Length)
+$js = ConvertTo-SharePointAscii($scriptBlock.Substring($open.Index, $close - $open.Index + '})();'.Length))
 
-Set-Content -Path (Join-Path $root "training-hub.css") -Value $css -Encoding UTF8
-Set-Content -Path (Join-Path $root "training-hub.js") -Value $js -Encoding UTF8
+$archive = Join-Path $root "archive"
+if (-not (Test-Path $archive)) {
+  New-Item -ItemType Directory -Path $archive | Out-Null
+}
+
 Set-Content -Path (Join-Path $root "training-hub-styles.txt") -Value $css -Encoding UTF8
 Set-Content -Path (Join-Path $root "training-hub-script.txt") -Value $js -Encoding UTF8
 
@@ -41,7 +59,9 @@ $js
 </script>
 "@
 
-Set-Content -Path (Join-Path $root "sharepoint-script-editor-paste.html") -Value $paste -Encoding UTF8
+Set-Content -Path (Join-Path $archive "sharepoint-script-editor-paste.html") -Value $paste -Encoding UTF8
+Set-Content -Path (Join-Path $archive "training-hub.css") -Value $css -Encoding UTF8
+Set-Content -Path (Join-Path $archive "training-hub.js") -Value $js -Encoding UTF8
 
 $loaderCss = @'
       #sp-pip-ui {
@@ -239,11 +259,23 @@ $loaderJs
 
 Set-Content -Path (Join-Path $root "sharepoint-script-editor-loader.html") -Value $loader -Encoding UTF8
 
-$pasteBytes = (Get-Item (Join-Path $root "sharepoint-script-editor-paste.html")).Length
+$legacyRootFiles = @(
+  "sharepoint-script-editor-paste.html",
+  "training-hub.css",
+  "training-hub.js"
+)
+foreach ($name in $legacyRootFiles) {
+  $legacyPath = Join-Path $root $name
+  if (Test-Path $legacyPath) {
+    Remove-Item $legacyPath -Force
+  }
+}
+
 $loaderBytes = (Get-Item (Join-Path $root "sharepoint-script-editor-loader.html")).Length
 $stylesBytes = (Get-Item (Join-Path $root "training-hub-styles.txt")).Length
 $scriptBytes = (Get-Item (Join-Path $root "training-hub-script.txt")).Length
-Write-Host "Wrote sharepoint-script-editor-paste.html ($pasteBytes bytes, all-in-one fallback)"
+$pasteBytes = (Get-Item (Join-Path $archive "sharepoint-script-editor-paste.html")).Length
 Write-Host "Wrote sharepoint-script-editor-loader.html ($loaderBytes bytes, paste this + Site Assets)"
 Write-Host "Wrote training-hub-styles.txt ($stylesBytes bytes) and training-hub-script.txt ($scriptBytes bytes)"
-Write-Host "Wrote training-hub.css / training-hub.js (local preview helpers)"
+Write-Host "Wrote archive/sharepoint-script-editor-paste.html ($pasteBytes bytes, all-in-one fallback)"
+Write-Host "Wrote archive/training-hub.css and archive/training-hub.js (local preview helpers)"
