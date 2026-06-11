@@ -2885,15 +2885,45 @@
           });
         }
 
+        function listItemDisplayFieldCandidates(displayField) {
+          const out = [];
+          function add(k) {
+            const s = String(k || "").trim();
+            if (s && out.indexOf(s) === -1) out.push(s);
+          }
+          add(displayField);
+          add(CERTIFIERS_LIST_DISPLAY_FIELD);
+          add("Certifier");
+          add("Title");
+          add("Name");
+          return out;
+        }
+
+        function rowLabelFromListItem(row, displayField) {
+          if (!row || typeof row !== "object") return "";
+          const candidates = listItemDisplayFieldCandidates(displayField);
+          for (let i = 0; i < candidates.length; i++) {
+            const key = candidates[i];
+            if (row[key] != null && row[key] !== "") return String(row[key]).trim();
+          }
+          const keys = Object.keys(row);
+          for (let i = 0; i < candidates.length; i++) {
+            const want = candidates[i].toLowerCase();
+            for (let j = 0; j < keys.length; j++) {
+              const k = keys[j];
+              if (k.toLowerCase() !== want) continue;
+              if (row[k] != null && row[k] !== "") return String(row[k]).trim();
+            }
+          }
+          return "";
+        }
+
         function listItemChoicesFromRows(rows, displayField) {
-          const lookupField = String(displayField || "Title").trim();
           const seen = new Set();
           const out = [];
           (Array.isArray(rows) ? rows : []).forEach(function (row) {
             if (!row) return;
-            const text = row[lookupField];
-            if (text == null || text === "") return;
-            const label = String(text).trim();
+            const label = rowLabelFromListItem(row, displayField);
             const id = row.Id;
             if (!label || id == null || seen.has(String(id))) return;
             seen.add(String(id));
@@ -2905,26 +2935,78 @@
           return out;
         }
 
+        function certifiersListApiSegment() {
+          const guid = String(LIST_CERTIFIERS_GUID || "").replace(/[{}' ]/g, "");
+          if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(guid)) {
+            return "lists(guid'" + guid + "')";
+          }
+          const title = String(LIST_CERTIFIERS || "").trim();
+          if (!title) return "";
+          return "lists/getbytitle('" + escListTitle(title) + "')";
+        }
+
         async function fetchListItemChoices(pw, listTitle, listGuid, displayField) {
           const field = String(displayField || "Title").trim();
           let guid = String(listGuid || "").replace(/[{}' ]/g, "");
-          let path = "";
+          let listSeg = "";
           if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(guid)) {
-            path = `/_api/web/lists(guid'${guid}')/items?$select=Id,${field}&$top=500`;
+            listSeg = "lists(guid'" + guid + "')";
           } else {
             const title = String(listTitle || "").trim();
             if (!title) return [];
-            path = `/_api/web/lists/getbytitle('${escListTitle(title)}')/items?$select=Id,${field}&$top=500`;
+            listSeg = "lists/getbytitle('" + escListTitle(title) + "')";
           }
-          let rows = [];
-          try {
-            const data = await spFetch(path + "&$orderby=" + encodeURIComponent(field), {}, pw);
-            rows = (data && data.value) || [];
-          } catch (_) {
-            const data = await spFetch(path, {}, pw);
-            rows = (data && data.value) || [];
+
+          async function loadRows(withSelect) {
+            const base = `/_api/web/${listSeg}/items?$top=500`;
+            const path = withSelect ? base + "&$select=Id," + encodeURIComponent(field) : base;
+            try {
+              const data = await spFetch(path, {}, pw);
+              return (data && data.value) || [];
+            } catch (e) {
+              if (withSelect && /\b400\b/.test(String(e.message || ""))) return loadRows(false);
+              return [];
+            }
           }
+
+          let rows = await loadRows(true);
+          if (!rows.length) rows = await loadRows(false);
           return listItemChoicesFromRows(rows, field);
+        }
+
+        async function fetchCertifiersListEntries(pw) {
+          const fieldsToTry = listItemDisplayFieldCandidates(CERTIFIERS_LIST_DISPLAY_FIELD);
+          for (let i = 0; i < fieldsToTry.length; i++) {
+            const entries = await fetchListItemChoices(pw, LIST_CERTIFIERS, LIST_CERTIFIERS_GUID, fieldsToTry[i]);
+            if (entries.length) return entries;
+          }
+          return [];
+        }
+
+        function selectHasRealChoices(sel) {
+          if (!sel || sel.tagName !== "SELECT") return false;
+          for (let i = 0; i < sel.options.length; i++) {
+            const o = sel.options[i];
+            if (!o || o.disabled || !String(o.value || "").trim()) continue;
+            const t = String(o.textContent || "");
+            if (t.indexOf("(no choices") === 0 || t.indexOf("(error loading") === 0) continue;
+            return true;
+          }
+          return false;
+        }
+
+        function appendCertifierSelectOptions(sel, entries) {
+          if (!sel || !entries || !entries.length) return;
+          const priorValue = String(sel.value || "").trim();
+          while (sel.options.length > 1) sel.remove(1);
+          entries.forEach(function (entry) {
+            const o = document.createElement("option");
+            o.value = String(entry.id);
+            o.textContent = entry.text;
+            sel.appendChild(o);
+          });
+          if (priorValue) sel.value = priorValue;
+          applySelectAutosize(sel);
         }
 
         async function fetchLookupListChoices(pw, fieldMeta) {
@@ -2955,32 +3037,33 @@
             return c.key === "Certifier";
           });
           if (!certCol) return;
-          await fillDropdownSelect(sel, certCol, seg, pw, sampleRow, null);
-          if (sel.options.length > 1) return;
-
-          const entries = await fetchListItemChoices(
-            pw,
-            LIST_CERTIFIERS,
-            LIST_CERTIFIERS_GUID,
-            CERTIFIERS_LIST_DISPLAY_FIELD,
-          );
-          if (!entries.length) return;
 
           const writeKey = await resolveBylawCertifierWriteKey(seg, pw);
           const lookupBase = writeKey.replace(/Id$/, "");
           sel.dataset.writeKey = writeKey;
           if (lookupBase) sel.dataset.lookupDisplayKey = lookupBase;
 
-          const priorValue = String(sel.value || "").trim();
+          const entries = await fetchCertifiersListEntries(pw);
+          if (entries.length) {
+            appendCertifierSelectOptions(sel, entries);
+            return;
+          }
+
+          await fillDropdownSelect(sel, certCol, seg, pw, sampleRow, null);
+          if (selectHasRealChoices(sel)) return;
+
+          const listSeg = certifiersListApiSegment();
+          const errText = listSeg
+            ? "(no certifiers in list " + LIST_CERTIFIERS + " â€” check Certifier column and list permissions)"
+            : "(Certifiers list not configured)";
           while (sel.options.length > 1) sel.remove(1);
-          entries.forEach(function (entry) {
-            const o = document.createElement("option");
-            o.value = String(entry.id);
-            o.textContent = entry.text;
-            sel.appendChild(o);
-          });
-          if (priorValue) sel.value = priorValue;
+          const o = document.createElement("option");
+          o.value = "";
+          o.textContent = errText;
+          o.disabled = true;
+          sel.appendChild(o);
           applySelectAutosize(sel);
+          log("Certifier dropdown: no rows from " + LIST_CERTIFIERS + " (segment " + listSeg + ")", "warn");
         }
 
         async function fetchChoiceOptions(seg, pw, fieldInternalOrTitle) {
