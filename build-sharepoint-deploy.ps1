@@ -29,8 +29,9 @@ Set-Content -Path (Join-Path $root "training-hub-styles.txt") -Value $css -Encod
 Set-Content -Path (Join-Path $root "training-hub-script.txt") -Value $js -Encoding UTF8
 
 $paste = @"
-<!-- Training Hub - paste this entire file into Modern Script Editor (one copy/paste). -->
+<!-- Training Hub - full paste (all-in-one). Use only if Site Assets loading is not an option. -->
 <!-- Source: sharepoint-modern-script-editor-ui.html - run build-sharepoint-deploy.ps1 after edits. -->
+<!-- Recommended: sharepoint-script-editor-loader.html + Site Assets .txt files instead. -->
 <style>
 $css
 </style>
@@ -42,6 +43,107 @@ $js
 
 Set-Content -Path (Join-Path $root "sharepoint-script-editor-paste.html") -Value $paste -Encoding UTF8
 
+$loaderCss = @'
+      #sp-pip-ui {
+        box-sizing: border-box;
+        max-width: 100%;
+        min-height: 120px;
+        font-family: Consolas, Monaco, "Courier New", monospace;
+        font-size: 14px;
+        color: #3cff7a;
+        background: #050807;
+        border: 2px solid #1e4a36;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+      }
+      #sp-pip-ui .hub-loader-status {
+        margin: 0;
+        padding: 20px 24px;
+        font-size: 12px;
+        color: rgba(210, 255, 224, 0.88);
+      }
+      #sp-pip-ui .hub-loader-status[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui .hub-load-err {
+        margin: 0;
+        padding: 16px;
+        color: #ff5a45;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+'@
+
+$loaderJs = @'
+(function () {
+  var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt";
+  var statusEl = document.getElementById("hubLoaderStatus");
+  function fail(msg) {
+    if (statusEl) statusEl.hidden = true;
+    var root = document.getElementById("sp-pip-ui");
+    if (!root) return;
+    var p = document.createElement("p");
+    p.className = "hub-load-err";
+    p.textContent = "Training Hub failed to load: " + String(msg || "unknown error");
+    root.appendChild(p);
+  }
+  fetch(cssUrl, { credentials: "same-origin", cache: "no-cache" })
+    .then(function (res) {
+      if (!res.ok) throw new Error("Upload training-hub-styles.txt to Site Assets (" + cssUrl + ").");
+      return res.text();
+    })
+    .then(function (css) {
+      var tag = document.createElement("style");
+      tag.textContent = css;
+      document.head.appendChild(tag);
+      return fetch(jsUrl, { credentials: "same-origin", cache: "no-cache" });
+    })
+    .then(function (res) {
+      if (!res.ok) throw new Error("Upload training-hub-script.txt to Site Assets (" + jsUrl + ").");
+      return res.text();
+    })
+    .then(function (code) {
+      if (statusEl) statusEl.hidden = true;
+      var s = document.createElement("script");
+      s.text = code;
+      document.body.appendChild(s);
+    })
+    .catch(function (err) {
+      fail(err && err.message ? err.message : err);
+    });
+})();
+'@
+
+$hubHtmlLoader = [regex]::Replace(
+  $hubHtml,
+  '(<div id="sp-pip-ui">)',
+  '$1' + "`n      <p id=""hubLoaderStatus"" class=""hub-loader-status"">Loading Training Hub...</p>",
+  1
+)
+
+$loader = @"
+<!-- Training Hub - SMALL loader for Modern Script Editor (recommended). -->
+<!-- STEP 1: Upload training-hub-styles.txt and training-hub-script.txt to Site Assets on this site. -->
+<!-- STEP 2: Paste this entire file into Modern Script Editor. Change SITE_ASSETS_BASE below if needed. -->
+<style>
+$loaderCss
+</style>
+$hubHtmlLoader
+<script>
+$loaderJs
+</script>
+"@
+
+Set-Content -Path (Join-Path $root "sharepoint-script-editor-loader.html") -Value $loader -Encoding UTF8
+
 $pasteBytes = (Get-Item (Join-Path $root "sharepoint-script-editor-paste.html")).Length
-Write-Host "Wrote sharepoint-script-editor-paste.html ($pasteBytes bytes)"
+$loaderBytes = (Get-Item (Join-Path $root "sharepoint-script-editor-loader.html")).Length
+$stylesBytes = (Get-Item (Join-Path $root "training-hub-styles.txt")).Length
+$scriptBytes = (Get-Item (Join-Path $root "training-hub-script.txt")).Length
+Write-Host "Wrote sharepoint-script-editor-paste.html ($pasteBytes bytes, all-in-one fallback)"
+Write-Host "Wrote sharepoint-script-editor-loader.html ($loaderBytes bytes, paste this + Site Assets)"
+Write-Host "Wrote training-hub-styles.txt ($stylesBytes bytes) and training-hub-script.txt ($scriptBytes bytes)"
 Write-Host "Wrote training-hub.css / training-hub.js (local preview helpers)"

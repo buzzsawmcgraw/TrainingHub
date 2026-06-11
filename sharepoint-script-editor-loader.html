@@ -1,1 +1,128 @@
-<!-- Use sharepoint-script-editor-paste.html - one full copy/paste into Modern Script Editor. -->
+﻿<!-- Training Hub - SMALL loader for Modern Script Editor (recommended). -->
+<!-- STEP 1: Upload training-hub-styles.txt and training-hub-script.txt to Site Assets on this site. -->
+<!-- STEP 2: Paste this entire file into Modern Script Editor. Change SITE_ASSETS_BASE below if needed. -->
+<style>
+      #sp-pip-ui {
+        box-sizing: border-box;
+        max-width: 100%;
+        min-height: 120px;
+        font-family: Consolas, Monaco, "Courier New", monospace;
+        font-size: 14px;
+        color: #3cff7a;
+        background: #050807;
+        border: 2px solid #1e4a36;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+      }
+      #sp-pip-ui .hub-loader-status {
+        margin: 0;
+        padding: 20px 24px;
+        font-size: 12px;
+        color: rgba(210, 255, 224, 0.88);
+      }
+      #sp-pip-ui .hub-loader-status[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui .hub-load-err {
+        margin: 0;
+        padding: 16px;
+        color: #ff5a45;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+</style>
+<div id="sp-pip-ui">
+      <p id="hubLoaderStatus" class="hub-loader-status">Loading Training Hub...</p>
+      <div id="hubAccessGate" class="hub-access-gate" aria-label="Training Hub access">
+        <div class="hub-access-panel">
+          <h2>Authorized access</h2>
+          <p>Enter the Training Hub password to continue.</p>
+          <label for="hubAccessInput">Password</label>
+          <input type="password" id="hubAccessInput" autocomplete="current-password" />
+          <button type="button" id="hubAccessSubmit">Continue</button>
+          <p id="hubAccessError" class="hub-access-error" hidden>Incorrect password.</p>
+        </div>
+      </div>
+      <div class="hub-top-banner-wrap" id="hubTopBannerWrap" hidden>
+        <img id="hubTopBannerImg" class="hub-top-banner-img" src="" alt="" decoding="async" />
+      </div>
+      <header class="hub-header">
+        <div class="hub-header-row">
+          <div class="hub-logo-wrap" id="hubLogoWrap" hidden>
+            <img id="hubLogoImg" class="hub-logo" src="" alt="" decoding="async" />
+          </div>
+          <div class="hub-header-titles">
+            <h1 class="hub-org">88th Security Forces Squadron</h1>
+            <p class="hub-banner">Authorized Personnel Only</p>
+          </div>
+        </div>
+      </header>
+      <main class="hub-main">
+        <section class="hub-section hub-section--form" aria-label="Training Hub entry">
+          <div id="addPersonPanel" class="add-person-panel" aria-live="polite"></div>
+        </section>
+        <section class="hub-section hub-section--status" aria-label="Connection status and refresh">
+          <div id="rosterReadState" class="read-state loading">Loading listâ€¦</div>
+          <div class="hub-toolbar">
+            <button type="button" id="probeRun">Refresh list</button>
+          </div>
+        </section>
+        <section class="hub-section hub-section--roster" aria-label="Personnel roster">
+          <h2 class="hub-subtitle">Personnel roster</h2>
+          <div class="roster-wrap">
+            <table class="roster" aria-label="Personnel rows from SharePoint">
+              <thead id="rosterThead"></thead>
+              <tbody id="rosterTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="hub-section hub-section--diag">
+          <details>
+            <summary>Diagnostics (REST details &amp; raw JSON)</summary>
+            <pre id="probeOut"></pre>
+          </details>
+        </section>
+      </main>
+    </div>
+<script>
+(function () {
+  var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt";
+  var statusEl = document.getElementById("hubLoaderStatus");
+  function fail(msg) {
+    if (statusEl) statusEl.hidden = true;
+    var root = document.getElementById("sp-pip-ui");
+    if (!root) return;
+    var p = document.createElement("p");
+    p.className = "hub-load-err";
+    p.textContent = "Training Hub failed to load: " + String(msg || "unknown error");
+    root.appendChild(p);
+  }
+  fetch(cssUrl, { credentials: "same-origin", cache: "no-cache" })
+    .then(function (res) {
+      if (!res.ok) throw new Error("Upload training-hub-styles.txt to Site Assets (" + cssUrl + ").");
+      return res.text();
+    })
+    .then(function (css) {
+      var tag = document.createElement("style");
+      tag.textContent = css;
+      document.head.appendChild(tag);
+      return fetch(jsUrl, { credentials: "same-origin", cache: "no-cache" });
+    })
+    .then(function (res) {
+      if (!res.ok) throw new Error("Upload training-hub-script.txt to Site Assets (" + jsUrl + ").");
+      return res.text();
+    })
+    .then(function (code) {
+      if (statusEl) statusEl.hidden = true;
+      var s = document.createElement("script");
+      s.text = code;
+      document.body.appendChild(s);
+    })
+    .catch(function (err) {
+      fail(err && err.message ? err.message : err);
+    });
+})();
+</script>
