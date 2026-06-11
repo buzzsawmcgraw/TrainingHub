@@ -114,6 +114,30 @@
                 </form>
               </div>
             </div>
+            <div id="personBylawWrap" class="person-bylaw-wrap" hidden>
+              <h3 class="person-bylaw-title">By-law training</h3>
+              <div id="personBylawState" class="read-state" hidden></div>
+              <div class="roster-wrap bylaw-roster-wrap">
+                <table class="roster bylaw-table" aria-label="By-law training records">
+                  <thead id="personBylawThead"></thead>
+                  <tbody id="personBylawBody"></tbody>
+                </table>
+              </div>
+              <p id="personBylawEmpty" class="bylaw-empty" hidden>No by-law training records on file for this person.</p>
+              <div class="bylaw-add-toolbar">
+                <button type="button" id="personBylawAddBtn" class="btn-secondary">Add training</button>
+              </div>
+              <div id="personBylawAddPanel" class="bylaw-add-panel" hidden>
+                <h4 id="personBylawFormTitle" class="bylaw-add-title">New by-law training record</h4>
+                <form id="personBylawAddForm" class="bylaw-add-form add-form-stack" aria-label="Add by-law training record">
+                  <div id="personBylawAddFields" class="add-form-grid"></div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="personBylawSaveBtn">Save training</button>
+                    <button type="button" id="personBylawAddCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </section>
         <section class="hub-section hub-section--diag">

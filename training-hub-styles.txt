@@ -387,12 +387,14 @@
       #sp-pip-ui .person-detail-field.add-field--address .person-detail-value {
         min-height: 52px;
       }
-      #sp-pip-ui .person-weapons-wrap {
+      #sp-pip-ui .person-weapons-wrap,
+      #sp-pip-ui .person-bylaw-wrap {
         margin-top: 22px;
         padding-top: 18px;
         border-top: 1px solid var(--pip-border);
       }
-      #sp-pip-ui h3.person-weapons-title {
+      #sp-pip-ui h3.person-weapons-title,
+      #sp-pip-ui h3.person-bylaw-title {
         margin: 0 0 12px;
         font-size: 11px;
         font-weight: 700;
@@ -401,7 +403,8 @@
         color: var(--pip-amber);
         text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
       }
-      #sp-pip-ui .weapons-empty {
+      #sp-pip-ui .weapons-empty,
+      #sp-pip-ui .bylaw-empty {
         margin: 0;
         padding: 12px 14px;
         font-size: 12px;
@@ -410,26 +413,31 @@
         border-radius: 6px;
         background: rgba(8, 22, 16, 0.35);
       }
-      #sp-pip-ui .weapons-add-toolbar {
+      #sp-pip-ui .weapons-add-toolbar,
+      #sp-pip-ui .bylaw-add-toolbar {
         margin-top: 14px;
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
       }
-      #sp-pip-ui .weapons-add-toolbar button {
+      #sp-pip-ui .weapons-add-toolbar button,
+      #sp-pip-ui .bylaw-add-toolbar button {
         margin: 0;
       }
-      #sp-pip-ui .weapons-add-panel {
+      #sp-pip-ui .weapons-add-panel,
+      #sp-pip-ui .bylaw-add-panel {
         margin-top: 14px;
         padding: 14px 16px 16px;
         border: 1px solid var(--pip-border);
         border-radius: 8px;
         background: rgba(8, 22, 16, 0.38);
       }
-      #sp-pip-ui .weapons-add-panel[hidden] {
+      #sp-pip-ui .weapons-add-panel[hidden],
+      #sp-pip-ui .bylaw-add-panel[hidden] {
         display: none !important;
       }
-      #sp-pip-ui h4.weapons-add-title {
+      #sp-pip-ui h4.weapons-add-title,
+      #sp-pip-ui h4.bylaw-add-title {
         margin: 0 0 12px;
         font-size: 10px;
         font-weight: 700;
@@ -437,55 +445,67 @@
         text-transform: uppercase;
         color: var(--pip-amber);
       }
-      #sp-pip-ui .weapons-add-form .add-form-grid {
+      #sp-pip-ui .weapons-add-form .add-form-grid,
+      #sp-pip-ui .bylaw-add-form .add-form-grid {
         display: flex;
         flex-direction: column;
         gap: 12px;
         max-width: min(100%, 34rem);
       }
-      #sp-pip-ui .weapons-add-form .add-field {
+      #sp-pip-ui .weapons-add-form .add-field,
+      #sp-pip-ui .bylaw-add-form .add-field {
         display: grid;
         grid-template-columns: minmax(10.5rem, 42%) 1fr;
         gap: 10px 14px;
         align-items: center;
         min-width: 0;
       }
-      #sp-pip-ui .weapons-add-form .add-field label {
+      #sp-pip-ui .weapons-add-form .add-field label,
+      #sp-pip-ui .bylaw-add-form .add-field label {
         margin-bottom: 0;
         line-height: 1.35;
         align-self: center;
       }
       #sp-pip-ui .weapons-add-form .add-field input,
-      #sp-pip-ui .weapons-add-form .add-field select {
+      #sp-pip-ui .weapons-add-form .add-field select,
+      #sp-pip-ui .bylaw-add-form .add-field input,
+      #sp-pip-ui .bylaw-add-form .add-field select {
         width: 100%;
         max-width: 100%;
         min-width: 0;
       }
-      #sp-pip-ui .weapons-add-form .add-field select.add-field-select--autosize {
+      #sp-pip-ui .weapons-add-form .add-field select.add-field-select--autosize,
+      #sp-pip-ui .bylaw-add-form .add-field select.add-field-select--autosize {
         width: 100%;
       }
-      #sp-pip-ui .weapons-add-form .add-form-actions {
+      #sp-pip-ui .weapons-add-form .add-form-actions,
+      #sp-pip-ui .bylaw-add-form .add-form-actions {
         margin-top: 16px;
         padding-top: 14px;
         border-top: 1px solid var(--pip-border);
       }
-      #sp-pip-ui .weapons-status {
+      #sp-pip-ui .weapons-status,
+      #sp-pip-ui .cert-status {
         font-weight: 700;
         letter-spacing: 0.04em;
       }
-      #sp-pip-ui .weapons-status--ok {
+      #sp-pip-ui .weapons-status--ok,
+      #sp-pip-ui .cert-status--ok {
         color: var(--pip-green);
         text-shadow: 0 0 6px var(--pip-green-glow);
       }
-      #sp-pip-ui .weapons-status--warn {
+      #sp-pip-ui .weapons-status--warn,
+      #sp-pip-ui .cert-status--warn {
         color: var(--pip-amber);
         text-shadow: 0 0 8px rgba(255, 204, 102, 0.35);
       }
-      #sp-pip-ui .weapons-status--urgent {
+      #sp-pip-ui .weapons-status--urgent,
+      #sp-pip-ui .cert-status--urgent {
         color: var(--pip-red);
         text-shadow: 0 0 8px rgba(255, 90, 69, 0.4);
       }
-      #sp-pip-ui .weapons-status--expired {
+      #sp-pip-ui .weapons-status--expired,
+      #sp-pip-ui .cert-status--expired {
         color: rgba(255, 90, 69, 0.72);
         text-shadow: none;
       }

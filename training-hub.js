@@ -68,6 +68,46 @@
         /** Set SharePoint Title on new weapons cert rows from the weapon name when true. */
         const WEAPONS_CERT_SET_TITLE = true;
 
+        const LIST_BYLAW_TRAINING = "ByLawTraining";
+        const LIST_BYLAW_TRAINING_GUID = "";
+        const BYLAW_TRAINING_PERSON_FIELD = "PersonnelId";
+        const BYLAW_TRAINING_PERSON_FIELD_ALT = [
+          "PersonnelID",
+          "PersonnelIdId",
+          "Personnel_x0020_Id",
+          "Personnel_x0020_ID",
+          "Personnel/Id",
+        ];
+        const BYLAW_TRAINING_ITEMS_ORDERBY = "QualDate desc";
+        /** ByLawTraining list: PersonnelId Â· Item Â· QualDate Â· ExpirationDate Â· Certifier (+ computed Status in hub). */
+        const BYLAW_TRAINING_COLUMNS = [
+          {
+            key: "Item",
+            label: "Item",
+            altKeys: ["Item0", "Title", "Training", "ByLaw", "TrainingName", "Training_x0020_Name"],
+          },
+          {
+            key: "QualDate",
+            label: "Certification Date",
+            altKeys: ["QualificationDate", "Qualification_x0020_Date", "CertificationDate", "Certification_x0020_Date", "CertDate"],
+          },
+          {
+            key: "ExpirationDate",
+            label: "Expiration Date",
+            altKeys: ["ExpiryDate", "Expiry_x0020_Date", "ExpiresOn", "Expiration_x0020_Date", "ExpDate"],
+          },
+          {
+            key: "Certifier",
+            label: "Certifier",
+            altKeys: ["Certifier0", "CertifierName", "Certifier_x0020_Name", "Instructor", "Trainer"],
+          },
+          { key: "Status", label: "Status", computed: true },
+        ];
+        const BYLAW_TRAINING_DROPDOWN_KEYS = ["Item"];
+        /** Set SharePoint Title on new rows from the Item value when the list still requires Title. */
+        const BYLAW_TRAINING_SET_TITLE = true;
+        const BYLAW_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "ByLaw", "TrainingName", "Training_x0020_Name"];
+
         /**
          * Circular profile image to the left of the squadron header (default: **S3T Files** / **Fallout Guy.png**).
          * `HUB_PROFILE_IMAGE_URL` â€” full URL override. `HUB_LOGO_URL` â€” legacy override if profile URL is empty.
@@ -242,6 +282,18 @@
         const personWeaponsAddCancelBtn = document.getElementById("personWeaponsAddCancelBtn");
         const personWeaponsSaveBtn = document.getElementById("personWeaponsSaveBtn");
         const personWeaponsFormTitle = document.getElementById("personWeaponsFormTitle");
+        const personBylawWrap = document.getElementById("personBylawWrap");
+        const personBylawThead = document.getElementById("personBylawThead");
+        const personBylawBody = document.getElementById("personBylawBody");
+        const personBylawEmpty = document.getElementById("personBylawEmpty");
+        const personBylawState = document.getElementById("personBylawState");
+        const personBylawAddBtn = document.getElementById("personBylawAddBtn");
+        const personBylawAddPanel = document.getElementById("personBylawAddPanel");
+        const personBylawAddForm = document.getElementById("personBylawAddForm");
+        const personBylawAddFields = document.getElementById("personBylawAddFields");
+        const personBylawAddCancelBtn = document.getElementById("personBylawAddCancelBtn");
+        const personBylawSaveBtn = document.getElementById("personBylawSaveBtn");
+        const personBylawFormTitle = document.getElementById("personBylawFormTitle");
 
         let hubSession = {
           rows: null,
@@ -252,9 +304,18 @@
           weaponsPersonFilterField: null,
           weaponsPersonFilterFields: null,
           weaponsCertRows: null,
+          bylawTrainingSampleRow: null,
+          bylawTrainingRows: null,
+          bylawPersonFilterField: null,
+          bylawPersonFilterFields: null,
+          bylawPersonPostKey: null,
         };
 
         let weaponsCertEditSession = {
+          item: null,
+        };
+
+        let bylawTrainingEditSession = {
           item: null,
         };
 
@@ -490,6 +551,7 @@
           if (personDetailSection) personDetailSection.hidden = true;
           personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           clearPersonWeaponsCertSection();
+          clearPersonBylawTrainingSection();
           setPersonDetailEditMode(false);
           setHubListViewVisible(true);
           await ensureRosterViewRendered();
@@ -573,24 +635,41 @@
           return new Date(year, month + 1, 0);
         }
 
-        function applyWeaponsCertExpirationFromQual() {
-          const qualEl = document.getElementById("wf_QualDate");
-          const expEl = document.getElementById("wf_ExpirationDate");
+        function applyCertExpirationFromQual(formIdPrefix) {
+          const qualEl = document.getElementById(formIdPrefix + "QualDate");
+          const expEl = document.getElementById(formIdPrefix + "ExpirationDate");
           if (!qualEl || !expEl) return;
           const qual = parseWeaponsCertCalendarDate(qualEl.value);
           if (!qual) return;
           expEl.value = isoDateFromCalendarDate(expirationDateFromQualDate(qual));
         }
 
-        function wireWeaponsCertQualDateAutoExpiry(form) {
-          if (!form || form.dataset.weaponsAutoExpiryWired === "1") return;
-          form.dataset.weaponsAutoExpiryWired = "1";
+        function wireCertQualDateAutoExpiry(form, formIdPrefix, wiredAttr) {
+          if (!form || form.dataset[wiredAttr] === "1") return;
+          form.dataset[wiredAttr] = "1";
+          const qualFieldId = formIdPrefix + "QualDate";
           form.addEventListener("change", function (ev) {
-            if (ev.target && ev.target.id === "wf_QualDate") applyWeaponsCertExpirationFromQual();
+            if (ev.target && ev.target.id === qualFieldId) applyCertExpirationFromQual(formIdPrefix);
           });
           form.addEventListener("input", function (ev) {
-            if (ev.target && ev.target.id === "wf_QualDate") applyWeaponsCertExpirationFromQual();
+            if (ev.target && ev.target.id === qualFieldId) applyCertExpirationFromQual(formIdPrefix);
           });
+        }
+
+        function applyWeaponsCertExpirationFromQual() {
+          applyCertExpirationFromQual("wf_");
+        }
+
+        function wireWeaponsCertQualDateAutoExpiry(form) {
+          wireCertQualDateAutoExpiry(form, "wf_", "weaponsAutoExpiryWired");
+        }
+
+        function applyBylawTrainingExpirationFromQual() {
+          applyCertExpirationFromQual("bf_");
+        }
+
+        function wireBylawTrainingQualDateAutoExpiry(form) {
+          wireCertQualDateAutoExpiry(form, "bf_", "bylawAutoExpiryWired");
         }
 
         function calendarDaysBetween(fromDate, toDate) {
@@ -599,8 +678,8 @@
           return Math.round((to.getTime() - from.getTime()) / 86400000);
         }
 
-        function computeWeaponsCertStatus(item) {
-          const raw = valueFromItemByKeys(item, weaponsCertExpiryDateKeys());
+        function computeCertStatusFromExpiryKeys(item, expiryKeys) {
+          const raw = valueFromItemByKeys(item, expiryKeys);
           const expiry = parseWeaponsCertCalendarDate(raw);
           if (!expiry) return { text: "-", tone: "unknown" };
 
@@ -611,6 +690,44 @@
           if (daysLeft <= 30) return { text: "Qualified", tone: "urgent" };
           if (daysLeft <= 60) return { text: "Qualified", tone: "warn" };
           return { text: "Qualified", tone: "ok" };
+        }
+
+        function computeWeaponsCertStatus(item) {
+          return computeCertStatusFromExpiryKeys(item, weaponsCertExpiryDateKeys());
+        }
+
+        function normalizedBylawTrainingColumns() {
+          const arr = Array.isArray(BYLAW_TRAINING_COLUMNS) ? BYLAW_TRAINING_COLUMNS : [];
+          return arr
+            .map(function (entry) {
+              if (!entry || !entry.key) return null;
+              const key = String(entry.key).trim();
+              const label = String(entry.label || key).trim() || key;
+              const alt = Array.isArray(entry.altKeys) ? entry.altKeys.map(function (x) { return String(x).trim(); }).filter(Boolean) : [];
+              const tryKeys = [key];
+              alt.forEach(function (a) {
+                if (tryKeys.indexOf(a) === -1) tryKeys.push(a);
+              });
+              return { key: key, label: label, tryKeys: tryKeys, computed: !!entry.computed };
+            })
+            .filter(Boolean);
+        }
+
+        function bylawTrainingFormColumns() {
+          return normalizedBylawTrainingColumns().filter(function (col) {
+            return !col.computed;
+          });
+        }
+
+        function bylawTrainingExpiryDateKeys() {
+          const expiryCol = normalizedBylawTrainingColumns().find(function (col) {
+            return col.key === "ExpirationDate" || col.key === "ExpiryDate";
+          });
+          return expiryCol && expiryCol.tryKeys ? expiryCol.tryKeys.slice() : ["ExpirationDate", "ExpiryDate"];
+        }
+
+        function computeBylawTrainingStatus(item) {
+          return computeCertStatusFromExpiryKeys(item, bylawTrainingExpiryDateKeys());
         }
 
         function weaponsCertListTitle() {
@@ -1243,6 +1360,636 @@
           }
         }
 
+
+        function bylawTrainingListTitle() {
+          return String(LIST_BYLAW_TRAINING || "").trim();
+        }
+
+        function bylawTrainingGuidRaw() {
+          return String(LIST_BYLAW_TRAINING_GUID || "").trim();
+        }
+
+        function bylawTrainingListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(bylawTrainingGuidRaw());
+        }
+
+        function bylawTrainingListApiPath() {
+          if (bylawTrainingListUsesGuid()) return "lists(guid'" + bylawTrainingGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(bylawTrainingListTitle()) + "')";
+        }
+
+        function setBylawTrainingState(kind, message) {
+          if (!personBylawState) return;
+          if (!message) {
+            personBylawState.hidden = true;
+            personBylawState.textContent = "";
+            return;
+          }
+          personBylawState.hidden = false;
+          personBylawState.className = "read-state " + kind;
+          personBylawState.textContent = message;
+        }
+
+        function clearBylawTrainingTable() {
+          if (personBylawThead) personBylawThead.innerHTML = "";
+          if (personBylawBody) personBylawBody.innerHTML = "";
+        }
+
+        function clearPersonBylawTrainingSection() {
+          clearBylawTrainingTable();
+          setBylawTrainingState("", "");
+          bylawTrainingEditSession.item = null;
+          hubSession.bylawTrainingRows = null;
+          setBylawTrainingAddPanelVisible(false);
+          if (personBylawAddForm) personBylawAddForm.reset();
+          if (personBylawEmpty) {
+            personBylawEmpty.hidden = true;
+            personBylawEmpty.textContent = "No by-law training records on file for this person.";
+          }
+          if (personBylawWrap) personBylawWrap.hidden = true;
+        }
+
+        function updateBylawTrainingToolbarLabel() {
+          if (!personBylawAddBtn) return;
+          if (personBylawAddPanel && !personBylawAddPanel.hidden) {
+            personBylawAddBtn.textContent = bylawTrainingEditSession.item ? "Cancel requalify" : "Cancel add";
+          } else {
+            personBylawAddBtn.textContent = "Add training";
+          }
+        }
+
+        function setBylawTrainingFormMode(mode) {
+          const isEdit = mode === "edit";
+          if (personBylawFormTitle) {
+            personBylawFormTitle.textContent = isEdit ? "Requalify training" : "New by-law training record";
+          }
+          if (personBylawSaveBtn) {
+            personBylawSaveBtn.textContent = isEdit ? "Save requalification" : "Save training";
+          }
+          updateBylawTrainingToolbarLabel();
+        }
+
+        function setBylawTrainingAddPanelVisible(visible) {
+          if (personBylawAddPanel) personBylawAddPanel.hidden = !visible;
+          if (!visible) {
+            bylawTrainingEditSession.item = null;
+            setBylawTrainingFormMode("add");
+          } else {
+            updateBylawTrainingToolbarLabel();
+          }
+        }
+
+        function resolveBylawTrainingWriteKey(col, sampleRow) {
+          if (col.saveKey) return String(col.saveKey).trim();
+          if (sampleRow) {
+            const tryKeys = col.tryKeys || [col.key];
+            const hit = tryKeys.find(function (k) {
+              return sampleRow && Object.prototype.hasOwnProperty.call(sampleRow, k);
+            });
+            if (hit) return hit;
+          }
+          return col.key;
+        }
+
+        function buildBylawTrainingFieldWrap(col, sampleRow, options) {
+          options = options || {};
+          const idPrefix = options.idPrefix || "bf_";
+          const readOnlyKeys = Array.isArray(options.readOnlyKeys) ? options.readOnlyKeys : [];
+          const readOnly = readOnlyKeys.indexOf(col.key) !== -1;
+          const writeKey = resolveBylawTrainingWriteKey(col, sampleRow);
+          const fwrap = document.createElement("div");
+          fwrap.className = "add-field";
+          const lab = document.createElement("label");
+          lab.setAttribute("for", idPrefix + col.key);
+          lab.textContent = col.label;
+          lab.title =
+            col.key === "ExpirationDate"
+              ? "Auto-calculated from certification date (last day of month, one year out). REST write key: " + writeKey
+              : "REST write key: " + writeKey;
+          fwrap.appendChild(lab);
+
+          const isDrop = BYLAW_TRAINING_DROPDOWN_KEYS.indexOf(col.key) !== -1;
+          let input;
+          if (isDrop) {
+            input = document.createElement("select");
+            input.className = "add-field-select--autosize";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+            const opt0 = document.createElement("option");
+            opt0.value = "";
+            opt0.textContent = "(select)";
+            input.appendChild(opt0);
+          } else if (isWeaponsCertDateColumn(col)) {
+            input = document.createElement("input");
+            input.type = "date";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+          } else {
+            input = document.createElement("input");
+            input.type = "text";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+          }
+          if (readOnly) input.disabled = true;
+          fwrap.appendChild(input);
+          return fwrap;
+        }
+
+        function buildBylawTrainingAddFormFields(options) {
+          if (!personBylawAddFields) return;
+          personBylawAddFields.innerHTML = "";
+          const sampleRow = hubSession.bylawTrainingSampleRow;
+          bylawTrainingFormColumns().forEach(function (col) {
+            const f = buildBylawTrainingFieldWrap(col, sampleRow, options);
+            if (f) personBylawAddFields.appendChild(f);
+          });
+        }
+
+        function setBylawTrainingFormFieldValue(col, item, el) {
+          if (!el || !item) return;
+          const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+          if (isWeaponsCertDateColumn(col)) {
+            el.value = isoDateForDateInput(raw);
+            return;
+          }
+          if (el.tagName === "SELECT") {
+            const writeKey = String(el.dataset.writeKey || "").trim();
+            if (/Id$/.test(writeKey) && item[writeKey] != null && item[writeKey] !== "") {
+              el.value = String(item[writeKey]);
+              return;
+            }
+            const display = formatCellValue(raw);
+            ensureSelectIncludesValue(el, display);
+            el.value = display;
+            return;
+          }
+          el.value = formatCellValue(raw);
+        }
+
+        function fillBylawTrainingFormFromItem(item) {
+          if (!item) return;
+          bylawTrainingFormColumns().forEach(function (col) {
+            const el = document.getElementById("bf_" + col.key);
+            if (el) setBylawTrainingFormFieldValue(col, item, el);
+          });
+        }
+
+        async function populateBylawTrainingAddDropdowns() {
+          if (!personBylawAddForm || !personDetailSession.pw) return;
+          const seg = bylawTrainingListApiPath();
+          const pw = personDetailSession.pw;
+          const sampleRow = hubSession.bylawTrainingSampleRow;
+          const columns = normalizedBylawTrainingColumns();
+          for (let i = 0; i < columns.length; i++) {
+            const col = columns[i];
+            if (BYLAW_TRAINING_DROPDOWN_KEYS.indexOf(col.key) === -1) continue;
+            const sel = document.getElementById("bf_" + col.key);
+            if (!sel || sel.tagName !== "SELECT") continue;
+            await fillDropdownSelect(sel, col, seg, pw, sampleRow, null);
+          }
+          applyAllSelectAutosizes(personBylawAddForm);
+        }
+
+        async function resolveBylawPersonPostKey(seg, pw) {
+          if (hubSession.bylawPersonPostKey) return hubSession.bylawPersonPostKey;
+          const filterField = String(hubSession.bylawPersonFilterField || BYLAW_TRAINING_PERSON_FIELD || "PersonnelId").trim();
+          let postKey = filterField;
+          try {
+            const esc = filterField.replace(/'/g, "''");
+            const data = await spFetch(
+              `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=InternalName,TypeAsString`,
+              {},
+              pw,
+            );
+            const internal = String(data.InternalName || filterField).trim();
+            const type = String(data.TypeAsString || "");
+            if (/lookup/i.test(type)) {
+              postKey = internal.endsWith("Id") ? internal : internal + "Id";
+            } else {
+              postKey = internal;
+            }
+          } catch (_) {
+            if (filterField === "PersonnelId" || filterField === "PersonnelID") postKey = "PersonnelIdId";
+            else if (!/Id$/.test(filterField)) postKey = filterField + "Id";
+          }
+          hubSession.bylawPersonPostKey = postKey;
+          return postKey;
+        }
+
+        async function openBylawTrainingAddPanel() {
+          if (!personDetailSession.item || personDetailSession.item.Id == null) {
+            setBylawTrainingState("warn", "Open a personnel record before adding training.");
+            return;
+          }
+          bylawTrainingEditSession.item = null;
+          setBylawTrainingFormMode("add");
+          buildBylawTrainingAddFormFields();
+          setBylawTrainingAddPanelVisible(true);
+          setBylawTrainingState("", "");
+          await populateBylawTrainingAddDropdowns();
+          wireBylawTrainingQualDateAutoExpiry(personBylawAddForm);
+          const itemEl = document.getElementById("bf_Item");
+          if (itemEl) itemEl.focus();
+        }
+
+        async function openBylawTrainingEditPanel(item) {
+          if (!personDetailSession.item || personDetailSession.item.Id == null) {
+            setBylawTrainingState("warn", "Open a personnel record before requalifying.");
+            return;
+          }
+          if (!item || item.Id == null) return;
+          bylawTrainingEditSession.item = item;
+          setBylawTrainingFormMode("edit");
+          buildBylawTrainingAddFormFields({ readOnlyKeys: ["Item"] });
+          setBylawTrainingAddPanelVisible(true);
+          setBylawTrainingState("", "");
+          await populateBylawTrainingAddDropdowns();
+          fillBylawTrainingFormFromItem(item);
+          const qualEl = document.getElementById("bf_QualDate");
+          if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+          applyBylawTrainingExpirationFromQual();
+          wireBylawTrainingQualDateAutoExpiry(personBylawAddForm);
+          if (qualEl) qualEl.focus();
+        }
+
+        async function deleteBylawTrainingRow(id, pw, seg, personId) {
+          const sid = parseInt(String(id), 10);
+          if (!sid || isNaN(sid)) {
+            setBylawTrainingState("err", "Invalid training record Id for delete.");
+            return;
+          }
+          if (!confirm("Delete by-law training record Id " + sid + "? This cannot be undone.")) return;
+          try {
+            setBylawTrainingState("loading", "Deleting training recordâ€¦");
+            await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
+            if (bylawTrainingEditSession.item && parseInt(String(bylawTrainingEditSession.item.Id), 10) === sid) {
+              bylawTrainingEditSession.item = null;
+              setBylawTrainingAddPanelVisible(false);
+              if (personBylawAddForm) personBylawAddForm.reset();
+            }
+            if (personId) await loadPersonBylawTraining(personId, pw);
+            setBylawTrainingState("ok", "Training record deleted.");
+            window.setTimeout(function () {
+              setBylawTrainingState("", "");
+            }, 2500);
+          } catch (e) {
+            setBylawTrainingState("err", "Delete failed: " + (e.message || String(e)).slice(0, 280));
+            log("By-law training DELETE failed:\n" + (e.message || String(e)), "err");
+          }
+        }
+
+        async function submitBylawTrainingSave() {
+          const personItem = personDetailSession.item;
+          const pw = personDetailSession.pw;
+          if (!personItem || personItem.Id == null || !pw) return;
+
+          const editItem = bylawTrainingEditSession.item;
+          const isEdit = editItem && editItem.Id != null;
+          const seg = bylawTrainingListApiPath();
+          const sampleRow = hubSession.bylawTrainingSampleRow;
+          const itemEl = document.getElementById("bf_Item");
+          const itemVal = itemEl ? String(itemEl.value || "").trim() : "";
+          if (!isEdit && !itemVal) {
+            setBylawTrainingState("err", "Item is required.");
+            return;
+          }
+
+          const qualEl = document.getElementById("bf_QualDate");
+          if (!qualEl || !String(qualEl.value || "").trim()) {
+            setBylawTrainingState("err", "Certification date is required.");
+            return;
+          }
+
+          const payload = {};
+          bylawTrainingFormColumns().forEach(function (col) {
+            if (isEdit && col.key === "Item") return;
+            const el = document.getElementById("bf_" + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || resolveBylawTrainingWriteKey(col, sampleRow);
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
+            payload[writeKey] = v;
+          });
+
+          if (!isEdit) {
+            const personId = parseInt(String(personItem.Id), 10);
+            if (!personId || isNaN(personId)) {
+              setBylawTrainingState("err", "Invalid personnel record Id.");
+              return;
+            }
+            const personKey = await resolveBylawPersonPostKey(seg, pw);
+            payload[personKey] = personId;
+            if (BYLAW_TRAINING_SET_TITLE) payload.Title = itemVal;
+          }
+
+          try {
+            setBylawTrainingState("loading", isEdit ? "Saving requalificationâ€¦" : "Saving training recordâ€¦");
+            if (personBylawSaveBtn) personBylawSaveBtn.disabled = true;
+            if (isEdit) {
+              await spFetch(`/_api/web/${seg}/items(${editItem.Id})`, { method: "MERGE", body: payload }, pw);
+            } else {
+              await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            }
+            bylawTrainingEditSession.item = null;
+            if (personBylawAddForm) personBylawAddForm.reset();
+            setBylawTrainingAddPanelVisible(false);
+            await loadPersonBylawTraining(personItem.Id, pw);
+            setBylawTrainingState("ok", isEdit ? "Requalification saved." : "Training record saved.");
+            window.setTimeout(function () {
+              setBylawTrainingState("", "");
+            }, 2500);
+          } catch (e) {
+            setBylawTrainingState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+            log("By-law training save failed:\n" + (e.message || String(e)), "err");
+          } finally {
+            if (personBylawSaveBtn) personBylawSaveBtn.disabled = false;
+          }
+        }
+
+        function renderBylawTrainingTable(rows) {
+          clearBylawTrainingTable();
+          const columns = normalizedBylawTrainingColumns();
+          if (!personBylawThead || !personBylawBody || !columns.length) return;
+
+          const showActions = !!(personDetailSession.pw && personBylawWrap && !personBylawWrap.hidden);
+          const trHead = document.createElement("tr");
+          columns.forEach(function (col) {
+            const th = document.createElement("th");
+            th.textContent = col.label;
+            trHead.appendChild(th);
+          });
+          if (showActions) {
+            const thAct = document.createElement("th");
+            thAct.className = "roster-actions";
+            thAct.textContent = " ";
+            thAct.title = "Requalify / delete";
+            trHead.appendChild(thAct);
+          }
+          personBylawThead.appendChild(trHead);
+
+          const frag = document.createDocumentFragment();
+          rows.forEach(function (item) {
+            const tr = document.createElement("tr");
+            columns.forEach(function (col) {
+              const td = document.createElement("td");
+              if (col.computed && col.key === "Status") {
+                const status = computeBylawTrainingStatus(item);
+                td.textContent = displayCellText(status.text);
+                if (status.tone && status.tone !== "unknown") {
+                  td.className = "cert-status cert-status--" + status.tone;
+                }
+              } else if (isWeaponsCertDateColumn(col)) {
+                const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+                td.textContent = displayCellText(formatWeaponsCertDisplayDate(raw));
+              } else {
+                const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+                const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+                td.textContent = displayCellText(text);
+              }
+              tr.appendChild(td);
+            });
+            if (showActions && item.Id != null) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              const inner = document.createElement("div");
+              inner.className = "roster-actions-inner";
+              const requalBtn = document.createElement("button");
+              requalBtn.type = "button";
+              requalBtn.className = "btn-record";
+              requalBtn.textContent = "Requalify";
+              const trainingLabel = formatCellValue(valueFromItemByKeys(item, BYLAW_TRAINING_ITEM_SORT_KEYS) || "");
+              requalBtn.title = trainingLabel ? "Requalify " + trainingLabel : "Requalify training";
+              requalBtn.addEventListener("click", function () {
+                void openBylawTrainingEditPanel(item);
+              });
+              inner.appendChild(requalBtn);
+              const delBtn = document.createElement("button");
+              delBtn.type = "button";
+              delBtn.className = "btn-danger";
+              delBtn.textContent = "Delete";
+              delBtn.title = trainingLabel ? "Delete " + trainingLabel + " qualification" : "Delete training record";
+              delBtn.addEventListener("click", function () {
+                const personId = personDetailSession.item && personDetailSession.item.Id;
+                void deleteBylawTrainingRow(item.Id, personDetailSession.pw, bylawTrainingListApiPath(), personId);
+              });
+              inner.appendChild(delBtn);
+              tdAct.appendChild(inner);
+              tr.appendChild(tdAct);
+            } else if (showActions) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              tdAct.textContent = "-";
+              tr.appendChild(tdAct);
+            }
+            frag.appendChild(tr);
+          });
+          personBylawBody.appendChild(frag);
+
+          if (personBylawEmpty) {
+            personBylawEmpty.hidden = rows.length > 0;
+          }
+        }
+
+        function bylawPersonFilterFieldCandidates() {
+          const primary = String(BYLAW_TRAINING_PERSON_FIELD || "PersonnelId").trim();
+          const out = [];
+          if (primary) out.push(primary);
+          const alts = Array.isArray(BYLAW_TRAINING_PERSON_FIELD_ALT) ? BYLAW_TRAINING_PERSON_FIELD_ALT : [];
+          alts.forEach(function (name) {
+            const n = String(name || "").trim();
+            if (n && out.indexOf(n) === -1) out.push(n);
+          });
+          return out;
+        }
+
+        function bylawPersonnelIdFromItem(item) {
+          if (!item || typeof item !== "object") return null;
+          const keys = bylawPersonFilterFieldCandidates().concat([
+            "PersonnelId",
+            "PersonnelID",
+            "PersonnelIdId",
+            "Personnel_x0020_Id",
+          ]);
+          for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            if (!k || k.indexOf("/") !== -1) continue;
+            if (Object.prototype.hasOwnProperty.call(item, k) && item[k] !== null && item[k] !== "") {
+              return String(item[k]);
+            }
+          }
+          if (item.Personnel && typeof item.Personnel === "object" && item.Personnel.Id != null) {
+            return String(item.Personnel.Id);
+          }
+          return null;
+        }
+
+        function bylawRowsMatchPersonnel(rows, personnelId) {
+          const want = String(personnelId);
+          return (Array.isArray(rows) ? rows : []).filter(function (item) {
+            return bylawPersonnelIdFromItem(item) === want;
+          });
+        }
+
+        async function discoverBylawPersonFilterFields(seg, pw) {
+          if (hubSession.bylawPersonFilterFields && hubSession.bylawPersonFilterFields.length) {
+            return hubSession.bylawPersonFilterFields.slice();
+          }
+          const out = [];
+          try {
+            const data = await spFetch(
+              `/_api/web/${seg}/fields?$select=InternalName,Title,EntityPropertyName,StaticName,TypeAsString&$filter=Hidden eq false&$top=200`,
+              {},
+              pw,
+            );
+            const fields = (data && data.value) || [];
+            const want = String(BYLAW_TRAINING_PERSON_FIELD || "PersonnelId").trim().toLowerCase();
+            let hit = fields.find(function (f) {
+              const title = String(f.Title || "").trim().toLowerCase();
+              const internal = String(f.InternalName || f.StaticName || f.EntityPropertyName || "").trim();
+              const internalLower = internal.toLowerCase();
+              return (
+                internalLower === want ||
+                title === want ||
+                title === "personnel id" ||
+                internalLower === "personnelid" ||
+                internalLower === "personnelidid"
+              );
+            });
+            if (!hit) {
+              hit = fields.find(function (f) {
+                const internal = String(f.InternalName || f.StaticName || "").toLowerCase();
+                return internal.indexOf("personnel") !== -1 && internal.indexOf("id") !== -1;
+              });
+            }
+            if (hit) {
+              const internal = String(hit.InternalName || hit.StaticName || hit.EntityPropertyName || "").trim();
+              const type = String(hit.TypeAsString || "");
+              if (internal) out.push(internal);
+              if (/lookup/i.test(type) && internal) {
+                const lookupIdField = internal.endsWith("Id") ? internal + "Id" : internal + "Id";
+                if (out.indexOf(lookupIdField) === -1) out.push(lookupIdField);
+                const slashField = internal + "/Id";
+                if (out.indexOf(slashField) === -1) out.push(slashField);
+              }
+            }
+          } catch (_) {}
+          hubSession.bylawPersonFilterFields = out.slice();
+          return out;
+        }
+
+        async function fetchBylawTrainingForPersonnel(seg, pw, personnelId) {
+          const id = parseInt(String(personnelId), 10);
+          if (!id || isNaN(id)) return [];
+          const orderByClause = String(BYLAW_TRAINING_ITEMS_ORDERBY || "").trim();
+          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
+          const tried = [];
+          const candidates = bylawPersonFilterFieldCandidates().slice();
+
+          const discovered = await discoverBylawPersonFilterFields(seg, pw);
+          discovered.forEach(function (name) {
+            if (name && candidates.indexOf(name) === -1) candidates.unshift(name);
+          });
+          if (discovered.length) {
+            discovered.slice().reverse().forEach(function (name) {
+              if (name && candidates.indexOf(name) !== -1) {
+                candidates.splice(candidates.indexOf(name), 1);
+                candidates.unshift(name);
+              }
+            });
+          }
+
+          for (let i = 0; i < candidates.length; i++) {
+            const personField = candidates[i];
+            if (!personField || tried.indexOf(personField) !== -1) continue;
+            tried.push(personField);
+            const filterRaw = personField + " eq " + id;
+            const filter = encodeURIComponent(filterRaw);
+            try {
+              let data = null;
+              try {
+                data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}` + orderByQs, {}, pw);
+              } catch (e0) {
+                if (/\b400\b/.test(String(e0.message || "")) && orderByQs) {
+                  data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}`, {}, pw);
+                } else {
+                  throw e0;
+                }
+              }
+              hubSession.bylawPersonFilterField = personField;
+              return (data && data.value) || [];
+            } catch (e1) {
+              if (!/\b400\b/.test(String(e1.message || "")) && !/does not exist/i.test(String(e1.message || ""))) {
+                throw e1;
+              }
+            }
+          }
+
+          let data = null;
+          try {
+            data = await spFetch(`/_api/web/${seg}/items?$top=500` + orderByQs, {}, pw);
+          } catch (e2) {
+            if (/\b400\b/.test(String(e2.message || "")) && orderByQs) {
+              data = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
+            } else {
+              throw e2;
+            }
+          }
+          return bylawRowsMatchPersonnel((data && data.value) || [], id);
+        }
+
+        async function loadPersonBylawTraining(personId, pw) {
+          if (!personId) return;
+          if (personBylawWrap) personBylawWrap.hidden = false;
+          setBylawTrainingState("loading", "Loading by-law training recordsâ€¦");
+          clearBylawTrainingTable();
+          if (personBylawEmpty) personBylawEmpty.hidden = true;
+
+          const seg = bylawTrainingListApiPath();
+          if (!bylawTrainingListTitle() && !bylawTrainingListUsesGuid()) {
+            renderBylawTrainingTable([]);
+            setBylawTrainingState("", "");
+            if (personBylawEmpty) {
+              personBylawEmpty.hidden = false;
+              personBylawEmpty.textContent = "By-law training list is not configured.";
+            }
+            return;
+          }
+
+          try {
+            const rows = await fetchBylawTrainingForPersonnel(seg, pw, personId);
+            const dateKeys = [
+              "QualDate",
+              "QualificationDate",
+              "Qualification_x0020_Date",
+              "CertificationDate",
+              "Certification_x0020_Date",
+              "CertDate",
+            ];
+            rows.sort(function (a, b) {
+              const da = formatCellValue(valueFromItemByKeys(a, dateKeys) || "");
+              const db = formatCellValue(valueFromItemByKeys(b, dateKeys) || "");
+              if (da !== db) return String(db).localeCompare(String(da));
+              const wa = formatCellValue(valueFromItemByKeys(a, BYLAW_TRAINING_ITEM_SORT_KEYS) || "");
+              const wb = formatCellValue(valueFromItemByKeys(b, BYLAW_TRAINING_ITEM_SORT_KEYS) || "");
+              return String(wa).localeCompare(String(wb));
+            });
+            hubSession.bylawTrainingSampleRow = rows.length ? rows[0] : hubSession.bylawTrainingSampleRow || null;
+            hubSession.bylawTrainingRows = rows.slice();
+            renderBylawTrainingTable(rows);
+            setBylawTrainingState("", "");
+          } catch (e) {
+            hubSession.bylawTrainingSampleRow = hubSession.bylawTrainingSampleRow || null;
+            renderBylawTrainingTable([]);
+            setBylawTrainingState("warn", "Could not load by-law training records: " + (e.message || String(e)).slice(0, 220));
+            if (personBylawEmpty) {
+              personBylawEmpty.hidden = false;
+              personBylawEmpty.textContent =
+                "No by-law training records loaded. If PersonnelId exists on the list, check that values match the personnel record Id.";
+            }
+          }
+        }
+
+
         function setHubListViewVisible(visible) {
           document.querySelectorAll(".hub-section--form, .hub-section--status, .hub-section--roster").forEach(function (el) {
             el.hidden = !visible;
@@ -1722,6 +2469,7 @@
 
           await renderPersonDetailView(item, false);
           await loadPersonWeaponsCertifications(item.Id, personDetailSession.pw);
+          await loadPersonBylawTraining(item.Id, personDetailSession.pw);
         }
 
         async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {
@@ -1779,6 +2527,31 @@
           personWeaponsAddCancelBtn.addEventListener("click", function () {
             setWeaponsCertAddPanelVisible(false);
             if (personWeaponsAddForm) personWeaponsAddForm.reset();
+          });
+        }
+
+        if (personBylawAddBtn) {
+          personBylawAddBtn.addEventListener("click", function () {
+            if (personBylawAddPanel && !personBylawAddPanel.hidden) {
+              setBylawTrainingAddPanelVisible(false);
+              if (personBylawAddForm) personBylawAddForm.reset();
+              return;
+            }
+            void openBylawTrainingAddPanel();
+          });
+        }
+
+        if (personBylawAddForm) {
+          personBylawAddForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void submitBylawTrainingSave();
+          });
+        }
+
+        if (personBylawAddCancelBtn) {
+          personBylawAddCancelBtn.addEventListener("click", function () {
+            setBylawTrainingAddPanelVisible(false);
+            if (personBylawAddForm) personBylawAddForm.reset();
           });
         }
 
