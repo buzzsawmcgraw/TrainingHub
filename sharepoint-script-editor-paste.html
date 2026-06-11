@@ -1081,11 +1081,15 @@
           {
             key: "Certifier",
             label: "Certifier",
-            altKeys: ["Certifier0", "CertifierName", "Certifier_x0020_Name", "Instructor", "Trainer"],
+            altKeys: ["CertifierId", "Certifier0", "CertifierName", "Certifier_x0020_Name", "Instructor", "Trainer"],
           },
           { key: "Status", label: "Status", computed: true },
         ];
-        const BYLAW_TRAINING_DROPDOWN_KEYS = ["Item"];
+        const BYLAW_TRAINING_DROPDOWN_KEYS = ["Item", "Certifier"];
+        /** SharePoint list of certifiers (lookup source for the Certifier field on ByLawTraining). */
+        const LIST_CERTIFIERS = "Certifier";
+        const LIST_CERTIFIERS_GUID = "";
+        const CERTIFIERS_LIST_DISPLAY_FIELD = "Title";
         /** Set SharePoint Title on new rows from the Item value when the list still requires Title. */
         const BYLAW_TRAINING_SET_TITLE = true;
         const BYLAW_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "ByLaw", "TrainingName", "Training_x0020_Name"];
@@ -1385,6 +1389,16 @@
             return a.localeCompare(b, undefined, { sensitivity: "base" });
           });
           return keys;
+        }
+
+        function formatSharePointLookupDisplay(val) {
+          if (val === null || val === undefined || val === "") return "";
+          if (typeof val === "object") {
+            const label = val.Title != null ? val.Title : val.Name != null ? val.Name : val.Label;
+            if (label != null && String(label).trim() !== "") return String(label).trim();
+            if (val.Id != null) return String(val.Id);
+          }
+          return formatCellValue(val);
         }
 
         function formatCellValue(val) {
@@ -2500,12 +2514,17 @@
               el.value = String(item[writeKey]);
               return;
             }
-            const display = formatCellValue(raw);
+            const lookupBase = writeKey.replace(/Id$/, "");
+            if (lookupBase && item[lookupBase] && typeof item[lookupBase] === "object" && item[lookupBase].Id != null) {
+              el.value = String(item[lookupBase].Id);
+              return;
+            }
+            const display = formatSharePointLookupDisplay(raw);
             ensureSelectIncludesValue(el, display);
             el.value = display;
             return;
           }
-          el.value = formatCellValue(raw);
+          el.value = formatSharePointLookupDisplay(raw);
         }
 
         function fillBylawTrainingFormFromItem(item) {
@@ -2527,7 +2546,11 @@
             if (BYLAW_TRAINING_DROPDOWN_KEYS.indexOf(col.key) === -1) continue;
             const sel = document.getElementById("bf_" + col.key);
             if (!sel || sel.tagName !== "SELECT") continue;
-            await fillDropdownSelect(sel, col, seg, pw, sampleRow, null);
+            if (col.key === "Certifier") {
+              await fillBylawCertifierDropdown(sel, seg, pw, sampleRow);
+            } else {
+              await fillDropdownSelect(sel, col, seg, pw, sampleRow, null);
+            }
           }
           applyAllSelectAutosizes(personBylawAddForm);
         }
@@ -2723,6 +2746,9 @@
               } else if (isWeaponsCertDateColumn(col)) {
                 const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
                 td.textContent = displayCellText(formatWeaponsCertDisplayDate(raw));
+              } else if (col.key === "Certifier") {
+                const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+                td.textContent = displayCellText(formatSharePointLookupDisplay(raw));
               } else {
                 const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
                 const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
@@ -3841,24 +3867,11 @@
           });
         }
 
-        async function fetchLookupListChoices(pw, fieldMeta) {
-          let listId = fieldMeta && fieldMeta.LookupList;
-          if (!listId) return [];
-          listId = String(listId).replace(/[{}' ]/g, "");
-          const lookupField = (fieldMeta.LookupField || "Title").trim();
-          const path =
-            `/_api/web/lists(guid'${listId}')/items?$select=Id,${lookupField}&$top=500`;
-          let rows = [];
-          try {
-            const data = await spFetch(path + "&$orderby=" + encodeURIComponent(lookupField), {}, pw);
-            rows = (data && data.value) || [];
-          } catch (_) {
-            const data = await spFetch(path, {}, pw);
-            rows = (data && data.value) || [];
-          }
+        function listItemChoicesFromRows(rows, displayField) {
+          const lookupField = String(displayField || "Title").trim();
           const seen = new Set();
           const out = [];
-          rows.forEach(function (row) {
+          (Array.isArray(rows) ? rows : []).forEach(function (row) {
             if (!row) return;
             const text = row[lookupField];
             if (text == null || text === "") return;
@@ -3872,6 +3885,84 @@
             return String(a.text).localeCompare(String(b.text), undefined, { sensitivity: "base" });
           });
           return out;
+        }
+
+        async function fetchListItemChoices(pw, listTitle, listGuid, displayField) {
+          const field = String(displayField || "Title").trim();
+          let guid = String(listGuid || "").replace(/[{}' ]/g, "");
+          let path = "";
+          if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(guid)) {
+            path = `/_api/web/lists(guid'${guid}')/items?$select=Id,${field}&$top=500`;
+          } else {
+            const title = String(listTitle || "").trim();
+            if (!title) return [];
+            path = `/_api/web/lists/getbytitle('${escListTitle(title)}')/items?$select=Id,${field}&$top=500`;
+          }
+          let rows = [];
+          try {
+            const data = await spFetch(path + "&$orderby=" + encodeURIComponent(field), {}, pw);
+            rows = (data && data.value) || [];
+          } catch (_) {
+            const data = await spFetch(path, {}, pw);
+            rows = (data && data.value) || [];
+          }
+          return listItemChoicesFromRows(rows, field);
+        }
+
+        async function fetchLookupListChoices(pw, fieldMeta) {
+          let listId = fieldMeta && fieldMeta.LookupList;
+          if (!listId) return [];
+          listId = String(listId).replace(/[{}' ]/g, "");
+          const lookupField = (fieldMeta.LookupField || "Title").trim();
+          return fetchListItemChoices(pw, "", listId, lookupField);
+        }
+
+        async function resolveBylawCertifierWriteKey(seg, pw) {
+          try {
+            const r = await fetchChoiceOptions(seg, pw, "Certifier");
+            const internal = String((r.field && r.field.InternalName) || "Certifier").trim();
+            const type = String((r.field && r.field.TypeAsString) || "");
+            if (/lookup/i.test(type)) {
+              return internal.endsWith("Id") ? internal : internal + "Id";
+            }
+            return internal;
+          } catch (_) {
+            return "CertifierId";
+          }
+        }
+
+        async function fillBylawCertifierDropdown(sel, seg, pw, sampleRow) {
+          if (!sel || sel.tagName !== "SELECT") return;
+          const certCol = normalizedBylawTrainingColumns().find(function (c) {
+            return c.key === "Certifier";
+          });
+          if (!certCol) return;
+          await fillDropdownSelect(sel, certCol, seg, pw, sampleRow, null);
+          if (sel.options.length > 1) return;
+
+          const entries = await fetchListItemChoices(
+            pw,
+            LIST_CERTIFIERS,
+            LIST_CERTIFIERS_GUID,
+            CERTIFIERS_LIST_DISPLAY_FIELD,
+          );
+          if (!entries.length) return;
+
+          const writeKey = await resolveBylawCertifierWriteKey(seg, pw);
+          const lookupBase = writeKey.replace(/Id$/, "");
+          sel.dataset.writeKey = writeKey;
+          if (lookupBase) sel.dataset.lookupDisplayKey = lookupBase;
+
+          const priorValue = String(sel.value || "").trim();
+          while (sel.options.length > 1) sel.remove(1);
+          entries.forEach(function (entry) {
+            const o = document.createElement("option");
+            o.value = String(entry.id);
+            o.textContent = entry.text;
+            sel.appendChild(o);
+          });
+          if (priorValue) sel.value = priorValue;
+          applySelectAutosize(sel);
         }
 
         async function fetchChoiceOptions(seg, pw, fieldInternalOrTitle) {
