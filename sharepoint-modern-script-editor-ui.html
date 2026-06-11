@@ -450,6 +450,33 @@
         text-transform: uppercase;
         color: var(--pip-amber);
       }
+      #sp-pip-ui .weapons-add-form .add-form-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: min(100%, 34rem);
+      }
+      #sp-pip-ui .weapons-add-form .add-field {
+        display: grid;
+        grid-template-columns: minmax(10.5rem, 42%) 1fr;
+        gap: 10px 14px;
+        align-items: center;
+        min-width: 0;
+      }
+      #sp-pip-ui .weapons-add-form .add-field label {
+        margin-bottom: 0;
+        line-height: 1.35;
+        align-self: center;
+      }
+      #sp-pip-ui .weapons-add-form .add-field input,
+      #sp-pip-ui .weapons-add-form .add-field select {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+      #sp-pip-ui .weapons-add-form .add-field select.add-field-select--autosize {
+        width: 100%;
+      }
       #sp-pip-ui .weapons-add-form .add-form-actions {
         margin-top: 16px;
         padding-top: 14px;
@@ -1637,9 +1664,11 @@
           fwrap.className = "add-field";
           const lab = document.createElement("label");
           lab.setAttribute("for", idPrefix + col.key);
-          lab.textContent =
-            col.key === "ExpirationDate" ? col.label + " (auto from qual date)" : col.label;
-          lab.title = "REST write key: " + writeKey;
+          lab.textContent = col.label;
+          lab.title =
+            col.key === "ExpirationDate"
+              ? "Auto-calculated from certification date (last day of month, one year out). REST write key: " + writeKey
+              : "REST write key: " + writeKey;
           fwrap.appendChild(lab);
 
           const isDrop = WEAPONS_CERT_DROPDOWN_KEYS.indexOf(col.key) !== -1;
@@ -1786,6 +1815,32 @@
           if (qualEl) qualEl.focus();
         }
 
+        async function deleteWeaponsCertRow(id, pw, seg, personId) {
+          const sid = parseInt(String(id), 10);
+          if (!sid || isNaN(sid)) {
+            setWeaponsCertState("err", "Invalid qualification Id for delete.");
+            return;
+          }
+          if (!confirm("Delete weapons qualification Id " + sid + "? This cannot be undone.")) return;
+          try {
+            setWeaponsCertState("loading", "Deleting qualification…");
+            await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
+            if (weaponsCertEditSession.item && parseInt(String(weaponsCertEditSession.item.Id), 10) === sid) {
+              weaponsCertEditSession.item = null;
+              setWeaponsCertAddPanelVisible(false);
+              if (personWeaponsAddForm) personWeaponsAddForm.reset();
+            }
+            if (personId) await loadPersonWeaponsCertifications(personId, pw);
+            setWeaponsCertState("ok", "Qualification deleted.");
+            window.setTimeout(function () {
+              setWeaponsCertState("", "");
+            }, 2500);
+          } catch (e) {
+            setWeaponsCertState("err", "Delete failed: " + (e.message || String(e)).slice(0, 280));
+            log("Weapons cert DELETE failed:\n" + (e.message || String(e)), "err");
+          }
+        }
+
         async function submitWeaponsCertSave() {
           const personItem = personDetailSession.item;
           const pw = personDetailSession.pw;
@@ -1870,7 +1925,7 @@
             const thAct = document.createElement("th");
             thAct.className = "roster-actions";
             thAct.textContent = " ";
-            thAct.title = "Requalify";
+            thAct.title = "Requalify / delete";
             trHead.appendChild(thAct);
           }
           personWeaponsThead.appendChild(trHead);
@@ -1913,6 +1968,16 @@
                 void openWeaponsCertEditPanel(item);
               });
               inner.appendChild(requalBtn);
+              const delBtn = document.createElement("button");
+              delBtn.type = "button";
+              delBtn.className = "btn-danger";
+              delBtn.textContent = "Delete";
+              delBtn.title = weaponLabel ? "Delete " + weaponLabel + " qualification" : "Delete qualification";
+              delBtn.addEventListener("click", function () {
+                const personId = personDetailSession.item && personDetailSession.item.Id;
+                void deleteWeaponsCertRow(item.Id, personDetailSession.pw, weaponsCertListApiPath(), personId);
+              });
+              inner.appendChild(delBtn);
               tdAct.appendChild(inner);
               tr.appendChild(tdAct);
             } else if (showActions) {
