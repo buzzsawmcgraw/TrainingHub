@@ -410,6 +410,38 @@
         border-radius: 6px;
         background: rgba(8, 22, 16, 0.35);
       }
+      #sp-pip-ui .weapons-add-toolbar {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      #sp-pip-ui .weapons-add-toolbar button {
+        margin: 0;
+      }
+      #sp-pip-ui .weapons-add-panel {
+        margin-top: 14px;
+        padding: 14px 16px 16px;
+        border: 1px solid var(--pip-border);
+        border-radius: 8px;
+        background: rgba(8, 22, 16, 0.38);
+      }
+      #sp-pip-ui .weapons-add-panel[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui h4.weapons-add-title {
+        margin: 0 0 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .weapons-add-form .add-form-actions {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--pip-border);
+      }
       #sp-pip-ui table.roster {
         width: 100%;
         border-collapse: separate;

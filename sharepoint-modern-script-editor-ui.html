@@ -423,6 +423,38 @@
         border-radius: 6px;
         background: rgba(8, 22, 16, 0.35);
       }
+      #sp-pip-ui .weapons-add-toolbar {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      #sp-pip-ui .weapons-add-toolbar button {
+        margin: 0;
+      }
+      #sp-pip-ui .weapons-add-panel {
+        margin-top: 14px;
+        padding: 14px 16px 16px;
+        border: 1px solid var(--pip-border);
+        border-radius: 8px;
+        background: rgba(8, 22, 16, 0.38);
+      }
+      #sp-pip-ui .weapons-add-panel[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui h4.weapons-add-title {
+        margin: 0 0 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .weapons-add-form .add-form-actions {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--pip-border);
+      }
       #sp-pip-ui table.roster {
         width: 100%;
         border-collapse: separate;
@@ -844,6 +876,19 @@
                 </table>
               </div>
               <p id="personWeaponsEmpty" class="weapons-empty" hidden>No weapons qualifications on file for this person.</p>
+              <div class="weapons-add-toolbar">
+                <button type="button" id="personWeaponsAddBtn" class="btn-secondary">Add qualification</button>
+              </div>
+              <div id="personWeaponsAddPanel" class="weapons-add-panel" hidden>
+                <h4 class="weapons-add-title">New weapons qualification</h4>
+                <form id="personWeaponsAddForm" class="weapons-add-form add-form-stack" aria-label="Add weapons qualification">
+                  <div id="personWeaponsAddFields" class="add-form-grid"></div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="personWeaponsSaveBtn">Save qualification</button>
+                    <button type="button" id="personWeaponsAddCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         </section>
@@ -912,16 +957,20 @@
           },
           {
             key: "QualDate",
-            label: "Cert date",
+            label: "Certification Date",
             altKeys: ["QualificationDate", "Qualification_x0020_Date", "CertificationDate", "Certification_x0020_Date", "CertDate"],
           },
           {
             key: "ExpiryDate",
-            label: "Expiry",
-            altKeys: ["Expiry_x0020_Date", "ExpirationDate", "ExpiresOn", "Expiration_x0020_Date"],
+            label: "Expiration Date",
+            altKeys: ["Expiry_x0020_Date", "ExpirationDate", "ExpiresOn", "Expiration_x0020_Date", "ExpDate"],
           },
           { key: "Status", label: "Status", altKeys: ["CertificationStatus", "QualificationStatus"] },
         ];
+        /** Choice/lookup columns on the add-weapons form (Weapon included so list choices load when available). */
+        const WEAPONS_CERT_DROPDOWN_KEYS = ["Weapon", "Status"];
+        /** Set SharePoint Title on new weapons cert rows from the weapon name when true. */
+        const WEAPONS_CERT_SET_TITLE = true;
 
         /**
          * Circular profile image to the left of the squadron header (default: **S3T Files** / **Fallout Guy.png**).
@@ -1090,6 +1139,12 @@
         const personWeaponsBody = document.getElementById("personWeaponsBody");
         const personWeaponsEmpty = document.getElementById("personWeaponsEmpty");
         const personWeaponsState = document.getElementById("personWeaponsState");
+        const personWeaponsAddBtn = document.getElementById("personWeaponsAddBtn");
+        const personWeaponsAddPanel = document.getElementById("personWeaponsAddPanel");
+        const personWeaponsAddForm = document.getElementById("personWeaponsAddForm");
+        const personWeaponsAddFields = document.getElementById("personWeaponsAddFields");
+        const personWeaponsAddCancelBtn = document.getElementById("personWeaponsAddCancelBtn");
+        const personWeaponsSaveBtn = document.getElementById("personWeaponsSaveBtn");
 
         let hubSession = {
           rows: null,
@@ -1206,6 +1261,12 @@
           } catch (_) {
             return String(val);
           }
+        }
+
+        /** Plain ASCII placeholder for empty table/detail cells (avoids em-dash mojibake in SharePoint). */
+        function displayCellText(text) {
+          const s = text == null ? "" : String(text);
+          return s === "" ? "-" : s;
         }
 
         function valueFromItemByKeys(item, tryKeys) {
@@ -1386,11 +1447,191 @@
         function clearPersonWeaponsCertSection() {
           clearWeaponsCertTable();
           setWeaponsCertState("", "");
+          setWeaponsCertAddPanelVisible(false);
+          if (personWeaponsAddForm) personWeaponsAddForm.reset();
           if (personWeaponsEmpty) {
             personWeaponsEmpty.hidden = true;
             personWeaponsEmpty.textContent = "No weapons qualifications on file for this person.";
           }
           if (personWeaponsWrap) personWeaponsWrap.hidden = true;
+        }
+
+        function setWeaponsCertAddPanelVisible(visible) {
+          if (personWeaponsAddPanel) personWeaponsAddPanel.hidden = !visible;
+          if (personWeaponsAddBtn) {
+            personWeaponsAddBtn.textContent = visible ? "Cancel add" : "Add qualification";
+          }
+        }
+
+        function resolveWeaponsCertWriteKey(col, sampleRow) {
+          if (col.saveKey) return String(col.saveKey).trim();
+          if (sampleRow) {
+            const tryKeys = col.tryKeys || [col.key];
+            const hit = tryKeys.find(function (k) {
+              return sampleRow && Object.prototype.hasOwnProperty.call(sampleRow, k);
+            });
+            if (hit) return hit;
+          }
+          return col.key;
+        }
+
+        function buildWeaponsCertFieldWrap(col, sampleRow) {
+          const idPrefix = "wf_";
+          const writeKey = resolveWeaponsCertWriteKey(col, sampleRow);
+          const fwrap = document.createElement("div");
+          fwrap.className = "add-field";
+          const lab = document.createElement("label");
+          lab.setAttribute("for", idPrefix + col.key);
+          lab.textContent = col.label;
+          lab.title = "REST write key: " + writeKey;
+          fwrap.appendChild(lab);
+
+          const isDrop = WEAPONS_CERT_DROPDOWN_KEYS.indexOf(col.key) !== -1;
+          let input;
+          if (isDrop) {
+            input = document.createElement("select");
+            input.className = "add-field-select--autosize";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+            const opt0 = document.createElement("option");
+            opt0.value = "";
+            opt0.textContent = "(select)";
+            input.appendChild(opt0);
+          } else if (col.key === "QualDate" || col.key === "ExpiryDate") {
+            input = document.createElement("input");
+            input.type = "date";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+          } else {
+            input = document.createElement("input");
+            input.type = "text";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+          }
+          fwrap.appendChild(input);
+          return fwrap;
+        }
+
+        function buildWeaponsCertAddFormFields() {
+          if (!personWeaponsAddFields) return;
+          personWeaponsAddFields.innerHTML = "";
+          const sampleRow = hubSession.weaponsCertSampleRow;
+          const columns = normalizedWeaponsCertColumns();
+          columns.forEach(function (col) {
+            const f = buildWeaponsCertFieldWrap(col, sampleRow);
+            if (f) personWeaponsAddFields.appendChild(f);
+          });
+        }
+
+        async function populateWeaponsCertAddDropdowns() {
+          if (!personWeaponsAddForm || !personDetailSession.pw) return;
+          const seg = weaponsCertListApiPath();
+          const pw = personDetailSession.pw;
+          const sampleRow = hubSession.weaponsCertSampleRow;
+          const columns = normalizedWeaponsCertColumns();
+          for (let i = 0; i < columns.length; i++) {
+            const col = columns[i];
+            if (WEAPONS_CERT_DROPDOWN_KEYS.indexOf(col.key) === -1) continue;
+            const sel = document.getElementById("wf_" + col.key);
+            if (!sel || sel.tagName !== "SELECT") continue;
+            await fillDropdownSelect(sel, col, seg, pw, sampleRow, null);
+          }
+          applyAllSelectAutosizes(personWeaponsAddForm);
+        }
+
+        async function resolveWeaponsPersonPostKey(seg, pw) {
+          if (hubSession.weaponsPersonPostKey) return hubSession.weaponsPersonPostKey;
+          const filterField = String(hubSession.weaponsPersonFilterField || WEAPONS_CERT_PERSON_FIELD || "PersonnelId").trim();
+          let postKey = filterField;
+          try {
+            const esc = filterField.replace(/'/g, "''");
+            const data = await spFetch(
+              `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=InternalName,TypeAsString`,
+              {},
+              pw,
+            );
+            const internal = String(data.InternalName || filterField).trim();
+            const type = String(data.TypeAsString || "");
+            if (/lookup/i.test(type)) {
+              postKey = internal.endsWith("Id") ? internal : internal + "Id";
+            } else {
+              postKey = internal;
+            }
+          } catch (_) {
+            if (filterField === "PersonnelId" || filterField === "PersonnelID") postKey = "PersonnelIdId";
+            else if (!/Id$/.test(filterField)) postKey = filterField + "Id";
+          }
+          hubSession.weaponsPersonPostKey = postKey;
+          return postKey;
+        }
+
+        async function openWeaponsCertAddPanel() {
+          if (!personDetailSession.item || personDetailSession.item.Id == null) {
+            setWeaponsCertState("warn", "Open a personnel record before adding a qualification.");
+            return;
+          }
+          buildWeaponsCertAddFormFields();
+          setWeaponsCertAddPanelVisible(true);
+          setWeaponsCertState("", "");
+          await populateWeaponsCertAddDropdowns();
+          const weaponEl = document.getElementById("wf_Weapon");
+          if (weaponEl) weaponEl.focus();
+        }
+
+        async function submitNewWeaponsCert() {
+          const personItem = personDetailSession.item;
+          const pw = personDetailSession.pw;
+          if (!personItem || personItem.Id == null || !pw) return;
+
+          const seg = weaponsCertListApiPath();
+          const sampleRow = hubSession.weaponsCertSampleRow;
+          const columns = normalizedWeaponsCertColumns();
+          const weaponEl = document.getElementById("wf_Weapon");
+          const weaponVal = weaponEl ? String(weaponEl.value || "").trim() : "";
+          if (!weaponVal) {
+            setWeaponsCertState("err", "Weapon is required.");
+            return;
+          }
+
+          const payload = {};
+          columns.forEach(function (col) {
+            const el = document.getElementById("wf_" + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || resolveWeaponsCertWriteKey(col, sampleRow);
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
+            payload[writeKey] = v;
+          });
+
+          const personId = parseInt(String(personItem.Id), 10);
+          if (!personId || isNaN(personId)) {
+            setWeaponsCertState("err", "Invalid personnel record Id.");
+            return;
+          }
+          const personKey = await resolveWeaponsPersonPostKey(seg, pw);
+          payload[personKey] = personId;
+
+          if (WEAPONS_CERT_SET_TITLE) {
+            payload.Title = weaponVal;
+          }
+
+          try {
+            setWeaponsCertState("loading", "Saving qualification…");
+            if (personWeaponsSaveBtn) personWeaponsSaveBtn.disabled = true;
+            await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            if (personWeaponsAddForm) personWeaponsAddForm.reset();
+            setWeaponsCertAddPanelVisible(false);
+            await loadPersonWeaponsCertifications(personItem.Id, pw);
+            setWeaponsCertState("ok", "Qualification saved.");
+            window.setTimeout(function () {
+              setWeaponsCertState("", "");
+            }, 2500);
+          } catch (e) {
+            setWeaponsCertState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+            log("Weapons cert POST failed:\n" + (e.message || String(e)), "err");
+          } finally {
+            if (personWeaponsSaveBtn) personWeaponsSaveBtn.disabled = false;
+          }
         }
 
         function renderWeaponsCertTable(rows) {
@@ -1413,7 +1654,7 @@
               const td = document.createElement("td");
               const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
               const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-              td.textContent = text === "" ? "—" : text;
+              td.textContent = displayCellText(text);
               tr.appendChild(td);
             });
             frag.appendChild(tr);
@@ -1608,9 +1849,11 @@
               const wb = formatCellValue(valueFromItemByKeys(b, ["Weapon", "WeaponName", "Title"]) || "");
               return String(wa).localeCompare(String(wb));
             });
+            hubSession.weaponsCertSampleRow = rows.length ? rows[0] : hubSession.weaponsCertSampleRow || null;
             renderWeaponsCertTable(rows);
             setWeaponsCertState("", "");
           } catch (e) {
+            hubSession.weaponsCertSampleRow = hubSession.weaponsCertSampleRow || null;
             renderWeaponsCertTable([]);
             setWeaponsCertState("warn", "Could not load weapons qualifications: " + (e.message || String(e)).slice(0, 220));
             if (personWeaponsEmpty) {
@@ -1681,7 +1924,7 @@
           lab.textContent = col.label;
           const val = document.createElement("div");
           val.className = "person-detail-value";
-          val.textContent = text === "" ? "—" : text;
+          val.textContent = displayCellText(text);
           fwrap.appendChild(lab);
           fwrap.appendChild(val);
           return fwrap;
@@ -2135,6 +2378,31 @@
           });
         }
 
+        if (personWeaponsAddBtn) {
+          personWeaponsAddBtn.addEventListener("click", function () {
+            if (personWeaponsAddPanel && !personWeaponsAddPanel.hidden) {
+              setWeaponsCertAddPanelVisible(false);
+              if (personWeaponsAddForm) personWeaponsAddForm.reset();
+              return;
+            }
+            void openWeaponsCertAddPanel();
+          });
+        }
+
+        if (personWeaponsAddForm) {
+          personWeaponsAddForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void submitNewWeaponsCert();
+          });
+        }
+
+        if (personWeaponsAddCancelBtn) {
+          personWeaponsAddCancelBtn.addEventListener("click", function () {
+            setWeaponsCertAddPanelVisible(false);
+            if (personWeaponsAddForm) personWeaponsAddForm.reset();
+          });
+        }
+
         function renderRosterTable(rows, meta, pw, seg) {
           clearRosterTable();
           const thead = document.getElementById("rosterThead");
@@ -2167,7 +2435,7 @@
               const tryKeys = col.tryKeys || [col.key];
               const raw = valueFromItemByKeys(item, tryKeys);
               const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-              td.textContent = text === "" ? "—" : text;
+              td.textContent = displayCellText(text);
               tr.appendChild(td);
             });
             if (showRowActions && item.Id != null) {
@@ -2198,7 +2466,7 @@
             } else if (showRowActions) {
               const tdAct = document.createElement("td");
               tdAct.className = "roster-actions";
-              tdAct.textContent = "—";
+              tdAct.textContent = "-";
               tr.appendChild(tdAct);
             }
             frag.appendChild(tr);

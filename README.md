@@ -80,7 +80,7 @@ Edit constants in **`sharepoint-modern-script-editor-ui.html`**, then run `build
 - **`PERSONNEL_SITE_ROOT_URL`** — site root for REST calls (default `https://usaf.dps.mil/sites/88thSFS`).
 - **`LIST_PERSONNEL`** — list title (default `Personnel`).
 
-**Record review:** click **Record** on a roster row to open the full personnel view. **Edit record** switches to editable fields; **Save changes** updates SharePoint via REST. **Back to roster** returns without reloading the page.
+**Record review:** click **Record** on a roster row to open the full personnel view. **Edit record** switches to editable fields; **Save changes** updates SharePoint via REST. **Add qualification** on the weapons section creates a row in **WeaponsCertifications** linked to that person. **Back to roster** returns without reloading the page.
 
 Password and list settings live in the **script** file (`training-hub-script.txt` after build), not in the loader.
 
