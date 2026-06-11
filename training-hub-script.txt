@@ -61,10 +61,10 @@
             label: "Expiration Date",
             altKeys: ["Expiry_x0020_Date", "ExpirationDate", "ExpiresOn", "Expiration_x0020_Date", "ExpDate"],
           },
-          { key: "Status", label: "Status", altKeys: ["CertificationStatus", "QualificationStatus"] },
+          { key: "Status", label: "Status", computed: true },
         ];
         /** Choice/lookup columns on the add-weapons form (Weapon included so list choices load when available). */
-        const WEAPONS_CERT_DROPDOWN_KEYS = ["Weapon", "Status"];
+        const WEAPONS_CERT_DROPDOWN_KEYS = ["Weapon"];
         /** Set SharePoint Title on new weapons cert rows from the weapon name when true. */
         const WEAPONS_CERT_SET_TITLE = true;
 
@@ -501,9 +501,55 @@
               alt.forEach(function (a) {
                 if (tryKeys.indexOf(a) === -1) tryKeys.push(a);
               });
-              return { key: key, label: label, tryKeys: tryKeys };
+              return { key: key, label: label, tryKeys: tryKeys, computed: !!entry.computed };
             })
             .filter(Boolean);
+        }
+
+        function weaponsCertFormColumns() {
+          return normalizedWeaponsCertColumns().filter(function (col) {
+            return !col.computed;
+          });
+        }
+
+        function weaponsCertExpiryDateKeys() {
+          const expiryCol = normalizedWeaponsCertColumns().find(function (col) {
+            return col.key === "ExpiryDate";
+          });
+          return expiryCol && expiryCol.tryKeys ? expiryCol.tryKeys.slice() : ["ExpiryDate"];
+        }
+
+        function parseWeaponsCertCalendarDate(val) {
+          if (val === null || val === undefined || val === "") return null;
+          const formatted = formatCellValue(val);
+          const iso = String(formatted).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (iso) {
+            const d = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
+            return isNaN(d.getTime()) ? null : d;
+          }
+          const d = new Date(val);
+          if (isNaN(d.getTime())) return null;
+          return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+
+        function calendarDaysBetween(fromDate, toDate) {
+          const from = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+          const to = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+          return Math.round((to.getTime() - from.getTime()) / 86400000);
+        }
+
+        function computeWeaponsCertStatus(item) {
+          const raw = valueFromItemByKeys(item, weaponsCertExpiryDateKeys());
+          const expiry = parseWeaponsCertCalendarDate(raw);
+          if (!expiry) return { text: "-", tone: "unknown" };
+
+          const today = new Date();
+          const daysLeft = calendarDaysBetween(today, expiry);
+
+          if (daysLeft < 0) return { text: "Expired", tone: "expired" };
+          if (daysLeft <= 30) return { text: "Qualified", tone: "urgent" };
+          if (daysLeft <= 60) return { text: "Qualified", tone: "warn" };
+          return { text: "Qualified", tone: "ok" };
         }
 
         function weaponsCertListTitle() {
@@ -612,8 +658,7 @@
           if (!personWeaponsAddFields) return;
           personWeaponsAddFields.innerHTML = "";
           const sampleRow = hubSession.weaponsCertSampleRow;
-          const columns = normalizedWeaponsCertColumns();
-          columns.forEach(function (col) {
+          weaponsCertFormColumns().forEach(function (col) {
             const f = buildWeaponsCertFieldWrap(col, sampleRow);
             if (f) personWeaponsAddFields.appendChild(f);
           });
@@ -681,7 +726,6 @@
 
           const seg = weaponsCertListApiPath();
           const sampleRow = hubSession.weaponsCertSampleRow;
-          const columns = normalizedWeaponsCertColumns();
           const weaponEl = document.getElementById("wf_Weapon");
           const weaponVal = weaponEl ? String(weaponEl.value || "").trim() : "";
           if (!weaponVal) {
@@ -690,7 +734,7 @@
           }
 
           const payload = {};
-          columns.forEach(function (col) {
+          weaponsCertFormColumns().forEach(function (col) {
             const el = document.getElementById("wf_" + col.key);
             if (!el) return;
             const writeKey = el.dataset.writeKey || resolveWeaponsCertWriteKey(col, sampleRow);
@@ -748,9 +792,17 @@
             const tr = document.createElement("tr");
             columns.forEach(function (col) {
               const td = document.createElement("td");
-              const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
-              const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-              td.textContent = displayCellText(text);
+              if (col.computed && col.key === "Status") {
+                const status = computeWeaponsCertStatus(item);
+                td.textContent = displayCellText(status.text);
+                if (status.tone && status.tone !== "unknown") {
+                  td.className = "weapons-status weapons-status--" + status.tone;
+                }
+              } else {
+                const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+                const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+                td.textContent = displayCellText(text);
+              }
               tr.appendChild(td);
             });
             frag.appendChild(tr);

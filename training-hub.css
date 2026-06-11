@@ -442,6 +442,26 @@
         padding-top: 14px;
         border-top: 1px solid var(--pip-border);
       }
+      #sp-pip-ui .weapons-status {
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      #sp-pip-ui .weapons-status--ok {
+        color: var(--pip-green);
+        text-shadow: 0 0 6px var(--pip-green-glow);
+      }
+      #sp-pip-ui .weapons-status--warn {
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.35);
+      }
+      #sp-pip-ui .weapons-status--urgent {
+        color: var(--pip-red);
+        text-shadow: 0 0 8px rgba(255, 90, 69, 0.4);
+      }
+      #sp-pip-ui .weapons-status--expired {
+        color: rgba(255, 90, 69, 0.72);
+        text-shadow: none;
+      }
       #sp-pip-ui table.roster {
         width: 100%;
         border-collapse: separate;
