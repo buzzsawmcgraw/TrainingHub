@@ -113,6 +113,55 @@
         const BYLAW_TRAINING_SET_TITLE = true;
         const BYLAW_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "ByLaw", "TrainingName", "Training_x0020_Name"];
 
+        /** Hub Reports menu (Reports nav). Set implemented:true when the report renderer is wired. */
+        const HUB_REPORT_TYPES = [
+          {
+            id: "status-of-training",
+            title: "Status of Training",
+            subtitle: "Squadron-wide snapshot of Weapons Qualifications and By-Law Training.",
+            badge: "SOT",
+            implemented: true,
+            printable: true,
+          },
+          {
+            id: "mql-report",
+            title: "MQL Report",
+            subtitle: "Minimum Qualification Level listing for review and tracking.",
+            badge: "MQL",
+            implemented: false,
+            placeholder:
+              "MQL Report will list minimum qualification levels across the Personnel Roster. This view is queued for a follow-up build.",
+          },
+          {
+            id: "mql-pdf",
+            title: "MQL PDF",
+            subtitle: "Printable MQL export suitable for signatures and filing.",
+            badge: "PDF",
+            implemented: false,
+            printable: true,
+            placeholder:
+              "MQL PDF will generate a print-ready minimum qualification document. Use Print report here once the export is wired.",
+          },
+          {
+            id: "heavy-weapons",
+            title: "Heavy Weapons Report",
+            subtitle: "Heavy weapons qualification status and expirations.",
+            badge: "HVY",
+            implemented: false,
+            placeholder:
+              "Heavy Weapons Report will filter Weapons Qualifications to heavy-weapon entries. Define the weapon list in a future hub update.",
+          },
+          {
+            id: "augmentee",
+            title: "Augmentee Report",
+            subtitle: "Augmentee Personnel training and qualification status.",
+            badge: "AUG",
+            implemented: false,
+            placeholder:
+              "Augmentee Report will highlight augmentee Personnel and their training posture. Augmentee identification rules will be added next.",
+          },
+        ];
+
         /**
          * Circular profile image to the left of the squadron header (default: **S3T Files** / **Fallout Guy.png**).
          * `HUB_PROFILE_IMAGE_URL` - full URL override. `HUB_LOGO_URL` - legacy override if profile URL is empty.
@@ -312,6 +361,18 @@
         const instructorsPersonSelect = document.getElementById("instructorsPersonSelect");
         const instructorsAddCancelBtn = document.getElementById("instructorsAddCancelBtn");
         const instructorsSaveBtn = document.getElementById("instructorsSaveBtn");
+        const hubNavReports = document.getElementById("hubNavReports");
+        const reportsSection = document.getElementById("reportsSection");
+        const reportsReadState = document.getElementById("reportsReadState");
+        const reportsBackLink = document.getElementById("reportsBackLink");
+        const reportsHubPanel = document.getElementById("reportsHubPanel");
+        const reportsHubGrid = document.getElementById("reportsHubGrid");
+        const reportsDetailPanel = document.getElementById("reportsDetailPanel");
+        const reportsDetailBackLink = document.getElementById("reportsDetailBackLink");
+        const reportsPrintBtn = document.getElementById("reportsPrintBtn");
+        const reportsDetailTitle = document.getElementById("reportsDetailTitle");
+        const reportsDetailSubtitle = document.getElementById("reportsDetailSubtitle");
+        const reportsDetailBody = document.getElementById("reportsDetailBody");
 
         let hubSession = {
           rows: null,
@@ -334,6 +395,12 @@
 
         let instructorsSession = {
           rows: null,
+        };
+
+        let reportsSession = {
+          activeReportId: null,
+          weaponsRows: null,
+          bylawRows: null,
         };
 
         let weaponsCertEditSession = {
@@ -585,13 +652,26 @@
         async function navigateToRoster() {
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = true;
+          if (reportsSection) reportsSection.hidden = true;
           setInstructorsAddPanelVisible(false);
+          showReportsHub();
           personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           clearPersonWeaponsCertSection();
           clearPersonBylawTrainingSection();
           setPersonDetailEditMode(false);
           setHubListViewVisible(true);
           await ensureRosterViewRendered();
+        }
+
+        async function navigateToReports() {
+          setReportsViewVisible(true);
+          if (!hubSession.pw) {
+            setReportsState("warn", "Load the Personnel Roster first (wait for list to load or click Refresh list).");
+            showReportsHub();
+            return;
+          }
+          showReportsHub();
+          setReportsState("", "");
         }
 
         async function navigateToInstructors() {
@@ -2078,6 +2158,7 @@
           });
           if (personDetailSection) personDetailSection.hidden = visible;
           if (instructorsSection) instructorsSection.hidden = true;
+          if (reportsSection) reportsSection.hidden = true;
         }
 
         function setInstructorsViewVisible(visible) {
@@ -2086,6 +2167,361 @@
           });
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = !visible;
+          if (reportsSection) reportsSection.hidden = true;
+        }
+
+        function setReportsViewVisible(visible) {
+          document.querySelectorAll(".hub-section--form, .hub-section--status, .hub-section--roster").forEach(function (el) {
+            el.hidden = visible;
+          });
+          if (personDetailSection) personDetailSection.hidden = true;
+          if (instructorsSection) instructorsSection.hidden = true;
+          if (reportsSection) reportsSection.hidden = !visible;
+        }
+
+        function setReportsState(kind, message) {
+          if (!reportsReadState) return;
+          if (!message) {
+            reportsReadState.hidden = true;
+            reportsReadState.textContent = "";
+            return;
+          }
+          reportsReadState.hidden = false;
+          reportsReadState.className = "read-state " + kind;
+          reportsReadState.textContent = message;
+        }
+
+        function reportTypeById(reportId) {
+          const id = String(reportId || "").trim();
+          return (Array.isArray(HUB_REPORT_TYPES) ? HUB_REPORT_TYPES : []).find(function (r) {
+            return r && String(r.id) === id;
+          });
+        }
+
+        function showReportsHub() {
+          reportsSession.activeReportId = null;
+          if (reportsHubPanel) reportsHubPanel.hidden = false;
+          if (reportsDetailPanel) reportsDetailPanel.hidden = true;
+          if (reportsPrintBtn) reportsPrintBtn.hidden = true;
+          renderReportsHubGrid();
+        }
+
+        function showReportsDetail(reportDef) {
+          if (!reportDef) return;
+          reportsSession.activeReportId = reportDef.id;
+          if (reportsHubPanel) reportsHubPanel.hidden = true;
+          if (reportsDetailPanel) reportsDetailPanel.hidden = false;
+          if (reportsDetailTitle) reportsDetailTitle.textContent = reportDef.title || "Report";
+          if (reportsDetailSubtitle) reportsDetailSubtitle.textContent = reportDef.subtitle || "";
+          if (reportsPrintBtn) reportsPrintBtn.hidden = !reportDef.printable;
+        }
+
+        function renderReportsHubGrid() {
+          if (!reportsHubGrid) return;
+          reportsHubGrid.innerHTML = "";
+          const frag = document.createDocumentFragment();
+          (Array.isArray(HUB_REPORT_TYPES) ? HUB_REPORT_TYPES : []).forEach(function (def) {
+            if (!def || !def.id) return;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "reports-hub-card";
+            btn.setAttribute("role", "listitem");
+            btn.title = "Open " + (def.title || def.id);
+            const badge = document.createElement("span");
+            badge.className = "reports-hub-card-badge";
+            badge.textContent = def.badge || "RPT";
+            const title = document.createElement("span");
+            title.className = "reports-hub-card-title";
+            title.textContent = def.title || def.id;
+            const desc = document.createElement("span");
+            desc.className = "reports-hub-card-desc";
+            desc.textContent = def.subtitle || "";
+            const status = document.createElement("span");
+            status.className =
+              "reports-hub-card-status " + (def.implemented ? "reports-hub-card-status--ready" : "reports-hub-card-status--soon");
+            status.textContent = def.implemented ? "Ready" : "Coming soon";
+            btn.appendChild(badge);
+            btn.appendChild(title);
+            btn.appendChild(desc);
+            btn.appendChild(status);
+            btn.addEventListener("click", function () {
+              void openHubReport(def.id);
+            });
+            frag.appendChild(btn);
+          });
+          reportsHubGrid.appendChild(frag);
+        }
+
+        function trainingStatusToneRank(tone) {
+          const ranks = { unknown: 0, ok: 1, warn: 2, urgent: 3, expired: 4 };
+          return ranks[String(tone || "unknown")] != null ? ranks[String(tone || "unknown")] : 0;
+        }
+
+        function worstTrainingStatusTone(tones) {
+          let worst = "unknown";
+          (Array.isArray(tones) ? tones : []).forEach(function (tone) {
+            if (trainingStatusToneRank(tone) > trainingStatusToneRank(worst)) worst = tone;
+          });
+          return worst;
+        }
+
+        function summarizeTrainingRows(rows, computeFn) {
+          const list = Array.isArray(rows) ? rows : [];
+          if (!list.length) return { text: "No records", tone: "unknown", count: 0 };
+          const statuses = list.map(function (row) {
+            return computeFn(row);
+          });
+          const tone = worstTrainingStatusTone(
+            statuses.map(function (s) {
+              return s.tone;
+            }),
+          );
+          let text = "Qualified";
+          if (tone === "expired") text = "Expired";
+          else if (tone === "urgent") text = "Due <=30d";
+          else if (tone === "warn") text = "Due 31-60d";
+          else if (tone === "unknown") text = "No records";
+          return { text: text, tone: tone, count: list.length };
+        }
+
+        function applyReportStatusCell(td, status) {
+          const s = status || { text: "-", tone: "unknown" };
+          td.textContent = displayCellText(s.text);
+          if (s.tone && s.tone !== "unknown") {
+            td.className = "cert-status cert-status--" + s.tone;
+          }
+        }
+
+        function personOfficeLabel(item) {
+          const office = itemFieldText(item, "OfficeSymbol");
+          const squadron = itemFieldText(item, "Squadron");
+          const parts = [office, squadron].filter(Boolean);
+          return parts.length ? parts.join(" / ") : "-";
+        }
+
+        async function fetchAllWeaponsCertRows(pw) {
+          const seg = weaponsCertListApiPath();
+          if (!seg || !pw) return [];
+          try {
+            const data = await spFetch(`/_api/web/${seg}/items?$top=5000`, {}, pw);
+            return (data && data.value) || [];
+          } catch (e) {
+            log("Reports weapons fetch failed:\n" + (e.message || String(e)), "warn");
+            return [];
+          }
+        }
+
+        async function fetchAllBylawTrainingRows(pw) {
+          const seg = bylawTrainingListApiPath();
+          if (!seg || !pw) return [];
+          try {
+            const data = await spFetch(`/_api/web/${seg}/items?$top=5000`, {}, pw);
+            return (data && data.value) || [];
+          } catch (e) {
+            log("Reports by-law fetch failed:\n" + (e.message || String(e)), "warn");
+            return [];
+          }
+        }
+
+        async function ensureReportsTrainingCache(pw) {
+          if (!pw) return { weaponsRows: [], bylawRows: [] };
+          if (!Array.isArray(reportsSession.weaponsRows)) {
+            reportsSession.weaponsRows = await fetchAllWeaponsCertRows(pw);
+          }
+          if (!Array.isArray(reportsSession.bylawRows)) {
+            reportsSession.bylawRows = await fetchAllBylawTrainingRows(pw);
+          }
+          return {
+            weaponsRows: reportsSession.weaponsRows || [],
+            bylawRows: reportsSession.bylawRows || [],
+          };
+        }
+
+        function buildStatusOfTrainingRows(personRows, weaponsRows, bylawRows) {
+          return (Array.isArray(personRows) ? personRows : []).map(function (person) {
+            if (!person || person.Id == null) return null;
+            const pid = String(person.Id);
+            const personWeapons = weaponsRows.filter(function (row) {
+              return weaponsPersonnelIdFromItem(row) === pid;
+            });
+            const personBylaw = bylawRows.filter(function (row) {
+              return bylawPersonnelIdFromItem(row) === pid;
+            });
+            const weaponsStatus = summarizeTrainingRows(personWeapons, computeWeaponsCertStatus);
+            const bylawStatus = summarizeTrainingRows(personBylaw, computeBylawTrainingStatus);
+            const overallTone = worstTrainingStatusTone([weaponsStatus.tone, bylawStatus.tone]);
+            let overallText = "Qualified";
+            if (overallTone === "expired") overallText = "Expired";
+            else if (overallTone === "urgent") overallText = "Action needed";
+            else if (overallTone === "warn") overallText = "Due soon";
+            else if (overallTone === "unknown") overallText = "No training data";
+            return {
+              person: person,
+              weaponsStatus: weaponsStatus,
+              bylawStatus: bylawStatus,
+              overall: { text: overallText, tone: overallTone },
+            };
+          }).filter(Boolean);
+        }
+
+        function renderStatusOfTrainingSummary(rows) {
+          const counts = { total: rows.length, ok: 0, warn: 0, urgent: 0, expired: 0, unknown: 0 };
+          rows.forEach(function (entry) {
+            const tone = entry.overall && entry.overall.tone ? entry.overall.tone : "unknown";
+            if (counts[tone] != null) counts[tone] += 1;
+          });
+          const grid = document.createElement("div");
+          grid.className = "reports-summary-grid";
+          const stats = [
+            { label: "Personnel", value: counts.total, mod: "" },
+            { label: "Qualified", value: counts.ok, mod: "" },
+            { label: "Due 31-60d", value: counts.warn, mod: "warn" },
+            { label: "Due <=30d", value: counts.urgent, mod: "urgent" },
+            { label: "Expired", value: counts.expired, mod: "expired" },
+            { label: "No data", value: counts.unknown, mod: "" },
+          ];
+          stats.forEach(function (stat) {
+            const box = document.createElement("div");
+            box.className = "reports-summary-stat" + (stat.mod ? " reports-summary-stat--" + stat.mod : "");
+            const val = document.createElement("span");
+            val.className = "reports-summary-stat-value";
+            val.textContent = String(stat.value);
+            const lab = document.createElement("span");
+            lab.className = "reports-summary-stat-label";
+            lab.textContent = stat.label;
+            box.appendChild(val);
+            box.appendChild(lab);
+            grid.appendChild(box);
+          });
+          return grid;
+        }
+
+        function renderStatusOfTrainingTable(rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "roster-wrap";
+          const table = document.createElement("table");
+          table.className = "roster reports-status-table";
+          table.setAttribute("aria-label", "Status of Training");
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          ["Personnel", "Office / Squadron", "Weapons", "By-Law", "Overall"].forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          const sorted = rows.slice().sort(function (a, b) {
+            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
+              sensitivity: "base",
+            });
+          });
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (entry) {
+            const tr = document.createElement("tr");
+            const tdName = document.createElement("td");
+            const nameBtn = document.createElement("button");
+            nameBtn.type = "button";
+            nameBtn.className = "reports-name-link";
+            nameBtn.textContent = formatPersonDisplayName(entry.person);
+            nameBtn.title = "Open Personnel Record";
+            nameBtn.addEventListener("click", function () {
+              navigateToPersonDetail(entry.person.Id);
+            });
+            tdName.appendChild(nameBtn);
+            tr.appendChild(tdName);
+            const tdOffice = document.createElement("td");
+            tdOffice.textContent = displayCellText(personOfficeLabel(entry.person));
+            tr.appendChild(tdOffice);
+            const tdWeapons = document.createElement("td");
+            applyReportStatusCell(tdWeapons, entry.weaponsStatus);
+            tr.appendChild(tdWeapons);
+            const tdBylaw = document.createElement("td");
+            applyReportStatusCell(tdBylaw, entry.bylawStatus);
+            tr.appendChild(tdBylaw);
+            const tdOverall = document.createElement("td");
+            applyReportStatusCell(tdOverall, entry.overall);
+            tr.appendChild(tdOverall);
+            frag.appendChild(tr);
+          });
+          tbody.appendChild(frag);
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        async function loadStatusOfTrainingReport(reportDef) {
+          const pw = hubSession.pw;
+          if (!pw) {
+            setReportsState("err", "Hub not ready. Refresh the Personnel Roster first.");
+            return;
+          }
+          if (!reportsDetailBody) return;
+          showReportsDetail(reportDef);
+          reportsDetailBody.innerHTML = "";
+          setReportsState("loading", "Building Status of Training report...");
+          try {
+            const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+            if (!personRows.length) {
+              setReportsState("warn", "Personnel Roster is empty. Refresh the list first.");
+              const empty = document.createElement("div");
+              empty.className = "reports-placeholder-panel";
+              const emptyMsg = document.createElement("p");
+              emptyMsg.textContent = "No Personnel rows loaded.";
+              empty.appendChild(emptyMsg);
+              reportsDetailBody.appendChild(empty);
+              return;
+            }
+            const cache = await ensureReportsTrainingCache(pw);
+            const rows = buildStatusOfTrainingRows(personRows, cache.weaponsRows, cache.bylawRows);
+            reportsDetailBody.appendChild(renderStatusOfTrainingSummary(rows));
+            reportsDetailBody.appendChild(renderStatusOfTrainingTable(rows));
+            setReportsState("ok", "Status of Training updated.");
+            window.setTimeout(function () {
+              setReportsState("", "");
+            }, 2200);
+          } catch (e) {
+            setReportsState("err", "Could not build report: " + (e.message || String(e)).slice(0, 220));
+            log("Status of Training report failed:\n" + (e.message || String(e)), "err");
+          }
+        }
+
+        function renderPlaceholderReport(reportDef) {
+          showReportsDetail(reportDef);
+          if (!reportsDetailBody) return;
+          reportsDetailBody.innerHTML = "";
+          const panel = document.createElement("div");
+          panel.className = "reports-placeholder-panel";
+          const p = document.createElement("p");
+          p.textContent =
+            reportDef.placeholder ||
+            "This report is queued for a future hub update. The layout shell is ready so data can be wired in next.";
+          panel.appendChild(p);
+          reportsDetailBody.appendChild(panel);
+          setReportsState("", "");
+        }
+
+        async function openHubReport(reportId) {
+          const def = reportTypeById(reportId);
+          if (!def) return;
+          setReportsState("", "");
+          if (def.implemented && def.id === "status-of-training") {
+            await loadStatusOfTrainingReport(def);
+            return;
+          }
+          renderPlaceholderReport(def);
+        }
+
+        function invalidateReportsTrainingCache() {
+          reportsSession.weaponsRows = null;
+          reportsSession.bylawRows = null;
+        }
+
+        function printActiveReport() {
+          const def = reportTypeById(reportsSession.activeReportId);
+          if (!def || !def.printable) return;
+          window.print();
         }
 
         function setInstructorsState(kind, message) {
@@ -2932,6 +3368,33 @@
         if (instructorsAddForm) {
           instructorsAddForm.addEventListener("submit", function (ev) {
             void submitInstructorAdd(ev);
+          });
+        }
+
+        if (reportsBackLink) {
+          reportsBackLink.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            void navigateToRoster();
+          });
+        }
+
+        if (reportsDetailBackLink) {
+          reportsDetailBackLink.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            showReportsHub();
+            setReportsState("", "");
+          });
+        }
+
+        if (hubNavReports) {
+          hubNavReports.addEventListener("click", function () {
+            void navigateToReports();
+          });
+        }
+
+        if (reportsPrintBtn) {
+          reportsPrintBtn.addEventListener("click", function () {
+            printActiveReport();
           });
         }
 
@@ -4173,6 +4636,7 @@
             seg: seg2,
             sampleRow: sampleRow,
           };
+          invalidateReportsTrainingCache();
 
           await renderAddPersonForm(meta, pw, seg2, sampleRow);
           renderRosterTable(rows, meta, pw, seg2);

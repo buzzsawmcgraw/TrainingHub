@@ -183,6 +183,30 @@
             </div>
           </div>
         </section>
+        <section id="reportsSection" class="hub-section hub-section--reports" hidden aria-label="Reports">
+          <div class="person-detail-panel reports-panel">
+            <div class="person-detail-toolbar">
+              <a id="reportsBackLink" class="person-detail-back" href="#">Back to roster</a>
+            </div>
+            <h2 class="hub-subtitle person-detail-title">Reports</h2>
+            <p class="reports-hint">Training and qualification reports for the squadron. Select a report type below.</p>
+            <div id="reportsReadState" class="read-state" hidden></div>
+            <div id="reportsHubPanel">
+              <div id="reportsHubGrid" class="reports-hub-grid" role="list" aria-label="Report types"></div>
+            </div>
+            <div id="reportsDetailPanel" hidden>
+              <div class="person-detail-toolbar">
+                <a id="reportsDetailBackLink" class="person-detail-back" href="#">Back to reports</a>
+                <div class="person-detail-toolbar-actions">
+                  <button type="button" id="reportsPrintBtn" class="btn-secondary" hidden>Print report</button>
+                </div>
+              </div>
+              <h2 id="reportsDetailTitle" class="hub-subtitle person-detail-title">Report</h2>
+              <p id="reportsDetailSubtitle" class="reports-hint"></p>
+              <div id="reportsDetailBody" class="reports-detail-body"></div>
+            </div>
+          </div>
+        </section>
         <section class="hub-section hub-section--diag">
           <details>
             <summary>Diagnostics (REST details &amp; raw JSON)</summary>

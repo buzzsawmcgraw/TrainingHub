@@ -339,11 +339,168 @@
       #sp-pip-ui .person-detail-toolbar-actions button {
         margin: 0;
       }
-      #sp-pip-ui .instructors-hint {
+      #sp-pip-ui .instructors-hint,
+      #sp-pip-ui .reports-hint {
         margin: 0 0 14px;
         font-size: 12px;
         line-height: 1.5;
         color: rgba(210, 255, 224, 0.72);
+      }
+      #sp-pip-ui .reports-hub-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 14px;
+        margin-top: 4px;
+      }
+      #sp-pip-ui button.reports-hub-card {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        width: 100%;
+        min-height: 132px;
+        padding: 16px 18px;
+        text-align: left;
+        text-transform: none;
+        letter-spacing: 0.02em;
+        font-weight: 400;
+        color: rgba(210, 255, 224, 0.92);
+        background: rgba(5, 14, 10, 0.55);
+        border: 1px solid var(--pip-border);
+        border-radius: 6px;
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), inset 0 0 28px rgba(0, 0, 0, 0.45);
+      }
+      #sp-pip-ui button.reports-hub-card:hover {
+        color: var(--pip-green);
+        border-color: var(--pip-green-dim);
+        background: rgba(8, 24, 14, 0.72);
+        box-shadow: 0 0 14px var(--pip-green-glow), inset 0 0 20px rgba(0, 0, 0, 0.4);
+      }
+      #sp-pip-ui .reports-hub-card-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        border: 1px solid rgba(255, 204, 102, 0.35);
+        border-radius: 3px;
+        background: rgba(255, 204, 102, 0.08);
+      }
+      #sp-pip-ui .reports-hub-card-title {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--pip-green);
+        text-shadow: 0 0 6px var(--pip-green-glow);
+      }
+      #sp-pip-ui .reports-hub-card-desc {
+        font-size: 12px;
+        line-height: 1.45;
+        color: rgba(210, 255, 224, 0.72);
+      }
+      #sp-pip-ui .reports-hub-card-status {
+        margin-top: auto;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      #sp-pip-ui .reports-hub-card-status--ready {
+        color: var(--pip-green);
+      }
+      #sp-pip-ui .reports-hub-card-status--soon {
+        color: rgba(255, 204, 102, 0.85);
+      }
+      #sp-pip-ui .reports-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+        gap: 10px;
+        margin: 0 0 18px;
+      }
+      #sp-pip-ui .reports-summary-stat {
+        padding: 12px 10px;
+        text-align: center;
+        border: 1px solid var(--pip-border);
+        border-radius: 4px;
+        background: rgba(5, 14, 10, 0.55);
+      }
+      #sp-pip-ui .reports-summary-stat-value {
+        display: block;
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--pip-green);
+      }
+      #sp-pip-ui .reports-summary-stat-label {
+        display: block;
+        margin-top: 6px;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(210, 255, 224, 0.68);
+      }
+      #sp-pip-ui .reports-summary-stat--warn .reports-summary-stat-value {
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .reports-summary-stat--urgent .reports-summary-stat-value {
+        color: var(--pip-red);
+      }
+      #sp-pip-ui .reports-summary-stat--expired .reports-summary-stat-value {
+        color: rgba(255, 90, 69, 0.82);
+      }
+      #sp-pip-ui .reports-placeholder-panel {
+        border: 1px dashed rgba(30, 74, 54, 0.85);
+        border-radius: 6px;
+        padding: 22px 20px;
+        background: rgba(5, 14, 10, 0.35);
+      }
+      #sp-pip-ui .reports-placeholder-panel p {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.55;
+        color: rgba(210, 255, 224, 0.8);
+      }
+      #sp-pip-ui .reports-detail-body .roster-wrap {
+        margin-top: 4px;
+      }
+      #sp-pip-ui button.reports-name-link {
+        margin: 0;
+        padding: 0;
+        border: none;
+        background: none;
+        box-shadow: none;
+        font: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        letter-spacing: inherit;
+        text-transform: none;
+        color: var(--pip-green);
+        text-shadow: 0 0 4px var(--pip-green-glow);
+        cursor: pointer;
+      }
+      #sp-pip-ui button.reports-name-link:hover {
+        color: #7dff8f;
+        background: none;
+      }
+      @media print {
+        #sp-pip-ui .hub-header,
+        #sp-pip-ui .hub-top-banner-wrap,
+        #sp-pip-ui .person-detail-toolbar,
+        #sp-pip-ui .hub-section--diag,
+        #sp-pip-ui #reportsHubPanel,
+        #sp-pip-ui #reportsReadState,
+        #sp-pip-ui .reports-hint {
+          display: none !important;
+        }
+        #sp-pip-ui button.reports-name-link {
+          color: #000;
+          text-shadow: none;
+        }
       }
       #sp-pip-ui a.person-detail-back {
         display: inline-block;
