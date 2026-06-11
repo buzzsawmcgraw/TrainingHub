@@ -500,6 +500,174 @@
         color: #7dff8f;
         background: none;
       }
+      #sp-pip-ui .reports-sot-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 16px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--pip-border);
+      }
+      #sp-pip-ui .reports-sot-toolbar button {
+        margin: 0;
+      }
+      #sp-pip-ui .reports-sot-toolbar button.reports-sot-tab--active {
+        background: rgba(30, 255, 69, 0.18);
+        color: var(--pip-green);
+        border-color: var(--pip-green);
+        box-shadow: 0 0 10px var(--pip-green-glow), inset 0 0 12px rgba(60, 255, 122, 0.08);
+      }
+      #sp-pip-ui .reports-month-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 12px 16px;
+        margin: 0 0 18px;
+        padding: 14px 16px;
+        border: 1px solid var(--pip-border);
+        border-radius: 6px;
+        background: rgba(5, 14, 10, 0.45);
+      }
+      #sp-pip-ui .reports-month-controls label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .reports-month-field select {
+        min-width: 180px;
+        height: var(--pip-control-h);
+        padding: 8px 12px;
+        font-family: var(--pip-font);
+        font-size: 13px;
+        color: var(--pip-green);
+        background: rgba(5, 14, 10, 0.85);
+        border: 1px solid var(--pip-green-dim);
+        border-radius: var(--pip-control-radius);
+      }
+      #sp-pip-ui .reports-month-controls button {
+        margin: 0;
+      }
+      #sp-pip-ui .reports-sot-monthly-print {
+        margin-top: 4px;
+      }
+      #sp-pip-ui .reports-office-block {
+        margin-bottom: 22px;
+        padding: 16px 18px;
+        border: 1px solid var(--pip-border);
+        border-radius: 6px;
+        background: rgba(5, 14, 10, 0.5);
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05);
+      }
+      #sp-pip-ui .reports-office-block:last-child {
+        margin-bottom: 0;
+      }
+      #sp-pip-ui h3.reports-office-title {
+        margin: 0 0 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(30, 74, 54, 0.65);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui h4.reports-office-subtitle {
+        margin: 14px 0 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(210, 255, 224, 0.78);
+      }
+      #sp-pip-ui .reports-office-meta {
+        margin: 0 0 10px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: rgba(210, 255, 224, 0.82);
+      }
+      #sp-pip-ui .reports-office-list {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 12px;
+        line-height: 1.55;
+        color: rgba(210, 255, 224, 0.88);
+      }
+      #sp-pip-ui .reports-office-list li {
+        margin-bottom: 4px;
+      }
+      #sp-pip-ui .reports-office-empty {
+        margin: 0;
+        font-size: 12px;
+        color: rgba(210, 255, 224, 0.62);
+        font-style: italic;
+      }
+      #sp-pip-ui .reports-month-print-header {
+        display: none;
+        margin: 0 0 16px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #333;
+      }
+      #sp-pip-ui .reports-month-print-header h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      #sp-pip-ui .reports-month-print-header p {
+        margin: 0;
+        font-size: 12px;
+      }
+      #sp-pip-ui .reports-month-print-header .reports-sot-doc-title {
+        margin: 0 0 8px;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+      }
+      #sp-pip-ui .reports-sot-squadron-summary {
+        margin: 0 0 20px;
+        padding: 14px 16px;
+        border: 1px solid var(--pip-border);
+        border-radius: 6px;
+        background: rgba(5, 14, 10, 0.45);
+      }
+      #sp-pip-ui .reports-sot-section-block {
+        margin-bottom: 16px;
+      }
+      #sp-pip-ui .reports-sot-section-block:last-child {
+        margin-bottom: 0;
+      }
+      #sp-pip-ui table.reports-sot-table {
+        width: 100%;
+        margin: 0 0 12px;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      #sp-pip-ui table.reports-sot-table th,
+      #sp-pip-ui table.reports-sot-table td {
+        padding: 7px 10px;
+        border: 1px solid rgba(30, 74, 54, 0.55);
+        text-align: left;
+        vertical-align: middle;
+      }
+      #sp-pip-ui table.reports-sot-table th {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        background: rgba(8, 22, 16, 0.65);
+      }
+      #sp-pip-ui table.reports-sot-table td {
+        color: rgba(210, 255, 224, 0.9);
+      }
+      #sp-pip-ui table.reports-sot-table td.reports-sot-num {
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+      }
       @media print {
         #sp-pip-ui .hub-header,
         #sp-pip-ui .hub-top-banner-wrap,
@@ -507,12 +675,58 @@
         #sp-pip-ui .hub-section--diag,
         #sp-pip-ui #reportsHubPanel,
         #sp-pip-ui #reportsReadState,
-        #sp-pip-ui .reports-hint {
+        #sp-pip-ui .reports-hint,
+        #sp-pip-ui .reports-sot-toolbar,
+        #sp-pip-ui .reports-month-controls,
+        #sp-pip-ui .reports-no-print,
+        #sp-pip-ui #reportsSotActiveView,
+        #sp-pip-ui #reportsDetailTitle,
+        #sp-pip-ui #reportsDetailSubtitle {
           display: none !important;
         }
-        #sp-pip-ui button.reports-name-link {
+        #sp-pip-ui .reports-month-print-header {
+          display: block !important;
           color: #000;
-          text-shadow: none;
+        }
+        #sp-pip-ui .reports-sot-monthly-print,
+        #sp-pip-ui #reportsSotMonthlyView {
+          display: block !important;
+        }
+        #sp-pip-ui .reports-office-block {
+          break-inside: avoid;
+          page-break-inside: avoid;
+          border-color: #333;
+          background: #fff;
+          color: #000;
+          box-shadow: none;
+        }
+        #sp-pip-ui h3.reports-office-title,
+        #sp-pip-ui h4.reports-office-subtitle {
+          color: #000;
+        }
+        #sp-pip-ui .reports-office-meta,
+        #sp-pip-ui .reports-office-list,
+        #sp-pip-ui .reports-office-empty,
+        #sp-pip-ui .reports-sot-squadron-summary {
+          color: #000;
+          background: #fff;
+          border-color: #333;
+        }
+        #sp-pip-ui table.reports-sot-table th,
+        #sp-pip-ui table.reports-sot-table td {
+          color: #000 !important;
+          border-color: #333 !important;
+          text-shadow: none !important;
+        }
+        #sp-pip-ui table.reports-sot-table th {
+          background: #eee !important;
+        }
+        #sp-pip-ui table.roster td.cert-status--ok,
+        #sp-pip-ui table.roster td.cert-status--warn,
+        #sp-pip-ui table.roster td.cert-status--urgent,
+        #sp-pip-ui table.roster td.cert-status--expired {
+          color: #000 !important;
+          text-shadow: none !important;
         }
       }
       #sp-pip-ui a.person-detail-back {
@@ -1356,12 +1570,23 @@
         const BYLAW_TRAINING_SET_TITLE = true;
         const BYLAW_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "ByLaw", "TrainingName", "Training_x0020_Name"];
 
+        /** Monthly Status of Training print: months shown in the dropdown (including current month). */
+        const SOT_REPORT_MONTHS_BACK = 24;
+        /**
+         * Personnel Status values included in training posture counts (OfficeSymbol groups).
+         * Leave empty [] to include every status. Example: ["Active", "AGR"].
+         */
+        const SOT_PERSONNEL_STATUS_FOR_COUNTS = [];
+        /** Printed monthly report header (matches legacy SOT PDF). */
+        const SOT_SQUADRON_LABEL = "88 SFS";
+
         /** Hub Reports menu (Reports nav). Set implemented:true when the report renderer is wired. */
         const HUB_REPORT_TYPES = [
           {
             id: "status-of-training",
             title: "Status of Training",
-            subtitle: "Squadron-wide snapshot of Weapons Qualifications and By-Law Training.",
+            subtitle:
+              "Active snapshot with Personnel names, or a monthly office summary for printing (no names).",
             badge: "SOT",
             implemented: true,
             printable: true,
@@ -1644,6 +1869,9 @@
           activeReportId: null,
           weaponsRows: null,
           bylawRows: null,
+          sotView: "active",
+          selectedMonth: null,
+          sotRows: null,
         };
 
         let weaponsCertEditSession = {
@@ -3456,7 +3684,14 @@
           if (reportsDetailPanel) reportsDetailPanel.hidden = false;
           if (reportsDetailTitle) reportsDetailTitle.textContent = reportDef.title || "Report";
           if (reportsDetailSubtitle) reportsDetailSubtitle.textContent = reportDef.subtitle || "";
-          if (reportsPrintBtn) reportsPrintBtn.hidden = !reportDef.printable;
+          if (reportsPrintBtn) {
+            if (reportDef.id === "status-of-training") {
+              updateSotPrintButtonLabel();
+            } else {
+              reportsPrintBtn.textContent = "Print report";
+              reportsPrintBtn.hidden = !reportDef.printable;
+            }
+          }
         }
 
         function renderReportsHubGrid() {
@@ -3540,6 +3775,831 @@
           const squadron = itemFieldText(item, "Squadron");
           const parts = [office, squadron].filter(Boolean);
           return parts.length ? parts.join(" / ") : "-";
+        }
+
+        function personOfficeKey(item) {
+          const office = itemFieldText(item, "OfficeSymbol");
+          return office || "Unassigned";
+        }
+
+        function personStatusLabel(item) {
+          const status = itemFieldText(item, "Status");
+          return status || "Unknown";
+        }
+
+        function personCountsForSotPosture(item) {
+          const allowed = Array.isArray(SOT_PERSONNEL_STATUS_FOR_COUNTS) ? SOT_PERSONNEL_STATUS_FOR_COUNTS : [];
+          if (!allowed.length) return true;
+          const status = personStatusLabel(item);
+          return allowed.some(function (entry) {
+            return String(entry).trim().toLowerCase() === status.toLowerCase();
+          });
+        }
+
+        function weaponsQualDateKeys() {
+          const col = normalizedWeaponsCertColumns().find(function (c) {
+            return c.key === "QualDate";
+          });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["QualDate"];
+        }
+
+        function bylawQualDateKeys() {
+          const col = normalizedBylawTrainingColumns().find(function (c) {
+            return c.key === "QualDate";
+          });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["QualDate"];
+        }
+
+        function yearMonthKeyFromDate(d) {
+          if (!d || isNaN(d.getTime())) return "";
+          return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+        }
+
+        function currentYearMonthKey() {
+          return yearMonthKeyFromDate(new Date());
+        }
+
+        function formatYearMonthLabel(yyyyMm) {
+          const parts = String(yyyyMm || "").split("-");
+          if (parts.length !== 2) return String(yyyyMm || "");
+          const y = parts[0];
+          const m = parseInt(parts[1], 10);
+          if (!y || !m || m < 1 || m > 12) return String(yyyyMm || "");
+          const mon = WEAPONS_CERT_MONTH_ABBR[m - 1] || "";
+          return mon + " " + y;
+        }
+
+        function buildSotMonthOptions() {
+          const out = [];
+          const now = new Date();
+          const count = Math.max(1, parseInt(String(SOT_REPORT_MONTHS_BACK || 24), 10) || 24);
+          for (let i = 0; i < count; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const key = yearMonthKeyFromDate(d);
+            if (!key) continue;
+            out.push({ key: key, label: formatYearMonthLabel(key) });
+          }
+          return out;
+        }
+
+        function trainingRowQualInMonth(row, yyyyMm, qualKeys) {
+          const raw = valueFromItemByKeys(row, qualKeys);
+          const d = parseWeaponsCertCalendarDate(raw);
+          return yearMonthKeyFromDate(d) === yyyyMm;
+        }
+
+        function weaponLabelFromRow(row) {
+          const raw = valueFromItemByKeys(row, ["Weapon", "WeaponName", "Weapon_x0020_Name", "Title"]);
+          return formatCellValue(raw) || "Weapon";
+        }
+
+        function bylawLabelFromRow(row) {
+          const raw = valueFromItemByKeys(row, BYLAW_TRAINING_ITEM_SORT_KEYS);
+          return formatCellValue(raw) || "Training";
+        }
+
+        function tallyActivityLabels(rows, labelFn) {
+          const counts = {};
+          (Array.isArray(rows) ? rows : []).forEach(function (row) {
+            const label = String(labelFn(row) || "Unknown").trim() || "Unknown";
+            counts[label] = (counts[label] || 0) + 1;
+          });
+          return Object.keys(counts)
+            .sort(function (a, b) {
+              return a.localeCompare(b, undefined, { sensitivity: "base" });
+            })
+            .map(function (label) {
+              return { label: label, count: counts[label] };
+            });
+        }
+
+        function incrementToneBucket(bucket, tone) {
+          const key = tone && bucket[tone] != null ? tone : "unknown";
+          bucket[key] = (bucket[key] || 0) + 1;
+        }
+
+        function postureBucketToLines(bucket) {
+          const order = [
+            { key: "ok", label: "Qualified" },
+            { key: "warn", label: "Due 31-60d" },
+            { key: "urgent", label: "Due <=30d" },
+            { key: "expired", label: "Expired" },
+            { key: "unknown", label: "No records" },
+          ];
+          const lines = [];
+          order.forEach(function (entry) {
+            const n = bucket[entry.key] || 0;
+            if (n > 0) lines.push(entry.label + ": " + n);
+          });
+          return lines.length ? lines.join(" | ") : "No records";
+        }
+
+        function statusCountsToText(statusCounts) {
+          return Object.keys(statusCounts)
+            .sort(function (a, b) {
+              return a.localeCompare(b, undefined, { sensitivity: "base" });
+            })
+            .map(function (status) {
+              return status + ": " + statusCounts[status];
+            })
+            .join(" | ");
+        }
+
+        function sotStatusCategoryRules() {
+          return [
+            { label: "Deployed / TDY / Leave", match: /deploy|tdy|leave|pcs|tour/i },
+            { label: "TAW Personnel", match: /\btaw\b/i },
+            { label: "IMA", match: /\bima\b/i },
+            { label: "Profile", match: /profile/i },
+          ];
+        }
+
+        function sotStatusCategoryLabel(status) {
+          const s = String(status || "").trim();
+          if (!s) return "Unknown";
+          const rules = sotStatusCategoryRules();
+          for (let i = 0; i < rules.length; i++) {
+            if (rules[i].match.test(s)) return rules[i].label;
+          }
+          return s;
+        }
+
+        function buildStatusCategoryCounts(statusCounts) {
+          const out = {};
+          Object.keys(statusCounts || {}).forEach(function (status) {
+            const label = sotStatusCategoryLabel(status);
+            out[label] = (out[label] || 0) + statusCounts[status];
+          });
+          return out;
+        }
+
+        function renderSotDataTable(columns, rows, emptyText) {
+          const wrap = document.createElement("div");
+          wrap.className = "roster-wrap";
+          if (!rows || !rows.length) {
+            const p = document.createElement("p");
+            p.className = "reports-office-empty";
+            p.textContent = emptyText || "No data.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          const table = document.createElement("table");
+          table.className = "reports-sot-table";
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          columns.forEach(function (col) {
+            const th = document.createElement("th");
+            th.textContent = col.label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          rows.forEach(function (row) {
+            const tr = document.createElement("tr");
+            columns.forEach(function (col) {
+              const td = document.createElement("td");
+              if (col.numeric) td.className = "reports-sot-num";
+              const val = row[col.key];
+              td.textContent = val === null || val === undefined || val === "" ? "-" : String(val);
+              tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+          });
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        function buildOfficeWeaponTypeStats(personRows, weaponsRows, officeKey) {
+          const people = (Array.isArray(personRows) ? personRows : []).filter(function (person) {
+            return person && personOfficeKey(person) === officeKey;
+          });
+          const posturePeople = people.filter(personCountsForSotPosture);
+          const required = posturePeople.length;
+          const weaponStats = {};
+
+          posturePeople.forEach(function (person) {
+            const pid = String(person.Id);
+            const rows = weaponsRows.filter(function (row) {
+              return weaponsPersonnelIdFromItem(row) === pid;
+            });
+            const byWeapon = {};
+            rows.forEach(function (row) {
+              const label = weaponLabelFromRow(row);
+              const tone = computeWeaponsCertStatus(row).tone;
+              if (!byWeapon[label] || trainingStatusToneRank(tone) > trainingStatusToneRank(byWeapon[label])) {
+                byWeapon[label] = tone;
+              }
+            });
+            Object.keys(byWeapon).forEach(function (label) {
+              if (!weaponStats[label]) {
+                weaponStats[label] = { qualified: 0, dueSoon: 0, overdue: 0 };
+              }
+              const tone = byWeapon[label];
+              if (tone === "ok") weaponStats[label].qualified += 1;
+              else if (tone === "warn") weaponStats[label].dueSoon += 1;
+              else if (tone === "urgent" || tone === "expired") weaponStats[label].overdue += 1;
+            });
+          });
+
+          return Object.keys(weaponStats)
+            .sort(function (a, b) {
+              return a.localeCompare(b, undefined, { sensitivity: "base" });
+            })
+            .map(function (label) {
+              const s = weaponStats[label];
+              return {
+                weapon: label,
+                required: required,
+                qualified: s.qualified,
+                dueSoon: s.dueSoon,
+                overdue: s.overdue,
+              };
+            });
+        }
+
+        function buildOfficeBylawItemStats(personRows, bylawRows, officeKey, yyyyMm) {
+          const people = (Array.isArray(personRows) ? personRows : []).filter(function (person) {
+            return person && personOfficeKey(person) === officeKey;
+          });
+          const posturePeople = people.filter(personCountsForSotPosture);
+          const required = posturePeople.length;
+          const bylawQualKeys = bylawQualDateKeys();
+          const itemStats = {};
+
+          posturePeople.forEach(function (person) {
+            const pid = String(person.Id);
+            const rows = bylawRows.filter(function (row) {
+              return bylawPersonnelIdFromItem(row) === pid;
+            });
+            const byItem = {};
+            rows.forEach(function (row) {
+              const label = bylawLabelFromRow(row);
+              const tone = computeBylawTrainingStatus(row).tone;
+              if (!byItem[label]) {
+                byItem[label] = { tone: tone, completedMonth: 0 };
+              }
+              if (trainingStatusToneRank(tone) > trainingStatusToneRank(byItem[label].tone)) {
+                byItem[label].tone = tone;
+              }
+              if (trainingRowQualInMonth(row, yyyyMm, bylawQualKeys)) {
+                byItem[label].completedMonth += 1;
+              }
+            });
+            Object.keys(byItem).forEach(function (label) {
+              if (!itemStats[label]) {
+                itemStats[label] = { qualified: 0, dueSoon: 0, overdue: 0, completedMonth: 0 };
+              }
+              const tone = byItem[label].tone;
+              if (tone === "ok") itemStats[label].qualified += 1;
+              else if (tone === "warn") itemStats[label].dueSoon += 1;
+              else if (tone === "urgent" || tone === "expired") itemStats[label].overdue += 1;
+              itemStats[label].completedMonth += byItem[label].completedMonth;
+            });
+          });
+
+          return Object.keys(itemStats)
+            .sort(function (a, b) {
+              return a.localeCompare(b, undefined, { sensitivity: "base" });
+            })
+            .map(function (label) {
+              const s = itemStats[label];
+              return {
+                item: label,
+                required: required,
+                qualified: s.qualified,
+                dueSoon: s.dueSoon,
+                overdue: s.overdue,
+                completedMonth: s.completedMonth,
+                monthRange: formatYearMonthLabel(yyyyMm),
+              };
+            });
+        }
+
+        function buildSquadronMonthlyRollup(officeGroups) {
+          const rollup = {
+            headcount: 0,
+            postureIncluded: 0,
+            weaponsPosture: { ok: 0, warn: 0, urgent: 0, expired: 0, unknown: 0 },
+            bylawPosture: { ok: 0, warn: 0, urgent: 0, expired: 0, unknown: 0 },
+            statusCounts: {},
+            monthWeaponsTally: [],
+            monthBylawTally: [],
+            totalWeaponsOverdue: 0,
+            totalBylawOverdue: 0,
+          };
+          const weaponsMonth = {};
+          const bylawMonth = {};
+
+          (Array.isArray(officeGroups) ? officeGroups : []).forEach(function (group) {
+            rollup.headcount += group.headcount || 0;
+            rollup.postureIncluded += group.postureIncluded || 0;
+            ["ok", "warn", "urgent", "expired", "unknown"].forEach(function (tone) {
+              rollup.weaponsPosture[tone] += (group.weaponsPosture && group.weaponsPosture[tone]) || 0;
+              rollup.bylawPosture[tone] += (group.bylawPosture && group.bylawPosture[tone]) || 0;
+            });
+            Object.keys(group.statusCounts || {}).forEach(function (status) {
+              rollup.statusCounts[status] = (rollup.statusCounts[status] || 0) + group.statusCounts[status];
+            });
+            (group.monthWeaponsTally || []).forEach(function (entry) {
+              weaponsMonth[entry.label] = (weaponsMonth[entry.label] || 0) + entry.count;
+            });
+            (group.monthBylawTally || []).forEach(function (entry) {
+              bylawMonth[entry.label] = (bylawMonth[entry.label] || 0) + entry.count;
+            });
+            rollup.totalWeaponsOverdue +=
+              ((group.weaponsPosture && group.weaponsPosture.urgent) || 0) +
+              ((group.weaponsPosture && group.weaponsPosture.expired) || 0);
+            rollup.totalBylawOverdue +=
+              ((group.bylawPosture && group.bylawPosture.urgent) || 0) +
+              ((group.bylawPosture && group.bylawPosture.expired) || 0);
+          });
+
+          rollup.monthWeaponsTally = Object.keys(weaponsMonth)
+            .sort()
+            .map(function (label) {
+              return { label: label, count: weaponsMonth[label] };
+            });
+          rollup.monthBylawTally = Object.keys(bylawMonth)
+            .sort()
+            .map(function (label) {
+              return { label: label, count: bylawMonth[label] };
+            });
+          return rollup;
+        }
+
+        function buildMonthlyOfficeGroups(personRows, weaponsRows, bylawRows, yyyyMm) {
+          const offices = {};
+          const weaponsQualKeys = weaponsQualDateKeys();
+          const bylawQualKeys = bylawQualDateKeys();
+
+          function ensureOffice(key) {
+            if (!offices[key]) {
+              offices[key] = {
+                office: key,
+                statusCounts: {},
+                headcount: 0,
+                postureIncluded: 0,
+                weaponsPosture: { ok: 0, warn: 0, urgent: 0, expired: 0, unknown: 0 },
+                bylawPosture: { ok: 0, warn: 0, urgent: 0, expired: 0, unknown: 0 },
+                monthWeapons: [],
+                monthBylaw: [],
+              };
+            }
+            return offices[key];
+          }
+
+          (Array.isArray(personRows) ? personRows : []).forEach(function (person) {
+            if (!person || person.Id == null) return;
+            const officeKey = personOfficeKey(person);
+            const group = ensureOffice(officeKey);
+            const status = personStatusLabel(person);
+            group.statusCounts[status] = (group.statusCounts[status] || 0) + 1;
+            group.headcount += 1;
+
+            if (!personCountsForSotPosture(person)) return;
+            group.postureIncluded += 1;
+
+            const pid = String(person.Id);
+            const personWeapons = weaponsRows.filter(function (row) {
+              return weaponsPersonnelIdFromItem(row) === pid;
+            });
+            const personBylaw = bylawRows.filter(function (row) {
+              return bylawPersonnelIdFromItem(row) === pid;
+            });
+
+            const weaponsStatus = summarizeTrainingRows(personWeapons, computeWeaponsCertStatus);
+            const bylawStatus = summarizeTrainingRows(personBylaw, computeBylawTrainingStatus);
+            incrementToneBucket(group.weaponsPosture, weaponsStatus.tone);
+            incrementToneBucket(group.bylawPosture, bylawStatus.tone);
+
+            personWeapons.forEach(function (row) {
+              if (trainingRowQualInMonth(row, yyyyMm, weaponsQualKeys)) group.monthWeapons.push(row);
+            });
+            personBylaw.forEach(function (row) {
+              if (trainingRowQualInMonth(row, yyyyMm, bylawQualKeys)) group.monthBylaw.push(row);
+            });
+          });
+
+          return Object.keys(offices)
+            .sort(function (a, b) {
+              return a.localeCompare(b, undefined, { sensitivity: "base" });
+            })
+            .map(function (key) {
+              const group = offices[key];
+              group.monthWeaponsTally = tallyActivityLabels(group.monthWeapons, weaponLabelFromRow);
+              group.monthBylawTally = tallyActivityLabels(group.monthBylaw, bylawLabelFromRow);
+              group.statusCategoryCounts = buildStatusCategoryCounts(group.statusCounts);
+              group.weaponTypeStats = buildOfficeWeaponTypeStats(personRows, weaponsRows, key);
+              group.bylawItemStats = buildOfficeBylawItemStats(personRows, bylawRows, key, yyyyMm);
+              return group;
+            });
+        }
+
+        function renderActivityList(items, emptyText) {
+          if (!items || !items.length) {
+            const p = document.createElement("p");
+            p.className = "reports-office-empty";
+            p.textContent = emptyText;
+            return p;
+          }
+          const ul = document.createElement("ul");
+          ul.className = "reports-office-list";
+          items.forEach(function (entry) {
+            const li = document.createElement("li");
+            li.textContent = entry.label + " (" + entry.count + ")";
+            ul.appendChild(li);
+          });
+          return ul;
+        }
+
+        function renderMonthlyOfficeBlock(group, yyyyMm) {
+          const block = document.createElement("section");
+          block.className = "reports-office-block";
+
+          const title = document.createElement("h3");
+          title.className = "reports-office-title";
+          title.textContent = group.office;
+          block.appendChild(title);
+
+          const meta = document.createElement("p");
+          meta.className = "reports-office-meta";
+          meta.textContent =
+            "Assigned Personnel: " +
+            group.headcount +
+            (group.postureIncluded !== group.headcount
+              ? " | Training posture counts: " + group.postureIncluded + " (Status filter)"
+              : "");
+          block.appendChild(meta);
+
+          const statusSection = document.createElement("div");
+          statusSection.className = "reports-sot-section-block";
+          const statusTitle = document.createElement("h4");
+          statusTitle.className = "reports-office-subtitle";
+          statusTitle.textContent = "Personnel status";
+          statusSection.appendChild(statusTitle);
+          const statusRows = Object.keys(group.statusCategoryCounts || {})
+            .sort(function (a, b) {
+              return a.localeCompare(b, undefined, { sensitivity: "base" });
+            })
+            .map(function (label) {
+              return { status: label, count: group.statusCategoryCounts[label] };
+            });
+          statusSection.appendChild(
+            renderSotDataTable(
+              [
+                { key: "status", label: "Status" },
+                { key: "count", label: "Count", numeric: true },
+              ],
+              statusRows,
+              "No Personnel status data.",
+            ),
+          );
+          block.appendChild(statusSection);
+
+          const weaponsSection = document.createElement("div");
+          weaponsSection.className = "reports-sot-section-block";
+          const weaponsTitle = document.createElement("h4");
+          weaponsTitle.className = "reports-office-subtitle";
+          weaponsTitle.textContent = "Monthly required weapons qualifications";
+          weaponsSection.appendChild(weaponsTitle);
+          weaponsSection.appendChild(
+            renderSotDataTable(
+              [
+                { key: "weapon", label: "Weapon" },
+                { key: "required", label: "Required", numeric: true },
+                { key: "qualified", label: "Qualified", numeric: true },
+                { key: "dueSoon", label: "Due 31-60d", numeric: true },
+                { key: "overdue", label: "Overdue", numeric: true },
+              ],
+              group.weaponTypeStats || [],
+              "No weapons qualification records for this office.",
+            ),
+          );
+          block.appendChild(weaponsSection);
+
+          const bylawSection = document.createElement("div");
+          bylawSection.className = "reports-sot-section-block";
+          const bylawTitle = document.createElement("h4");
+          bylawTitle.className = "reports-office-subtitle";
+          bylawTitle.textContent = "Scheduled annual AUoF / By-Law training";
+          bylawSection.appendChild(bylawTitle);
+          bylawSection.appendChild(
+            renderSotDataTable(
+              [
+                { key: "item", label: "Training" },
+                { key: "monthRange", label: "Training dates" },
+                { key: "required", label: "Required", numeric: true },
+                { key: "completedMonth", label: "Completed trng", numeric: true },
+                { key: "qualified", label: "Qualified", numeric: true },
+                { key: "overdue", label: "Overdue", numeric: true },
+              ],
+              group.bylawItemStats || [],
+              "No By-Law training records for this office.",
+            ),
+          );
+          block.appendChild(bylawSection);
+
+          const monthSection = document.createElement("div");
+          monthSection.className = "reports-sot-section-block";
+          const monthTitle = document.createElement("h4");
+          monthTitle.className = "reports-office-subtitle";
+          monthTitle.textContent = "Completed in " + formatYearMonthLabel(yyyyMm);
+          monthSection.appendChild(monthTitle);
+
+          const weaponsMonth = document.createElement("h4");
+          weaponsMonth.className = "reports-office-subtitle";
+          weaponsMonth.textContent = "Weapons qualifications";
+          monthSection.appendChild(weaponsMonth);
+          monthSection.appendChild(
+            renderActivityList(group.monthWeaponsTally, "No weapons qualifications recorded this month."),
+          );
+
+          const bylawMonth = document.createElement("h4");
+          bylawMonth.className = "reports-office-subtitle";
+          bylawMonth.textContent = "By-Law training";
+          monthSection.appendChild(bylawMonth);
+          monthSection.appendChild(
+            renderActivityList(group.monthBylawTally, "No By-Law training recorded this month."),
+          );
+          block.appendChild(monthSection);
+
+          return block;
+        }
+
+        function renderSquadronMonthlySummary(rollup, yyyyMm) {
+          const box = document.createElement("div");
+          box.className = "reports-sot-squadron-summary";
+
+          const title = document.createElement("h4");
+          title.className = "reports-office-subtitle";
+          title.textContent = "Squadron totals";
+          box.appendChild(title);
+
+          const meta = document.createElement("p");
+          meta.className = "reports-office-meta";
+          meta.textContent =
+            "Personnel: " +
+            rollup.headcount +
+            " | Training posture: " +
+            rollup.postureIncluded +
+            " | Weapons overdue: " +
+            rollup.totalWeaponsOverdue +
+            " | By-Law overdue: " +
+            rollup.totalBylawOverdue;
+          box.appendChild(meta);
+
+          const postureSection = document.createElement("div");
+          postureSection.className = "reports-sot-section-block";
+          const postureTitle = document.createElement("h4");
+          postureTitle.className = "reports-office-subtitle";
+          postureTitle.textContent = "Training posture (all offices)";
+          postureSection.appendChild(postureTitle);
+          postureSection.appendChild(
+            renderSotDataTable(
+              [
+                { key: "area", label: "Area" },
+                { key: "qualified", label: "Qualified", numeric: true },
+                { key: "dueSoon", label: "Due 31-60d", numeric: true },
+                { key: "urgent", label: "Due <=30d", numeric: true },
+                { key: "expired", label: "Expired", numeric: true },
+                { key: "unknown", label: "No records", numeric: true },
+              ],
+              [
+                {
+                  area: "Weapons",
+                  qualified: rollup.weaponsPosture.ok || 0,
+                  dueSoon: rollup.weaponsPosture.warn || 0,
+                  urgent: rollup.weaponsPosture.urgent || 0,
+                  expired: rollup.weaponsPosture.expired || 0,
+                  unknown: rollup.weaponsPosture.unknown || 0,
+                },
+                {
+                  area: "By-Law",
+                  qualified: rollup.bylawPosture.ok || 0,
+                  dueSoon: rollup.bylawPosture.warn || 0,
+                  urgent: rollup.bylawPosture.urgent || 0,
+                  expired: rollup.bylawPosture.expired || 0,
+                  unknown: rollup.bylawPosture.unknown || 0,
+                },
+              ],
+              "",
+            ),
+          );
+          box.appendChild(postureSection);
+
+          const monthSection = document.createElement("div");
+          monthSection.className = "reports-sot-section-block";
+          const monthTitle = document.createElement("h4");
+          monthTitle.className = "reports-office-subtitle";
+          monthTitle.textContent = "Total completed in " + formatYearMonthLabel(yyyyMm);
+          monthSection.appendChild(monthTitle);
+          monthSection.appendChild(
+            renderActivityList(rollup.monthWeaponsTally, "No squadron weapons qualifications this month."),
+          );
+          monthSection.appendChild(
+            renderActivityList(rollup.monthBylawTally, "No squadron By-Law training this month."),
+          );
+          box.appendChild(monthSection);
+
+          return box;
+        }
+
+        function renderMonthlySotReport(officeGroups, yyyyMm) {
+          const wrap = document.createElement("div");
+          wrap.className = "reports-sot-monthly-print";
+
+          const header = document.createElement("div");
+          header.className = "reports-month-print-header";
+          const docTitle = document.createElement("h3");
+          docTitle.className = "reports-sot-doc-title";
+          docTitle.textContent = "STATUS OF TRAINING";
+          const squadron = document.createElement("p");
+          squadron.textContent = "SQUADRON: " + String(SOT_SQUADRON_LABEL || "88 SFS");
+          const dataMonth = document.createElement("p");
+          dataMonth.textContent = "DATA MONTH: " + formatYearMonthLabel(yyyyMm);
+          const generated = document.createElement("p");
+          const today = new Date();
+          generated.textContent =
+            "Report generated: " +
+            formatWeaponsCertDisplayDate(isoDateFromCalendarDate(today)) +
+            " | Office summary (no names)";
+          header.appendChild(docTitle);
+          header.appendChild(squadron);
+          header.appendChild(dataMonth);
+          header.appendChild(generated);
+          wrap.appendChild(header);
+
+          if (!officeGroups.length) {
+            const empty = document.createElement("p");
+            empty.className = "reports-office-empty";
+            empty.textContent = "No office groups to display.";
+            wrap.appendChild(empty);
+            return wrap;
+          }
+
+          const rollup = buildSquadronMonthlyRollup(officeGroups);
+          wrap.appendChild(renderSquadronMonthlySummary(rollup, yyyyMm));
+
+          const officesTitle = document.createElement("h4");
+          officesTitle.className = "reports-office-subtitle";
+          officesTitle.textContent = "By office";
+          wrap.appendChild(officesTitle);
+
+          officeGroups.forEach(function (group) {
+            wrap.appendChild(renderMonthlyOfficeBlock(group, yyyyMm));
+          });
+
+          const sig = document.createElement("p");
+          sig.className = "reports-office-meta";
+          sig.style.marginTop = "18px";
+          sig.textContent = "Training NCOIC Sig: _________________________    CC Sig: _________________________";
+          wrap.appendChild(sig);
+
+          return wrap;
+        }
+
+        function updateSotPrintButtonLabel() {
+          if (!reportsPrintBtn) return;
+          if (reportsSession.activeReportId !== "status-of-training") return;
+          if (reportsSession.sotView === "monthly") {
+            reportsPrintBtn.textContent = "Print monthly report";
+            reportsPrintBtn.hidden = false;
+          } else {
+            reportsPrintBtn.textContent = "Print report";
+            reportsPrintBtn.hidden = true;
+          }
+        }
+
+        function setSotView(view) {
+          reportsSession.sotView = view === "monthly" ? "monthly" : "active";
+          const activeView = document.getElementById("reportsSotActiveView");
+          const monthlyView = document.getElementById("reportsSotMonthlyView");
+          const tabActive = document.getElementById("reportsSotTabActive");
+          const tabMonthly = document.getElementById("reportsSotTabMonthly");
+          if (activeView) activeView.hidden = reportsSession.sotView !== "active";
+          if (monthlyView) monthlyView.hidden = reportsSession.sotView !== "monthly";
+          if (tabActive) tabActive.classList.toggle("reports-sot-tab--active", reportsSession.sotView === "active");
+          if (tabMonthly) tabMonthly.classList.toggle("reports-sot-tab--active", reportsSession.sotView === "monthly");
+          updateSotPrintButtonLabel();
+        }
+
+        function refreshMonthlySotView() {
+          const monthSelect = document.getElementById("reportsSotMonthSelect");
+          const monthlyBody = document.getElementById("reportsSotMonthlyBody");
+          if (!monthlyBody) return;
+          const yyyyMm = monthSelect ? String(monthSelect.value || "").trim() : "";
+          reportsSession.selectedMonth = yyyyMm || currentYearMonthKey();
+          if (monthSelect && !monthSelect.value) monthSelect.value = reportsSession.selectedMonth;
+
+          const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+          const weaponsRows = Array.isArray(reportsSession.weaponsRows) ? reportsSession.weaponsRows : [];
+          const bylawRows = Array.isArray(reportsSession.bylawRows) ? reportsSession.bylawRows : [];
+          const officeGroups = buildMonthlyOfficeGroups(personRows, weaponsRows, bylawRows, reportsSession.selectedMonth);
+          monthlyBody.innerHTML = "";
+          monthlyBody.appendChild(renderMonthlySotReport(officeGroups, reportsSession.selectedMonth));
+        }
+
+        function wireStatusOfTrainingControls() {
+          const tabActive = document.getElementById("reportsSotTabActive");
+          const tabMonthly = document.getElementById("reportsSotTabMonthly");
+          const monthSelect = document.getElementById("reportsSotMonthSelect");
+          const monthApply = document.getElementById("reportsSotMonthApply");
+
+          if (tabActive && !tabActive.dataset.wired) {
+            tabActive.dataset.wired = "1";
+            tabActive.addEventListener("click", function () {
+              setSotView("active");
+            });
+          }
+          if (tabMonthly && !tabMonthly.dataset.wired) {
+            tabMonthly.dataset.wired = "1";
+            tabMonthly.addEventListener("click", function () {
+              setSotView("monthly");
+              refreshMonthlySotView();
+            });
+          }
+          if (monthApply && !monthApply.dataset.wired) {
+            monthApply.dataset.wired = "1";
+            monthApply.addEventListener("click", function () {
+              refreshMonthlySotView();
+              setReportsState("ok", "Monthly report updated for " + formatYearMonthLabel(reportsSession.selectedMonth) + ".");
+              window.setTimeout(function () {
+                setReportsState("", "");
+              }, 2200);
+            });
+          }
+          if (monthSelect && !monthSelect.dataset.wired) {
+            monthSelect.dataset.wired = "1";
+            monthSelect.addEventListener("change", function () {
+              refreshMonthlySotView();
+            });
+          }
+        }
+
+        function buildStatusOfTrainingShell(activeChildren, monthSelectOptions) {
+          const frag = document.createDocumentFragment();
+
+          const toolbar = document.createElement("div");
+          toolbar.className = "reports-sot-toolbar reports-no-print";
+          const tabActive = document.createElement("button");
+          tabActive.type = "button";
+          tabActive.id = "reportsSotTabActive";
+          tabActive.className = "btn-secondary reports-sot-tab--active";
+          tabActive.textContent = "Active snapshot";
+          const tabMonthly = document.createElement("button");
+          tabMonthly.type = "button";
+          tabMonthly.id = "reportsSotTabMonthly";
+          tabMonthly.className = "btn-secondary";
+          tabMonthly.textContent = "Monthly report";
+          toolbar.appendChild(tabActive);
+          toolbar.appendChild(tabMonthly);
+          frag.appendChild(toolbar);
+
+          const activeView = document.createElement("div");
+          activeView.id = "reportsSotActiveView";
+          (Array.isArray(activeChildren) ? activeChildren : []).forEach(function (node) {
+            if (node) activeView.appendChild(node);
+          });
+          frag.appendChild(activeView);
+
+          const monthlyView = document.createElement("div");
+          monthlyView.id = "reportsSotMonthlyView";
+          monthlyView.hidden = true;
+
+          const controls = document.createElement("div");
+          controls.className = "reports-month-controls reports-no-print";
+          const field = document.createElement("div");
+          field.className = "reports-month-field";
+          const lab = document.createElement("label");
+          lab.setAttribute("for", "reportsSotMonthSelect");
+          lab.textContent = "Report month";
+          const sel = document.createElement("select");
+          sel.id = "reportsSotMonthSelect";
+          (Array.isArray(monthSelectOptions) ? monthSelectOptions : []).forEach(function (opt) {
+            const o = document.createElement("option");
+            o.value = opt.key;
+            o.textContent = opt.label;
+            sel.appendChild(o);
+          });
+          field.appendChild(lab);
+          field.appendChild(sel);
+          controls.appendChild(field);
+          const applyBtn = document.createElement("button");
+          applyBtn.type = "button";
+          applyBtn.id = "reportsSotMonthApply";
+          applyBtn.className = "btn-secondary";
+          applyBtn.textContent = "Update month";
+          controls.appendChild(applyBtn);
+          monthlyView.appendChild(controls);
+
+          const monthlyBody = document.createElement("div");
+          monthlyBody.id = "reportsSotMonthlyBody";
+          monthlyView.appendChild(monthlyBody);
+          frag.appendChild(monthlyView);
+
+          return frag;
         }
 
         async function fetchAllWeaponsCertRows(pw) {
@@ -3703,6 +4763,8 @@
           if (!reportsDetailBody) return;
           showReportsDetail(reportDef);
           reportsDetailBody.innerHTML = "";
+          reportsSession.sotView = "active";
+          reportsSession.selectedMonth = currentYearMonthKey();
           setReportsState("loading", "Building Status of Training report...");
           try {
             const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
@@ -3718,8 +4780,16 @@
             }
             const cache = await ensureReportsTrainingCache(pw);
             const rows = buildStatusOfTrainingRows(personRows, cache.weaponsRows, cache.bylawRows);
-            reportsDetailBody.appendChild(renderStatusOfTrainingSummary(rows));
-            reportsDetailBody.appendChild(renderStatusOfTrainingTable(rows));
+            reportsSession.sotRows = rows;
+            const monthOptions = buildSotMonthOptions();
+            const shell = buildStatusOfTrainingShell(
+              [renderStatusOfTrainingSummary(rows), renderStatusOfTrainingTable(rows)],
+              monthOptions,
+            );
+            reportsDetailBody.appendChild(shell);
+            wireStatusOfTrainingControls();
+            setSotView("active");
+            refreshMonthlySotView();
             setReportsState("ok", "Status of Training updated.");
             window.setTimeout(function () {
               setReportsState("", "");
@@ -3764,6 +4834,11 @@
         function printActiveReport() {
           const def = reportTypeById(reportsSession.activeReportId);
           if (!def || !def.printable) return;
+          if (def.id === "status-of-training") {
+            if (reportsSession.sotView !== "monthly") return;
+            window.print();
+            return;
+          }
           window.print();
         }
 
