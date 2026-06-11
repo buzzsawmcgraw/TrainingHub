@@ -57,9 +57,9 @@
             altKeys: ["QualificationDate", "Qualification_x0020_Date", "CertificationDate", "Certification_x0020_Date", "CertDate"],
           },
           {
-            key: "ExpiryDate",
+            key: "ExpirationDate",
             label: "Expiration Date",
-            altKeys: ["Expiry_x0020_Date", "ExpirationDate", "ExpiresOn", "Expiration_x0020_Date", "ExpDate"],
+            altKeys: ["ExpiryDate", "Expiry_x0020_Date", "ExpiresOn", "Expiration_x0020_Date", "ExpDate"],
           },
           { key: "Status", label: "Status", computed: true },
         ];
@@ -514,9 +514,9 @@
 
         function weaponsCertExpiryDateKeys() {
           const expiryCol = normalizedWeaponsCertColumns().find(function (col) {
-            return col.key === "ExpiryDate";
+            return col.key === "ExpirationDate" || col.key === "ExpiryDate";
           });
-          return expiryCol && expiryCol.tryKeys ? expiryCol.tryKeys.slice() : ["ExpiryDate"];
+          return expiryCol && expiryCol.tryKeys ? expiryCol.tryKeys.slice() : ["ExpirationDate", "ExpiryDate"];
         }
 
         function parseWeaponsCertCalendarDate(val) {
@@ -639,7 +639,7 @@
             opt0.value = "";
             opt0.textContent = "(select)";
             input.appendChild(opt0);
-          } else if (col.key === "QualDate" || col.key === "ExpiryDate") {
+          } else if (col.key === "QualDate" || col.key === "ExpirationDate" || col.key === "ExpiryDate") {
             input = document.createElement("input");
             input.type = "date";
             input.id = idPrefix + col.key;
