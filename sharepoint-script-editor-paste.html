@@ -391,6 +391,29 @@
       #sp-pip-ui .person-detail-field.add-field--address .person-detail-value {
         min-height: 52px;
       }
+      #sp-pip-ui .person-weapons-wrap {
+        margin-top: 22px;
+        padding-top: 18px;
+        border-top: 1px solid var(--pip-border);
+      }
+      #sp-pip-ui h3.person-weapons-title {
+        margin: 0 0 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
+      }
+      #sp-pip-ui .weapons-empty {
+        margin: 0;
+        padding: 12px 14px;
+        font-size: 12px;
+        color: rgba(210, 255, 224, 0.72);
+        border: 1px dashed rgba(30, 74, 54, 0.55);
+        border-radius: 6px;
+        background: rgba(8, 22, 16, 0.35);
+      }
       #sp-pip-ui table.roster {
         width: 100%;
         border-collapse: separate;
@@ -799,6 +822,17 @@
             <h2 id="personDetailTitle" class="hub-subtitle person-detail-title">Personnel record</h2>
             <div id="personDetailReadState" class="read-state loading" hidden></div>
             <div id="personDetailContent" class="person-detail-content"></div>
+            <div id="personWeaponsWrap" class="person-weapons-wrap" hidden>
+              <h3 class="person-weapons-title">Weapons qualifications</h3>
+              <div id="personWeaponsState" class="read-state" hidden></div>
+              <div class="roster-wrap weapons-roster-wrap">
+                <table class="roster weapons-table" aria-label="Weapons qualifications">
+                  <thead id="personWeaponsThead"></thead>
+                  <tbody id="personWeaponsBody"></tbody>
+                </table>
+              </div>
+              <p id="personWeaponsEmpty" class="weapons-empty" hidden>No weapons qualifications on file for this person.</p>
+            </div>
           </div>
         </section>
         <section class="hub-section hub-section--diag">
@@ -840,6 +874,41 @@
         const LIST_PERSONNEL = "Personnel";
         /** Optional: List GUID from List settings â†’ use if getbytitle fails. */
         const LIST_PERSONNEL_GUID = "";
+
+        /**
+         * Weapons certifications list (SharePoint title **WeaponsCertifications**). Rows are filtered by PersonnelId =
+         * personnel list item Id. PersonnelId is used for filtering only (not shown in the table on the record page).
+         */
+        const LIST_WEAPONS_CERTIFICATIONS = "WeaponsCertifications";
+        const LIST_WEAPONS_CERTIFICATIONS_GUID = "";
+        const WEAPONS_CERT_PERSON_FIELD = "PersonnelId";
+        /** Additional REST filter field names to try if the primary name fails (lookup / casing variants). */
+        const WEAPONS_CERT_PERSON_FIELD_ALT = [
+          "PersonnelID",
+          "PersonnelIdId",
+          "Personnel_x0020_Id",
+          "Personnel_x0020_ID",
+          "Personnel/Id",
+        ];
+        const WEAPONS_CERT_ITEMS_ORDERBY = "CertificationDate desc";
+        const WEAPONS_CERT_COLUMNS = [
+          {
+            key: "Weapon",
+            label: "Weapon",
+            altKeys: ["WeaponName", "Weapon_x0020_Name", "WeaponType", "Title"],
+          },
+          {
+            key: "CertificationDate",
+            label: "Cert date",
+            altKeys: ["Certification_x0020_Date", "CertDate", "QualificationDate", "Qualification_x0020_Date"],
+          },
+          {
+            key: "ExpiryDate",
+            label: "Expiry",
+            altKeys: ["Expiry_x0020_Date", "ExpirationDate", "ExpiresOn", "Expiration_x0020_Date"],
+          },
+          { key: "Status", label: "Status", altKeys: ["CertificationStatus", "QualificationStatus"] },
+        ];
 
         /**
          * Circular profile image to the left of the squadron header (default: **S3T Files** / **Fallout Guy.png**).
@@ -1003,6 +1072,11 @@
         const personDetailEditBtn = document.getElementById("personDetailEditBtn");
         const personDetailSaveBtn = document.getElementById("personDetailSaveBtn");
         const personDetailCancelBtn = document.getElementById("personDetailCancelBtn");
+        const personWeaponsWrap = document.getElementById("personWeaponsWrap");
+        const personWeaponsThead = document.getElementById("personWeaponsThead");
+        const personWeaponsBody = document.getElementById("personWeaponsBody");
+        const personWeaponsEmpty = document.getElementById("personWeaponsEmpty");
+        const personWeaponsState = document.getElementById("personWeaponsState");
 
         let hubSession = {
           rows: null,
@@ -1010,6 +1084,8 @@
           pw: null,
           seg: null,
           sampleRow: null,
+          weaponsPersonFilterField: null,
+          weaponsPersonFilterFields: null,
         };
 
         let personDetailSession = {
@@ -1237,9 +1313,298 @@
         async function navigateToRoster() {
           if (personDetailSection) personDetailSection.hidden = true;
           personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
+          clearPersonWeaponsCertSection();
           setPersonDetailEditMode(false);
           setHubListViewVisible(true);
           await ensureRosterViewRendered();
+        }
+
+        function normalizedWeaponsCertColumns() {
+          const arr = Array.isArray(WEAPONS_CERT_COLUMNS) ? WEAPONS_CERT_COLUMNS : [];
+          return arr
+            .map(function (entry) {
+              if (!entry || !entry.key) return null;
+              const key = String(entry.key).trim();
+              const label = String(entry.label || key).trim() || key;
+              const alt = Array.isArray(entry.altKeys) ? entry.altKeys.map(function (x) { return String(x).trim(); }).filter(Boolean) : [];
+              const tryKeys = [key];
+              alt.forEach(function (a) {
+                if (tryKeys.indexOf(a) === -1) tryKeys.push(a);
+              });
+              return { key: key, label: label, tryKeys: tryKeys };
+            })
+            .filter(Boolean);
+        }
+
+        function weaponsCertListTitle() {
+          return String(LIST_WEAPONS_CERTIFICATIONS || "").trim();
+        }
+
+        function weaponsCertGuidRaw() {
+          return String(LIST_WEAPONS_CERTIFICATIONS_GUID || "").trim();
+        }
+
+        function weaponsCertListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(weaponsCertGuidRaw());
+        }
+
+        function weaponsCertListApiPath() {
+          if (weaponsCertListUsesGuid()) return "lists(guid'" + weaponsCertGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(weaponsCertListTitle()) + "')";
+        }
+
+        function setWeaponsCertState(kind, message) {
+          if (!personWeaponsState) return;
+          if (!message) {
+            personWeaponsState.hidden = true;
+            personWeaponsState.textContent = "";
+            return;
+          }
+          personWeaponsState.hidden = false;
+          personWeaponsState.className = "read-state " + kind;
+          personWeaponsState.textContent = message;
+        }
+
+        function clearWeaponsCertTable() {
+          if (personWeaponsThead) personWeaponsThead.innerHTML = "";
+          if (personWeaponsBody) personWeaponsBody.innerHTML = "";
+        }
+
+        function clearPersonWeaponsCertSection() {
+          clearWeaponsCertTable();
+          setWeaponsCertState("", "");
+          if (personWeaponsEmpty) {
+            personWeaponsEmpty.hidden = true;
+            personWeaponsEmpty.textContent = "No weapons qualifications on file for this person.";
+          }
+          if (personWeaponsWrap) personWeaponsWrap.hidden = true;
+        }
+
+        function renderWeaponsCertTable(rows) {
+          clearWeaponsCertTable();
+          const columns = normalizedWeaponsCertColumns();
+          if (!personWeaponsThead || !personWeaponsBody || !columns.length) return;
+
+          const trHead = document.createElement("tr");
+          columns.forEach(function (col) {
+            const th = document.createElement("th");
+            th.textContent = col.label;
+            trHead.appendChild(th);
+          });
+          personWeaponsThead.appendChild(trHead);
+
+          const frag = document.createDocumentFragment();
+          rows.forEach(function (item) {
+            const tr = document.createElement("tr");
+            columns.forEach(function (col) {
+              const td = document.createElement("td");
+              const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+              const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+              td.textContent = text === "" ? "â€”" : text;
+              tr.appendChild(td);
+            });
+            frag.appendChild(tr);
+          });
+          personWeaponsBody.appendChild(frag);
+
+          if (personWeaponsEmpty) {
+            personWeaponsEmpty.hidden = rows.length > 0;
+          }
+        }
+
+        function weaponsPersonFilterFieldCandidates() {
+          const primary = String(WEAPONS_CERT_PERSON_FIELD || "PersonnelId").trim();
+          const out = [];
+          if (primary) out.push(primary);
+          const alts = Array.isArray(WEAPONS_CERT_PERSON_FIELD_ALT) ? WEAPONS_CERT_PERSON_FIELD_ALT : [];
+          alts.forEach(function (name) {
+            const n = String(name || "").trim();
+            if (n && out.indexOf(n) === -1) out.push(n);
+          });
+          return out;
+        }
+
+        function weaponsPersonnelIdFromItem(item) {
+          if (!item || typeof item !== "object") return null;
+          const keys = weaponsPersonFilterFieldCandidates().concat([
+            "PersonnelId",
+            "PersonnelID",
+            "PersonnelIdId",
+            "Personnel_x0020_Id",
+          ]);
+          for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            if (!k || k.indexOf("/") !== -1) continue;
+            if (Object.prototype.hasOwnProperty.call(item, k) && item[k] !== null && item[k] !== "") {
+              return String(item[k]);
+            }
+          }
+          if (item.Personnel && typeof item.Personnel === "object" && item.Personnel.Id != null) {
+            return String(item.Personnel.Id);
+          }
+          return null;
+        }
+
+        function weaponsRowsMatchPersonnel(rows, personnelId) {
+          const want = String(personnelId);
+          return (Array.isArray(rows) ? rows : []).filter(function (item) {
+            return weaponsPersonnelIdFromItem(item) === want;
+          });
+        }
+
+        async function discoverWeaponsPersonFilterFields(seg, pw) {
+          if (hubSession.weaponsPersonFilterFields && hubSession.weaponsPersonFilterFields.length) {
+            return hubSession.weaponsPersonFilterFields.slice();
+          }
+          const out = [];
+          try {
+            const data = await spFetch(
+              `/_api/web/${seg}/fields?$select=InternalName,Title,EntityPropertyName,StaticName,TypeAsString&$filter=Hidden eq false&$top=200`,
+              {},
+              pw,
+            );
+            const fields = (data && data.value) || [];
+            const want = String(WEAPONS_CERT_PERSON_FIELD || "PersonnelId").trim().toLowerCase();
+            let hit = fields.find(function (f) {
+              const title = String(f.Title || "").trim().toLowerCase();
+              const internal = String(f.InternalName || f.StaticName || f.EntityPropertyName || "").trim();
+              const internalLower = internal.toLowerCase();
+              return (
+                internalLower === want ||
+                title === want ||
+                title === "personnel id" ||
+                internalLower === "personnelid" ||
+                internalLower === "personnelidid"
+              );
+            });
+            if (!hit) {
+              hit = fields.find(function (f) {
+                const internal = String(f.InternalName || f.StaticName || "").toLowerCase();
+                return internal.indexOf("personnel") !== -1 && internal.indexOf("id") !== -1;
+              });
+            }
+            if (hit) {
+              const internal = String(hit.InternalName || hit.StaticName || hit.EntityPropertyName || "").trim();
+              const type = String(hit.TypeAsString || "");
+              if (internal) out.push(internal);
+              if (/lookup/i.test(type) && internal) {
+                const lookupIdField = internal.endsWith("Id") ? internal + "Id" : internal + "Id";
+                if (out.indexOf(lookupIdField) === -1) out.push(lookupIdField);
+                const slashField = internal + "/Id";
+                if (out.indexOf(slashField) === -1) out.push(slashField);
+              }
+            }
+          } catch (_) {}
+          hubSession.weaponsPersonFilterFields = out.slice();
+          return out;
+        }
+
+        async function fetchWeaponsCertificationsForPersonnel(seg, pw, personnelId) {
+          const id = parseInt(String(personnelId), 10);
+          if (!id || isNaN(id)) return [];
+          const orderByClause = String(WEAPONS_CERT_ITEMS_ORDERBY || "").trim();
+          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
+          const tried = [];
+          const candidates = weaponsPersonFilterFieldCandidates().slice();
+
+          const discovered = await discoverWeaponsPersonFilterFields(seg, pw);
+          discovered.forEach(function (name) {
+            if (name && candidates.indexOf(name) === -1) candidates.unshift(name);
+          });
+          if (discovered.length) {
+            discovered.slice().reverse().forEach(function (name) {
+              if (name && candidates.indexOf(name) !== -1) {
+                candidates.splice(candidates.indexOf(name), 1);
+                candidates.unshift(name);
+              }
+            });
+          }
+
+          for (let i = 0; i < candidates.length; i++) {
+            const personField = candidates[i];
+            if (!personField || tried.indexOf(personField) !== -1) continue;
+            tried.push(personField);
+            const filterRaw = personField + " eq " + id;
+            const filter = encodeURIComponent(filterRaw);
+            try {
+              let data = null;
+              try {
+                data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}` + orderByQs, {}, pw);
+              } catch (e0) {
+                if (/\b400\b/.test(String(e0.message || "")) && orderByQs) {
+                  data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}`, {}, pw);
+                } else {
+                  throw e0;
+                }
+              }
+              hubSession.weaponsPersonFilterField = personField;
+              return (data && data.value) || [];
+            } catch (e1) {
+              if (!/\b400\b/.test(String(e1.message || "")) && !/does not exist/i.test(String(e1.message || ""))) {
+                throw e1;
+              }
+            }
+          }
+
+          let data = null;
+          try {
+            data = await spFetch(`/_api/web/${seg}/items?$top=500` + orderByQs, {}, pw);
+          } catch (e2) {
+            if (/\b400\b/.test(String(e2.message || "")) && orderByQs) {
+              data = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
+            } else {
+              throw e2;
+            }
+          }
+          return weaponsRowsMatchPersonnel((data && data.value) || [], id);
+        }
+
+        async function loadPersonWeaponsCertifications(personId, pw) {
+          if (!personId) return;
+          if (personWeaponsWrap) personWeaponsWrap.hidden = false;
+          setWeaponsCertState("loading", "Loading weapons qualificationsâ€¦");
+          clearWeaponsCertTable();
+          if (personWeaponsEmpty) personWeaponsEmpty.hidden = true;
+
+          const seg = weaponsCertListApiPath();
+          if (!weaponsCertListTitle() && !weaponsCertListUsesGuid()) {
+            renderWeaponsCertTable([]);
+            setWeaponsCertState("", "");
+            if (personWeaponsEmpty) {
+              personWeaponsEmpty.hidden = false;
+              personWeaponsEmpty.textContent = "Weapons certifications list is not configured.";
+            }
+            return;
+          }
+
+          try {
+            const rows = await fetchWeaponsCertificationsForPersonnel(seg, pw, personId);
+            const dateKeys = [
+              "CertificationDate",
+              "Certification_x0020_Date",
+              "CertDate",
+              "QualificationDate",
+              "Qualification_x0020_Date",
+            ];
+            rows.sort(function (a, b) {
+              const da = formatCellValue(valueFromItemByKeys(a, dateKeys) || "");
+              const db = formatCellValue(valueFromItemByKeys(b, dateKeys) || "");
+              if (da !== db) return String(db).localeCompare(String(da));
+              const wa = formatCellValue(valueFromItemByKeys(a, ["Weapon", "WeaponName", "Title"]) || "");
+              const wb = formatCellValue(valueFromItemByKeys(b, ["Weapon", "WeaponName", "Title"]) || "");
+              return String(wa).localeCompare(String(wb));
+            });
+            renderWeaponsCertTable(rows);
+            setWeaponsCertState("", "");
+          } catch (e) {
+            renderWeaponsCertTable([]);
+            setWeaponsCertState("warn", "Could not load weapons qualifications: " + (e.message || String(e)).slice(0, 220));
+            if (personWeaponsEmpty) {
+              personWeaponsEmpty.hidden = false;
+              personWeaponsEmpty.textContent =
+                "No weapons qualifications loaded. If PersonnelId exists on the list, check that values match the personnel record Id.";
+            }
+          }
         }
 
         function setHubListViewVisible(visible) {
@@ -1720,6 +2085,7 @@
           };
 
           await renderPersonDetailView(item, false);
+          await loadPersonWeaponsCertifications(item.Id, personDetailSession.pw);
         }
 
         async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {

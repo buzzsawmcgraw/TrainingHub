@@ -90,6 +90,17 @@
             <h2 id="personDetailTitle" class="hub-subtitle person-detail-title">Personnel record</h2>
             <div id="personDetailReadState" class="read-state loading" hidden></div>
             <div id="personDetailContent" class="person-detail-content"></div>
+            <div id="personWeaponsWrap" class="person-weapons-wrap" hidden>
+              <h3 class="person-weapons-title">Weapons qualifications</h3>
+              <div id="personWeaponsState" class="read-state" hidden></div>
+              <div class="roster-wrap weapons-roster-wrap">
+                <table class="roster weapons-table" aria-label="Weapons qualifications">
+                  <thead id="personWeaponsThead"></thead>
+                  <tbody id="personWeaponsBody"></tbody>
+                </table>
+              </div>
+              <p id="personWeaponsEmpty" class="weapons-empty" hidden>No weapons qualifications on file for this person.</p>
+            </div>
           </div>
         </section>
         <section class="hub-section hub-section--diag">

@@ -91,3 +91,4 @@ Open `sharepoint-modern-script-editor-ui.html` in a browser.
 ## Lists required
 
 - **Personnel** list on the same site (`LIST_PERSONNEL`, default title `Personnel`)
+- **WeaponsCertifications** list on the same site (`LIST_WEAPONS_CERTIFICATIONS`, default title `WeaponsCertifications`). Each row should link to a personnel record via a **PersonnelId** lookup (or equivalent internal name). The record detail view shows weapon name, certification date, expiry, and status columns — adjust `WEAPONS_CERT_COLUMNS` in the script if your list uses different field names.
