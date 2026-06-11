@@ -91,6 +91,8 @@
   var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt";
   var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt";
   var statusEl = document.getElementById("hubLoaderStatus");
+  var hubScriptCode = "";
+
   function fail(msg) {
     if (statusEl) statusEl.hidden = true;
     var root = document.getElementById("sp-pip-ui");
@@ -100,6 +102,101 @@
     p.textContent = "Training Hub failed to load: " + String(msg || "unknown error");
     root.appendChild(p);
   }
+
+  function parseScriptConst(code, name, fallback) {
+    var re = new RegExp("const " + name + '\\s*=\\s*"([^"]*)"');
+    var m = code.match(re);
+    return m ? m[1] : fallback;
+  }
+
+  function isHubAccessGranted(storageKey) {
+    try {
+      return sessionStorage.getItem(storageKey) === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function grantHubAccess(storageKey) {
+    try {
+      sessionStorage.setItem(storageKey, "1");
+    } catch (_) {}
+  }
+
+  function runHubScript(code) {
+    window.__trainingHubSkipAccessGate = true;
+    try {
+      var blob = new Blob([code], { type: "application/javascript" });
+      var blobUrl = URL.createObjectURL(blob);
+      var s = document.createElement("script");
+      s.src = blobUrl;
+      s.onload = function () {
+        URL.revokeObjectURL(blobUrl);
+      };
+      s.onerror = function () {
+        URL.revokeObjectURL(blobUrl);
+        try {
+          (new Function(code))();
+        } catch (err) {
+          fail("Could not run hub script. Re-upload training-hub-script.txt to Site Assets.");
+        }
+      };
+      document.body.appendChild(s);
+    } catch (err) {
+      try {
+        (new Function(code))();
+      } catch (err2) {
+        fail("Could not run hub script. Re-upload training-hub-script.txt to Site Assets.");
+      }
+    }
+  }
+
+  function initPasswordGateThenRun(password, storageKey, onReady) {
+    var gate = document.getElementById("hubAccessGate");
+    var input = document.getElementById("hubAccessInput");
+    var submit = document.getElementById("hubAccessSubmit");
+    var err = document.getElementById("hubAccessError");
+    password = String(password || "").trim();
+
+    if (!password || isHubAccessGranted(storageKey)) {
+      if (gate) gate.hidden = true;
+      onReady();
+      return;
+    }
+
+    function tryUnlock() {
+      if (!input) return;
+      if (String(input.value || "") === password) {
+        grantHubAccess(storageKey);
+        if (err) err.hidden = true;
+        if (gate) gate.hidden = true;
+        onReady();
+        return;
+      }
+      if (err) {
+        err.hidden = false;
+        err.textContent = "Incorrect password.";
+      }
+      input.value = "";
+      input.focus();
+    }
+
+    if (gate) gate.hidden = false;
+    if (input) {
+      input.value = "";
+      window.setTimeout(function () {
+        input.focus();
+      }, 0);
+      input.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          tryUnlock();
+        }
+      });
+    }
+    if (submit) submit.addEventListener("click", tryUnlock);
+  }
+
   fetch(cssUrl, { credentials: "same-origin", cache: "no-cache" })
     .then(function (res) {
       if (!res.ok) throw new Error("Upload training-hub-styles.txt to Site Assets (" + cssUrl + ").");
@@ -116,10 +213,13 @@
       return res.text();
     })
     .then(function (code) {
+      hubScriptCode = code;
       if (statusEl) statusEl.hidden = true;
-      var s = document.createElement("script");
-      s.text = code;
-      document.body.appendChild(s);
+      var password = parseScriptConst(code, "HUB_ACCESS_PASSWORD", "Training2026");
+      var storageKey = parseScriptConst(code, "HUB_ACCESS_STORAGE_KEY", "trainingHubAccessGranted");
+      initPasswordGateThenRun(password, storageKey, function () {
+        runHubScript(hubScriptCode);
+      });
     })
     .catch(function (err) {
       fail(err && err.message ? err.message : err);

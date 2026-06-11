@@ -1281,5 +1281,14 @@
           }
         }
 
-        initHubAccessGate();
+        if (window.__trainingHubSkipAccessGate) {
+          const gateEarly = document.getElementById("hubAccessGate");
+          if (gateEarly) gateEarly.hidden = true;
+          runProbe().catch(function (e) {
+            setReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
+            log("UNCAUGHT:\n" + (e.message || String(e)), "err");
+          });
+        } else {
+          initHubAccessGate();
+        }
       })();
