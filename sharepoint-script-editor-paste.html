@@ -311,6 +311,20 @@
       }
       #sp-pip-ui .person-detail-toolbar {
         margin-bottom: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      #sp-pip-ui .person-detail-toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+      #sp-pip-ui .person-detail-toolbar-actions button {
+        margin: 0;
       }
       #sp-pip-ui a.person-detail-back {
         display: inline-block;
@@ -776,6 +790,11 @@
           <div class="person-detail-panel">
             <div class="person-detail-toolbar">
               <a id="personDetailBackLink" class="person-detail-back" href="#">Back to roster</a>
+              <div class="person-detail-toolbar-actions">
+                <button type="button" id="personDetailEditBtn" class="btn-secondary">Edit record</button>
+                <button type="button" id="personDetailSaveBtn" hidden>Save changes</button>
+                <button type="button" id="personDetailCancelBtn" class="btn-secondary" hidden>Cancel</button>
+              </div>
             </div>
             <h2 id="personDetailTitle" class="hub-subtitle person-detail-title">Personnel record</h2>
             <div id="personDetailReadState" class="read-state loading" hidden></div>
@@ -981,9 +1000,21 @@
         const personDetailContent = document.getElementById("personDetailContent");
         const personDetailReadState = document.getElementById("personDetailReadState");
         const personDetailBackLink = document.getElementById("personDetailBackLink");
+        const personDetailEditBtn = document.getElementById("personDetailEditBtn");
+        const personDetailSaveBtn = document.getElementById("personDetailSaveBtn");
+        const personDetailCancelBtn = document.getElementById("personDetailCancelBtn");
 
         let hubSession = {
           rows: null,
+          meta: null,
+          pw: null,
+          seg: null,
+          sampleRow: null,
+        };
+
+        let personDetailSession = {
+          item: null,
+          editing: false,
           meta: null,
           pw: null,
           seg: null,
@@ -1205,6 +1236,8 @@
 
         async function navigateToRoster() {
           if (personDetailSection) personDetailSection.hidden = true;
+          personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
+          setPersonDetailEditMode(false);
           setHubListViewVisible(true);
           await ensureRosterViewRendered();
         }
@@ -1226,6 +1259,13 @@
           personDetailReadState.hidden = false;
           personDetailReadState.className = "read-state " + kind;
           personDetailReadState.textContent = message;
+        }
+
+        function setPersonDetailEditMode(editing) {
+          personDetailSession.editing = !!editing;
+          if (personDetailEditBtn) personDetailEditBtn.hidden = !!editing;
+          if (personDetailSaveBtn) personDetailSaveBtn.hidden = !editing;
+          if (personDetailCancelBtn) personDetailCancelBtn.hidden = !editing;
         }
 
         function itemFieldText(item, fieldKey) {
@@ -1343,25 +1383,153 @@
           return fs;
         }
 
-        function renderPersonDetailContent(item) {
-          if (!personDetailContent) return;
-          personDetailContent.innerHTML = "";
+        function setFieldValueFromItem(el, col, item) {
+          if (!el || !item) return;
+          const tryKeys = col.tryKeys || [col.key];
+          const raw = valueFromItemByKeys(item, tryKeys);
+          if (raw === undefined || raw === null || raw === "") return;
+          const text = formatCellValue(raw);
+          if (el.type === "date") {
+            const m = text.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (m) el.value = m[1];
+            return;
+          }
+          el.value = text;
+        }
+
+        function buildEditGroupFieldset(group, cols, sampleRow, item) {
+          if (!group || !group.title || !Array.isArray(group.keys)) return null;
+          const fieldOpt = { idPrefix: "pf_", sampleRow: sampleRow };
+
+          if (group.layout === "contact-stack") {
+            const keys = group.keys;
+            if (keys.length < 7) return null;
+            const topKeys = keys.slice(0, 3);
+            const statusKeys = keys.slice(3, 6);
+            const notesKey = keys[6];
+            const bundle = document.createElement("div");
+            bundle.className = "add-form-contact-bundle";
+
+            const topGrid = document.createElement("div");
+            topGrid.className = "add-form-grid add-form-grid--stack add-form-contact-stack-top";
+            topKeys.forEach(function (key) {
+              const col = cols.find(function (c) {
+                return c.key === key;
+              });
+              if (!col) return;
+              const f = buildAddFieldWrap(col, sampleRow, fieldOpt);
+              if (!f) return;
+              const input = f.querySelector("input, select, textarea");
+              if (input) setFieldValueFromItem(input, col, item);
+              topGrid.appendChild(f);
+            });
+
+            const statusRow = document.createElement("div");
+            statusRow.className = "add-form-contact-status-row";
+            statusKeys.forEach(function (key) {
+              const col = cols.find(function (c) {
+                return c.key === key;
+              });
+              if (!col) return;
+              const f = buildAddFieldWrap(col, sampleRow, Object.assign({ fullWidthSelect: true }, fieldOpt));
+              if (!f) return;
+              const input = f.querySelector("input, select, textarea");
+              if (input) setFieldValueFromItem(input, col, item);
+              statusRow.appendChild(f);
+            });
+
+            const notesCol = cols.find(function (c) {
+              return c.key === notesKey;
+            });
+            let notesWrap = null;
+            if (notesCol) {
+              notesWrap = buildAddFieldWrap(notesCol, sampleRow, fieldOpt);
+              if (notesWrap) {
+                const input = notesWrap.querySelector("textarea");
+                if (input) setFieldValueFromItem(input, notesCol, item);
+              }
+            }
+
+            bundle.appendChild(topGrid);
+            bundle.appendChild(statusRow);
+            if (notesWrap) bundle.appendChild(notesWrap);
+
+            const fs = document.createElement("fieldset");
+            fs.className = "add-form-group";
+            const leg = document.createElement("legend");
+            leg.className = "add-form-group-legend";
+            leg.textContent = group.title;
+            fs.appendChild(leg);
+            fs.appendChild(bundle);
+            return fs;
+          }
+
+          const grid = document.createElement("div");
+          grid.className = "add-form-grid";
+          if (group.layout === "stack") grid.classList.add("add-form-grid--stack");
+          group.keys.forEach(function (key) {
+            const col = cols.find(function (c) {
+              return c.key === key;
+            });
+            if (!col) return;
+            const fwrap = buildAddFieldWrap(col, sampleRow, fieldOpt);
+            if (!fwrap) return;
+            const input = fwrap.querySelector("input, select, textarea");
+            if (input) setFieldValueFromItem(input, col, item);
+            grid.appendChild(fwrap);
+          });
+          if (!grid.childElementCount) return null;
+          const fs = document.createElement("fieldset");
+          fs.className = "add-form-group";
+          const leg = document.createElement("legend");
+          leg.className = "add-form-group-legend";
+          leg.textContent = group.title;
+          fs.appendChild(leg);
+          fs.appendChild(grid);
+          return fs;
+        }
+
+        async function populatePersonEditDropdowns(seg, pw, sampleRow, root) {
+          const cols = normalizedRosterColumns();
+          for (let i = 0; i < cols.length; i++) {
+            const col = cols[i];
+            if (col.key === "Id") continue;
+            if (DROPDOWN_COLUMN_KEYS.indexOf(col.key) === -1) continue;
+            const writeKey = resolveWriteKey(col, sampleRow);
+            const sel = root.querySelector("#pf_" + col.key);
+            if (!sel || sel.tagName !== "SELECT") continue;
+            const keepValue = sel.value;
+            while (sel.options.length > 1) sel.remove(1);
+            try {
+              const r = await fetchChoiceOptions(seg, pw, writeKey);
+              if (r.choices && r.choices.length) {
+                r.choices.forEach(function (c) {
+                  const o = document.createElement("option");
+                  o.value = c;
+                  o.textContent = c;
+                  sel.appendChild(o);
+                });
+              }
+            } catch (_) {}
+            if (keepValue) sel.value = keepValue;
+            applySelectAutosize(sel);
+          }
+          applyAllSelectAutosizes(root);
+        }
+
+        function buildPersonDetailFields(item, editing) {
           const cols = normalizedRosterColumns().filter(function (c) {
             return c.key !== "Id";
           });
-          if (!cols.length) {
-            setPersonDetailState("warn", "No columns configured to display.");
-            return;
-          }
-          setPersonDetailState("", "");
-          if (personDetailTitle) personDetailTitle.textContent = formatPersonDisplayName(item);
-
           const splitWrap = document.createElement("div");
           splitWrap.className = "add-form-split add-form-split--primary";
+          const sampleRow = personDetailSession.sampleRow || item;
 
           if (Array.isArray(ADD_FORM_FIELD_GROUPS)) {
             ADD_FORM_FIELD_GROUPS.forEach(function (group) {
-              const fs = buildDetailGroupFieldset(group, cols, item);
+              const fs = editing
+                ? buildEditGroupFieldset(group, cols, sampleRow, item)
+                : buildDetailGroupFieldset(group, cols, item);
               if (fs) splitWrap.appendChild(fs);
             });
           }
@@ -1370,19 +1538,156 @@
             const grid = document.createElement("div");
             grid.className = "add-form-grid add-form-grid--stack";
             cols.forEach(function (col) {
-              grid.appendChild(buildDetailFieldWrap(col, item));
+              if (editing) {
+                const f = buildAddFieldWrap(col, sampleRow, { idPrefix: "pf_" });
+                if (!f) return;
+                const input = f.querySelector("input, select, textarea");
+                if (input) setFieldValueFromItem(input, col, item);
+                grid.appendChild(f);
+              } else {
+                grid.appendChild(buildDetailFieldWrap(col, item));
+              }
             });
-            personDetailContent.appendChild(grid);
+            return grid;
+          }
+
+          return splitWrap;
+        }
+
+        async function renderPersonDetailView(item, editing) {
+          if (!personDetailContent || !item) return;
+          personDetailContent.innerHTML = "";
+          const cols = normalizedRosterColumns().filter(function (c) {
+            return c.key !== "Id";
+          });
+          if (!cols.length) {
+            setPersonDetailState("warn", "No columns configured to display.");
+            return;
+          }
+          setPersonDetailEditMode(!!editing);
+          setPersonDetailState("", "");
+          if (personDetailTitle) personDetailTitle.textContent = formatPersonDisplayName(item);
+
+          const fields = buildPersonDetailFields(item, editing);
+          if (editing) {
+            const form = document.createElement("div");
+            form.id = "personEditForm";
+            form.className = "add-form-stack";
+            form.setAttribute("role", "form");
+            form.appendChild(fields);
+            personDetailContent.appendChild(form);
+            await populatePersonEditDropdowns(personDetailSession.seg, personDetailSession.pw, personDetailSession.sampleRow, form);
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () {
+                balanceContactNotesToIdentityColumn(form);
+              });
+            });
+          } else {
+            personDetailContent.appendChild(fields);
+          }
+        }
+
+        function mergePayloadIntoItem(item, body) {
+          const updated = Object.assign({}, item);
+          const cols = normalizedRosterColumns();
+          Object.keys(body || {}).forEach(function (key) {
+            if (key === "Title") {
+              updated.Title = body[key];
+              return;
+            }
+            const col = cols.find(function (c) {
+              const writeKey = c.saveKey || c.key;
+              const tryKeys = c.tryKeys || [c.key];
+              return writeKey === key || tryKeys.indexOf(key) !== -1 || c.key === key;
+            });
+            const targetKey = col ? col.key : key;
+            let val = body[key];
+            if (typeof val === "string" && /T00:00:00Z$/.test(val)) val = val.slice(0, 10);
+            updated[targetKey] = val;
+          });
+          return updated;
+        }
+
+        function syncPersonInHubSession(updatedItem) {
+          if (!updatedItem || updatedItem.Id == null) return;
+          if (!Array.isArray(hubSession.rows)) hubSession.rows = [];
+          const idx = hubSession.rows.findIndex(function (r) {
+            return r && String(r.Id) === String(updatedItem.Id);
+          });
+          if (idx === -1) hubSession.rows.push(updatedItem);
+          else hubSession.rows[idx] = Object.assign({}, hubSession.rows[idx], updatedItem);
+          hubSession.rows = sortPersonnelRowsAlphabetical(hubSession.rows);
+          if (rosterTableIsRendered() && hubSession.meta && hubSession.pw && hubSession.seg) {
+            renderRosterTable(hubSession.rows, hubSession.meta, hubSession.pw, hubSession.seg);
+          }
+        }
+
+        async function savePersonDetailEdits() {
+          const s = personDetailSession;
+          if (!s.item || s.item.Id == null || !s.pw || !s.seg) return;
+          const cols = normalizedRosterColumns();
+          let lastName = "";
+          let firstName = "";
+          let dod = "";
+          cols.forEach(function (col) {
+            if (col.key === "Id") return;
+            const el = document.getElementById("pf_" + col.key);
+            if (!el) return;
+            const v = String(el.value || "").trim();
+            if (col.key === "LastName") lastName = v;
+            if (col.key === "FirstName") firstName = v;
+            if (col.key === "DoDID") dod = v;
+          });
+          if (!lastName || !firstName) {
+            setPersonDetailState("err", "Last name and First name are required.");
             return;
           }
 
-          personDetailContent.appendChild(splitWrap);
+          const payload = {};
+          cols.forEach(function (col) {
+            if (col.key === "Id") return;
+            const el = document.getElementById("pf_" + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || resolveWriteKey(col, s.sampleRow);
+            let v = String(el.value || "").trim();
+            if (v === "") return;
+            if (el.type === "date") {
+              payload[writeKey] = v + "T00:00:00Z";
+              return;
+            }
+            payload[writeKey] = v;
+          });
+
+          if (SET_TITLE_ON_CREATE) {
+            payload.Title = [lastName, firstName].filter(Boolean).join(", ") || dod || "Personnel record";
+          }
+
+          try {
+            setPersonDetailState("loading", "Saving changesâ€¦");
+            if (personDetailSaveBtn) personDetailSaveBtn.disabled = true;
+            await spFetch(`/_api/web/${s.seg}/items(${s.item.Id})`, { method: "MERGE", body: payload }, s.pw);
+            const updated = mergePayloadIntoItem(s.item, payload);
+            updated.Id = s.item.Id;
+            personDetailSession.item = updated;
+            syncPersonInHubSession(updated);
+            if (personDetailTitle) personDetailTitle.textContent = formatPersonDisplayName(updated);
+            await renderPersonDetailView(updated, false);
+            setPersonDetailState("ok", "Record saved.");
+            window.setTimeout(function () {
+              setPersonDetailState("", "");
+            }, 2500);
+          } catch (e) {
+            setPersonDetailState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+          } finally {
+            if (personDetailSaveBtn) personDetailSaveBtn.disabled = false;
+          }
         }
 
-        async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {
+        async function openPersonDetailRecord(itemId, meta, pw, seg, cachedRows, sampleRow) {
           if (!personDetailSection || !personDetailContent) return;
           setHubListViewVisible(false);
           personDetailSection.hidden = false;
+          setPersonDetailEditMode(false);
 
           const rows = Array.isArray(cachedRows) ? cachedRows : hubSession.rows;
           let item =
@@ -1391,29 +1696,60 @@
               return r && String(r.Id) === String(itemId);
             });
 
-          if (item) {
-            renderPersonDetailContent(item);
-            return;
+          if (!item) {
+            personDetailContent.innerHTML = "";
+            setPersonDetailState("loading", "Loading personnel recordâ€¦");
+            if (personDetailTitle) personDetailTitle.textContent = "Personnel record";
+            try {
+              item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
+            } catch (e) {
+              setPersonDetailState("err", "Cannot load personnel record: " + (e.message || String(e)).slice(0, 280));
+              return;
+            }
           }
 
-          personDetailContent.innerHTML = "";
-          setPersonDetailState("loading", "Loading personnel recordâ€¦");
-          if (personDetailTitle) personDetailTitle.textContent = "Personnel record";
+          personDetailSession = {
+            item: item,
+            editing: false,
+            meta: meta || hubSession.meta,
+            pw: pw || hubSession.pw,
+            seg: seg || hubSession.seg,
+            sampleRow: sampleRow || (Array.isArray(rows) && rows.length ? rows[0] : item),
+          };
 
-          try {
-            item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
-          } catch (e) {
-            setPersonDetailState("err", "Cannot load personnel record: " + (e.message || String(e)).slice(0, 280));
-            return;
-          }
+          await renderPersonDetailView(item, false);
+        }
 
-          renderPersonDetailContent(item);
+        async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {
+          const sampleRow =
+            (Array.isArray(cachedRows) && cachedRows.length ? cachedRows[0] : null) || hubSession.sampleRow;
+          await openPersonDetailRecord(itemId, meta, pw, seg, cachedRows, sampleRow);
         }
 
         if (personDetailBackLink) {
           personDetailBackLink.addEventListener("click", function (ev) {
             ev.preventDefault();
             void navigateToRoster();
+          });
+        }
+
+        if (personDetailEditBtn) {
+          personDetailEditBtn.addEventListener("click", function () {
+            if (!personDetailSession.item) return;
+            void renderPersonDetailView(personDetailSession.item, true);
+          });
+        }
+
+        if (personDetailSaveBtn) {
+          personDetailSaveBtn.addEventListener("click", function () {
+            void savePersonDetailEdits();
+          });
+        }
+
+        if (personDetailCancelBtn) {
+          personDetailCancelBtn.addEventListener("click", function () {
+            if (!personDetailSession.item) return;
+            void renderPersonDetailView(personDetailSession.item, false);
           });
         }
 

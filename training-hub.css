@@ -307,6 +307,20 @@
       }
       #sp-pip-ui .person-detail-toolbar {
         margin-bottom: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      #sp-pip-ui .person-detail-toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+      #sp-pip-ui .person-detail-toolbar-actions button {
+        margin: 0;
       }
       #sp-pip-ui a.person-detail-back {
         display: inline-block;
