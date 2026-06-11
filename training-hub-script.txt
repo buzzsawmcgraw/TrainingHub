@@ -729,9 +729,26 @@
           return Math.round((to.getTime() - from.getTime()) / 86400000);
         }
 
-        function computeCertStatusFromExpiryKeys(item, expiryKeys) {
-          const raw = valueFromItemByKeys(item, expiryKeys);
-          const expiry = parseWeaponsCertCalendarDate(raw);
+        function certQualDateKeysFromColumns(columns) {
+          const qualCol = (Array.isArray(columns) ? columns : []).find(function (col) {
+            return col && col.key === "QualDate";
+          });
+          return qualCol && qualCol.tryKeys ? qualCol.tryKeys.slice() : ["QualDate"];
+        }
+
+        function resolveCertExpirationDate(item, expiryKeys, qualKeys) {
+          let raw = valueFromItemByKeys(item, expiryKeys);
+          let expiry = parseWeaponsCertCalendarDate(raw);
+          if (expiry) return expiry;
+          if (!qualKeys || !qualKeys.length) return null;
+          raw = valueFromItemByKeys(item, qualKeys);
+          const qual = parseWeaponsCertCalendarDate(raw);
+          if (!qual) return null;
+          return expirationDateFromQualDate(qual);
+        }
+
+        function computeCertStatusFromExpiryKeys(item, expiryKeys, qualKeys) {
+          const expiry = resolveCertExpirationDate(item, expiryKeys, qualKeys);
           if (!expiry) return { text: "-", tone: "unknown" };
 
           const today = new Date();
@@ -744,7 +761,8 @@
         }
 
         function computeWeaponsCertStatus(item) {
-          return computeCertStatusFromExpiryKeys(item, weaponsCertExpiryDateKeys());
+          const columns = normalizedWeaponsCertColumns();
+          return computeCertStatusFromExpiryKeys(item, weaponsCertExpiryDateKeys(), certQualDateKeysFromColumns(columns));
         }
 
         function normalizedBylawTrainingColumns() {
@@ -778,7 +796,8 @@
         }
 
         function computeBylawTrainingStatus(item) {
-          return computeCertStatusFromExpiryKeys(item, bylawTrainingExpiryDateKeys());
+          const columns = normalizedBylawTrainingColumns();
+          return computeCertStatusFromExpiryKeys(item, bylawTrainingExpiryDateKeys(), certQualDateKeysFromColumns(columns));
         }
 
         function weaponsCertListTitle() {

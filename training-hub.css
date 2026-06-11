@@ -512,23 +512,24 @@
         font-weight: 700;
         letter-spacing: 0.04em;
       }
-      #sp-pip-ui .weapons-status--ok,
-      #sp-pip-ui .cert-status--ok {
+      /* Must beat #sp-pip-ui table.roster td (higher specificity than .weapons-status--* alone). */
+      #sp-pip-ui table.roster td.weapons-status--ok,
+      #sp-pip-ui table.roster td.cert-status--ok {
         color: var(--pip-green);
         text-shadow: 0 0 6px var(--pip-green-glow);
       }
-      #sp-pip-ui .weapons-status--warn,
-      #sp-pip-ui .cert-status--warn {
+      #sp-pip-ui table.roster td.weapons-status--warn,
+      #sp-pip-ui table.roster td.cert-status--warn {
         color: var(--pip-amber);
         text-shadow: 0 0 8px rgba(255, 204, 102, 0.35);
       }
-      #sp-pip-ui .weapons-status--urgent,
-      #sp-pip-ui .cert-status--urgent {
+      #sp-pip-ui table.roster td.weapons-status--urgent,
+      #sp-pip-ui table.roster td.cert-status--urgent {
         color: var(--pip-red);
         text-shadow: 0 0 8px rgba(255, 90, 69, 0.4);
       }
-      #sp-pip-ui .weapons-status--expired,
-      #sp-pip-ui .cert-status--expired {
+      #sp-pip-ui table.roster td.weapons-status--expired,
+      #sp-pip-ui table.roster td.cert-status--expired {
         color: rgba(255, 90, 69, 0.72);
         text-shadow: none;
       }

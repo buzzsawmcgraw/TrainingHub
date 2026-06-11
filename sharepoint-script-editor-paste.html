@@ -516,23 +516,24 @@
         font-weight: 700;
         letter-spacing: 0.04em;
       }
-      #sp-pip-ui .weapons-status--ok,
-      #sp-pip-ui .cert-status--ok {
+      /* Must beat #sp-pip-ui table.roster td (higher specificity than .weapons-status--* alone). */
+      #sp-pip-ui table.roster td.weapons-status--ok,
+      #sp-pip-ui table.roster td.cert-status--ok {
         color: var(--pip-green);
         text-shadow: 0 0 6px var(--pip-green-glow);
       }
-      #sp-pip-ui .weapons-status--warn,
-      #sp-pip-ui .cert-status--warn {
+      #sp-pip-ui table.roster td.weapons-status--warn,
+      #sp-pip-ui table.roster td.cert-status--warn {
         color: var(--pip-amber);
         text-shadow: 0 0 8px rgba(255, 204, 102, 0.35);
       }
-      #sp-pip-ui .weapons-status--urgent,
-      #sp-pip-ui .cert-status--urgent {
+      #sp-pip-ui table.roster td.weapons-status--urgent,
+      #sp-pip-ui table.roster td.cert-status--urgent {
         color: var(--pip-red);
         text-shadow: 0 0 8px rgba(255, 90, 69, 0.4);
       }
-      #sp-pip-ui .weapons-status--expired,
-      #sp-pip-ui .cert-status--expired {
+      #sp-pip-ui table.roster td.weapons-status--expired,
+      #sp-pip-ui table.roster td.cert-status--expired {
         color: rgba(255, 90, 69, 0.72);
         text-shadow: none;
       }
@@ -1777,9 +1778,26 @@
           return Math.round((to.getTime() - from.getTime()) / 86400000);
         }
 
-        function computeCertStatusFromExpiryKeys(item, expiryKeys) {
-          const raw = valueFromItemByKeys(item, expiryKeys);
-          const expiry = parseWeaponsCertCalendarDate(raw);
+        function certQualDateKeysFromColumns(columns) {
+          const qualCol = (Array.isArray(columns) ? columns : []).find(function (col) {
+            return col && col.key === "QualDate";
+          });
+          return qualCol && qualCol.tryKeys ? qualCol.tryKeys.slice() : ["QualDate"];
+        }
+
+        function resolveCertExpirationDate(item, expiryKeys, qualKeys) {
+          let raw = valueFromItemByKeys(item, expiryKeys);
+          let expiry = parseWeaponsCertCalendarDate(raw);
+          if (expiry) return expiry;
+          if (!qualKeys || !qualKeys.length) return null;
+          raw = valueFromItemByKeys(item, qualKeys);
+          const qual = parseWeaponsCertCalendarDate(raw);
+          if (!qual) return null;
+          return expirationDateFromQualDate(qual);
+        }
+
+        function computeCertStatusFromExpiryKeys(item, expiryKeys, qualKeys) {
+          const expiry = resolveCertExpirationDate(item, expiryKeys, qualKeys);
           if (!expiry) return { text: "-", tone: "unknown" };
 
           const today = new Date();
@@ -1792,7 +1810,8 @@
         }
 
         function computeWeaponsCertStatus(item) {
-          return computeCertStatusFromExpiryKeys(item, weaponsCertExpiryDateKeys());
+          const columns = normalizedWeaponsCertColumns();
+          return computeCertStatusFromExpiryKeys(item, weaponsCertExpiryDateKeys(), certQualDateKeysFromColumns(columns));
         }
 
         function normalizedBylawTrainingColumns() {
@@ -1826,7 +1845,8 @@
         }
 
         function computeBylawTrainingStatus(item) {
-          return computeCertStatusFromExpiryKeys(item, bylawTrainingExpiryDateKeys());
+          const columns = normalizedBylawTrainingColumns();
+          return computeCertStatusFromExpiryKeys(item, bylawTrainingExpiryDateKeys(), certQualDateKeysFromColumns(columns));
         }
 
         function weaponsCertListTitle() {
