@@ -74,6 +74,9 @@
          */
         const PERSONNEL_ITEMS_ORDERBY = "LastName asc,FirstName asc";
 
+        /** Roster table scrolls after this many rows (0 = no limit). */
+        const ROSTER_SCROLL_AFTER_ROWS = 10;
+
         /**
          * When false, the SharePoint list item `Id` is never shown as a roster column (covers stale Script Editor copies
          * that still list `Id` / "Personnel ID" in ROSTER_COLUMNS). Delete still uses `item.Id`. Set true to allow an Id column.
@@ -180,6 +183,19 @@
         const btn = document.getElementById("probeRun");
         const rosterReadState = document.getElementById("rosterReadState");
         const rosterTableBody = document.getElementById("rosterTableBody");
+        const personDetailSection = document.getElementById("personDetailSection");
+        const personDetailTitle = document.getElementById("personDetailTitle");
+        const personDetailContent = document.getElementById("personDetailContent");
+        const personDetailReadState = document.getElementById("personDetailReadState");
+        const personDetailBackLink = document.getElementById("personDetailBackLink");
+
+        let hubSession = {
+          rows: null,
+          meta: null,
+          pw: null,
+          seg: null,
+          sampleRow: null,
+        };
 
         function normalizedRosterColumns() {
           const arr = Array.isArray(ROSTER_COLUMNS) ? ROSTER_COLUMNS : [];
@@ -379,13 +395,243 @@
           }
         }
 
+        function rosterTableIsRendered() {
+          return !!(rosterTableBody && rosterTableBody.querySelector("tr"));
+        }
+
+        async function ensureRosterViewRendered() {
+          if (!hubSession.rows || !hubSession.meta || !hubSession.pw || !hubSession.seg) return;
+          if (rosterTableIsRendered() && document.getElementById("newPersonForm")) return;
+          await renderAddPersonForm(hubSession.meta, hubSession.pw, hubSession.seg, hubSession.sampleRow);
+          renderRosterTable(hubSession.rows, hubSession.meta, hubSession.pw, hubSession.seg);
+        }
+
+        function navigateToPersonDetail(itemId) {
+          void showPersonDetailById(itemId, hubSession.meta, hubSession.pw, hubSession.seg, hubSession.rows);
+        }
+
+        async function navigateToRoster() {
+          if (personDetailSection) personDetailSection.hidden = true;
+          setHubListViewVisible(true);
+          await ensureRosterViewRendered();
+        }
+
+        function setHubListViewVisible(visible) {
+          document.querySelectorAll(".hub-section--form, .hub-section--status, .hub-section--roster").forEach(function (el) {
+            el.hidden = !visible;
+          });
+          if (personDetailSection) personDetailSection.hidden = visible;
+        }
+
+        function setPersonDetailState(kind, message) {
+          if (!personDetailReadState) return;
+          if (!message) {
+            personDetailReadState.hidden = true;
+            personDetailReadState.textContent = "";
+            return;
+          }
+          personDetailReadState.hidden = false;
+          personDetailReadState.className = "read-state " + kind;
+          personDetailReadState.textContent = message;
+        }
+
+        function itemFieldText(item, fieldKey) {
+          const cols = normalizedRosterColumns();
+          const col = cols.find(function (c) {
+            return c.key === fieldKey;
+          });
+          const keys = col ? col.tryKeys || [col.key] : sortKeysForPersonnelName(fieldKey);
+          const raw = valueFromItemByKeys(item, keys);
+          return raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+        }
+
+        function formatPersonDisplayName(item) {
+          const rank = itemFieldText(item, "Rank");
+          const last = itemFieldText(item, "LastName");
+          const first = itemFieldText(item, "FirstName");
+          const mi = itemFieldText(item, "MiddleInitial");
+          let name = [last, first].filter(Boolean).join(", ");
+          if (mi) name = name ? name + " " + mi + "." : mi + ".";
+          if (rank && name) return rank + " " + name;
+          return rank || name || "Personnel record";
+        }
+
+        function buildDetailFieldWrap(col, item) {
+          const tryKeys = col.tryKeys || [col.key];
+          const raw = valueFromItemByKeys(item, tryKeys);
+          const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+          const fwrap = document.createElement("div");
+          fwrap.className = "add-field person-detail-field";
+          if (col.key === "Address") fwrap.classList.add("add-field--address");
+          if (col.key === "Notes") fwrap.classList.add("add-field--notes");
+          const lab = document.createElement("div");
+          lab.className = "person-detail-label";
+          lab.textContent = col.label;
+          const val = document.createElement("div");
+          val.className = "person-detail-value";
+          val.textContent = text === "" ? "â€”" : text;
+          fwrap.appendChild(lab);
+          fwrap.appendChild(val);
+          return fwrap;
+        }
+
+        function buildDetailGroupFieldset(group, cols, item) {
+          if (!group || !group.title || !Array.isArray(group.keys)) return null;
+
+          if (group.layout === "contact-stack") {
+            const keys = group.keys;
+            if (keys.length < 7) return null;
+            const topKeys = keys.slice(0, 3);
+            const statusKeys = keys.slice(3, 6);
+            const notesKey = keys[6];
+            const bundle = document.createElement("div");
+            bundle.className = "add-form-contact-bundle";
+
+            const topGrid = document.createElement("div");
+            topGrid.className = "add-form-grid add-form-grid--stack add-form-contact-stack-top";
+            topKeys.forEach(function (key) {
+              const col = cols.find(function (c) {
+                return c.key === key;
+              });
+              if (!col) return;
+              const f = buildDetailFieldWrap(col, item);
+              if (f) topGrid.appendChild(f);
+            });
+
+            const statusRow = document.createElement("div");
+            statusRow.className = "add-form-contact-status-row";
+            statusKeys.forEach(function (key) {
+              const col = cols.find(function (c) {
+                return c.key === key;
+              });
+              if (!col) return;
+              const f = buildDetailFieldWrap(col, item);
+              if (f) statusRow.appendChild(f);
+            });
+
+            const notesCol = cols.find(function (c) {
+              return c.key === notesKey;
+            });
+            const notesWrap = notesCol ? buildDetailFieldWrap(notesCol, item) : null;
+
+            bundle.appendChild(topGrid);
+            bundle.appendChild(statusRow);
+            if (notesWrap) bundle.appendChild(notesWrap);
+
+            const fs = document.createElement("fieldset");
+            fs.className = "add-form-group";
+            const leg = document.createElement("legend");
+            leg.className = "add-form-group-legend";
+            leg.textContent = group.title;
+            fs.appendChild(leg);
+            fs.appendChild(bundle);
+            return fs;
+          }
+
+          const grid = document.createElement("div");
+          grid.className = "add-form-grid";
+          if (group.layout === "stack") grid.classList.add("add-form-grid--stack");
+          group.keys.forEach(function (key) {
+            const col = cols.find(function (c) {
+              return c.key === key;
+            });
+            if (!col) return;
+            const fwrap = buildDetailFieldWrap(col, item);
+            if (fwrap) grid.appendChild(fwrap);
+          });
+          if (!grid.childElementCount) return null;
+          const fs = document.createElement("fieldset");
+          fs.className = "add-form-group";
+          const leg = document.createElement("legend");
+          leg.className = "add-form-group-legend";
+          leg.textContent = group.title;
+          fs.appendChild(leg);
+          fs.appendChild(grid);
+          return fs;
+        }
+
+        function renderPersonDetailContent(item) {
+          if (!personDetailContent) return;
+          personDetailContent.innerHTML = "";
+          const cols = normalizedRosterColumns().filter(function (c) {
+            return c.key !== "Id";
+          });
+          if (!cols.length) {
+            setPersonDetailState("warn", "No columns configured to display.");
+            return;
+          }
+          setPersonDetailState("", "");
+          if (personDetailTitle) personDetailTitle.textContent = formatPersonDisplayName(item);
+
+          const splitWrap = document.createElement("div");
+          splitWrap.className = "add-form-split add-form-split--primary";
+
+          if (Array.isArray(ADD_FORM_FIELD_GROUPS)) {
+            ADD_FORM_FIELD_GROUPS.forEach(function (group) {
+              const fs = buildDetailGroupFieldset(group, cols, item);
+              if (fs) splitWrap.appendChild(fs);
+            });
+          }
+
+          if (!splitWrap.childElementCount) {
+            const grid = document.createElement("div");
+            grid.className = "add-form-grid add-form-grid--stack";
+            cols.forEach(function (col) {
+              grid.appendChild(buildDetailFieldWrap(col, item));
+            });
+            personDetailContent.appendChild(grid);
+            return;
+          }
+
+          personDetailContent.appendChild(splitWrap);
+        }
+
+        async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {
+          if (!personDetailSection || !personDetailContent) return;
+          setHubListViewVisible(false);
+          personDetailSection.hidden = false;
+
+          const rows = Array.isArray(cachedRows) ? cachedRows : hubSession.rows;
+          let item =
+            Array.isArray(rows) &&
+            rows.find(function (r) {
+              return r && String(r.Id) === String(itemId);
+            });
+
+          if (item) {
+            renderPersonDetailContent(item);
+            return;
+          }
+
+          personDetailContent.innerHTML = "";
+          setPersonDetailState("loading", "Loading personnel recordâ€¦");
+          if (personDetailTitle) personDetailTitle.textContent = "Personnel record";
+
+          try {
+            item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
+          } catch (e) {
+            setPersonDetailState("err", "Cannot load personnel record: " + (e.message || String(e)).slice(0, 280));
+            return;
+          }
+
+          renderPersonDetailContent(item);
+        }
+
+        if (personDetailBackLink) {
+          personDetailBackLink.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            void navigateToRoster();
+          });
+        }
+
         function renderRosterTable(rows, meta, pw, seg) {
           clearRosterTable();
           const thead = document.getElementById("rosterThead");
+          const rosterWrap = document.querySelector("#sp-pip-ui .roster-wrap");
           if (!rosterTableBody || !thead) return;
           const plan = resolveRosterColumnPlan(rows);
           const columns = rosterColumnsForDisplay(plan);
-          const showDelete = pw && seg;
+          const showRowActions = pw && seg;
           const trHead = document.createElement("tr");
           columns.forEach((col) => {
             const th = document.createElement("th");
@@ -393,11 +639,11 @@
             th.title = (col.tryKeys || [col.key]).join(" Â· ");
             trHead.appendChild(th);
           });
-          if (showDelete) {
+          if (showRowActions) {
             const thx = document.createElement("th");
             thx.className = "roster-actions";
             thx.textContent = " ";
-            thx.title = "Delete row";
+            thx.title = "Record / delete";
             trHead.appendChild(thx);
           }
           thead.appendChild(trHead);
@@ -413,9 +659,20 @@
               td.textContent = text === "" ? "â€”" : text;
               tr.appendChild(td);
             });
-            if (showDelete && item.Id != null) {
+            if (showRowActions && item.Id != null) {
               const tdAct = document.createElement("td");
               tdAct.className = "roster-actions";
+              const inner = document.createElement("div");
+              inner.className = "roster-actions-inner";
+              const recordBtn = document.createElement("button");
+              recordBtn.type = "button";
+              recordBtn.className = "btn-record";
+              recordBtn.textContent = "Record";
+              recordBtn.title = "View full record for " + formatPersonDisplayName(item);
+              recordBtn.addEventListener("click", () => {
+                navigateToPersonDetail(item.Id);
+              });
+              inner.appendChild(recordBtn);
               const delBtn = document.createElement("button");
               delBtn.type = "button";
               delBtn.className = "btn-danger";
@@ -424,9 +681,10 @@
               delBtn.addEventListener("click", () => {
                 void deletePersonnelRow(item.Id, pw, seg);
               });
-              tdAct.appendChild(delBtn);
+              inner.appendChild(delBtn);
+              tdAct.appendChild(inner);
               tr.appendChild(tdAct);
-            } else if (showDelete) {
+            } else if (showRowActions) {
               const tdAct = document.createElement("td");
               tdAct.className = "roster-actions";
               tdAct.textContent = "â€”";
@@ -435,6 +693,21 @@
             frag.appendChild(tr);
           });
           rosterTableBody.appendChild(frag);
+
+          if (rosterWrap) {
+            const scrollAfter = Number(ROSTER_SCROLL_AFTER_ROWS) > 0 ? Number(ROSTER_SCROLL_AFTER_ROWS) : 10;
+            if (rows.length > scrollAfter) {
+              rosterWrap.classList.add("roster-wrap--scroll");
+              const headerRow = thead.querySelector("tr");
+              const sampleRow = rosterTableBody.querySelector("tr");
+              const headerH = headerRow ? headerRow.getBoundingClientRect().height : 42;
+              const rowH = sampleRow ? sampleRow.getBoundingClientRect().height : 42;
+              rosterWrap.style.maxHeight = Math.ceil(headerH + rowH * scrollAfter + 4) + "px";
+            } else {
+              rosterWrap.classList.remove("roster-wrap--scroll");
+              rosterWrap.style.maxHeight = "";
+            }
+          }
 
           const listTitle = meta && meta.Title ? String(meta.Title) : personnelListTitle();
           const ic = meta && meta.ItemCount != null ? meta.ItemCount : "?";
@@ -1195,8 +1468,17 @@
             );
           }
 
+          hubSession = {
+            rows: rows,
+            meta: meta,
+            pw: pw,
+            seg: seg2,
+            sampleRow: sampleRow,
+          };
+
           await renderAddPersonForm(meta, pw, seg2, sampleRow);
           renderRosterTable(rows, meta, pw, seg2);
+          setHubListViewVisible(true);
         }
 
         btn.addEventListener("click", () => {

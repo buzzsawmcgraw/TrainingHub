@@ -219,6 +219,33 @@
         text-align: center;
         vertical-align: middle;
       }
+      #sp-pip-ui .roster-actions-inner {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      #sp-pip-ui button.btn-record {
+        margin: 0;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-family: var(--pip-font);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--pip-green);
+        background: rgba(8, 24, 14, 0.6);
+        border: 1px solid var(--pip-green-dim);
+        border-radius: 2px;
+        text-shadow: 0 0 4px var(--pip-green-glow);
+        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.06);
+      }
+      #sp-pip-ui button.btn-record:hover {
+        background: rgba(30, 255, 69, 0.12);
+        color: #7dff8f;
+      }
       #sp-pip-ui button:active {
         transform: translateY(1px);
       }
@@ -260,12 +287,91 @@
       }
       #sp-pip-ui .roster-wrap {
         overflow: auto;
-        max-height: min(52vh, 560px);
         border: 1px solid var(--pip-border);
         margin: 0;
         background: rgba(5, 14, 10, 0.55);
         border-radius: 8px;
         box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), inset 0 0 32px rgba(0, 0, 0, 0.5);
+      }
+      #sp-pip-ui .roster-wrap.roster-wrap--scroll {
+        overflow-y: auto;
+        overflow-x: auto;
+      }
+      #sp-pip-ui .person-detail-panel {
+        border: 1px solid var(--pip-border);
+        border-radius: 8px;
+        padding: 18px 20px 20px;
+        margin: 0;
+        background: rgba(5, 14, 10, 0.55);
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), inset 0 0 32px rgba(0, 0, 0, 0.5);
+      }
+      #sp-pip-ui .person-detail-toolbar {
+        margin-bottom: 14px;
+      }
+      #sp-pip-ui a.person-detail-back {
+        display: inline-block;
+        padding: 9px 18px;
+        font-family: var(--pip-font);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--pip-green);
+        background: rgba(8, 24, 14, 0.6);
+        border: 1px solid var(--pip-green-dim);
+        border-radius: 4px;
+        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.06);
+        text-shadow: 0 0 4px var(--pip-green-glow);
+        cursor: pointer;
+      }
+      #sp-pip-ui a.person-detail-back:hover {
+        background: rgba(30, 255, 69, 0.12);
+        color: #7dff8f;
+      }
+      #sp-pip-ui h2.person-detail-title {
+        margin: 0 0 16px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--pip-border);
+        font-size: clamp(1rem, 2.2vw, 1.35rem);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--pip-green);
+        text-shadow: 0 0 10px var(--pip-green-glow);
+      }
+      #sp-pip-ui .person-detail-content .add-form-split--primary {
+        padding: 12px 14px 14px;
+        margin-bottom: 0;
+        border: 1px solid rgba(30, 74, 54, 0.4);
+        border-radius: 8px;
+        background: rgba(8, 22, 16, 0.38);
+      }
+      #sp-pip-ui .person-detail-label {
+        display: block;
+        font-size: 10px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.18);
+      }
+      #sp-pip-ui .person-detail-value {
+        font: 13px var(--pip-font);
+        padding: 8px 10px;
+        border: 1px solid rgba(30, 74, 54, 0.35);
+        border-radius: var(--pip-control-radius);
+        background: rgba(5, 14, 10, 0.72);
+        color: rgba(210, 255, 224, 0.92);
+        text-shadow: 0 0 1px rgba(60, 255, 122, 0.12);
+        white-space: pre-wrap;
+        word-break: break-word;
+        min-height: var(--pip-control-h);
+      }
+      #sp-pip-ui .person-detail-field.add-field--notes .person-detail-value,
+      #sp-pip-ui .person-detail-field.add-field--address .person-detail-value {
+        min-height: 52px;
       }
       #sp-pip-ui table.roster {
         width: 100%;
