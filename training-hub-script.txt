@@ -241,6 +241,7 @@
         const personWeaponsAddFields = document.getElementById("personWeaponsAddFields");
         const personWeaponsAddCancelBtn = document.getElementById("personWeaponsAddCancelBtn");
         const personWeaponsSaveBtn = document.getElementById("personWeaponsSaveBtn");
+        const personWeaponsFormTitle = document.getElementById("personWeaponsFormTitle");
 
         let hubSession = {
           rows: null,
@@ -250,6 +251,11 @@
           sampleRow: null,
           weaponsPersonFilterField: null,
           weaponsPersonFilterFields: null,
+          weaponsCertRows: null,
+        };
+
+        let weaponsCertEditSession = {
+          item: null,
         };
 
         let personDetailSession = {
@@ -519,6 +525,8 @@
           return expiryCol && expiryCol.tryKeys ? expiryCol.tryKeys.slice() : ["ExpirationDate", "ExpiryDate"];
         }
 
+        const WEAPONS_CERT_MONTH_ABBR = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
         function parseWeaponsCertCalendarDate(val) {
           if (val === null || val === undefined || val === "") return null;
           const formatted = formatCellValue(val);
@@ -530,6 +538,59 @@
           const d = new Date(val);
           if (isNaN(d.getTime())) return null;
           return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+
+        function isWeaponsCertDateColumn(col) {
+          if (!col) return false;
+          return col.key === "QualDate" || col.key === "ExpirationDate" || col.key === "ExpiryDate";
+        }
+
+        function isoDateFromCalendarDate(d) {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          return y + "-" + m + "-" + day;
+        }
+
+        function isoDateForDateInput(val) {
+          const d = parseWeaponsCertCalendarDate(val);
+          return d ? isoDateFromCalendarDate(d) : "";
+        }
+
+        function formatWeaponsCertDisplayDate(val) {
+          if (val === null || val === undefined || val === "") return "";
+          const d = parseWeaponsCertCalendarDate(val);
+          if (!d) return formatCellValue(val);
+          const day = String(d.getDate()).padStart(2, "0");
+          const mon = WEAPONS_CERT_MONTH_ABBR[d.getMonth()] || "";
+          const yr = String(d.getFullYear()).slice(-2);
+          return day + "-" + mon + "-" + yr;
+        }
+
+        function expirationDateFromQualDate(qualDate) {
+          const year = qualDate.getFullYear() + 1;
+          const month = qualDate.getMonth();
+          return new Date(year, month + 1, 0);
+        }
+
+        function applyWeaponsCertExpirationFromQual() {
+          const qualEl = document.getElementById("wf_QualDate");
+          const expEl = document.getElementById("wf_ExpirationDate");
+          if (!qualEl || !expEl) return;
+          const qual = parseWeaponsCertCalendarDate(qualEl.value);
+          if (!qual) return;
+          expEl.value = isoDateFromCalendarDate(expirationDateFromQualDate(qual));
+        }
+
+        function wireWeaponsCertQualDateAutoExpiry(form) {
+          if (!form || form.dataset.weaponsAutoExpiryWired === "1") return;
+          form.dataset.weaponsAutoExpiryWired = "1";
+          form.addEventListener("change", function (ev) {
+            if (ev.target && ev.target.id === "wf_QualDate") applyWeaponsCertExpirationFromQual();
+          });
+          form.addEventListener("input", function (ev) {
+            if (ev.target && ev.target.id === "wf_QualDate") applyWeaponsCertExpirationFromQual();
+          });
         }
 
         function calendarDaysBetween(fromDate, toDate) {
@@ -589,6 +650,8 @@
         function clearPersonWeaponsCertSection() {
           clearWeaponsCertTable();
           setWeaponsCertState("", "");
+          weaponsCertEditSession.item = null;
+          hubSession.weaponsCertRows = null;
           setWeaponsCertAddPanelVisible(false);
           if (personWeaponsAddForm) personWeaponsAddForm.reset();
           if (personWeaponsEmpty) {
@@ -598,10 +661,33 @@
           if (personWeaponsWrap) personWeaponsWrap.hidden = true;
         }
 
+        function updateWeaponsCertToolbarLabel() {
+          if (!personWeaponsAddBtn) return;
+          if (personWeaponsAddPanel && !personWeaponsAddPanel.hidden) {
+            personWeaponsAddBtn.textContent = weaponsCertEditSession.item ? "Cancel requalify" : "Cancel add";
+          } else {
+            personWeaponsAddBtn.textContent = "Add qualification";
+          }
+        }
+
+        function setWeaponsCertFormMode(mode) {
+          const isEdit = mode === "edit";
+          if (personWeaponsFormTitle) {
+            personWeaponsFormTitle.textContent = isEdit ? "Requalify weapon" : "New weapons qualification";
+          }
+          if (personWeaponsSaveBtn) {
+            personWeaponsSaveBtn.textContent = isEdit ? "Save requalification" : "Save qualification";
+          }
+          updateWeaponsCertToolbarLabel();
+        }
+
         function setWeaponsCertAddPanelVisible(visible) {
           if (personWeaponsAddPanel) personWeaponsAddPanel.hidden = !visible;
-          if (personWeaponsAddBtn) {
-            personWeaponsAddBtn.textContent = visible ? "Cancel add" : "Add qualification";
+          if (!visible) {
+            weaponsCertEditSession.item = null;
+            setWeaponsCertFormMode("add");
+          } else {
+            updateWeaponsCertToolbarLabel();
           }
         }
 
@@ -617,14 +703,18 @@
           return col.key;
         }
 
-        function buildWeaponsCertFieldWrap(col, sampleRow) {
-          const idPrefix = "wf_";
+        function buildWeaponsCertFieldWrap(col, sampleRow, options) {
+          options = options || {};
+          const idPrefix = options.idPrefix || "wf_";
+          const readOnlyKeys = Array.isArray(options.readOnlyKeys) ? options.readOnlyKeys : [];
+          const readOnly = readOnlyKeys.indexOf(col.key) !== -1;
           const writeKey = resolveWeaponsCertWriteKey(col, sampleRow);
           const fwrap = document.createElement("div");
           fwrap.className = "add-field";
           const lab = document.createElement("label");
           lab.setAttribute("for", idPrefix + col.key);
-          lab.textContent = col.label;
+          lab.textContent =
+            col.key === "ExpirationDate" ? col.label + " (auto from qual date)" : col.label;
           lab.title = "REST write key: " + writeKey;
           fwrap.appendChild(lab);
 
@@ -639,7 +729,7 @@
             opt0.value = "";
             opt0.textContent = "(select)";
             input.appendChild(opt0);
-          } else if (col.key === "QualDate" || col.key === "ExpirationDate" || col.key === "ExpiryDate") {
+          } else if (isWeaponsCertDateColumn(col)) {
             input = document.createElement("input");
             input.type = "date";
             input.id = idPrefix + col.key;
@@ -650,17 +740,47 @@
             input.id = idPrefix + col.key;
             input.dataset.writeKey = writeKey;
           }
+          if (readOnly) input.disabled = true;
           fwrap.appendChild(input);
           return fwrap;
         }
 
-        function buildWeaponsCertAddFormFields() {
+        function buildWeaponsCertAddFormFields(options) {
           if (!personWeaponsAddFields) return;
           personWeaponsAddFields.innerHTML = "";
           const sampleRow = hubSession.weaponsCertSampleRow;
           weaponsCertFormColumns().forEach(function (col) {
-            const f = buildWeaponsCertFieldWrap(col, sampleRow);
+            const f = buildWeaponsCertFieldWrap(col, sampleRow, options);
             if (f) personWeaponsAddFields.appendChild(f);
+          });
+        }
+
+        function setWeaponsCertFormFieldValue(col, item, el) {
+          if (!el || !item) return;
+          const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+          if (isWeaponsCertDateColumn(col)) {
+            el.value = isoDateForDateInput(raw);
+            return;
+          }
+          if (el.tagName === "SELECT") {
+            const writeKey = String(el.dataset.writeKey || "").trim();
+            if (/Id$/.test(writeKey) && item[writeKey] != null && item[writeKey] !== "") {
+              el.value = String(item[writeKey]);
+              return;
+            }
+            const display = formatCellValue(raw);
+            ensureSelectIncludesValue(el, display);
+            el.value = display;
+            return;
+          }
+          el.value = formatCellValue(raw);
+        }
+
+        function fillWeaponsCertFormFromItem(item) {
+          if (!item) return;
+          weaponsCertFormColumns().forEach(function (col) {
+            const el = document.getElementById("wf_" + col.key);
+            if (el) setWeaponsCertFormFieldValue(col, item, el);
           });
         }
 
@@ -711,30 +831,62 @@
             setWeaponsCertState("warn", "Open a personnel record before adding a qualification.");
             return;
           }
+          weaponsCertEditSession.item = null;
+          setWeaponsCertFormMode("add");
           buildWeaponsCertAddFormFields();
           setWeaponsCertAddPanelVisible(true);
           setWeaponsCertState("", "");
           await populateWeaponsCertAddDropdowns();
+          wireWeaponsCertQualDateAutoExpiry(personWeaponsAddForm);
           const weaponEl = document.getElementById("wf_Weapon");
           if (weaponEl) weaponEl.focus();
         }
 
-        async function submitNewWeaponsCert() {
+        async function openWeaponsCertEditPanel(item) {
+          if (!personDetailSession.item || personDetailSession.item.Id == null) {
+            setWeaponsCertState("warn", "Open a personnel record before requalifying.");
+            return;
+          }
+          if (!item || item.Id == null) return;
+          weaponsCertEditSession.item = item;
+          setWeaponsCertFormMode("edit");
+          buildWeaponsCertAddFormFields({ readOnlyKeys: ["Weapon"] });
+          setWeaponsCertAddPanelVisible(true);
+          setWeaponsCertState("", "");
+          await populateWeaponsCertAddDropdowns();
+          fillWeaponsCertFormFromItem(item);
+          const qualEl = document.getElementById("wf_QualDate");
+          if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+          applyWeaponsCertExpirationFromQual();
+          wireWeaponsCertQualDateAutoExpiry(personWeaponsAddForm);
+          if (qualEl) qualEl.focus();
+        }
+
+        async function submitWeaponsCertSave() {
           const personItem = personDetailSession.item;
           const pw = personDetailSession.pw;
           if (!personItem || personItem.Id == null || !pw) return;
 
+          const editItem = weaponsCertEditSession.item;
+          const isEdit = editItem && editItem.Id != null;
           const seg = weaponsCertListApiPath();
           const sampleRow = hubSession.weaponsCertSampleRow;
           const weaponEl = document.getElementById("wf_Weapon");
           const weaponVal = weaponEl ? String(weaponEl.value || "").trim() : "";
-          if (!weaponVal) {
+          if (!isEdit && !weaponVal) {
             setWeaponsCertState("err", "Weapon is required.");
+            return;
+          }
+
+          const qualEl = document.getElementById("wf_QualDate");
+          if (!qualEl || !String(qualEl.value || "").trim()) {
+            setWeaponsCertState("err", "Certification date is required.");
             return;
           }
 
           const payload = {};
           weaponsCertFormColumns().forEach(function (col) {
+            if (isEdit && col.key === "Weapon") return;
             const el = document.getElementById("wf_" + col.key);
             if (!el) return;
             const writeKey = el.dataset.writeKey || resolveWeaponsCertWriteKey(col, sampleRow);
@@ -743,32 +895,36 @@
             payload[writeKey] = v;
           });
 
-          const personId = parseInt(String(personItem.Id), 10);
-          if (!personId || isNaN(personId)) {
-            setWeaponsCertState("err", "Invalid personnel record Id.");
-            return;
-          }
-          const personKey = await resolveWeaponsPersonPostKey(seg, pw);
-          payload[personKey] = personId;
-
-          if (WEAPONS_CERT_SET_TITLE) {
-            payload.Title = weaponVal;
+          if (!isEdit) {
+            const personId = parseInt(String(personItem.Id), 10);
+            if (!personId || isNaN(personId)) {
+              setWeaponsCertState("err", "Invalid personnel record Id.");
+              return;
+            }
+            const personKey = await resolveWeaponsPersonPostKey(seg, pw);
+            payload[personKey] = personId;
+            if (WEAPONS_CERT_SET_TITLE) payload.Title = weaponVal;
           }
 
           try {
-            setWeaponsCertState("loading", "Saving qualificationâ€¦");
+            setWeaponsCertState("loading", isEdit ? "Saving requalificationâ€¦" : "Saving qualificationâ€¦");
             if (personWeaponsSaveBtn) personWeaponsSaveBtn.disabled = true;
-            await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            if (isEdit) {
+              await spFetch(`/_api/web/${seg}/items(${editItem.Id})`, { method: "MERGE", body: payload }, pw);
+            } else {
+              await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            }
+            weaponsCertEditSession.item = null;
             if (personWeaponsAddForm) personWeaponsAddForm.reset();
             setWeaponsCertAddPanelVisible(false);
             await loadPersonWeaponsCertifications(personItem.Id, pw);
-            setWeaponsCertState("ok", "Qualification saved.");
+            setWeaponsCertState("ok", isEdit ? "Requalification saved." : "Qualification saved.");
             window.setTimeout(function () {
               setWeaponsCertState("", "");
             }, 2500);
           } catch (e) {
             setWeaponsCertState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
-            log("Weapons cert POST failed:\n" + (e.message || String(e)), "err");
+            log("Weapons cert save failed:\n" + (e.message || String(e)), "err");
           } finally {
             if (personWeaponsSaveBtn) personWeaponsSaveBtn.disabled = false;
           }
@@ -779,12 +935,20 @@
           const columns = normalizedWeaponsCertColumns();
           if (!personWeaponsThead || !personWeaponsBody || !columns.length) return;
 
+          const showActions = !!(personDetailSession.pw && personWeaponsWrap && !personWeaponsWrap.hidden);
           const trHead = document.createElement("tr");
           columns.forEach(function (col) {
             const th = document.createElement("th");
             th.textContent = col.label;
             trHead.appendChild(th);
           });
+          if (showActions) {
+            const thAct = document.createElement("th");
+            thAct.className = "roster-actions";
+            thAct.textContent = " ";
+            thAct.title = "Requalify";
+            trHead.appendChild(thAct);
+          }
           personWeaponsThead.appendChild(trHead);
 
           const frag = document.createDocumentFragment();
@@ -798,6 +962,9 @@
                 if (status.tone && status.tone !== "unknown") {
                   td.className = "weapons-status weapons-status--" + status.tone;
                 }
+              } else if (isWeaponsCertDateColumn(col)) {
+                const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+                td.textContent = displayCellText(formatWeaponsCertDisplayDate(raw));
               } else {
                 const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
                 const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
@@ -805,6 +972,31 @@
               }
               tr.appendChild(td);
             });
+            if (showActions && item.Id != null) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              const inner = document.createElement("div");
+              inner.className = "roster-actions-inner";
+              const requalBtn = document.createElement("button");
+              requalBtn.type = "button";
+              requalBtn.className = "btn-record";
+              requalBtn.textContent = "Requalify";
+              const weaponLabel = formatCellValue(
+                valueFromItemByKeys(item, ["Weapon", "WeaponName", "Weapon_x0020_Name", "Title"]) || "",
+              );
+              requalBtn.title = weaponLabel ? "Requalify " + weaponLabel : "Requalify weapon";
+              requalBtn.addEventListener("click", function () {
+                void openWeaponsCertEditPanel(item);
+              });
+              inner.appendChild(requalBtn);
+              tdAct.appendChild(inner);
+              tr.appendChild(tdAct);
+            } else if (showActions) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              tdAct.textContent = "-";
+              tr.appendChild(tdAct);
+            }
             frag.appendChild(tr);
           });
           personWeaponsBody.appendChild(frag);
@@ -998,6 +1190,7 @@
               return String(wa).localeCompare(String(wb));
             });
             hubSession.weaponsCertSampleRow = rows.length ? rows[0] : hubSession.weaponsCertSampleRow || null;
+            hubSession.weaponsCertRows = rows.slice();
             renderWeaponsCertTable(rows);
             setWeaponsCertState("", "");
           } catch (e) {
@@ -1540,7 +1733,7 @@
         if (personWeaponsAddForm) {
           personWeaponsAddForm.addEventListener("submit", function (ev) {
             ev.preventDefault();
-            void submitNewWeaponsCert();
+            void submitWeaponsCertSave();
           });
         }
 
