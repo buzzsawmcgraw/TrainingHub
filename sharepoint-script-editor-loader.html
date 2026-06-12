@@ -525,28 +525,29 @@
         <div class="scheduling-memo-panel">
           <h4>Memorandum</h4>
           <form id="schedulingMemoForm" class="weapons-add-form add-form-stack scheduling-memo-form" aria-label="Memorandum">
-            <div class="add-form-grid scheduling-memo-form-fields">
-              <div class="add-field add-field--address">
-                <label for="schedulingMemoFor">Memorandum for</label>
-                <input type="text" id="schedulingMemoFor" />
+            <div class="scheduling-memo-scroll">
+              <div class="add-form-grid scheduling-memo-form-fields">
+                <div class="add-field add-field--address">
+                  <label for="schedulingMemoFor">Memorandum for</label>
+                  <input type="text" id="schedulingMemoFor" />
+                </div>
+                <div class="add-field">
+                  <label for="schedulingMemoFrom">From</label>
+                  <input type="text" id="schedulingMemoFrom" />
+                </div>
+                <div class="add-field add-field--address">
+                  <label for="schedulingMemoSubject">Subject</label>
+                  <input type="text" id="schedulingMemoSubject" />
+                </div>
+                <div class="add-field add-field--notes">
+                  <label for="schedulingMemoBody">Body</label>
+                  <textarea id="schedulingMemoBody" rows="10"></textarea>
+                </div>
               </div>
-              <div class="add-field">
-                <label for="schedulingMemoFrom">From</label>
-                <input type="text" id="schedulingMemoFrom" />
-              </div>
-              <div class="add-field add-field--address">
-                <label for="schedulingMemoSubject">Subject</label>
-                <input type="text" id="schedulingMemoSubject" />
-              </div>
-              <div class="add-field add-field--notes">
-                <label for="schedulingMemoBody">Body</label>
-                <textarea id="schedulingMemoBody" rows="12"></textarea>
-              </div>
-            </div>
-            <p class="scheduling-hint" style="margin: 12px 0 6px">
-              Signature blocks - choose Personnel, title, and squadron from the dropdowns below.
-            </p>
-            <div class="scheduling-memo-sig-grid">
+              <p class="scheduling-hint">
+                Signature blocks - choose Personnel, title, and squadron from the dropdowns below.
+              </p>
+              <div class="scheduling-memo-sig-grid">
               <div class="scheduling-memo-sig-block">
                 <h5>Signature 1</h5>
                 <div class="add-field">
@@ -609,6 +610,7 @@
                     <option value="">Select squadron...</option>
                   </select>
                 </div>
+              </div>
               </div>
             </div>
             <div class="add-form-actions">

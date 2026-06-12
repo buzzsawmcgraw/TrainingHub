@@ -544,9 +544,9 @@
         inset: 0;
         z-index: 400;
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
-        padding: 20px;
+        padding: 12px;
         overflow-y: auto;
         background: rgba(2, 6, 4, 0.92);
       }
@@ -554,96 +554,130 @@
         display: none !important;
       }
       #sp-pip-ui .scheduling-memo-panel {
-        width: min(100%, 1040px);
-        max-height: min(92vh, 920px);
-        margin: auto;
-        padding: 22px 26px 24px;
-        overflow-y: auto;
+        width: min(100%, 920px);
+        max-height: calc(100dvh - 24px);
+        margin: 12px auto;
+        padding: 18px 20px 20px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
         border: 1px solid var(--pip-border);
         border-radius: 8px;
         background: rgba(5, 14, 10, 0.98);
         box-shadow: 0 0 40px rgba(0, 0, 0, 0.65);
         flex-shrink: 0;
-      }
-      #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields {
-        margin-bottom: 4px;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px 16px;
-      }
-      #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields .add-field--address,
-      #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields .add-field--notes {
-        grid-column: 1 / -1;
-      }
-      #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields input[type="text"] {
-        width: 100%;
-        min-height: 42px;
         box-sizing: border-box;
-      }
-      #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields textarea {
-        width: 100%;
-        min-height: 220px;
-        height: 220px;
-        max-height: none;
-        resize: vertical;
-        box-sizing: border-box;
-        line-height: 1.45;
-      }
-      #sp-pip-ui .scheduling-memo-panel select.scheduling-memo-sig-select {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0;
-        height: var(--pip-control-h);
-        min-height: var(--pip-control-h);
       }
       #sp-pip-ui .scheduling-memo-panel h4 {
-        margin: 0 0 14px;
+        margin: 0 0 12px;
+        flex: 0 0 auto;
         font-size: 11px;
         font-weight: 700;
         letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--pip-amber);
       }
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+      }
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form .add-form-grid.scheduling-memo-form-fields {
+        display: grid;
+        flex-direction: unset;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px 14px;
+        max-width: none;
+        width: 100%;
+        margin-bottom: 0;
+      }
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form .scheduling-memo-form-fields .add-field--address,
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form .scheduling-memo-form-fields .add-field--notes {
+        grid-column: 1 / -1;
+      }
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form .add-field,
+      #sp-pip-ui .scheduling-memo-sig-block .add-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: stretch;
+        grid-template-columns: unset;
+        grid-template-rows: unset;
+        margin: 0;
+        min-width: 0;
+      }
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form .add-field label,
+      #sp-pip-ui .scheduling-memo-sig-block .add-field label {
+        margin: 0;
+        align-self: auto;
+        line-height: 1.25;
+        font-size: 10px;
+      }
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form .add-field input[type="text"],
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form .add-field select,
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form .scheduling-memo-sig-select {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        height: var(--pip-control-h);
+        min-height: var(--pip-control-h);
+        box-sizing: border-box;
+      }
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form .add-field textarea {
+        width: 100%;
+        min-height: 160px;
+        height: 160px;
+        max-height: 240px;
+        resize: vertical;
+        box-sizing: border-box;
+        line-height: 1.45;
+      }
+      #sp-pip-ui .scheduling-memo-form .scheduling-memo-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+      #sp-pip-ui .scheduling-memo-form .scheduling-hint {
+        margin: 10px 0 8px;
+        flex: 0 0 auto;
+      }
       #sp-pip-ui .scheduling-memo-sig-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
-        margin-top: 10px;
+        gap: 12px;
+        margin-top: 0;
         align-items: start;
       }
       #sp-pip-ui .scheduling-memo-sig-block {
-        display: grid;
-        grid-template-rows: auto repeat(3, auto);
-        gap: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
         min-width: 0;
-        padding: 14px 14px 16px;
+        padding: 12px;
         border: 1px dashed rgba(30, 74, 54, 0.65);
         border-radius: 6px;
         background: rgba(0, 0, 0, 0.2);
       }
       #sp-pip-ui .scheduling-memo-sig-block h5 {
-        margin: 0 0 2px;
+        margin: 0;
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--pip-amber);
       }
-      #sp-pip-ui .scheduling-memo-sig-block .add-field {
-        display: grid;
-        grid-template-rows: auto var(--pip-control-h);
-        gap: 6px;
-        margin: 0;
-        min-width: 0;
-        align-items: stretch;
+      #sp-pip-ui .scheduling-memo-form.weapons-add-form .add-form-actions {
+        flex: 0 0 auto;
+        margin-top: 14px;
+        padding-top: 12px;
       }
-      #sp-pip-ui .scheduling-memo-sig-block .add-field label {
-        margin: 0;
-        min-height: 0;
-        display: block;
-        line-height: 1.25;
-        font-size: 10px;
-      }
-      @media (max-width: 960px) {
+      @media (max-width: 720px) {
+        #sp-pip-ui .scheduling-memo-form.weapons-add-form .add-form-grid.scheduling-memo-form-fields {
+          grid-template-columns: 1fr;
+        }
         #sp-pip-ui .scheduling-memo-sig-grid {
           grid-template-columns: 1fr;
         }
@@ -2372,28 +2406,29 @@
         <div class="scheduling-memo-panel">
           <h4>Memorandum</h4>
           <form id="schedulingMemoForm" class="weapons-add-form add-form-stack scheduling-memo-form" aria-label="Memorandum">
-            <div class="add-form-grid scheduling-memo-form-fields">
-              <div class="add-field add-field--address">
-                <label for="schedulingMemoFor">Memorandum for</label>
-                <input type="text" id="schedulingMemoFor" />
+            <div class="scheduling-memo-scroll">
+              <div class="add-form-grid scheduling-memo-form-fields">
+                <div class="add-field add-field--address">
+                  <label for="schedulingMemoFor">Memorandum for</label>
+                  <input type="text" id="schedulingMemoFor" />
+                </div>
+                <div class="add-field">
+                  <label for="schedulingMemoFrom">From</label>
+                  <input type="text" id="schedulingMemoFrom" />
+                </div>
+                <div class="add-field add-field--address">
+                  <label for="schedulingMemoSubject">Subject</label>
+                  <input type="text" id="schedulingMemoSubject" />
+                </div>
+                <div class="add-field add-field--notes">
+                  <label for="schedulingMemoBody">Body</label>
+                  <textarea id="schedulingMemoBody" rows="10"></textarea>
+                </div>
               </div>
-              <div class="add-field">
-                <label for="schedulingMemoFrom">From</label>
-                <input type="text" id="schedulingMemoFrom" />
-              </div>
-              <div class="add-field add-field--address">
-                <label for="schedulingMemoSubject">Subject</label>
-                <input type="text" id="schedulingMemoSubject" />
-              </div>
-              <div class="add-field add-field--notes">
-                <label for="schedulingMemoBody">Body</label>
-                <textarea id="schedulingMemoBody" rows="12"></textarea>
-              </div>
-            </div>
-            <p class="scheduling-hint" style="margin: 12px 0 6px">
-              Signature blocks - choose Personnel, title, and squadron from the dropdowns below.
-            </p>
-            <div class="scheduling-memo-sig-grid">
+              <p class="scheduling-hint">
+                Signature blocks - choose Personnel, title, and squadron from the dropdowns below.
+              </p>
+              <div class="scheduling-memo-sig-grid">
               <div class="scheduling-memo-sig-block">
                 <h5>Signature 1</h5>
                 <div class="add-field">
@@ -2456,6 +2491,7 @@
                     <option value="">Select squadron...</option>
                   </select>
                 </div>
+              </div>
               </div>
             </div>
             <div class="add-form-actions">
