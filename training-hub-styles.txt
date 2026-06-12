@@ -493,6 +493,9 @@
         color: var(--pip-green);
         box-shadow: 0 0 10px var(--pip-green-glow);
       }
+      #sp-pip-ui table.scheduling-table tr.scheduling-row--pending-archive td {
+        background: rgba(255, 193, 7, 0.12);
+      }
       #sp-pip-ui table.scheduling-table tr.scheduling-row--missed td,
       #sp-pip-ui table.appointments-table tr.appointments-row--missed td {
         background: rgba(92, 26, 10, 0.35);

@@ -497,6 +497,9 @@
         color: var(--pip-green);
         box-shadow: 0 0 10px var(--pip-green-glow);
       }
+      #sp-pip-ui table.scheduling-table tr.scheduling-row--pending-archive td {
+        background: rgba(255, 193, 7, 0.12);
+      }
       #sp-pip-ui table.scheduling-table tr.scheduling-row--missed td,
       #sp-pip-ui table.appointments-table tr.appointments-row--missed td {
         background: rgba(92, 26, 10, 0.35);
@@ -3229,6 +3232,8 @@
           appointmentsPersonFilterFields: null,
           appointmentsPersonPostKey: null,
           appointmentsSampleRow: null,
+          appointmentsArchivePersonPostKey: null,
+          appointmentsArchiveSampleRow: null,
         };
 
         let phase1Session = {
@@ -5597,53 +5602,102 @@
           const name = person ? formatPersonDisplayName(person) : pid ? "Personnel Id " + pid : "Appointment";
           return when ? name + " - " + when : name;
         }
-        function appointmentArchivePayloadFromItem(item) {
-          const payload = { ArchivedAt: new Date().toISOString() };
-          if (item && typeof item === "object") {
-            Object.keys(item).forEach(function (k) {
-              if (!k || k.indexOf("__") !== -1 || k === "Id" || k === "ID") return;
-              if (/^odata/i.test(k) || k === "Attachments" || k === "GUID") return;
-              const v = item[k];
-              if (v === null || v === undefined) return;
-              if (typeof v === "object" && v !== null && !Array.isArray(v)) return;
-              payload[k] = v;
+        function appointmentArchiveDatePayloadValue(raw) {
+          const d = parseAppointmentDateTime(raw);
+          if (d) return d.toISOString();
+          if (raw === null || raw === undefined || raw === "") return null;
+          return raw;
+        }
+        async function resolveAppointmentsArchivePersonPostKey(archSeg, pw) {
+          if (hubSession.appointmentsArchivePersonPostKey) return hubSession.appointmentsArchivePersonPostKey;
+          const sampleRow = hubSession.appointmentsArchiveSampleRow;
+          const tryKeys = appointmentsPersonFilterFieldCandidates();
+          if (sampleRow) {
+            const hit = tryKeys.find(function (k) {
+              return Object.prototype.hasOwnProperty.call(sampleRow, k);
             });
+            if (hit) {
+              hubSession.appointmentsArchivePersonPostKey = hit;
+              return hit;
+            }
           }
-          if (!payload.Title) payload.Title = appointmentArchiveTitleFromItem(item);
+          hubSession.appointmentsArchivePersonPostKey = await resolveAppointmentsPersonPostKey(
+            appointmentsListApiPath(),
+            pw,
+          );
+          return hubSession.appointmentsArchivePersonPostKey;
+        }
+        async function appointmentArchivePayloadFromItem(item, archSeg, pw) {
+          const sampleRow =
+            hubSession.appointmentsArchiveSampleRow || hubSession.appointmentsSampleRow || item || null;
+          const payload = {
+            Title: appointmentArchiveTitleFromItem(item),
+            ArchivedAt: spDateTimeNowIso(),
+          };
+          normalizedAppointmentsColumns().forEach(function (col) {
+            const tryKeys = col.tryKeys || [col.key];
+            const raw = valueFromItemByKeys(item, tryKeys);
+            if (raw === null || raw === undefined || raw === "") return;
+            const writeKey = resolveAppointmentsWriteKey({ key: col.key, tryKeys: tryKeys }, sampleRow);
+            if (col.key === "AppointmentDateTime") {
+              const v = appointmentArchiveDatePayloadValue(raw);
+              if (v !== null && v !== "") payload[writeKey] = v;
+            } else if (col.key === "CreatedAt") {
+              const v = appointmentArchiveDatePayloadValue(raw);
+              if (v !== null && v !== "") payload[writeKey] = v;
+            } else if (col.key === "MissedAppointment") {
+              payload[writeKey] = missedAppointmentPayloadValue(appointmentIsMissed(item), sampleRow);
+            } else {
+              payload[writeKey] = formatCellValue(raw);
+            }
+          });
+          const personId = appointmentPersonnelIdFromItem(item);
+          if (personId) {
+            const personKey = await resolveAppointmentsArchivePersonPostKey(archSeg, pw);
+            payload[personKey] = personId;
+          }
           return payload;
         }
         async function archivePastAppointmentItems(seg, pw, rows) {
           const list = Array.isArray(rows) ? rows.slice() : [];
-          if (!list.length) return { archived: 0, remaining: list, pastHidden: 0 };
+          if (!list.length) return { archived: 0, remaining: list, pastHidden: 0, failures: [] };
           const pastAll = list.filter(appointmentIsPast);
           if (!appointmentsArchiveListTitle() && !appointmentsArchiveListUsesGuid()) {
             return {
               archived: 0,
-              remaining: list.filter(appointmentIsUpcoming),
+              remaining: list,
               pastHidden: pastAll.length,
+              failures: [],
             };
           }
           const archSeg = appointmentsArchiveListApiPath();
-          const past = pastAll;
-          if (!past.length) return { archived: 0, remaining: list.filter(appointmentIsUpcoming), pastHidden: 0 };
+          if (!pastAll.length) return { archived: 0, remaining: list, pastHidden: 0, failures: [] };
           const pastIds = new Set();
           let archived = 0;
-          for (let i = 0; i < past.length; i++) {
-            const item = past[i];
+          const failures = [];
+          for (let i = 0; i < pastAll.length; i++) {
+            const item = pastAll[i];
             if (!item || item.Id == null) continue;
             try {
-              await spFetch(`/_api/web/${archSeg}/items`, { method: "POST", body: appointmentArchivePayloadFromItem(item) }, pw);
+              const payload = await appointmentArchivePayloadFromItem(item, archSeg, pw);
+              const created = await spFetch(`/_api/web/${archSeg}/items`, { method: "POST", body: payload }, pw);
+              const newId = created && (created.Id != null ? created.Id : created.ID);
+              if (newId == null) {
+                throw new Error("Archive list did not return a new item Id.");
+              }
               await spFetch(`/_api/web/${seg}/items(${item.Id})`, { method: "DELETE" }, pw);
               pastIds.add(String(item.Id));
               archived++;
             } catch (e) {
-              log("Appointment archive failed (Id " + item.Id + "):\n" + (e.message || String(e)), "err");
+              const errMsg = (e.message || String(e)).slice(0, 280);
+              failures.push({ id: item.Id, message: errMsg });
+              log("Appointment archive failed (Id " + item.Id + "):\n" + errMsg, "err");
             }
           }
           const remaining = list.filter(function (r) {
-            return r && pastIds.has(String(r.Id)) ? false : appointmentIsUpcoming(r);
+            return r && !pastIds.has(String(r.Id));
           });
-          return { archived: archived, remaining: remaining, pastHidden: 0 };
+          return { archived: archived, remaining: remaining, pastHidden: 0, failures: failures };
         }
 
         function setAppointmentsState(kind, message) {
@@ -5987,7 +6041,7 @@
           try {
             let rows = await fetchAppointmentsForPersonnel(seg, pw, personId);
             const archiveResult = await archivePastAppointmentItems(seg, pw, rows);
-            rows = archiveResult.remaining;
+            rows = archiveResult.remaining.filter(appointmentIsUpcoming);
             const dateKeys = [
               "AppointmentDateTime",
               "Appointment_x0020_Date_x0020_Time",
@@ -6171,9 +6225,31 @@
           };
         }
 
+        function schedulingPendingArchiveRows() {
+          return (schedulingSession.rows || []).filter(appointmentIsPast);
+        }
+
+        function schedulingArchiveTabRows() {
+          const out = [];
+          schedulingPendingArchiveRows().forEach(function (item) {
+            out.push({ item: item, pendingArchive: true });
+          });
+          (schedulingSession.archiveRows || []).forEach(function (item) {
+            out.push({ item: item, pendingArchive: false });
+          });
+          return out;
+        }
+
+        function normalizeSchedulingTableEntry(entry) {
+          if (entry && entry.item) {
+            return { item: entry.item, pendingArchive: !!entry.pendingArchive };
+          }
+          return { item: entry, pendingArchive: false };
+        }
+
         function schedulingSourceRowsForView() {
           if (schedulingSession.listView === "archive") {
-            return schedulingSession.archiveRows || [];
+            return schedulingArchiveTabRows();
           }
           return schedulingSession.rows || [];
         }
@@ -6197,7 +6273,10 @@
             schedulingListTitle.textContent =
               "Missed appointments (" + filteredCount + " of " + totalCount + " total)";
           } else if (schedulingSession.listView === "archive") {
-            schedulingListTitle.textContent = "Archived appointments (" + filteredCount + ")";
+            const pendingCount = schedulingPendingArchiveRows().length;
+            schedulingListTitle.textContent =
+              "Archived appointments (" + filteredCount + ")" +
+              (pendingCount ? " - " + pendingCount + " pending archive" : "");
           } else {
             schedulingListTitle.textContent = "Upcoming appointments (" + filteredCount + ")";
           }
@@ -6221,7 +6300,10 @@
         function refreshSchedulingListDisplay() {
           const rows = schedulingSourceRowsForView();
           const filtered = filterAppointmentRowsForListView(rows);
-          const totalCount = schedulingSession.listView === "archive" ? rows.length : (schedulingSession.rows || []).length;
+          const totalCount =
+            schedulingSession.listView === "archive"
+              ? filtered.length
+              : (schedulingSession.rows || []).length;
           updateSchedulingListTitle(filtered.length, totalCount);
           renderSchedulingTable(filtered, totalCount);
           if (schedulingEmpty) {
@@ -6891,7 +6973,11 @@
               throw e0;
             }
           }
-          return (data && data.value) || [];
+          const rows = (data && data.value) || [];
+          hubSession.appointmentsArchiveSampleRow = rows.length
+            ? rows[0]
+            : hubSession.appointmentsArchiveSampleRow || null;
+          return rows;
         }
 
         function clearSchedulingTable() {
@@ -6918,8 +7004,16 @@
           trHead.appendChild(thAct);
           schedulingThead.appendChild(trHead);
 
-          const views = (Array.isArray(rows) ? rows : []).map(schedulingRowViewModel);
+          const views = (Array.isArray(rows) ? rows : []).map(function (entry) {
+            const normalized = normalizeSchedulingTableEntry(entry);
+            const view = schedulingRowViewModel(normalized.item);
+            view.pendingArchive = normalized.pendingArchive;
+            return view;
+          });
           views.sort(function (a, b) {
+            if (isArchive && !!a.pendingArchive !== !!b.pendingArchive) {
+              return a.pendingArchive ? -1 : 1;
+            }
             const oa = String(a.office || "").toLowerCase();
             const ob = String(b.office || "").toLowerCase();
             if (oa !== ob) return oa < ob ? -1 : oa > ob ? 1 : 0;
@@ -6932,7 +7026,8 @@
           const frag = document.createDocumentFragment();
           views.forEach(function (view) {
             const tr = document.createElement("tr");
-            if (view.missedFlag) tr.className = "scheduling-row--missed";
+            if (view.pendingArchive) tr.className = "scheduling-row--pending-archive";
+            else if (view.missedFlag) tr.className = "scheduling-row--missed";
             const cells = [
               view.office,
               view.name,
@@ -6942,7 +7037,7 @@
               view.instructor,
               view.missed,
             ];
-            if (isArchive) cells.push(view.archivedAt);
+            if (isArchive) cells.push(view.pendingArchive ? "Pending archive" : view.archivedAt);
             cells.forEach(function (text) {
               const td = document.createElement("td");
               td.textContent = displayCellText(text);
@@ -6985,10 +7080,17 @@
               schedulingSession.archiveRows = [];
             }
             refreshSchedulingListDisplay();
-            const missedCount = rows.filter(appointmentIsMissed).length;
+            const upcomingCount = rows.filter(appointmentIsUpcoming).length;
+            const pendingCount = rows.filter(appointmentIsPast).length;
+            const missedCount = rows.filter(function (r) {
+              return appointmentIsUpcoming(r) && appointmentIsMissed(r);
+            }).length;
             let msg =
-              "Loaded " + rows.length + " upcoming appointment(s)" +
+              "Loaded " + upcomingCount + " upcoming appointment(s)" +
               (missedCount ? " (" + missedCount + " missed)." : ".");
+            if (pendingCount) {
+              msg += " " + pendingCount + " past on file pending archive.";
+            }
             if (schedulingSession.archiveRows.length) {
               msg += " " + schedulingSession.archiveRows.length + " archived.";
             }
@@ -6998,9 +7100,17 @@
               msg +=
                 " " +
                 archiveResult.pastHidden +
-                " past appointment(s) hidden from the report (create the AppointmentsArchive list to move them).";
+                " past appointment(s) still on file (create the AppointmentsArchive list to move them).";
             }
-            setSchedulingState("ok", msg);
+            if (archiveResult.failures && archiveResult.failures.length) {
+              msg +=
+                " " +
+                archiveResult.failures.length +
+                " past appointment(s) could not be archived - check the Archive tab (highlighted in yellow).";
+              setSchedulingState("warn", msg);
+            } else {
+              setSchedulingState("ok", msg);
+            }
             window.setTimeout(function () {
               setSchedulingState("", "");
             }, 2200);
