@@ -136,6 +136,7 @@
           "Personnel/Id",
         ];
         const APPOINTMENTS_ITEMS_ORDERBY = "AppointmentDateTime asc";
+        const APPOINTMENTS_ARCHIVE_ITEMS_ORDERBY = "AppointmentDateTime desc";
         const APPOINTMENTS_COLUMNS = [
           {
             key: "AppointmentDateTime",
@@ -716,6 +717,7 @@
         const schedulingNewMemoBtn = document.getElementById("schedulingNewMemoBtn");
         const schedulingTabAll = document.getElementById("schedulingTabAll");
         const schedulingTabMissed = document.getElementById("schedulingTabMissed");
+        const schedulingTabArchive = document.getElementById("schedulingTabArchive");
         const phase1Section = document.getElementById("phase1Section");
         const phase1ReadState = document.getElementById("phase1ReadState");
         const phase1BackLink = document.getElementById("phase1BackLink");
@@ -808,6 +810,7 @@
 
         let schedulingSession = {
           rows: null,
+          archiveRows: null,
           listView: "all",
         };
 
@@ -3291,19 +3294,23 @@
           }
         }
 
-        function buildAppointmentActionsCell(item, refreshFn) {
+        function buildAppointmentActionsCell(item, refreshFn, options) {
+          const opts = options || {};
           const td = document.createElement("td");
           td.className = "roster-actions scheduling-appt-actions";
-          const missed = appointmentIsMissed(item);
-          const markBtn = document.createElement("button");
-          markBtn.type = "button";
-          markBtn.className = "btn-secondary";
-          markBtn.textContent = missed ? "Clear missed" : "Mark missed";
-          markBtn.addEventListener("click", function () {
-            const pw = hubSession.pw || personDetailSession.pw;
-            if (!pw) return;
-            void updateAppointmentMissedStatus(item, !missed, pw, refreshFn);
-          });
+          if (!opts.memoOnly) {
+            const missed = appointmentIsMissed(item);
+            const markBtn = document.createElement("button");
+            markBtn.type = "button";
+            markBtn.className = "btn-secondary";
+            markBtn.textContent = missed ? "Clear missed" : "Mark missed";
+            markBtn.addEventListener("click", function () {
+              const pw = hubSession.pw || personDetailSession.pw;
+              if (!pw) return;
+              void updateAppointmentMissedStatus(item, !missed, pw, refreshFn);
+            });
+            td.appendChild(markBtn);
+          }
           const memoBtn = document.createElement("button");
           memoBtn.type = "button";
           memoBtn.className = "btn-secondary";
@@ -3311,7 +3318,6 @@
           memoBtn.addEventListener("click", function () {
             openSchedulingMemoForAppointment(item);
           });
-          td.appendChild(markBtn);
           td.appendChild(memoBtn);
           return td;
         }
@@ -3652,6 +3658,19 @@
           });
         }
 
+        function formatArchivedAtDisplay(item) {
+          const raw = valueFromItemByKeys(item, ["ArchivedAt", "Archived_x0020_At"]);
+          const d = parseAppointmentDateTime(raw);
+          if (!d) return formatCellValue(raw);
+          return d.toLocaleString("en-US", {
+            month: "short",
+            day: "2-digit",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          });
+        }
+
         function isoDateTimeLocalFromValue(val) {
           const d = parseAppointmentDateTime(val);
           if (!d) return "";
@@ -3717,11 +3736,22 @@
             ),
             missedFlag: appointmentIsMissed(item),
             missed: appointmentIsMissed(item) ? "Yes" : "No",
+            archivedAt: formatArchivedAtDisplay(item),
           };
+        }
+
+        function schedulingSourceRowsForView() {
+          if (schedulingSession.listView === "archive") {
+            return schedulingSession.archiveRows || [];
+          }
+          return schedulingSession.rows || [];
         }
 
         function filterAppointmentRowsForListView(rows) {
           const list = Array.isArray(rows) ? rows.slice() : [];
+          if (schedulingSession.listView === "archive") {
+            return list;
+          }
           if (schedulingSession.listView === "missed") {
             return list.filter(function (item) {
               return appointmentIsUpcoming(item) && appointmentIsMissed(item);
@@ -3735,33 +3765,42 @@
           if (schedulingSession.listView === "missed") {
             schedulingListTitle.textContent =
               "Missed appointments (" + filteredCount + " of " + totalCount + " total)";
+          } else if (schedulingSession.listView === "archive") {
+            schedulingListTitle.textContent = "Archived appointments (" + filteredCount + ")";
           } else {
             schedulingListTitle.textContent = "Upcoming appointments (" + filteredCount + ")";
           }
         }
 
         function setSchedulingListView(view) {
-          schedulingSession.listView = view === "missed" ? "missed" : "all";
+          schedulingSession.listView =
+            view === "missed" ? "missed" : view === "archive" ? "archive" : "all";
           if (schedulingTabAll) {
             schedulingTabAll.classList.toggle("scheduling-tab--active", schedulingSession.listView === "all");
           }
           if (schedulingTabMissed) {
             schedulingTabMissed.classList.toggle("scheduling-tab--active", schedulingSession.listView === "missed");
           }
+          if (schedulingTabArchive) {
+            schedulingTabArchive.classList.toggle("scheduling-tab--active", schedulingSession.listView === "archive");
+          }
           refreshSchedulingListDisplay();
         }
 
         function refreshSchedulingListDisplay() {
-          const rows = schedulingSession.rows || [];
+          const rows = schedulingSourceRowsForView();
           const filtered = filterAppointmentRowsForListView(rows);
-          updateSchedulingListTitle(filtered.length, rows.length);
-          renderSchedulingTable(filtered, rows.length);
+          const totalCount = schedulingSession.listView === "archive" ? rows.length : (schedulingSession.rows || []).length;
+          updateSchedulingListTitle(filtered.length, totalCount);
+          renderSchedulingTable(filtered, totalCount);
           if (schedulingEmpty) {
             schedulingEmpty.hidden = filtered.length > 0;
             schedulingEmpty.textContent =
               schedulingSession.listView === "missed"
                 ? "No missed appointments on file."
-                : "No upcoming appointments on file.";
+                : schedulingSession.listView === "archive"
+                  ? "No archived appointments on file."
+                  : "No upcoming appointments on file.";
           }
         }
 
@@ -4408,6 +4447,22 @@
           return rows;
         }
 
+        async function fetchAllArchivedAppointmentsRows(seg, pw) {
+          const orderByClause = String(APPOINTMENTS_ARCHIVE_ITEMS_ORDERBY || "").trim();
+          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
+          let data = null;
+          try {
+            data = await spFetch(`/_api/web/${seg}/items?$top=5000` + orderByQs, {}, pw);
+          } catch (e0) {
+            if (/\b400\b/.test(String(e0.message || "")) && orderByQs) {
+              data = await spFetch(`/_api/web/${seg}/items?$top=5000`, {}, pw);
+            } else {
+              throw e0;
+            }
+          }
+          return (data && data.value) || [];
+        }
+
         function clearSchedulingTable() {
           if (schedulingThead) schedulingThead.innerHTML = "";
           if (schedulingTableBody) schedulingTableBody.innerHTML = "";
@@ -4416,7 +4471,9 @@
         function renderSchedulingTable(rows, totalCount) {
           clearSchedulingTable();
           if (!schedulingThead || !schedulingTableBody) return;
+          const isArchive = schedulingSession.listView === "archive";
           const headers = ["Office", "Personnel", "Date / time", "Location", "Description", "Instructor", "Missed"];
+          if (isArchive) headers.push("Archived");
           const trHead = document.createElement("tr");
           headers.forEach(function (label) {
             const th = document.createElement("th");
@@ -4426,7 +4483,7 @@
           const thAct = document.createElement("th");
           thAct.className = "roster-actions";
           thAct.textContent = " ";
-          thAct.title = "Mark missed / memorandum";
+          thAct.title = isArchive ? "Memorandum" : "Mark missed / memorandum";
           trHead.appendChild(thAct);
           schedulingThead.appendChild(trHead);
 
@@ -4437,7 +4494,7 @@
             if (oa !== ob) return oa < ob ? -1 : oa > ob ? 1 : 0;
             const ta = a.whenSort ? a.whenSort.getTime() : 0;
             const tb = b.whenSort ? b.whenSort.getTime() : 0;
-            if (ta !== tb) return ta - tb;
+            if (ta !== tb) return isArchive ? tb - ta : ta - tb;
             return String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base" });
           });
 
@@ -4445,17 +4502,29 @@
           views.forEach(function (view) {
             const tr = document.createElement("tr");
             if (view.missedFlag) tr.className = "scheduling-row--missed";
-            [view.office, view.name, view.when, view.location, view.description, view.instructor, view.missed].forEach(
-              function (text) {
-                const td = document.createElement("td");
-                td.textContent = displayCellText(text);
-                tr.appendChild(td);
-              },
-            );
+            const cells = [
+              view.office,
+              view.name,
+              view.when,
+              view.location,
+              view.description,
+              view.instructor,
+              view.missed,
+            ];
+            if (isArchive) cells.push(view.archivedAt);
+            cells.forEach(function (text) {
+              const td = document.createElement("td");
+              td.textContent = displayCellText(text);
+              tr.appendChild(td);
+            });
             tr.appendChild(
-              buildAppointmentActionsCell(view.item, async function () {
-                await loadSchedulingAppointmentsList();
-              }),
+              buildAppointmentActionsCell(
+                view.item,
+                async function () {
+                  await loadSchedulingAppointmentsList();
+                },
+                { memoOnly: isArchive },
+              ),
             );
             frag.appendChild(tr);
           });
@@ -4476,13 +4545,24 @@
             const archiveResult = await archivePastAppointmentItems(seg, pw, rows);
             rows = archiveResult.remaining;
             schedulingSession.rows = rows.slice();
+            if (appointmentsArchiveListTitle() || appointmentsArchiveListUsesGuid()) {
+              schedulingSession.archiveRows = await fetchAllArchivedAppointmentsRows(
+                appointmentsArchiveListApiPath(),
+                pw,
+              );
+            } else {
+              schedulingSession.archiveRows = [];
+            }
             refreshSchedulingListDisplay();
             const missedCount = rows.filter(appointmentIsMissed).length;
             let msg =
               "Loaded " + rows.length + " upcoming appointment(s)" +
               (missedCount ? " (" + missedCount + " missed)." : ".");
+            if (schedulingSession.archiveRows.length) {
+              msg += " " + schedulingSession.archiveRows.length + " archived.";
+            }
             if (archiveResult.archived > 0) {
-              msg += " Archived " + archiveResult.archived + " past appointment(s).";
+              msg += " Moved " + archiveResult.archived + " past appointment(s) to archive.";
             } else if (archiveResult.pastHidden > 0) {
               msg +=
                 " " +
@@ -4495,6 +4575,7 @@
             }, 2200);
           } catch (e) {
             schedulingSession.rows = null;
+            schedulingSession.archiveRows = null;
             refreshSchedulingListDisplay();
             setSchedulingState("err", "Could not load appointments: " + (e.message || String(e)).slice(0, 220));
           }
@@ -7552,6 +7633,12 @@
         if (schedulingTabMissed) {
           schedulingTabMissed.addEventListener("click", function () {
             setSchedulingListView("missed");
+          });
+        }
+
+        if (schedulingTabArchive) {
+          schedulingTabArchive.addEventListener("click", function () {
+            setSchedulingListView("archive");
           });
         }
 
