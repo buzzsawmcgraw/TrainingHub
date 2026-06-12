@@ -700,6 +700,135 @@
           break-inside: avoid;
           page-break-inside: avoid;
         }
+        #sp-pip-ui.ethos-print-active .hub-access-gate,
+        #sp-pip-ui.ethos-print-active .hub-top-banner-wrap,
+        #sp-pip-ui.ethos-print-active .hub-header,
+        #sp-pip-ui.ethos-print-active main,
+        #sp-pip-ui.ethos-print-active .hub-section--diag {
+          display: none !important;
+        }
+        #sp-pip-ui.ethos-print-active {
+          border: none !important;
+          background: #fff !important;
+          text-shadow: none !important;
+          color: #000 !important;
+          box-shadow: none !important;
+        }
+        #sp-pip-ui.ethos-print-active .ethos-print-surface {
+          display: block !important;
+          position: static !important;
+          width: 100% !important;
+        }
+        #sp-pip-ui.ethos-print-active .ethos-mql-report-print {
+          padding: 0;
+          max-width: none;
+        }
+        #sp-pip-ui.ethos-print-active .ethos-mql-member-block {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+      }
+      #sp-pip-ui .ethos-print-surface {
+        display: none;
+      }
+      #sp-pip-ui.ethos-print-active .ethos-print-surface {
+        display: block;
+      }
+      #sp-pip-ui .ethos-mql-report-panel {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--pip-border);
+      }
+      #sp-pip-ui .ethos-mql-report-screen {
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.45;
+        color: #e8f5ec;
+        background: rgba(0, 0, 0, 0.15);
+        padding: 16px 18px;
+        border-radius: 6px;
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+      #sp-pip-ui .ethos-mql-member-block {
+        margin-bottom: 20px;
+        break-inside: avoid;
+      }
+      #sp-pip-ui .ethos-mql-member-block h3 {
+        margin: 0 0 8px;
+        font-size: 12pt;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .ethos-mql-member-block h4 {
+        margin: 10px 0 6px;
+        font-size: 10pt;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--pip-green);
+      }
+      #sp-pip-ui table.ethos-mql-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 8px;
+        font-size: 9.5pt;
+      }
+      #sp-pip-ui table.ethos-mql-table th,
+      #sp-pip-ui table.ethos-mql-table td {
+        border: 1px solid rgba(30, 74, 54, 0.65);
+        padding: 5px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      #sp-pip-ui table.ethos-mql-table th {
+        background: rgba(30, 74, 54, 0.45);
+        font-weight: 700;
+        font-size: 8.5pt;
+        text-transform: uppercase;
+      }
+      #sp-pip-ui .ethos-mql-report-print {
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.45;
+        color: #1a1a1a;
+        background: #fff;
+        padding: 0.5in 0.6in;
+        max-width: 8.5in;
+        margin: 0 auto;
+      }
+      #sp-pip-ui .ethos-mql-report-print .ethos-mql-report-header {
+        border-bottom: 3px solid #1f3a5f;
+        padding-bottom: 14px;
+        margin-bottom: 22px;
+      }
+      #sp-pip-ui .ethos-mql-report-print .ethos-mql-report-header h1 {
+        margin: 0 0 6px;
+        font-size: 20pt;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: #1f3a5f;
+        text-transform: uppercase;
+      }
+      #sp-pip-ui .ethos-mql-report-print .ethos-mql-report-header p {
+        margin: 2px 0;
+        font-size: 10pt;
+        color: #444;
+      }
+      #sp-pip-ui .ethos-mql-report-print table.ethos-mql-table th,
+      #sp-pip-ui .ethos-mql-report-print table.ethos-mql-table td {
+        border: 1px solid #bbb;
+        color: #1a1a1a;
+      }
+      #sp-pip-ui .ethos-mql-report-print table.ethos-mql-table th {
+        background: #e8eef4;
+        color: #1f3a5f;
+      }
+      #sp-pip-ui .ethos-mql-report-print .ethos-mql-member-block h3 {
+        color: #1f3a5f;
+        font-size: 12pt;
+      }
+      #sp-pip-ui .ethos-mql-report-print .ethos-mql-member-block h4 {
+        color: #333;
+        font-size: 10pt;
       }
       #sp-pip-ui .reports-hub-grid {
         display: grid;

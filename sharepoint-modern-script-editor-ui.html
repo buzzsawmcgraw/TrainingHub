@@ -713,6 +713,135 @@
           break-inside: avoid;
           page-break-inside: avoid;
         }
+        #sp-pip-ui.ethos-print-active .hub-access-gate,
+        #sp-pip-ui.ethos-print-active .hub-top-banner-wrap,
+        #sp-pip-ui.ethos-print-active .hub-header,
+        #sp-pip-ui.ethos-print-active main,
+        #sp-pip-ui.ethos-print-active .hub-section--diag {
+          display: none !important;
+        }
+        #sp-pip-ui.ethos-print-active {
+          border: none !important;
+          background: #fff !important;
+          text-shadow: none !important;
+          color: #000 !important;
+          box-shadow: none !important;
+        }
+        #sp-pip-ui.ethos-print-active .ethos-print-surface {
+          display: block !important;
+          position: static !important;
+          width: 100% !important;
+        }
+        #sp-pip-ui.ethos-print-active .ethos-mql-report-print {
+          padding: 0;
+          max-width: none;
+        }
+        #sp-pip-ui.ethos-print-active .ethos-mql-member-block {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+      }
+      #sp-pip-ui .ethos-print-surface {
+        display: none;
+      }
+      #sp-pip-ui.ethos-print-active .ethos-print-surface {
+        display: block;
+      }
+      #sp-pip-ui .ethos-mql-report-panel {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--pip-border);
+      }
+      #sp-pip-ui .ethos-mql-report-screen {
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.45;
+        color: #e8f5ec;
+        background: rgba(0, 0, 0, 0.15);
+        padding: 16px 18px;
+        border-radius: 6px;
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+      #sp-pip-ui .ethos-mql-member-block {
+        margin-bottom: 20px;
+        break-inside: avoid;
+      }
+      #sp-pip-ui .ethos-mql-member-block h3 {
+        margin: 0 0 8px;
+        font-size: 12pt;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .ethos-mql-member-block h4 {
+        margin: 10px 0 6px;
+        font-size: 10pt;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--pip-green);
+      }
+      #sp-pip-ui table.ethos-mql-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 8px;
+        font-size: 9.5pt;
+      }
+      #sp-pip-ui table.ethos-mql-table th,
+      #sp-pip-ui table.ethos-mql-table td {
+        border: 1px solid rgba(30, 74, 54, 0.65);
+        padding: 5px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      #sp-pip-ui table.ethos-mql-table th {
+        background: rgba(30, 74, 54, 0.45);
+        font-weight: 700;
+        font-size: 8.5pt;
+        text-transform: uppercase;
+      }
+      #sp-pip-ui .ethos-mql-report-print {
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.45;
+        color: #1a1a1a;
+        background: #fff;
+        padding: 0.5in 0.6in;
+        max-width: 8.5in;
+        margin: 0 auto;
+      }
+      #sp-pip-ui .ethos-mql-report-print .ethos-mql-report-header {
+        border-bottom: 3px solid #1f3a5f;
+        padding-bottom: 14px;
+        margin-bottom: 22px;
+      }
+      #sp-pip-ui .ethos-mql-report-print .ethos-mql-report-header h1 {
+        margin: 0 0 6px;
+        font-size: 20pt;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: #1f3a5f;
+        text-transform: uppercase;
+      }
+      #sp-pip-ui .ethos-mql-report-print .ethos-mql-report-header p {
+        margin: 2px 0;
+        font-size: 10pt;
+        color: #444;
+      }
+      #sp-pip-ui .ethos-mql-report-print table.ethos-mql-table th,
+      #sp-pip-ui .ethos-mql-report-print table.ethos-mql-table td {
+        border: 1px solid #bbb;
+        color: #1a1a1a;
+      }
+      #sp-pip-ui .ethos-mql-report-print table.ethos-mql-table th {
+        background: #e8eef4;
+        color: #1f3a5f;
+      }
+      #sp-pip-ui .ethos-mql-report-print .ethos-mql-member-block h3 {
+        color: #1f3a5f;
+        font-size: 12pt;
+      }
+      #sp-pip-ui .ethos-mql-report-print .ethos-mql-member-block h4 {
+        color: #333;
+        font-size: 10pt;
       }
       #sp-pip-ui .reports-hub-grid {
         display: grid;
@@ -1657,6 +1786,7 @@
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavReports">Reports</button>
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavScheduling">Scheduling</button>
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavPhase1Tracker">Phase-1 Tracker</button>
+            <button type="button" class="btn-secondary hub-nav-btn" id="hubNavEthos">ETHOS</button>
           </nav>
         </div>
       </header>
@@ -1814,6 +1944,97 @@
             </div>
           </div>
         </section>
+        <section id="ethosSection" class="hub-section hub-section--ethos" hidden aria-label="ETHOS Members">
+          <div class="person-detail-panel ethos-panel">
+            <div class="person-detail-toolbar">
+              <a id="ethosBackLink" class="person-detail-back" href="#">Back to Personnel roster</a>
+              <div class="person-detail-toolbar-actions">
+                <button type="button" id="ethosMqlReportBtn" class="btn-secondary">ETHOS MQL Report</button>
+                <button type="button" id="ethosMqlPrintBtn" class="btn-secondary" hidden>Print report</button>
+                <button type="button" id="ethosMqlCloseBtn" class="btn-secondary" hidden>Close report</button>
+              </div>
+            </div>
+            <h2 class="hub-subtitle person-detail-title">ETHOS Members</h2>
+            <div id="ethosReadState" class="read-state loading">Loading ETHOS list...</div>
+            <div class="hub-toolbar">
+              <button type="button" id="ethosProbeRun">Refresh list</button>
+            </div>
+            <div id="ethosAddMemberPanel" class="add-person-panel" aria-live="polite"></div>
+            <div class="roster-wrap">
+              <table class="roster" aria-label="ETHOS member rows from SharePoint">
+                <thead id="ethosRosterThead"></thead>
+                <tbody id="ethosRosterTableBody"></tbody>
+              </table>
+            </div>
+            <div id="ethosMqlReportPanel" class="ethos-mql-report-panel" hidden>
+              <h3 class="hub-subtitle">ETHOS MQL Report</h3>
+              <div id="ethosMqlReportBody" class="ethos-mql-report-screen"></div>
+            </div>
+          </div>
+        </section>
+        <section id="ethosMemberDetailSection" class="hub-section hub-section--ethos-detail" hidden aria-label="ETHOS Member Record Detail">
+          <div class="person-detail-panel">
+            <div class="person-detail-toolbar">
+              <a id="ethosMemberDetailBackLink" class="person-detail-back" href="#">Back to ETHOS roster</a>
+              <div class="person-detail-toolbar-actions">
+                <button type="button" id="ethosMemberDetailEditBtn" class="btn-secondary">Edit record</button>
+                <button type="button" id="ethosMemberDetailSaveBtn" hidden>Save changes</button>
+                <button type="button" id="ethosMemberDetailCancelBtn" class="btn-secondary" hidden>Cancel</button>
+              </div>
+            </div>
+            <h2 id="ethosMemberDetailTitle" class="hub-subtitle person-detail-title">ETHOS Member Record</h2>
+            <div id="ethosMemberDetailReadState" class="read-state loading" hidden></div>
+            <div id="ethosMemberDetailContent" class="person-detail-content"></div>
+            <div id="ethosWeaponsWrap" class="person-weapons-wrap" hidden>
+              <h3 class="person-weapons-title">Weapons Qualifications</h3>
+              <div id="ethosWeaponsState" class="read-state" hidden></div>
+              <div class="roster-wrap weapons-roster-wrap">
+                <table class="roster weapons-table" aria-label="ETHOS Weapons Qualifications">
+                  <thead id="ethosWeaponsThead"></thead>
+                  <tbody id="ethosWeaponsBody"></tbody>
+                </table>
+              </div>
+              <p id="ethosWeaponsEmpty" class="weapons-empty" hidden>No Weapons Qualifications on file for this member.</p>
+              <div class="weapons-add-toolbar">
+                <button type="button" id="ethosWeaponsAddBtn" class="btn-secondary">Add qualification</button>
+              </div>
+              <div id="ethosWeaponsAddPanel" class="weapons-add-panel" hidden>
+                <h4 id="ethosWeaponsFormTitle" class="weapons-add-title">New Weapons Qualification</h4>
+                <form id="ethosWeaponsAddForm" class="weapons-add-form add-form-stack" aria-label="Add ETHOS Weapons Qualification">
+                  <div id="ethosWeaponsAddFields" class="add-form-grid"></div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="ethosWeaponsSaveBtn">Save qualification</button>
+                    <button type="button" id="ethosWeaponsAddCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div id="ethosBylawWrap" class="person-bylaw-wrap" hidden>
+              <h3 class="person-bylaw-title">By-Law Training</h3>
+              <div id="ethosBylawState" class="read-state" hidden></div>
+              <div class="roster-wrap bylaw-roster-wrap">
+                <table class="roster bylaw-table" aria-label="ETHOS By-Law Training Records">
+                  <thead id="ethosBylawThead"></thead>
+                  <tbody id="ethosBylawBody"></tbody>
+                </table>
+              </div>
+              <p id="ethosBylawEmpty" class="bylaw-empty" hidden>No By-Law Training records on file for this member.</p>
+              <div class="bylaw-add-toolbar">
+                <button type="button" id="ethosBylawAddBtn" class="btn-secondary">Add Training</button>
+              </div>
+              <div id="ethosBylawAddPanel" class="bylaw-add-panel" hidden>
+                <h4 id="ethosBylawFormTitle" class="bylaw-add-title">New By-Law Training Record</h4>
+                <form id="ethosBylawAddForm" class="bylaw-add-form add-form-stack" aria-label="Add ETHOS By-Law Training Record">
+                  <div id="ethosBylawAddFields" class="add-form-grid"></div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="ethosBylawSaveBtn">Save Training</button>
+                    <button type="button" id="ethosBylawAddCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
         <section id="schedulingSection" class="hub-section hub-section--scheduling" hidden aria-label="Scheduling">
           <div class="person-detail-panel scheduling-panel">
             <div class="person-detail-toolbar">
@@ -1877,6 +2098,7 @@
         </section>
       </main>
       <div id="schedulingPrintSurface" class="scheduling-print-surface" hidden aria-hidden="true"></div>
+      <div id="ethosPrintSurface" class="ethos-print-surface" hidden aria-hidden="true"></div>
       <div id="schedulingMemoOverlay" class="scheduling-memo-overlay" hidden aria-label="Memorandum editor">
         <div class="scheduling-memo-panel">
           <h4>Memorandum</h4>
@@ -2210,6 +2432,70 @@
           },
         ];
 
+        /** ETHOS Members list (SharePoint title **EthosMembers**). */
+        const LIST_ETHOS_MEMBERS = "EthosMembers";
+        const LIST_ETHOS_MEMBERS_GUID = "";
+        const ETHOS_ITEMS_ORDERBY = "LastName asc,FirstName asc";
+        const ETHOS_ROSTER_COLUMNS = [
+          { key: "Rank", label: "Rank", altKeys: ["Rank0", "PayGrade"] },
+          { key: "LastName", label: "LastName" },
+          { key: "FirstName", label: "FirstName" },
+          { key: "MiddleInitial", label: "Middle Initial" },
+          { key: "Status", label: "Status" },
+          { key: "OfficeSymbol", label: "OfficeSymbol" },
+          { key: "DoDID", label: "DoDID" },
+          { key: "Squadron", label: "Squadron" },
+        ];
+        const ETHOS_ADD_FORM_FIELD_GROUPS = [
+          {
+            title: "Identity",
+            keys: ["Rank", "LastName", "FirstName", "MiddleInitial", "DoDID"],
+            split: "left",
+            layout: "stack",
+          },
+          {
+            title: "Record",
+            keys: ["Status", "OfficeSymbol", "Squadron"],
+            split: "right",
+            layout: "stack",
+          },
+        ];
+        const ETHOS_DROPDOWN_COLUMN_KEYS = ["Status", "OfficeSymbol", "Squadron", "Rank"];
+        const ETHOS_SET_TITLE_ON_CREATE = true;
+        const ETHOS_ROSTER_SCROLL_AFTER_ROWS = 10;
+
+        const ETHOS_WEAPONS_PERSON_FIELD = "EthosMemberId";
+        const ETHOS_WEAPONS_PERSON_FIELD_ALT = [
+          "EthosMemberID",
+          "EthosMemberIdId",
+          "EthosMember_x0020_Id",
+          "EthosMember_x0020_ID",
+          "EthosMember/Id",
+        ];
+        const LIST_ETHOS_WEAPONS_CERTIFICATIONS = "EthosWeaponsCertifications";
+        const LIST_ETHOS_WEAPONS_CERTIFICATIONS_GUID = "";
+        const ETHOS_WEAPONS_CERT_ITEMS_ORDERBY = "QualDate desc";
+        const ETHOS_WEAPONS_CERT_COLUMNS = WEAPONS_CERT_COLUMNS;
+        const ETHOS_WEAPONS_CERT_DROPDOWN_KEYS = ["Weapon"];
+        const ETHOS_WEAPONS_CERT_SET_TITLE = true;
+
+        const ETHOS_BYLAW_PERSON_FIELD = "EthosMemberId";
+        const ETHOS_BYLAW_PERSON_FIELD_ALT = [
+          "EthosMemberID",
+          "EthosMemberIdId",
+          "EthosMember_x0020_Id",
+          "EthosMember_x0020_ID",
+          "EthosMember/Id",
+        ];
+        const LIST_ETHOS_BYLAW_TRAINING = "EthosByLawTraining";
+        const LIST_ETHOS_BYLAW_TRAINING_GUID = "";
+        const ETHOS_BYLAW_TRAINING_ITEMS_ORDERBY = "QualDate desc";
+        const ETHOS_BYLAW_TRAINING_COLUMNS = BYLAW_TRAINING_COLUMNS;
+        const ETHOS_BYLAW_TRAINING_DROPDOWN_KEYS = BYLAW_TRAINING_DROPDOWN_KEYS;
+        const ETHOS_BYLAW_TRAINING_SET_TITLE = true;
+        const ETHOS_BYLAW_TRAINING_ITEM_SORT_KEYS = BYLAW_TRAINING_ITEM_SORT_KEYS;
+        const ETHOS_SQUADRON_LABEL = "88 SFS";
+
         /** Monthly Status of Training print: months shown in the dropdown (including current month). */
         const SOT_REPORT_MONTHS_BACK = 24;
         /**
@@ -2487,6 +2773,50 @@
         const reportsDetailSubtitle = document.getElementById("reportsDetailSubtitle");
         const reportsDetailBody = document.getElementById("reportsDetailBody");
         const hubNavScheduling = document.getElementById("hubNavScheduling");
+        const hubNavEthos = document.getElementById("hubNavEthos");
+        const ethosSection = document.getElementById("ethosSection");
+        const ethosReadState = document.getElementById("ethosReadState");
+        const ethosProbeRun = document.getElementById("ethosProbeRun");
+        const ethosBackLink = document.getElementById("ethosBackLink");
+        const ethosRosterTableBody = document.getElementById("ethosRosterTableBody");
+        const ethosMqlReportBtn = document.getElementById("ethosMqlReportBtn");
+        const ethosMqlPrintBtn = document.getElementById("ethosMqlPrintBtn");
+        const ethosMqlCloseBtn = document.getElementById("ethosMqlCloseBtn");
+        const ethosMqlReportPanel = document.getElementById("ethosMqlReportPanel");
+        const ethosMqlReportBody = document.getElementById("ethosMqlReportBody");
+        const ethosPrintSurface = document.getElementById("ethosPrintSurface");
+        const ethosMemberDetailSection = document.getElementById("ethosMemberDetailSection");
+        const ethosMemberDetailTitle = document.getElementById("ethosMemberDetailTitle");
+        const ethosMemberDetailContent = document.getElementById("ethosMemberDetailContent");
+        const ethosMemberDetailReadState = document.getElementById("ethosMemberDetailReadState");
+        const ethosMemberDetailBackLink = document.getElementById("ethosMemberDetailBackLink");
+        const ethosMemberDetailEditBtn = document.getElementById("ethosMemberDetailEditBtn");
+        const ethosMemberDetailSaveBtn = document.getElementById("ethosMemberDetailSaveBtn");
+        const ethosMemberDetailCancelBtn = document.getElementById("ethosMemberDetailCancelBtn");
+        const ethosWeaponsWrap = document.getElementById("ethosWeaponsWrap");
+        const ethosWeaponsThead = document.getElementById("ethosWeaponsThead");
+        const ethosWeaponsBody = document.getElementById("ethosWeaponsBody");
+        const ethosWeaponsEmpty = document.getElementById("ethosWeaponsEmpty");
+        const ethosWeaponsState = document.getElementById("ethosWeaponsState");
+        const ethosWeaponsAddBtn = document.getElementById("ethosWeaponsAddBtn");
+        const ethosWeaponsAddPanel = document.getElementById("ethosWeaponsAddPanel");
+        const ethosWeaponsAddForm = document.getElementById("ethosWeaponsAddForm");
+        const ethosWeaponsAddFields = document.getElementById("ethosWeaponsAddFields");
+        const ethosWeaponsAddCancelBtn = document.getElementById("ethosWeaponsAddCancelBtn");
+        const ethosWeaponsSaveBtn = document.getElementById("ethosWeaponsSaveBtn");
+        const ethosWeaponsFormTitle = document.getElementById("ethosWeaponsFormTitle");
+        const ethosBylawWrap = document.getElementById("ethosBylawWrap");
+        const ethosBylawThead = document.getElementById("ethosBylawThead");
+        const ethosBylawBody = document.getElementById("ethosBylawBody");
+        const ethosBylawEmpty = document.getElementById("ethosBylawEmpty");
+        const ethosBylawState = document.getElementById("ethosBylawState");
+        const ethosBylawAddBtn = document.getElementById("ethosBylawAddBtn");
+        const ethosBylawAddPanel = document.getElementById("ethosBylawAddPanel");
+        const ethosBylawAddForm = document.getElementById("ethosBylawAddForm");
+        const ethosBylawAddFields = document.getElementById("ethosBylawAddFields");
+        const ethosBylawAddCancelBtn = document.getElementById("ethosBylawAddCancelBtn");
+        const ethosBylawSaveBtn = document.getElementById("ethosBylawSaveBtn");
+        const ethosBylawFormTitle = document.getElementById("ethosBylawFormTitle");
         const schedulingSection = document.getElementById("schedulingSection");
         const schedulingReadState = document.getElementById("schedulingReadState");
         const schedulingBackLink = document.getElementById("schedulingBackLink");
@@ -2599,6 +2929,36 @@
           seg: null,
           sampleRow: null,
         };
+
+        let ethosSession = {
+          rows: null,
+          meta: null,
+          pw: null,
+          seg: null,
+          sampleRow: null,
+          weaponsCertRows: null,
+          weaponsCertSampleRow: null,
+          weaponsPersonFilterField: null,
+          weaponsPersonFilterFields: null,
+          weaponsPersonPostKey: null,
+          bylawTrainingRows: null,
+          bylawTrainingSampleRow: null,
+          bylawPersonFilterField: null,
+          bylawPersonFilterFields: null,
+          bylawPersonPostKey: null,
+        };
+
+        let ethosDetailSession = {
+          item: null,
+          editing: false,
+          meta: null,
+          pw: null,
+          seg: null,
+          sampleRow: null,
+        };
+
+        let ethosWeaponsCertEditSession = { item: null };
+        let ethosBylawTrainingEditSession = { item: null };
 
         function normalizedRosterColumns() {
           const arr = Array.isArray(ROSTER_COLUMNS) ? ROSTER_COLUMNS : [];
@@ -2829,22 +3189,70 @@
           void showPersonDetailById(itemId, hubSession.meta, hubSession.pw, hubSession.seg, hubSession.rows);
         }
 
+        function hideEthosSections() {
+          if (ethosSection) ethosSection.hidden = true;
+          if (ethosMemberDetailSection) ethosMemberDetailSection.hidden = true;
+          if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = true;
+          if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = true;
+          if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = true;
+        }
+
+        function setEthosViewVisible(visible) {
+          document.querySelectorAll(".hub-section--form, .hub-section--status, .hub-section--roster").forEach(function (el) {
+            el.hidden = visible;
+          });
+          if (personDetailSection) personDetailSection.hidden = true;
+          if (instructorsSection) instructorsSection.hidden = true;
+          if (reportsSection) reportsSection.hidden = true;
+          if (schedulingSection) schedulingSection.hidden = true;
+          if (ethosSection) ethosSection.hidden = !visible;
+          if (ethosMemberDetailSection) ethosMemberDetailSection.hidden = true;
+        }
+
         async function navigateToRoster() {
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          hideEthosSections();
+          clearEthosMemberDetailSection();
           setInstructorsAddPanelVisible(false);
           setSchedulingAddPanelVisible(false);
           setSchedulingMemoOverlayVisible(false);
           showReportsHub();
           personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
+          ethosDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           clearPersonWeaponsCertSection();
           clearPersonBylawTrainingSection();
           clearPersonAppointmentsSection();
           setPersonDetailEditMode(false);
           setHubListViewVisible(true);
           await ensureRosterViewRendered();
+        }
+
+        async function navigateToEthosRoster() {
+          if (personDetailSection) personDetailSection.hidden = true;
+          if (instructorsSection) instructorsSection.hidden = true;
+          if (reportsSection) reportsSection.hidden = true;
+          if (schedulingSection) schedulingSection.hidden = true;
+          if (ethosMemberDetailSection) ethosMemberDetailSection.hidden = true;
+          if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = true;
+          if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = true;
+          if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = true;
+          ethosDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
+          clearEthosMemberWeaponsSection();
+          clearEthosMemberBylawSection();
+          setEthosMemberDetailEditMode(false);
+          setEthosViewVisible(true);
+          if (!ethosSession.rows || !ethosSession.pw) {
+            await runEthosProbe();
+          } else {
+            await ensureEthosRosterRendered();
+          }
+        }
+
+        async function navigateToEthos() {
+          await navigateToEthosRoster();
         }
 
         async function navigateToReports() {
@@ -5634,6 +6042,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          hideEthosSections();
         }
 
         function setInstructorsViewVisible(visible) {
@@ -5644,6 +6053,7 @@
           if (instructorsSection) instructorsSection.hidden = !visible;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          hideEthosSections();
         }
 
         function setReportsViewVisible(visible) {
@@ -5654,6 +6064,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = !visible;
           if (schedulingSection) schedulingSection.hidden = true;
+          hideEthosSections();
         }
 
         function setSchedulingViewVisible(visible) {
@@ -5664,6 +6075,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = !visible;
+          hideEthosSections();
         }
 
         function setReportsState(kind, message) {

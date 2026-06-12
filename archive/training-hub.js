@@ -231,6 +231,70 @@
           },
         ];
 
+        /** ETHOS Members list (SharePoint title **EthosMembers**). */
+        const LIST_ETHOS_MEMBERS = "EthosMembers";
+        const LIST_ETHOS_MEMBERS_GUID = "";
+        const ETHOS_ITEMS_ORDERBY = "LastName asc,FirstName asc";
+        const ETHOS_ROSTER_COLUMNS = [
+          { key: "Rank", label: "Rank", altKeys: ["Rank0", "PayGrade"] },
+          { key: "LastName", label: "LastName" },
+          { key: "FirstName", label: "FirstName" },
+          { key: "MiddleInitial", label: "Middle Initial" },
+          { key: "Status", label: "Status" },
+          { key: "OfficeSymbol", label: "OfficeSymbol" },
+          { key: "DoDID", label: "DoDID" },
+          { key: "Squadron", label: "Squadron" },
+        ];
+        const ETHOS_ADD_FORM_FIELD_GROUPS = [
+          {
+            title: "Identity",
+            keys: ["Rank", "LastName", "FirstName", "MiddleInitial", "DoDID"],
+            split: "left",
+            layout: "stack",
+          },
+          {
+            title: "Record",
+            keys: ["Status", "OfficeSymbol", "Squadron"],
+            split: "right",
+            layout: "stack",
+          },
+        ];
+        const ETHOS_DROPDOWN_COLUMN_KEYS = ["Status", "OfficeSymbol", "Squadron", "Rank"];
+        const ETHOS_SET_TITLE_ON_CREATE = true;
+        const ETHOS_ROSTER_SCROLL_AFTER_ROWS = 10;
+
+        const ETHOS_WEAPONS_PERSON_FIELD = "EthosMemberId";
+        const ETHOS_WEAPONS_PERSON_FIELD_ALT = [
+          "EthosMemberID",
+          "EthosMemberIdId",
+          "EthosMember_x0020_Id",
+          "EthosMember_x0020_ID",
+          "EthosMember/Id",
+        ];
+        const LIST_ETHOS_WEAPONS_CERTIFICATIONS = "EthosWeaponsCertifications";
+        const LIST_ETHOS_WEAPONS_CERTIFICATIONS_GUID = "";
+        const ETHOS_WEAPONS_CERT_ITEMS_ORDERBY = "QualDate desc";
+        const ETHOS_WEAPONS_CERT_COLUMNS = WEAPONS_CERT_COLUMNS;
+        const ETHOS_WEAPONS_CERT_DROPDOWN_KEYS = ["Weapon"];
+        const ETHOS_WEAPONS_CERT_SET_TITLE = true;
+
+        const ETHOS_BYLAW_PERSON_FIELD = "EthosMemberId";
+        const ETHOS_BYLAW_PERSON_FIELD_ALT = [
+          "EthosMemberID",
+          "EthosMemberIdId",
+          "EthosMember_x0020_Id",
+          "EthosMember_x0020_ID",
+          "EthosMember/Id",
+        ];
+        const LIST_ETHOS_BYLAW_TRAINING = "EthosByLawTraining";
+        const LIST_ETHOS_BYLAW_TRAINING_GUID = "";
+        const ETHOS_BYLAW_TRAINING_ITEMS_ORDERBY = "QualDate desc";
+        const ETHOS_BYLAW_TRAINING_COLUMNS = BYLAW_TRAINING_COLUMNS;
+        const ETHOS_BYLAW_TRAINING_DROPDOWN_KEYS = BYLAW_TRAINING_DROPDOWN_KEYS;
+        const ETHOS_BYLAW_TRAINING_SET_TITLE = true;
+        const ETHOS_BYLAW_TRAINING_ITEM_SORT_KEYS = BYLAW_TRAINING_ITEM_SORT_KEYS;
+        const ETHOS_SQUADRON_LABEL = "88 SFS";
+
         /** Monthly Status of Training print: months shown in the dropdown (including current month). */
         const SOT_REPORT_MONTHS_BACK = 24;
         /**
@@ -508,6 +572,50 @@
         const reportsDetailSubtitle = document.getElementById("reportsDetailSubtitle");
         const reportsDetailBody = document.getElementById("reportsDetailBody");
         const hubNavScheduling = document.getElementById("hubNavScheduling");
+        const hubNavEthos = document.getElementById("hubNavEthos");
+        const ethosSection = document.getElementById("ethosSection");
+        const ethosReadState = document.getElementById("ethosReadState");
+        const ethosProbeRun = document.getElementById("ethosProbeRun");
+        const ethosBackLink = document.getElementById("ethosBackLink");
+        const ethosRosterTableBody = document.getElementById("ethosRosterTableBody");
+        const ethosMqlReportBtn = document.getElementById("ethosMqlReportBtn");
+        const ethosMqlPrintBtn = document.getElementById("ethosMqlPrintBtn");
+        const ethosMqlCloseBtn = document.getElementById("ethosMqlCloseBtn");
+        const ethosMqlReportPanel = document.getElementById("ethosMqlReportPanel");
+        const ethosMqlReportBody = document.getElementById("ethosMqlReportBody");
+        const ethosPrintSurface = document.getElementById("ethosPrintSurface");
+        const ethosMemberDetailSection = document.getElementById("ethosMemberDetailSection");
+        const ethosMemberDetailTitle = document.getElementById("ethosMemberDetailTitle");
+        const ethosMemberDetailContent = document.getElementById("ethosMemberDetailContent");
+        const ethosMemberDetailReadState = document.getElementById("ethosMemberDetailReadState");
+        const ethosMemberDetailBackLink = document.getElementById("ethosMemberDetailBackLink");
+        const ethosMemberDetailEditBtn = document.getElementById("ethosMemberDetailEditBtn");
+        const ethosMemberDetailSaveBtn = document.getElementById("ethosMemberDetailSaveBtn");
+        const ethosMemberDetailCancelBtn = document.getElementById("ethosMemberDetailCancelBtn");
+        const ethosWeaponsWrap = document.getElementById("ethosWeaponsWrap");
+        const ethosWeaponsThead = document.getElementById("ethosWeaponsThead");
+        const ethosWeaponsBody = document.getElementById("ethosWeaponsBody");
+        const ethosWeaponsEmpty = document.getElementById("ethosWeaponsEmpty");
+        const ethosWeaponsState = document.getElementById("ethosWeaponsState");
+        const ethosWeaponsAddBtn = document.getElementById("ethosWeaponsAddBtn");
+        const ethosWeaponsAddPanel = document.getElementById("ethosWeaponsAddPanel");
+        const ethosWeaponsAddForm = document.getElementById("ethosWeaponsAddForm");
+        const ethosWeaponsAddFields = document.getElementById("ethosWeaponsAddFields");
+        const ethosWeaponsAddCancelBtn = document.getElementById("ethosWeaponsAddCancelBtn");
+        const ethosWeaponsSaveBtn = document.getElementById("ethosWeaponsSaveBtn");
+        const ethosWeaponsFormTitle = document.getElementById("ethosWeaponsFormTitle");
+        const ethosBylawWrap = document.getElementById("ethosBylawWrap");
+        const ethosBylawThead = document.getElementById("ethosBylawThead");
+        const ethosBylawBody = document.getElementById("ethosBylawBody");
+        const ethosBylawEmpty = document.getElementById("ethosBylawEmpty");
+        const ethosBylawState = document.getElementById("ethosBylawState");
+        const ethosBylawAddBtn = document.getElementById("ethosBylawAddBtn");
+        const ethosBylawAddPanel = document.getElementById("ethosBylawAddPanel");
+        const ethosBylawAddForm = document.getElementById("ethosBylawAddForm");
+        const ethosBylawAddFields = document.getElementById("ethosBylawAddFields");
+        const ethosBylawAddCancelBtn = document.getElementById("ethosBylawAddCancelBtn");
+        const ethosBylawSaveBtn = document.getElementById("ethosBylawSaveBtn");
+        const ethosBylawFormTitle = document.getElementById("ethosBylawFormTitle");
         const schedulingSection = document.getElementById("schedulingSection");
         const schedulingReadState = document.getElementById("schedulingReadState");
         const schedulingBackLink = document.getElementById("schedulingBackLink");
@@ -620,6 +728,36 @@
           seg: null,
           sampleRow: null,
         };
+
+        let ethosSession = {
+          rows: null,
+          meta: null,
+          pw: null,
+          seg: null,
+          sampleRow: null,
+          weaponsCertRows: null,
+          weaponsCertSampleRow: null,
+          weaponsPersonFilterField: null,
+          weaponsPersonFilterFields: null,
+          weaponsPersonPostKey: null,
+          bylawTrainingRows: null,
+          bylawTrainingSampleRow: null,
+          bylawPersonFilterField: null,
+          bylawPersonFilterFields: null,
+          bylawPersonPostKey: null,
+        };
+
+        let ethosDetailSession = {
+          item: null,
+          editing: false,
+          meta: null,
+          pw: null,
+          seg: null,
+          sampleRow: null,
+        };
+
+        let ethosWeaponsCertEditSession = { item: null };
+        let ethosBylawTrainingEditSession = { item: null };
 
         function normalizedRosterColumns() {
           const arr = Array.isArray(ROSTER_COLUMNS) ? ROSTER_COLUMNS : [];
@@ -850,22 +988,70 @@
           void showPersonDetailById(itemId, hubSession.meta, hubSession.pw, hubSession.seg, hubSession.rows);
         }
 
+        function hideEthosSections() {
+          if (ethosSection) ethosSection.hidden = true;
+          if (ethosMemberDetailSection) ethosMemberDetailSection.hidden = true;
+          if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = true;
+          if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = true;
+          if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = true;
+        }
+
+        function setEthosViewVisible(visible) {
+          document.querySelectorAll(".hub-section--form, .hub-section--status, .hub-section--roster").forEach(function (el) {
+            el.hidden = visible;
+          });
+          if (personDetailSection) personDetailSection.hidden = true;
+          if (instructorsSection) instructorsSection.hidden = true;
+          if (reportsSection) reportsSection.hidden = true;
+          if (schedulingSection) schedulingSection.hidden = true;
+          if (ethosSection) ethosSection.hidden = !visible;
+          if (ethosMemberDetailSection) ethosMemberDetailSection.hidden = true;
+        }
+
         async function navigateToRoster() {
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          hideEthosSections();
+          clearEthosMemberDetailSection();
           setInstructorsAddPanelVisible(false);
           setSchedulingAddPanelVisible(false);
           setSchedulingMemoOverlayVisible(false);
           showReportsHub();
           personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
+          ethosDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           clearPersonWeaponsCertSection();
           clearPersonBylawTrainingSection();
           clearPersonAppointmentsSection();
           setPersonDetailEditMode(false);
           setHubListViewVisible(true);
           await ensureRosterViewRendered();
+        }
+
+        async function navigateToEthosRoster() {
+          if (personDetailSection) personDetailSection.hidden = true;
+          if (instructorsSection) instructorsSection.hidden = true;
+          if (reportsSection) reportsSection.hidden = true;
+          if (schedulingSection) schedulingSection.hidden = true;
+          if (ethosMemberDetailSection) ethosMemberDetailSection.hidden = true;
+          if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = true;
+          if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = true;
+          if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = true;
+          ethosDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
+          clearEthosMemberWeaponsSection();
+          clearEthosMemberBylawSection();
+          setEthosMemberDetailEditMode(false);
+          setEthosViewVisible(true);
+          if (!ethosSession.rows || !ethosSession.pw) {
+            await runEthosProbe();
+          } else {
+            await ensureEthosRosterRendered();
+          }
+        }
+
+        async function navigateToEthos() {
+          await navigateToEthosRoster();
         }
 
         async function navigateToReports() {
@@ -3655,6 +3841,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          hideEthosSections();
         }
 
         function setInstructorsViewVisible(visible) {
@@ -3665,6 +3852,7 @@
           if (instructorsSection) instructorsSection.hidden = !visible;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          hideEthosSections();
         }
 
         function setReportsViewVisible(visible) {
@@ -3675,6 +3863,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = !visible;
           if (schedulingSection) schedulingSection.hidden = true;
+          hideEthosSections();
         }
 
         function setSchedulingViewVisible(visible) {
@@ -3685,6 +3874,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = !visible;
+          hideEthosSections();
         }
 
         function setReportsState(kind, message) {
