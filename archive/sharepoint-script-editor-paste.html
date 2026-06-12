@@ -2209,8 +2209,9 @@
             </div>
             <h2 class="hub-subtitle person-detail-title">Scheduling</h2>
             <p class="scheduling-hint">
-              Schedule appointments for Personnel. Mark missed appointments, track them on the Missed tab, and generate
-              printable memorandums with signature blocks (save as PDF from the print dialog).
+              Schedule upcoming appointments for Personnel. Past appointments are archived automatically and are not
+              included on the unit report. Mark missed appointments on the Missed tab, and generate printable
+              memorandums with signature blocks (save as PDF from the print dialog).
             </p>
             <div id="schedulingReadState" class="read-state" hidden></div>
             <div id="schedulingAddPanel" class="weapons-add-panel" hidden>
@@ -2234,20 +2235,20 @@
             <div id="schedulingUpcomingWrap" class="scheduling-upcoming-wrap">
               <div class="scheduling-list-toolbar scheduling-no-print">
                 <button type="button" id="schedulingTabAll" class="btn-secondary scheduling-tab scheduling-tab--active">
-                  All appointments
+                  Upcoming
                 </button>
                 <button type="button" id="schedulingTabMissed" class="btn-secondary scheduling-tab">
                   Missed appointments
                 </button>
               </div>
-              <h3 id="schedulingListTitle" class="scheduling-upcoming-title">Unit appointments</h3>
+              <h3 id="schedulingListTitle" class="scheduling-upcoming-title">Upcoming appointments</h3>
               <div class="roster-wrap scheduling-roster-wrap">
                 <table class="roster scheduling-table" aria-label="Unit appointments">
                   <thead id="schedulingThead"></thead>
                   <tbody id="schedulingTableBody"></tbody>
                 </table>
               </div>
-              <p id="schedulingEmpty" class="weapons-empty" hidden>No appointments on file.</p>
+              <p id="schedulingEmpty" class="weapons-empty" hidden>No upcoming appointments on file.</p>
             </div>
           </div>
         </section>
@@ -2549,6 +2550,9 @@
          */
         const LIST_APPOINTMENTS = "Appointments";
         const LIST_APPOINTMENTS_GUID = "";
+        /** Past appointments are moved here automatically (same columns as Appointments plus ArchivedAt). */
+        const LIST_APPOINTMENTS_ARCHIVE = "AppointmentsArchive";
+        const LIST_APPOINTMENTS_ARCHIVE_GUID = "";
         const APPOINTMENTS_PERSON_FIELD = "PeronnelId";
         /** Additional REST filter field names to try if the primary name fails (lookup / casing variants). */
         const APPOINTMENTS_PERSON_FIELD_ALT = [
@@ -5552,6 +5556,91 @@
           if (appointmentsListUsesGuid()) return "lists(guid'" + appointmentsGuidRaw() + "')";
           return "lists/getbytitle('" + escListTitle(appointmentsListTitle()) + "')";
         }
+        function appointmentsArchiveListTitle() {
+          return String(LIST_APPOINTMENTS_ARCHIVE || "").trim();
+        }
+        function appointmentsArchiveGuidRaw() {
+          return String(LIST_APPOINTMENTS_ARCHIVE_GUID || "").trim();
+        }
+        function appointmentsArchiveListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(appointmentsArchiveGuidRaw());
+        }
+        function appointmentsArchiveListApiPath() {
+          if (appointmentsArchiveListUsesGuid()) return "lists(guid'" + appointmentsArchiveGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(appointmentsArchiveListTitle()) + "')";
+        }
+        function appointmentDateTimeKeys() {
+          const dateCol = normalizedAppointmentsColumns().find(function (c) {
+            return c.key === "AppointmentDateTime";
+          });
+          return dateCol && dateCol.tryKeys ? dateCol.tryKeys.slice() : ["AppointmentDateTime"];
+        }
+        function appointmentDateTimeFromItem(item) {
+          return parseAppointmentDateTime(valueFromItemByKeys(item, appointmentDateTimeKeys()));
+        }
+        function appointmentIsPast(item) {
+          const d = appointmentDateTimeFromItem(item);
+          if (!d) return false;
+          return d.getTime() < Date.now();
+        }
+        function appointmentIsUpcoming(item) {
+          return !appointmentIsPast(item);
+        }
+        function appointmentArchiveTitleFromItem(item) {
+          const when = formatAppointmentDateTimeDisplay(valueFromItemByKeys(item, appointmentDateTimeKeys()));
+          const pid = appointmentPersonnelIdFromItem(item);
+          const person = pid ? personnelById(pid) : null;
+          const name = person ? formatPersonDisplayName(person) : pid ? "Personnel Id " + pid : "Appointment";
+          return when ? name + " - " + when : name;
+        }
+        function appointmentArchivePayloadFromItem(item) {
+          const payload = { ArchivedAt: new Date().toISOString() };
+          if (item && typeof item === "object") {
+            Object.keys(item).forEach(function (k) {
+              if (!k || k.indexOf("__") !== -1 || k === "Id" || k === "ID") return;
+              if (/^odata/i.test(k) || k === "Attachments" || k === "GUID") return;
+              const v = item[k];
+              if (v === null || v === undefined) return;
+              if (typeof v === "object" && v !== null && !Array.isArray(v)) return;
+              payload[k] = v;
+            });
+          }
+          if (!payload.Title) payload.Title = appointmentArchiveTitleFromItem(item);
+          return payload;
+        }
+        async function archivePastAppointmentItems(seg, pw, rows) {
+          const list = Array.isArray(rows) ? rows.slice() : [];
+          if (!list.length) return { archived: 0, remaining: list, pastHidden: 0 };
+          const pastAll = list.filter(appointmentIsPast);
+          if (!appointmentsArchiveListTitle() && !appointmentsArchiveListUsesGuid()) {
+            return {
+              archived: 0,
+              remaining: list.filter(appointmentIsUpcoming),
+              pastHidden: pastAll.length,
+            };
+          }
+          const archSeg = appointmentsArchiveListApiPath();
+          const past = pastAll;
+          if (!past.length) return { archived: 0, remaining: list.filter(appointmentIsUpcoming), pastHidden: 0 };
+          const pastIds = new Set();
+          let archived = 0;
+          for (let i = 0; i < past.length; i++) {
+            const item = past[i];
+            if (!item || item.Id == null) continue;
+            try {
+              await spFetch(`/_api/web/${archSeg}/items`, { method: "POST", body: appointmentArchivePayloadFromItem(item) }, pw);
+              await spFetch(`/_api/web/${seg}/items(${item.Id})`, { method: "DELETE" }, pw);
+              pastIds.add(String(item.Id));
+              archived++;
+            } catch (e) {
+              log("Appointment archive failed (Id " + item.Id + "):\n" + (e.message || String(e)), "err");
+            }
+          }
+          const remaining = list.filter(function (r) {
+            return r && pastIds.has(String(r.Id)) ? false : appointmentIsUpcoming(r);
+          });
+          return { archived: archived, remaining: remaining, pastHidden: 0 };
+        }
 
         function setAppointmentsState(kind, message) {
           if (!personAppointmentsState) return;
@@ -5889,7 +5978,9 @@
           }
 
           try {
-            const rows = await fetchAppointmentsForPersonnel(seg, pw, personId);
+            let rows = await fetchAppointmentsForPersonnel(seg, pw, personId);
+            const archiveResult = await archivePastAppointmentItems(seg, pw, rows);
+            rows = archiveResult.remaining;
             const dateKeys = [
               "AppointmentDateTime",
               "Appointment_x0020_Date_x0020_Time",
@@ -6062,9 +6153,11 @@
         function filterAppointmentRowsForListView(rows) {
           const list = Array.isArray(rows) ? rows.slice() : [];
           if (schedulingSession.listView === "missed") {
-            return list.filter(appointmentIsMissed);
+            return list.filter(function (item) {
+              return appointmentIsUpcoming(item) && appointmentIsMissed(item);
+            });
           }
-          return list;
+          return list.filter(appointmentIsUpcoming);
         }
 
         function updateSchedulingListTitle(filteredCount, totalCount) {
@@ -6073,7 +6166,7 @@
             schedulingListTitle.textContent =
               "Missed appointments (" + filteredCount + " of " + totalCount + " total)";
           } else {
-            schedulingListTitle.textContent = "Unit appointments (" + totalCount + ")";
+            schedulingListTitle.textContent = "Upcoming appointments (" + filteredCount + ")";
           }
         }
 
@@ -6098,7 +6191,7 @@
             schedulingEmpty.textContent =
               schedulingSession.listView === "missed"
                 ? "No missed appointments on file."
-                : "No appointments on file.";
+                : "No upcoming appointments on file.";
           }
         }
 
@@ -6809,14 +6902,24 @@
           clearSchedulingTable();
           if (schedulingEmpty) schedulingEmpty.hidden = true;
           try {
-            const rows = await fetchAllAppointmentsRows(seg, pw);
+            let rows = await fetchAllAppointmentsRows(seg, pw);
+            const archiveResult = await archivePastAppointmentItems(seg, pw, rows);
+            rows = archiveResult.remaining;
             schedulingSession.rows = rows.slice();
             refreshSchedulingListDisplay();
             const missedCount = rows.filter(appointmentIsMissed).length;
-            setSchedulingState(
-              "ok",
-              "Loaded " + rows.length + " appointment(s)" + (missedCount ? " (" + missedCount + " missed)." : "."),
-            );
+            let msg =
+              "Loaded " + rows.length + " upcoming appointment(s)" +
+              (missedCount ? " (" + missedCount + " missed)." : ".");
+            if (archiveResult.archived > 0) {
+              msg += " Archived " + archiveResult.archived + " past appointment(s).";
+            } else if (archiveResult.pastHidden > 0) {
+              msg +=
+                " " +
+                archiveResult.pastHidden +
+                " past appointment(s) hidden from the report (create the AppointmentsArchive list to move them).";
+            }
+            setSchedulingState("ok", msg);
             window.setTimeout(function () {
               setSchedulingState("", "");
             }, 2200);
@@ -7402,15 +7505,25 @@
           try {
             setSchedulingState("loading", missedOnly ? "Preparing missed report..." : "Preparing unit report...");
             let rows = schedulingSession.rows;
-            if (!rows) rows = await fetchAllAppointmentsRows(seg, pw);
+            if (!rows) {
+              rows = await fetchAllAppointmentsRows(seg, pw);
+              const archiveResult = await archivePastAppointmentItems(seg, pw, rows);
+              rows = archiveResult.remaining;
+            }
             schedulingSession.rows = rows.slice();
-            if (missedOnly) rows = rows.filter(appointmentIsMissed);
+            if (missedOnly) {
+              rows = rows.filter(function (item) {
+                return appointmentIsUpcoming(item) && appointmentIsMissed(item);
+              });
+            } else {
+              rows = rows.filter(appointmentIsUpcoming);
+            }
             const officeGroups = groupAppointmentsByOffice(rows);
             setSchedulingState("", "");
             triggerSchedulingPrint(
               renderSchedulingUnitPrintReport(
                 officeGroups,
-                missedOnly ? "Missed Appointments Report" : "Unit Appointments Schedule",
+                missedOnly ? "Missed Appointments Report" : "Upcoming Unit Appointments",
               ),
             );
           } catch (e) {

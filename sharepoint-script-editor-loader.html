@@ -399,8 +399,9 @@
             </div>
             <h2 class="hub-subtitle person-detail-title">Scheduling</h2>
             <p class="scheduling-hint">
-              Schedule appointments for Personnel. Mark missed appointments, track them on the Missed tab, and generate
-              printable memorandums with signature blocks (save as PDF from the print dialog).
+              Schedule upcoming appointments for Personnel. Past appointments are archived automatically and are not
+              included on the unit report. Mark missed appointments on the Missed tab, and generate printable
+              memorandums with signature blocks (save as PDF from the print dialog).
             </p>
             <div id="schedulingReadState" class="read-state" hidden></div>
             <div id="schedulingAddPanel" class="weapons-add-panel" hidden>
@@ -424,20 +425,20 @@
             <div id="schedulingUpcomingWrap" class="scheduling-upcoming-wrap">
               <div class="scheduling-list-toolbar scheduling-no-print">
                 <button type="button" id="schedulingTabAll" class="btn-secondary scheduling-tab scheduling-tab--active">
-                  All appointments
+                  Upcoming
                 </button>
                 <button type="button" id="schedulingTabMissed" class="btn-secondary scheduling-tab">
                   Missed appointments
                 </button>
               </div>
-              <h3 id="schedulingListTitle" class="scheduling-upcoming-title">Unit appointments</h3>
+              <h3 id="schedulingListTitle" class="scheduling-upcoming-title">Upcoming appointments</h3>
               <div class="roster-wrap scheduling-roster-wrap">
                 <table class="roster scheduling-table" aria-label="Unit appointments">
                   <thead id="schedulingThead"></thead>
                   <tbody id="schedulingTableBody"></tbody>
                 </table>
               </div>
-              <p id="schedulingEmpty" class="weapons-empty" hidden>No appointments on file.</p>
+              <p id="schedulingEmpty" class="weapons-empty" hidden>No upcoming appointments on file.</p>
             </div>
           </div>
         </section>
