@@ -496,6 +496,12 @@
       #sp-pip-ui table.scheduling-table tr.scheduling-row--pending-archive td {
         background: rgba(255, 193, 7, 0.12);
       }
+      #sp-pip-ui table.scheduling-table tr.scheduling-row--archive-delete-yellow td {
+        background: rgba(255, 235, 59, 0.14);
+      }
+      #sp-pip-ui table.scheduling-table tr.scheduling-row--archive-delete-red td {
+        background: rgba(244, 67, 54, 0.16);
+      }
       #sp-pip-ui table.scheduling-table tr.scheduling-row--missed td,
       #sp-pip-ui table.appointments-table tr.appointments-row--missed td {
         background: rgba(92, 26, 10, 0.35);
@@ -557,6 +563,26 @@
       }
       #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields {
         margin-bottom: 4px;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px 16px;
+      }
+      #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields .add-field--address,
+      #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields .add-field--notes {
+        grid-column: 1 / -1;
+      }
+      #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields input[type="text"] {
+        width: 100%;
+        min-height: 42px;
+        box-sizing: border-box;
+      }
+      #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields textarea {
+        width: 100%;
+        min-height: 220px;
+        height: 220px;
+        max-height: none;
+        resize: vertical;
+        box-sizing: border-box;
+        line-height: 1.45;
       }
       #sp-pip-ui .scheduling-memo-panel select.scheduling-memo-sig-select {
         width: 100% !important;
@@ -680,6 +706,10 @@
         font-size: 11pt;
       }
       @media print {
+        @page {
+          size: letter;
+          margin: 0.75in;
+        }
         body {
           margin: 0;
           padding: 0;
@@ -716,6 +746,10 @@
         #sp-pip-ui.scheduling-print-active .scheduling-memo-document {
           padding: 0;
           max-width: none;
+          margin: 0;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-memo-doc-title {
+          margin-top: 0;
         }
         #sp-pip-ui.scheduling-print-active .scheduling-memo-doc-sigs {
           break-inside: avoid;

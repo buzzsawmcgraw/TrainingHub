@@ -124,6 +124,14 @@
         const LIST_APPOINTMENTS_ARCHIVE = "AppointmentsArchive";
         const LIST_APPOINTMENTS_ARCHIVE_GUID = "";
         const APPOINTMENTS_PERSON_FIELD = "PeronnelId";
+        /** Archive list uses correct spelling (Appointments list has the PeronnelId typo). */
+        const APPOINTMENTS_ARCHIVE_PERSON_FIELD = "PersonnelId";
+        const APPOINTMENTS_ARCHIVE_PERSON_FIELD_ALT = [
+          "PersonnelID",
+          "PersonnelIdId",
+          "Personnel_x0020_Id",
+          "Personnel_x0020_ID",
+        ];
         /** Additional REST filter field names to try if the primary name fails (lookup / casing variants). */
         const APPOINTMENTS_PERSON_FIELD_ALT = [
           "PersonnelId",
@@ -137,6 +145,11 @@
         ];
         const APPOINTMENTS_ITEMS_ORDERBY = "AppointmentDateTime asc";
         const APPOINTMENTS_ARCHIVE_ITEMS_ORDERBY = "AppointmentDateTime desc";
+        /** Archived rows are deleted after this many days (from ArchivedAt). */
+        const APPOINTMENTS_ARCHIVE_RETENTION_DAYS = 30;
+        /** Highlight archived rows when this many days or fewer remain before deletion. */
+        const APPOINTMENTS_ARCHIVE_WARN_YELLOW_DAYS = 10;
+        const APPOINTMENTS_ARCHIVE_WARN_RED_DAYS = 5;
         const APPOINTMENTS_COLUMNS = [
           {
             key: "AppointmentDateTime",
@@ -3177,7 +3190,7 @@
         async function resolveAppointmentsArchivePersonPostKey(archSeg, pw) {
           if (hubSession.appointmentsArchivePersonPostKey) return hubSession.appointmentsArchivePersonPostKey;
           const sampleRow = hubSession.appointmentsArchiveSampleRow;
-          const tryKeys = appointmentsPersonFilterFieldCandidates();
+          const tryKeys = appointmentsArchivePersonFieldCandidates();
           if (sampleRow) {
             const hit = tryKeys.find(function (k) {
               return Object.prototype.hasOwnProperty.call(sampleRow, k);
@@ -3187,15 +3200,13 @@
               return hit;
             }
           }
-          hubSession.appointmentsArchivePersonPostKey = await resolveAppointmentsPersonPostKey(
-            appointmentsListApiPath(),
-            pw,
-          );
+          hubSession.appointmentsArchivePersonPostKey = String(
+            APPOINTMENTS_ARCHIVE_PERSON_FIELD || "PersonnelId",
+          ).trim();
           return hubSession.appointmentsArchivePersonPostKey;
         }
         async function appointmentArchivePayloadFromItem(item, archSeg, pw) {
-          const sampleRow =
-            hubSession.appointmentsArchiveSampleRow || hubSession.appointmentsSampleRow || item || null;
+          const sampleRow = hubSession.appointmentsArchiveSampleRow || item || null;
           const payload = {
             Title: appointmentArchiveTitleFromItem(item),
             ArchivedAt: spDateTimeNowIso(),
@@ -3439,6 +3450,20 @@
           const out = [];
           if (primary) out.push(primary);
           const alts = Array.isArray(APPOINTMENTS_PERSON_FIELD_ALT) ? APPOINTMENTS_PERSON_FIELD_ALT : [];
+          alts.forEach(function (name) {
+            const n = String(name || "").trim();
+            if (n && out.indexOf(n) === -1) out.push(n);
+          });
+          return out;
+        }
+
+        function appointmentsArchivePersonFieldCandidates() {
+          const primary = String(APPOINTMENTS_ARCHIVE_PERSON_FIELD || "PersonnelId").trim();
+          const out = [];
+          if (primary) out.push(primary);
+          const alts = Array.isArray(APPOINTMENTS_ARCHIVE_PERSON_FIELD_ALT)
+            ? APPOINTMENTS_ARCHIVE_PERSON_FIELD_ALT
+            : [];
           alts.forEach(function (name) {
             const n = String(name || "").trim();
             if (n && out.indexOf(n) === -1) out.push(n);
@@ -3709,10 +3734,44 @@
           });
         }
 
+        function archivedAtFromItem(item) {
+          return parseAppointmentDateTime(valueFromItemByKeys(item, ["ArchivedAt", "Archived_x0020_At"]));
+        }
+
+        function appointmentArchiveRetentionInfo(item) {
+          const retentionDays = Number(APPOINTMENTS_ARCHIVE_RETENTION_DAYS) || 30;
+          const warnYellow = Number(APPOINTMENTS_ARCHIVE_WARN_YELLOW_DAYS) || 10;
+          const warnRed = Number(APPOINTMENTS_ARCHIVE_WARN_RED_DAYS) || 5;
+          const archivedAt = archivedAtFromItem(item);
+          if (!archivedAt) return { daysUntilDelete: null, tier: null, expired: false };
+          const msPerDay = 86400000;
+          const deleteAt = archivedAt.getTime() + retentionDays * msPerDay;
+          const daysUntilDelete = Math.ceil((deleteAt - Date.now()) / msPerDay);
+          let tier = null;
+          if (daysUntilDelete <= warnRed) tier = "red";
+          else if (daysUntilDelete <= warnYellow) tier = "yellow";
+          return {
+            daysUntilDelete: daysUntilDelete,
+            tier: tier,
+            expired: daysUntilDelete <= 0,
+          };
+        }
+
+        function appointmentArchiveStatusLabel(item, pendingArchive) {
+          if (pendingArchive) return "Pending archive";
+          const when = formatArchivedAtDisplay(item);
+          const info = appointmentArchiveRetentionInfo(item);
+          if (info.daysUntilDelete == null) return when;
+          if (info.expired) return when + " (expired)";
+          if (info.tier) return when + " (deletes in " + info.daysUntilDelete + "d)";
+          return when;
+        }
+
         function formatArchivedAtDisplay(item) {
-          const raw = valueFromItemByKeys(item, ["ArchivedAt", "Archived_x0020_At"]);
-          const d = parseAppointmentDateTime(raw);
-          if (!d) return formatCellValue(raw);
+          const d = archivedAtFromItem(item);
+          if (!d) {
+            return formatCellValue(valueFromItemByKeys(item, ["ArchivedAt", "Archived_x0020_At"]));
+          }
           return d.toLocaleString("en-US", {
             month: "short",
             day: "2-digit",
@@ -3720,6 +3779,36 @@
             hour: "numeric",
             minute: "2-digit",
           });
+        }
+
+        async function purgeExpiredArchivedAppointments(archSeg, pw, rows) {
+          const list = Array.isArray(rows) ? rows.slice() : [];
+          if (!list.length) return { remaining: list, purged: 0 };
+          const remaining = [];
+          let purged = 0;
+          for (let i = 0; i < list.length; i++) {
+            const item = list[i];
+            if (!item || item.Id == null) {
+              if (item) remaining.push(item);
+              continue;
+            }
+            const info = appointmentArchiveRetentionInfo(item);
+            if (!info.expired) {
+              remaining.push(item);
+              continue;
+            }
+            try {
+              await spFetch(`/_api/web/${archSeg}/items(${item.Id})`, { method: "DELETE" }, pw);
+              purged++;
+            } catch (e) {
+              log(
+                "Expired archive delete failed (Id " + item.Id + "):\n" + (e.message || String(e)),
+                "err",
+              );
+              remaining.push(item);
+            }
+          }
+          return { remaining: remaining, purged: purged };
         }
 
         function isoDateTimeLocalFromValue(val) {
@@ -3788,6 +3877,7 @@
             missedFlag: appointmentIsMissed(item),
             missed: appointmentIsMissed(item) ? "Yes" : "No",
             archivedAt: formatArchivedAtDisplay(item),
+            archiveRetentionTier: appointmentArchiveRetentionInfo(item).tier,
           };
         }
 
@@ -4593,6 +4683,8 @@
           views.forEach(function (view) {
             const tr = document.createElement("tr");
             if (view.pendingArchive) tr.className = "scheduling-row--pending-archive";
+            else if (view.archiveRetentionTier === "red") tr.className = "scheduling-row--archive-delete-red";
+            else if (view.archiveRetentionTier === "yellow") tr.className = "scheduling-row--archive-delete-yellow";
             else if (view.missedFlag) tr.className = "scheduling-row--missed";
             const cells = [
               view.office,
@@ -4603,7 +4695,9 @@
               view.instructor,
               view.missed,
             ];
-            if (isArchive) cells.push(view.pendingArchive ? "Pending archive" : view.archivedAt);
+            if (isArchive) {
+              cells.push(appointmentArchiveStatusLabel(view.item, view.pendingArchive));
+            }
             cells.forEach(function (text) {
               const td = document.createElement("td");
               td.textContent = displayCellText(text);
@@ -4638,12 +4732,19 @@
             rows = archiveResult.remaining;
             schedulingSession.rows = rows.slice();
             if (appointmentsArchiveListTitle() || appointmentsArchiveListUsesGuid()) {
-              schedulingSession.archiveRows = await fetchAllArchivedAppointmentsRows(
-                appointmentsArchiveListApiPath(),
-                pw,
-              );
+              const archSeg = appointmentsArchiveListApiPath();
+              let archiveRows = await fetchAllArchivedAppointmentsRows(archSeg, pw);
+              const purgeResult = await purgeExpiredArchivedAppointments(archSeg, pw, archiveRows);
+              archiveRows = purgeResult.remaining;
+              schedulingSession.archiveRows = archiveRows;
+              if (purgeResult.purged > 0) {
+                schedulingSession.lastArchivePurged = purgeResult.purged;
+              } else {
+                schedulingSession.lastArchivePurged = 0;
+              }
             } else {
               schedulingSession.archiveRows = [];
+              schedulingSession.lastArchivePurged = 0;
             }
             refreshSchedulingListDisplay();
             const upcomingCount = rows.filter(appointmentIsUpcoming).length;
@@ -4659,6 +4760,10 @@
             }
             if (schedulingSession.archiveRows.length) {
               msg += " " + schedulingSession.archiveRows.length + " archived.";
+            }
+            if (schedulingSession.lastArchivePurged > 0) {
+              msg +=
+                " Removed " + schedulingSession.lastArchivePurged + " expired archived appointment(s) (30+ days).";
             }
             if (archiveResult.archived > 0) {
               msg += " Moved " + archiveResult.archived + " past appointment(s) to archive.";

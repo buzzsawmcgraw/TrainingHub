@@ -400,8 +400,9 @@
             <h2 class="hub-subtitle person-detail-title">Scheduling</h2>
             <p class="scheduling-hint">
               Schedule upcoming appointments for Personnel. Past appointments are archived automatically and are not
-              included on the unit report. Use the Archive tab to view past appointments and create memorandums. Mark
-              missed appointments on the Missed tab (save as PDF from the print dialog).
+              included on the unit report. Use the Archive tab to view past appointments and create memorandums (archived
+              rows are removed after 30 days; yellow/red highlights mean deletion is approaching). Mark missed
+              appointments on the Missed tab (save as PDF from the print dialog).
             </p>
             <div id="schedulingReadState" class="read-state" hidden></div>
             <div id="schedulingAddPanel" class="weapons-add-panel" hidden>
@@ -539,7 +540,7 @@
               </div>
               <div class="add-field add-field--notes">
                 <label for="schedulingMemoBody">Body</label>
-                <textarea id="schedulingMemoBody" rows="8"></textarea>
+                <textarea id="schedulingMemoBody" rows="12"></textarea>
               </div>
             </div>
             <p class="scheduling-hint" style="margin: 12px 0 6px">
