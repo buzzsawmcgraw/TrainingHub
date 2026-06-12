@@ -385,7 +385,8 @@
       }
       #sp-pip-ui .instructors-hint,
       #sp-pip-ui .reports-hint,
-      #sp-pip-ui .scheduling-hint {
+      #sp-pip-ui .scheduling-hint,
+      #sp-pip-ui .phase1-hint {
         margin: 0 0 14px;
         font-size: 12px;
         line-height: 1.5;
@@ -514,6 +515,23 @@
         flex-wrap: wrap;
         gap: 6px;
         white-space: nowrap;
+      }
+      #sp-pip-ui .phase1-house-hunting-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 12px;
+        margin: 14px 0 4px;
+      }
+      #sp-pip-ui .phase1-house-hunting-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .phase1-house-hunting-actions button {
+        margin: 0;
       }
       #sp-pip-ui .scheduling-appt-actions button {
         margin: 0;
@@ -2245,6 +2263,73 @@
             </div>
           </div>
         </section>
+        <section id="phase1Section" class="hub-section hub-section--phase1" hidden aria-label="Phase-1 Tracker">
+          <div class="person-detail-panel scheduling-panel">
+            <div class="person-detail-toolbar">
+              <a id="phase1BackLink" class="person-detail-back" href="#">Back to roster</a>
+              <div class="person-detail-toolbar-actions">
+                <button type="button" id="phase1AddBtn" class="btn-secondary">Enter Phase 1</button>
+                <button type="button" id="phase1RefreshBtn" class="btn-secondary">Refresh</button>
+              </div>
+            </div>
+            <h2 class="hub-subtitle person-detail-title">Phase-1 Tracker</h2>
+            <p class="phase1-hint">
+              Track inbound members in Phase 1. Date arrived comes from the Personnel roster Record Date. Choose house
+              hunting when entering Phase 1 to delay the Phase 1 start date. Released members are archived to PhaseOneArchive.
+            </p>
+            <div id="phase1ReadState" class="read-state" hidden></div>
+            <div id="phase1AddPanel" class="weapons-add-panel" hidden>
+              <h4 class="weapons-add-title">Enter Phase 1</h4>
+              <p class="phase1-hint" style="margin-top: 0">
+                Select personnel, then indicate whether they were on house-hunting leave. Arrival date is pulled from their
+                Record Date on the roster.
+              </p>
+              <div class="add-form-grid">
+                <div class="add-field">
+                  <label for="phase1PersonSelect">Personnel</label>
+                  <select id="phase1PersonSelect" class="add-field-select--autosize" required>
+                    <option value="">Select Personnel...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="phase1-house-hunting-actions">
+                <span class="phase1-house-hunting-label">House hunting?</span>
+                <button type="button" id="phase1HouseHuntingYes" class="btn-secondary">Yes</button>
+                <button type="button" id="phase1HouseHuntingNo" class="btn-secondary">No</button>
+              </div>
+              <div class="add-form-actions">
+                <button type="button" id="phase1AddCancelBtn" class="btn-secondary">Cancel</button>
+              </div>
+            </div>
+            <div id="phase1EditPanel" class="weapons-add-panel" hidden>
+              <h4 id="phase1EditTitle" class="weapons-add-title">Edit Phase 1 record</h4>
+              <form id="phase1EditForm" class="weapons-add-form add-form-stack" aria-label="Edit Phase 1 record">
+                <div id="phase1EditFields" class="add-form-grid"></div>
+                <div class="add-form-actions">
+                  <button type="submit" id="phase1EditSaveBtn">Save changes</button>
+                  <button type="button" id="phase1EditCancelBtn" class="btn-secondary">Cancel</button>
+                  <button type="button" id="phase1ArchiveBtn" class="btn-danger">Archive record</button>
+                </div>
+              </form>
+            </div>
+            <div class="scheduling-upcoming-wrap">
+              <div class="scheduling-list-toolbar scheduling-no-print">
+                <button type="button" id="phase1TabActive" class="btn-secondary scheduling-tab scheduling-tab--active">
+                  Active Phase 1
+                </button>
+                <button type="button" id="phase1TabArchive" class="btn-secondary scheduling-tab">Archive</button>
+              </div>
+              <h3 id="phase1ListTitle" class="scheduling-upcoming-title">Active Phase 1</h3>
+              <div class="roster-wrap scheduling-roster-wrap">
+                <table class="roster scheduling-table" aria-label="Phase 1 tracking">
+                  <thead id="phase1Thead"></thead>
+                  <tbody id="phase1TableBody"></tbody>
+                </table>
+              </div>
+              <p id="phase1Empty" class="weapons-empty" hidden>No Phase 1 records on file.</p>
+            </div>
+          </div>
+        </section>
         <section class="hub-section hub-section--diag">
           <details>
             <summary>Diagnostics (REST details &amp; raw JSON)</summary>
@@ -2534,6 +2619,47 @@
             altKeys: ["Created", "Created_x0020_At"],
           },
         ];
+        const LIST_PHASE_ONE_TRACKING = "PhaseOneTracking";
+        const LIST_PHASE_ONE_TRACKING_GUID = "";
+        const LIST_PHASE_ONE_ARCHIVE = "PhaseOneArchive";
+        const LIST_PHASE_ONE_ARCHIVE_GUID = "";
+        const PHASE_ONE_TRACKING_PERSON_FIELD = "PersonnelId";
+        const PHASE_ONE_TRACKING_ITEMS_ORDERBY = "PhaseOneStartDate desc";
+        const PHASE_ONE_ARCHIVE_ITEMS_ORDERBY = "ArchivedAt desc";
+        /** Days after DateArrived before Phase 1 starts when the member was on house-hunting leave. */
+        const PHASE_ONE_HOUSE_HUNTING_DAYS = 10;
+        const PHASE_ONE_DUTY_STATUS_HOUSE_HUNTING = "House Hunting";
+        const PHASE_ONE_DUTY_STATUS_ACTIVE = "Phase 1";
+        const PHASE_ONE_TRACKING_COLUMNS = [
+          { key: "PersonnelName", label: "Personnel" },
+          { key: "DutyStatus", label: "Duty status" },
+          { key: "DutySection", label: "Duty section" },
+          { key: "DateArrived", label: "Date arrived" },
+          { key: "PhaseOneStartDate", label: "Phase 1 start" },
+          { key: "ProjectedOfficeFlight", label: "Projected office flight" },
+          { key: "DateReleased", label: "Date released" },
+          { key: "Notes", label: "Notes" },
+        ];
+        const PHASE_ONE_ARCHIVE_COLUMNS = [
+          { key: "PersonnelName", label: "Personnel" },
+          { key: "DutyStatus", label: "Duty status" },
+          { key: "DutySection", label: "Duty section" },
+          { key: "DateArrived", label: "Date arrived" },
+          { key: "PhaseOneStartDate", label: "Phase 1 start" },
+          { key: "ProjectedOfficeFlight", label: "Projected office flight" },
+          { key: "DateReleased", label: "Date released" },
+          { key: "ArchivedAt", label: "Archived" },
+          { key: "Notes", label: "Notes" },
+        ];
+        const PHASE_ONE_EDIT_FIELDS = [
+          { key: "DutyStatus", label: "Duty status", inputType: "text" },
+          { key: "DutySection", label: "Duty section", inputType: "text" },
+          { key: "PhaseOneStartDate", label: "Phase 1 start date", inputType: "date" },
+          { key: "ProjectedOfficeFlight", label: "Projected office flight", inputType: "date" },
+          { key: "DateReleased", label: "Date released", inputType: "date" },
+          { key: "Notes", label: "Notes", inputType: "textarea" },
+        ];
+
         const APPOINTMENTS_SQUADRON_LABEL = "88 SFS";
         const APPOINTMENTS_MEMO_DEFAULT_FROM = "88 SFS/S3T";
         const MEMO_SIGNATURE_TITLE_PRESETS = [
@@ -2921,6 +3047,7 @@
         const personAppointmentsEmpty = document.getElementById("personAppointmentsEmpty");
         const personAppointmentsState = document.getElementById("personAppointmentsState");
         const hubNavInstructors = document.getElementById("hubNavInstructors");
+        const hubNavPhase1Tracker = document.getElementById("hubNavPhase1Tracker");
         const instructorsSection = document.getElementById("instructorsSection");
         const instructorsThead = document.getElementById("instructorsThead");
         const instructorsTableBody = document.getElementById("instructorsTableBody");
@@ -3027,6 +3154,29 @@
         const schedulingNewMemoBtn = document.getElementById("schedulingNewMemoBtn");
         const schedulingTabAll = document.getElementById("schedulingTabAll");
         const schedulingTabMissed = document.getElementById("schedulingTabMissed");
+        const phase1Section = document.getElementById("phase1Section");
+        const phase1ReadState = document.getElementById("phase1ReadState");
+        const phase1BackLink = document.getElementById("phase1BackLink");
+        const phase1AddBtn = document.getElementById("phase1AddBtn");
+        const phase1RefreshBtn = document.getElementById("phase1RefreshBtn");
+        const phase1AddPanel = document.getElementById("phase1AddPanel");
+        const phase1PersonSelect = document.getElementById("phase1PersonSelect");
+        const phase1HouseHuntingYes = document.getElementById("phase1HouseHuntingYes");
+        const phase1HouseHuntingNo = document.getElementById("phase1HouseHuntingNo");
+        const phase1AddCancelBtn = document.getElementById("phase1AddCancelBtn");
+        const phase1EditPanel = document.getElementById("phase1EditPanel");
+        const phase1EditTitle = document.getElementById("phase1EditTitle");
+        const phase1EditForm = document.getElementById("phase1EditForm");
+        const phase1EditFields = document.getElementById("phase1EditFields");
+        const phase1EditSaveBtn = document.getElementById("phase1EditSaveBtn");
+        const phase1EditCancelBtn = document.getElementById("phase1EditCancelBtn");
+        const phase1ArchiveBtn = document.getElementById("phase1ArchiveBtn");
+        const phase1TabActive = document.getElementById("phase1TabActive");
+        const phase1TabArchive = document.getElementById("phase1TabArchive");
+        const phase1ListTitle = document.getElementById("phase1ListTitle");
+        const phase1Thead = document.getElementById("phase1Thead");
+        const phase1TableBody = document.getElementById("phase1TableBody");
+        const phase1Empty = document.getElementById("phase1Empty");
         const schedulingListTitle = document.getElementById("schedulingListTitle");
         const schedulingMemoOverlay = document.getElementById("schedulingMemoOverlay");
         const schedulingMemoForm = document.getElementById("schedulingMemoForm");
@@ -3084,6 +3234,14 @@
           appointmentsPersonFilterFields: null,
           appointmentsPersonPostKey: null,
           appointmentsSampleRow: null,
+        };
+
+        let phase1Session = {
+          listView: "active",
+          trackingRows: null,
+          archiveRows: null,
+          editItem: null,
+          personPostKey: null,
         };
 
         let schedulingSession = {
@@ -3396,8 +3554,16 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          if (phase1Section) phase1Section.hidden = true;
           if (ethosSection) ethosSection.hidden = !visible;
           if (ethosMemberDetailSection) ethosMemberDetailSection.hidden = true;
+        }
+
+        function hidePhase1Section() {
+          if (phase1Section) phase1Section.hidden = true;
+          if (phase1AddPanel) phase1AddPanel.hidden = true;
+          if (phase1EditPanel) phase1EditPanel.hidden = true;
+          phase1Session.editItem = null;
         }
 
         async function navigateToRoster() {
@@ -3405,6 +3571,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          hidePhase1Section();
           hideEthosSections();
           clearEthosMemberDetailSection();
           setInstructorsAddPanelVisible(false);
@@ -3427,6 +3594,7 @@
             (ethosMemberDetailSection && !ethosMemberDetailSection.hidden) ||
             (reportsSection && !reportsSection.hidden) ||
             (schedulingSection && !schedulingSection.hidden) ||
+            (phase1Section && !phase1Section.hidden) ||
             (instructorsSection && !instructorsSection.hidden) ||
             (personDetailSection && !personDetailSection.hidden)
           );
@@ -3437,6 +3605,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          hidePhase1Section();
           if (ethosMemberDetailSection) ethosMemberDetailSection.hidden = true;
           if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = true;
           if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = true;
@@ -3511,6 +3680,35 @@
             return;
           }
           await loadInstructorsList();
+        }
+
+        function setPhase1ViewVisible(visible) {
+          document.querySelectorAll(".hub-section--form, .hub-section--status, .hub-section--roster").forEach(function (el) {
+            el.hidden = visible;
+          });
+          if (personDetailSection) personDetailSection.hidden = true;
+          if (instructorsSection) instructorsSection.hidden = true;
+          if (reportsSection) reportsSection.hidden = true;
+          if (schedulingSection) schedulingSection.hidden = true;
+          hideEthosSections();
+          if (phase1Section) phase1Section.hidden = !visible;
+          if (!visible) hidePhase1Section();
+        }
+
+        async function navigateToPhase1() {
+          setPhase1ViewVisible(true);
+          if (!hubSession.pw) {
+            setPhase1State(
+              "warn",
+              "Load the Personnel Roster first (wait for list to load or click Refresh list).",
+            );
+            return;
+          }
+          if (!phaseOneTrackingListTitle() && !phaseOneTrackingListUsesGuid()) {
+            setPhase1State("warn", "PhaseOneTracking list is not configured.");
+            return;
+          }
+          await loadPhase1TrackerData();
         }
 
         function normalizedWeaponsCertColumns() {
@@ -5916,6 +6114,508 @@
           }
         }
 
+        // ----- Phase-1 Tracker -----
+        function phaseOneTrackingListTitle() {
+          return String(LIST_PHASE_ONE_TRACKING || "").trim();
+        }
+        function phaseOneTrackingGuidRaw() {
+          return String(LIST_PHASE_ONE_TRACKING_GUID || "").trim();
+        }
+        function phaseOneTrackingListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(phaseOneTrackingGuidRaw());
+        }
+        function phaseOneTrackingListApiPath() {
+          if (phaseOneTrackingListUsesGuid()) return "lists(guid'" + phaseOneTrackingGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(phaseOneTrackingListTitle()) + "')";
+        }
+        function phaseOneArchiveListTitle() {
+          return String(LIST_PHASE_ONE_ARCHIVE || "").trim();
+        }
+        function phaseOneArchiveGuidRaw() {
+          return String(LIST_PHASE_ONE_ARCHIVE_GUID || "").trim();
+        }
+        function phaseOneArchiveListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(phaseOneArchiveGuidRaw());
+        }
+        function phaseOneArchiveListApiPath() {
+          if (phaseOneArchiveListUsesGuid()) return "lists(guid'" + phaseOneArchiveGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(phaseOneArchiveListTitle()) + "')";
+        }
+        function normalizedPhaseOneColumns(view) {
+          const arr =
+            view === "archive"
+              ? Array.isArray(PHASE_ONE_ARCHIVE_COLUMNS)
+                ? PHASE_ONE_ARCHIVE_COLUMNS
+                : []
+              : Array.isArray(PHASE_ONE_TRACKING_COLUMNS)
+                ? PHASE_ONE_TRACKING_COLUMNS
+                : [];
+          return arr
+            .map(function (entry) {
+              if (!entry || !entry.key) return null;
+              const key = String(entry.key).trim();
+              const label = String(entry.label || key).trim() || key;
+              const alt = Array.isArray(entry.altKeys) ? entry.altKeys.map(function (x) { return String(x).trim(); }).filter(Boolean) : [];
+              const tryKeys = [key];
+              alt.forEach(function (a) {
+                if (tryKeys.indexOf(a) === -1) tryKeys.push(a);
+              });
+              return { key: key, label: label, tryKeys: tryKeys };
+            })
+            .filter(Boolean);
+        }
+        function setPhase1State(kind, message) {
+          if (!phase1ReadState) return;
+          if (!message) {
+            phase1ReadState.hidden = true;
+            phase1ReadState.textContent = "";
+            return;
+          }
+          phase1ReadState.hidden = false;
+          phase1ReadState.className = "read-state " + kind;
+          phase1ReadState.textContent = message;
+        }
+        function setPhase1AddPanelVisible(visible) {
+          if (phase1AddPanel) phase1AddPanel.hidden = !visible;
+          if (visible && phase1EditPanel) phase1EditPanel.hidden = true;
+        }
+        function setPhase1EditPanelVisible(visible) {
+          if (phase1EditPanel) phase1EditPanel.hidden = !visible;
+          if (visible && phase1AddPanel) phase1AddPanel.hidden = true;
+        }
+        function addCalendarDays(date, days) {
+          const out = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          out.setDate(out.getDate() + days);
+          return out;
+        }
+        function spDateTimeFromCalendarDate(d) {
+          return isoDateFromCalendarDate(d) + "T00:00:00Z";
+        }
+        function spDateTimeNowIso() {
+          return new Date().toISOString();
+        }
+        function personnelRecordDate(person) {
+          const raw = valueFromItemByKeys(person, [
+            "RecordDate",
+            "Record_x0020_Date",
+            "Record0",
+            "DateArrived",
+            "Date_x0020_Arrived",
+          ]);
+          const d = parseWeaponsCertCalendarDate(raw);
+          return d || new Date();
+        }
+        function phaseOnePersonnelIdFromItem(item) {
+          if (!item || typeof item !== "object") return null;
+          const keys = [
+            "PersonnelId",
+            "PersonnelID",
+            "PersonnelIdId",
+            "Personnel_x0020_Id",
+            "Personnel_x0020_ID",
+          ];
+          for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            if (Object.prototype.hasOwnProperty.call(item, k) && item[k] !== null && item[k] !== "") {
+              return String(item[k]);
+            }
+          }
+          if (item.Personnel && typeof item.Personnel === "object" && item.Personnel.Id != null) {
+            return String(item.Personnel.Id);
+          }
+          return null;
+        }
+        function phaseOneIsActive(item) {
+          const raw = valueFromItemByKeys(item, ["IsActive", "Active"]);
+          if (raw === true || raw === 1 || String(raw).toLowerCase() === "yes" || String(raw) === "1") return true;
+          if (raw === false || raw === 0 || String(raw).toLowerCase() === "no" || String(raw) === "0") return false;
+          return true;
+        }
+        function phaseOneDisplayDate(val) {
+          if (val === null || val === undefined || val === "") return "";
+          return formatWeaponsCertDisplayDate(val) || formatCellValue(val);
+        }
+        function phaseOneFieldText(item, col) {
+          const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+          if (col.key === "DateArrived" || col.key === "PhaseOneStartDate" || col.key === "ProjectedOfficeFlight" || col.key === "DateReleased" || col.key === "ArchivedAt") {
+            return phaseOneDisplayDate(raw);
+          }
+          return displayCellText(raw !== undefined && raw !== null ? formatCellValue(raw) : "");
+        }
+        async function resolvePhaseOnePersonPostKey(seg, pw) {
+          if (phase1Session.personPostKey) return phase1Session.personPostKey;
+          const filterField = String(PHASE_ONE_TRACKING_PERSON_FIELD || "PersonnelId").trim();
+          let postKey = filterField;
+          try {
+            const esc = filterField.replace(/'/g, "''");
+            const data = await spFetch(
+              `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=InternalName,TypeAsString`,
+              {},
+              pw,
+            );
+            const internal = String(data.InternalName || filterField).trim();
+            const type = String(data.TypeAsString || "");
+            if (/lookup/i.test(type)) {
+              postKey = internal.endsWith("Id") ? internal : internal + "Id";
+            } else {
+              postKey = internal;
+            }
+          } catch (_) {
+            if (filterField === "PersonnelId" || filterField === "PersonnelID") postKey = "PersonnelIdId";
+            else if (!/Id$/.test(filterField)) postKey = filterField + "Id";
+          }
+          phase1Session.personPostKey = postKey;
+          return postKey;
+        }
+        async function fetchPhaseOneListRows(seg, pw, orderByConst) {
+          const orderByClause = String(orderByConst || "").trim();
+          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
+          let data = null;
+          try {
+            data = await spFetch(`/_api/web/${seg}/items?$top=5000` + orderByQs, {}, pw);
+          } catch (e0) {
+            if (/\b400\b/.test(String(e0.message || "")) && orderByQs) {
+              data = await spFetch(`/_api/web/${seg}/items?$top=5000`, {}, pw);
+            } else {
+              throw e0;
+            }
+          }
+          return (data && data.value) || [];
+        }
+        function clearPhase1Table() {
+          if (phase1Thead) phase1Thead.innerHTML = "";
+          if (phase1TableBody) phase1TableBody.innerHTML = "";
+        }
+        function setPhase1ListView(view) {
+          phase1Session.listView = view === "archive" ? "archive" : "active";
+          if (phase1TabActive) phase1TabActive.classList.toggle("scheduling-tab--active", phase1Session.listView === "active");
+          if (phase1TabArchive) phase1TabArchive.classList.toggle("scheduling-tab--active", phase1Session.listView === "archive");
+          if (phase1ListTitle) {
+            phase1ListTitle.textContent = phase1Session.listView === "archive" ? "Phase 1 archive" : "Active Phase 1";
+          }
+          refreshPhase1ListDisplay();
+        }
+        function refreshPhase1ListDisplay() {
+          const isArchive = phase1Session.listView === "archive";
+          const rows = isArchive
+            ? phase1Session.archiveRows || []
+            : (phase1Session.trackingRows || []).filter(function (item) {
+                return phaseOneIsActive(item);
+              });
+          renderPhase1Table(rows, isArchive);
+        }
+        function renderPhase1Table(rows, isArchive) {
+          clearPhase1Table();
+          const columns = normalizedPhaseOneColumns(isArchive ? "archive" : "active");
+          if (!phase1Thead || !phase1TableBody || !columns.length) return;
+          const showActions = !isArchive && !!hubSession.pw;
+          const trHead = document.createElement("tr");
+          columns.forEach(function (col) {
+            const th = document.createElement("th");
+            th.textContent = col.label;
+            trHead.appendChild(th);
+          });
+          if (showActions) {
+            const thAct = document.createElement("th");
+            thAct.className = "roster-actions";
+            thAct.textContent = " ";
+            trHead.appendChild(thAct);
+          }
+          phase1Thead.appendChild(trHead);
+          const frag = document.createDocumentFragment();
+          rows.forEach(function (item) {
+            const tr = document.createElement("tr");
+            columns.forEach(function (col) {
+              const td = document.createElement("td");
+              td.textContent = phaseOneFieldText(item, col);
+              tr.appendChild(td);
+            });
+            if (showActions && item.Id != null) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              const editBtn = document.createElement("button");
+              editBtn.type = "button";
+              editBtn.className = "btn-record";
+              editBtn.textContent = "Edit";
+              editBtn.addEventListener("click", function () {
+                void openPhase1EditPanel(item);
+              });
+              tdAct.appendChild(editBtn);
+              tr.appendChild(tdAct);
+            }
+            frag.appendChild(tr);
+          });
+          phase1TableBody.appendChild(frag);
+          if (phase1Empty) {
+            phase1Empty.hidden = rows.length > 0;
+            phase1Empty.textContent = isArchive
+              ? "No archived Phase 1 records on file."
+              : "No active Phase 1 records on file.";
+          }
+        }
+        function personnelAlreadyInActivePhase1(personId) {
+          const rows = phase1Session.trackingRows || [];
+          const want = String(personId);
+          return rows.some(function (item) {
+            return phaseOneIsActive(item) && String(phaseOnePersonnelIdFromItem(item) || "") === want;
+          });
+        }
+        function populatePhase1PersonSelect() {
+          if (!phase1PersonSelect) return;
+          while (phase1PersonSelect.options.length > 1) phase1PersonSelect.remove(1);
+          const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
+          rows.sort(function (a, b) {
+            return formatPersonDisplayName(a).localeCompare(formatPersonDisplayName(b), undefined, { sensitivity: "base" });
+          });
+          rows.forEach(function (person) {
+            if (!person || person.Id == null) return;
+            if (personnelAlreadyInActivePhase1(person.Id)) return;
+            const o = document.createElement("option");
+            o.value = String(person.Id);
+            o.textContent = formatPersonDisplayName(person);
+            phase1PersonSelect.appendChild(o);
+          });
+          applySelectAutosize(phase1PersonSelect);
+        }
+        function openPhase1AddPanel() {
+          if (!Array.isArray(hubSession.rows) || !hubSession.rows.length) {
+            setPhase1State("warn", "Personnel roster is empty. Add personnel first.");
+            return;
+          }
+          populatePhase1PersonSelect();
+          setPhase1AddPanelVisible(true);
+          setPhase1State("", "");
+        }
+        async function enrollPersonInPhase1(houseHunting) {
+          const pw = hubSession.pw;
+          if (!pw || !phase1PersonSelect) return;
+          const personId = parseInt(String(phase1PersonSelect.value || ""), 10);
+          if (!personId || isNaN(personId)) {
+            setPhase1State("err", "Select personnel to enter Phase 1.");
+            return;
+          }
+          const person = (hubSession.rows || []).find(function (r) {
+            return r && String(r.Id) === String(personId);
+          });
+          if (!person) {
+            setPhase1State("err", "Selected personnel not found on roster.");
+            return;
+          }
+          if (personnelAlreadyInActivePhase1(personId)) {
+            setPhase1State("warn", formatPersonDisplayName(person) + " is already in active Phase 1.");
+            return;
+          }
+          const seg = phaseOneTrackingListApiPath();
+          const dateArrived = personnelRecordDate(person);
+          const houseDays = parseInt(String(PHASE_ONE_HOUSE_HUNTING_DAYS || "0"), 10) || 0;
+          const phaseOneStart = houseHunting ? addCalendarDays(dateArrived, houseDays) : dateArrived;
+          const dutyStatus = houseHunting ? PHASE_ONE_DUTY_STATUS_HOUSE_HUNTING : PHASE_ONE_DUTY_STATUS_ACTIVE;
+          const dutySection = itemFieldText(person, "OfficeSymbol") || itemFieldText(person, "Squadron") || "";
+          const personKey = await resolvePhaseOnePersonPostKey(seg, pw);
+          const payload = {
+            PersonnelName: formatPersonDisplayName(person),
+            DutyStatus: dutyStatus,
+            DutySection: dutySection,
+            DateArrived: spDateTimeFromCalendarDate(dateArrived),
+            PhaseOneStartDate: spDateTimeFromCalendarDate(phaseOneStart),
+            IsActive: true,
+            Notes: "",
+          };
+          payload[personKey] = personId;
+          payload.Title = formatPersonDisplayName(person);
+          try {
+            setPhase1State("loading", "Entering Phase 1...");
+            await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            setPhase1AddPanelVisible(false);
+            if (phase1PersonSelect) phase1PersonSelect.value = "";
+            await loadPhase1TrackerData();
+            setPhase1State(
+              "ok",
+              formatPersonDisplayName(person) +
+                " entered Phase 1" +
+                (houseHunting ? " (house hunting)." : "."),
+            );
+            window.setTimeout(function () {
+              setPhase1State("", "");
+            }, 2500);
+          } catch (e) {
+            setPhase1State("err", "Could not enter Phase 1: " + (e.message || String(e)).slice(0, 280));
+          }
+        }
+        function buildPhase1EditFormFields(item) {
+          if (!phase1EditFields) return;
+          phase1EditFields.innerHTML = "";
+          (Array.isArray(PHASE_ONE_EDIT_FIELDS) ? PHASE_ONE_EDIT_FIELDS : []).forEach(function (field) {
+            if (!field || !field.key) return;
+            const fwrap = document.createElement("div");
+            fwrap.className = "add-field";
+            if (field.inputType === "textarea") fwrap.classList.add("add-field--notes");
+            const lab = document.createElement("label");
+            lab.setAttribute("for", "p1e_" + field.key);
+            lab.textContent = field.label || field.key;
+            fwrap.appendChild(lab);
+            let input;
+            if (field.inputType === "textarea") {
+              input = document.createElement("textarea");
+            } else if (field.inputType === "date") {
+              input = document.createElement("input");
+              input.type = "date";
+            } else {
+              input = document.createElement("input");
+              input.type = "text";
+            }
+            input.id = "p1e_" + field.key;
+            input.dataset.writeKey = field.key;
+            const raw = item ? valueFromItemByKeys(item, [field.key]) : "";
+            if (field.inputType === "date") input.value = isoDateForDateInput(raw);
+            else input.value = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+            fwrap.appendChild(input);
+            phase1EditFields.appendChild(fwrap);
+          });
+        }
+        function openPhase1EditPanel(item) {
+          if (!item || item.Id == null) return;
+          phase1Session.editItem = item;
+          if (phase1EditTitle) {
+            phase1EditTitle.textContent =
+              "Edit Phase 1 — " + (phaseOneFieldText(item, { key: "PersonnelName", tryKeys: ["PersonnelName", "Title"] }) || "Personnel");
+          }
+          buildPhase1EditFormFields(item);
+          setPhase1EditPanelVisible(true);
+          setPhase1State("", "");
+        }
+        async function submitPhase1EditSave() {
+          const item = phase1Session.editItem;
+          const pw = hubSession.pw;
+          if (!item || item.Id == null || !pw) return;
+          const seg = phaseOneTrackingListApiPath();
+          const payload = {};
+          (Array.isArray(PHASE_ONE_EDIT_FIELDS) ? PHASE_ONE_EDIT_FIELDS : []).forEach(function (field) {
+            if (!field || !field.key) return;
+            const el = document.getElementById("p1e_" + field.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || field.key;
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
+            payload[writeKey] = v;
+          });
+          try {
+            setPhase1State("loading", "Saving...");
+            if (phase1EditSaveBtn) phase1EditSaveBtn.disabled = true;
+            await spFetch(`/_api/web/${seg}/items(${item.Id})`, { method: "MERGE", body: payload }, pw);
+            setPhase1EditPanelVisible(false);
+            phase1Session.editItem = null;
+            await loadPhase1TrackerData();
+            setPhase1State("ok", "Phase 1 record saved.");
+            window.setTimeout(function () {
+              setPhase1State("", "");
+            }, 2500);
+          } catch (e) {
+            setPhase1State("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+          } finally {
+            if (phase1EditSaveBtn) phase1EditSaveBtn.disabled = false;
+          }
+        }
+        function phaseOneDatePayloadValue(raw) {
+          if (raw === null || raw === undefined || raw === "") return null;
+          const d = parseWeaponsCertCalendarDate(raw);
+          if (d) return spDateTimeFromCalendarDate(d);
+          const text = String(formatCellValue(raw) || "").trim();
+          return text || null;
+        }
+        function phaseOneArchivePayloadFromItem(item) {
+          const payload = {
+            PersonnelName: formatCellValue(valueFromItemByKeys(item, ["PersonnelName", "Title"]) || ""),
+            DutyStatus: formatCellValue(valueFromItemByKeys(item, ["DutyStatus"]) || ""),
+            DutySection: formatCellValue(valueFromItemByKeys(item, ["DutySection"]) || ""),
+            DateArrived: phaseOneDatePayloadValue(valueFromItemByKeys(item, ["DateArrived"])),
+            PhaseOneStartDate: phaseOneDatePayloadValue(valueFromItemByKeys(item, ["PhaseOneStartDate"])),
+            ProjectedOfficeFlight: phaseOneDatePayloadValue(valueFromItemByKeys(item, ["ProjectedOfficeFlight"])),
+            DateReleased: phaseOneDatePayloadValue(valueFromItemByKeys(item, ["DateReleased"])),
+            Notes: formatCellValue(valueFromItemByKeys(item, ["Notes"]) || ""),
+            ArchivedAt: spDateTimeNowIso(),
+            Title: formatCellValue(valueFromItemByKeys(item, ["PersonnelName", "Title"]) || "Phase 1 archive"),
+          };
+          return payload;
+        }
+        async function archivePhase1Record() {
+          const item = phase1Session.editItem;
+          const pw = hubSession.pw;
+          if (!item || item.Id == null || !pw) return;
+          if (!phaseOneArchiveListTitle() && !phaseOneArchiveListUsesGuid()) {
+            setPhase1State("err", "PhaseOneArchive list is not configured.");
+            return;
+          }
+          const name = phaseOneFieldText(item, { key: "PersonnelName", tryKeys: ["PersonnelName", "Title"] }) || "this member";
+          if (!confirm("Archive Phase 1 record for " + name + "? This moves the record to PhaseOneArchive.")) return;
+          const trackSeg = phaseOneTrackingListApiPath();
+          const archSeg = phaseOneArchiveListApiPath();
+          const archivePayload = phaseOneArchivePayloadFromItem(item);
+          const personId = phaseOnePersonnelIdFromItem(item);
+          if (personId) {
+            phase1Session.personPostKey = null;
+            const archPersonKey = await resolvePhaseOnePersonPostKey(archSeg, pw);
+            archivePayload[archPersonKey] = parseInt(personId, 10);
+            phase1Session.personPostKey = null;
+          }
+          try {
+            setPhase1State("loading", "Archiving...");
+            if (phase1ArchiveBtn) phase1ArchiveBtn.disabled = true;
+            await spFetch(`/_api/web/${archSeg}/items`, { method: "POST", body: archivePayload }, pw);
+            await spFetch(
+              `/_api/web/${trackSeg}/items(${item.Id})`,
+              { method: "MERGE", body: { IsActive: false } },
+              pw,
+            );
+            setPhase1EditPanelVisible(false);
+            phase1Session.editItem = null;
+            await loadPhase1TrackerData();
+            setPhase1State("ok", "Record archived.");
+            window.setTimeout(function () {
+              setPhase1State("", "");
+            }, 2500);
+          } catch (e) {
+            setPhase1State("err", "Archive failed: " + (e.message || String(e)).slice(0, 280));
+          } finally {
+            if (phase1ArchiveBtn) phase1ArchiveBtn.disabled = false;
+          }
+        }
+        async function loadPhase1TrackerData() {
+          const pw = hubSession.pw;
+          if (!pw) return;
+          setPhase1State("loading", "Loading Phase 1 records...");
+          clearPhase1Table();
+          if (phase1Empty) phase1Empty.hidden = true;
+          try {
+            const trackSeg = phaseOneTrackingListApiPath();
+            const rows = await fetchPhaseOneListRows(trackSeg, pw, PHASE_ONE_TRACKING_ITEMS_ORDERBY);
+            phase1Session.trackingRows = rows.slice();
+            if (phaseOneArchiveListTitle() || phaseOneArchiveListUsesGuid()) {
+              const archSeg = phaseOneArchiveListApiPath();
+              phase1Session.archiveRows = await fetchPhaseOneListRows(archSeg, pw, PHASE_ONE_ARCHIVE_ITEMS_ORDERBY);
+            } else {
+              phase1Session.archiveRows = [];
+            }
+            refreshPhase1ListDisplay();
+            const activeCount = rows.filter(function (r) {
+              return phaseOneIsActive(r);
+            }).length;
+            setPhase1State(
+              "ok",
+              "Loaded " + activeCount + " active Phase 1 record(s)" +
+                (phase1Session.archiveRows.length ? ", " + phase1Session.archiveRows.length + " archived." : "."),
+            );
+            window.setTimeout(function () {
+              setPhase1State("", "");
+            }, 2200);
+          } catch (e) {
+            phase1Session.trackingRows = null;
+            phase1Session.archiveRows = null;
+            refreshPhase1ListDisplay();
+            setPhase1State("err", "Could not load Phase 1 data: " + (e.message || String(e)).slice(0, 280));
+          }
+        }
+
         async function fetchAllAppointmentsRows(seg, pw) {
           const orderByClause = String(APPOINTMENTS_ITEMS_ORDERBY || "").trim();
           const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
@@ -6616,6 +7316,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          if (phase1Section) phase1Section.hidden = true;
           hideEthosSections();
         }
 
@@ -6627,6 +7328,7 @@
           if (instructorsSection) instructorsSection.hidden = !visible;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
+          if (phase1Section) phase1Section.hidden = true;
           hideEthosSections();
         }
 
@@ -6638,6 +7340,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = !visible;
           if (schedulingSection) schedulingSection.hidden = true;
+          if (phase1Section) phase1Section.hidden = true;
           hideEthosSections();
         }
 
@@ -6649,6 +7352,7 @@
           if (instructorsSection) instructorsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = !visible;
+          if (phase1Section) phase1Section.hidden = true;
           hideEthosSections();
         }
 
@@ -8718,6 +9422,85 @@
         if (hubNavScheduling) {
           hubNavScheduling.addEventListener("click", function () {
             void navigateToScheduling();
+          });
+        }
+
+        if (hubNavPhase1Tracker) {
+          hubNavPhase1Tracker.addEventListener("click", function () {
+            void navigateToPhase1();
+          });
+        }
+
+        if (phase1BackLink) {
+          phase1BackLink.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            void navigateToRoster();
+          });
+        }
+
+        if (phase1AddBtn) {
+          phase1AddBtn.addEventListener("click", function () {
+            if (phase1AddPanel && !phase1AddPanel.hidden) {
+              setPhase1AddPanelVisible(false);
+              return;
+            }
+            openPhase1AddPanel();
+          });
+        }
+
+        if (phase1RefreshBtn) {
+          phase1RefreshBtn.addEventListener("click", function () {
+            void loadPhase1TrackerData();
+          });
+        }
+
+        if (phase1HouseHuntingYes) {
+          phase1HouseHuntingYes.addEventListener("click", function () {
+            void enrollPersonInPhase1(true);
+          });
+        }
+
+        if (phase1HouseHuntingNo) {
+          phase1HouseHuntingNo.addEventListener("click", function () {
+            void enrollPersonInPhase1(false);
+          });
+        }
+
+        if (phase1AddCancelBtn) {
+          phase1AddCancelBtn.addEventListener("click", function () {
+            setPhase1AddPanelVisible(false);
+          });
+        }
+
+        if (phase1EditForm) {
+          phase1EditForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void submitPhase1EditSave();
+          });
+        }
+
+        if (phase1EditCancelBtn) {
+          phase1EditCancelBtn.addEventListener("click", function () {
+            setPhase1EditPanelVisible(false);
+            phase1Session.editItem = null;
+          });
+        }
+
+        if (phase1ArchiveBtn) {
+          phase1ArchiveBtn.addEventListener("click", function () {
+            void archivePhase1Record();
+          });
+        }
+
+        if (phase1TabActive) {
+          phase1TabActive.addEventListener("click", function () {
+            setPhase1ListView("active");
+          });
+        }
+
+        if (phase1TabArchive) {
+          phase1TabArchive.addEventListener("click", function () {
+            setPhase1ListView("archive");
           });
         }
 

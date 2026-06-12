@@ -441,6 +441,73 @@
             </div>
           </div>
         </section>
+        <section id="phase1Section" class="hub-section hub-section--phase1" hidden aria-label="Phase-1 Tracker">
+          <div class="person-detail-panel scheduling-panel">
+            <div class="person-detail-toolbar">
+              <a id="phase1BackLink" class="person-detail-back" href="#">Back to roster</a>
+              <div class="person-detail-toolbar-actions">
+                <button type="button" id="phase1AddBtn" class="btn-secondary">Enter Phase 1</button>
+                <button type="button" id="phase1RefreshBtn" class="btn-secondary">Refresh</button>
+              </div>
+            </div>
+            <h2 class="hub-subtitle person-detail-title">Phase-1 Tracker</h2>
+            <p class="phase1-hint">
+              Track inbound members in Phase 1. Date arrived comes from the Personnel roster Record Date. Choose house
+              hunting when entering Phase 1 to delay the Phase 1 start date. Released members are archived to PhaseOneArchive.
+            </p>
+            <div id="phase1ReadState" class="read-state" hidden></div>
+            <div id="phase1AddPanel" class="weapons-add-panel" hidden>
+              <h4 class="weapons-add-title">Enter Phase 1</h4>
+              <p class="phase1-hint" style="margin-top: 0">
+                Select personnel, then indicate whether they were on house-hunting leave. Arrival date is pulled from their
+                Record Date on the roster.
+              </p>
+              <div class="add-form-grid">
+                <div class="add-field">
+                  <label for="phase1PersonSelect">Personnel</label>
+                  <select id="phase1PersonSelect" class="add-field-select--autosize" required>
+                    <option value="">Select Personnel...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="phase1-house-hunting-actions">
+                <span class="phase1-house-hunting-label">House hunting?</span>
+                <button type="button" id="phase1HouseHuntingYes" class="btn-secondary">Yes</button>
+                <button type="button" id="phase1HouseHuntingNo" class="btn-secondary">No</button>
+              </div>
+              <div class="add-form-actions">
+                <button type="button" id="phase1AddCancelBtn" class="btn-secondary">Cancel</button>
+              </div>
+            </div>
+            <div id="phase1EditPanel" class="weapons-add-panel" hidden>
+              <h4 id="phase1EditTitle" class="weapons-add-title">Edit Phase 1 record</h4>
+              <form id="phase1EditForm" class="weapons-add-form add-form-stack" aria-label="Edit Phase 1 record">
+                <div id="phase1EditFields" class="add-form-grid"></div>
+                <div class="add-form-actions">
+                  <button type="submit" id="phase1EditSaveBtn">Save changes</button>
+                  <button type="button" id="phase1EditCancelBtn" class="btn-secondary">Cancel</button>
+                  <button type="button" id="phase1ArchiveBtn" class="btn-danger">Archive record</button>
+                </div>
+              </form>
+            </div>
+            <div class="scheduling-upcoming-wrap">
+              <div class="scheduling-list-toolbar scheduling-no-print">
+                <button type="button" id="phase1TabActive" class="btn-secondary scheduling-tab scheduling-tab--active">
+                  Active Phase 1
+                </button>
+                <button type="button" id="phase1TabArchive" class="btn-secondary scheduling-tab">Archive</button>
+              </div>
+              <h3 id="phase1ListTitle" class="scheduling-upcoming-title">Active Phase 1</h3>
+              <div class="roster-wrap scheduling-roster-wrap">
+                <table class="roster scheduling-table" aria-label="Phase 1 tracking">
+                  <thead id="phase1Thead"></thead>
+                  <tbody id="phase1TableBody"></tbody>
+                </table>
+              </div>
+              <p id="phase1Empty" class="weapons-empty" hidden>No Phase 1 records on file.</p>
+            </div>
+          </div>
+        </section>
         <section class="hub-section hub-section--diag">
           <details>
             <summary>Diagnostics (REST details &amp; raw JSON)</summary>

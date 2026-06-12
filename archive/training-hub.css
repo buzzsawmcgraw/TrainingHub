@@ -372,7 +372,8 @@
       }
       #sp-pip-ui .instructors-hint,
       #sp-pip-ui .reports-hint,
-      #sp-pip-ui .scheduling-hint {
+      #sp-pip-ui .scheduling-hint,
+      #sp-pip-ui .phase1-hint {
         margin: 0 0 14px;
         font-size: 12px;
         line-height: 1.5;
@@ -501,6 +502,23 @@
         flex-wrap: wrap;
         gap: 6px;
         white-space: nowrap;
+      }
+      #sp-pip-ui .phase1-house-hunting-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 12px;
+        margin: 14px 0 4px;
+      }
+      #sp-pip-ui .phase1-house-hunting-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .phase1-house-hunting-actions button {
+        margin: 0;
       }
       #sp-pip-ui .scheduling-appt-actions button {
         margin: 0;
