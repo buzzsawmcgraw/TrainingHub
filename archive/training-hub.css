@@ -371,11 +371,145 @@
         margin: 0;
       }
       #sp-pip-ui .instructors-hint,
-      #sp-pip-ui .reports-hint {
+      #sp-pip-ui .reports-hint,
+      #sp-pip-ui .scheduling-hint {
         margin: 0 0 14px;
         font-size: 12px;
         line-height: 1.5;
         color: rgba(210, 255, 224, 0.72);
+      }
+      #sp-pip-ui .scheduling-upcoming-wrap {
+        margin-top: 18px;
+      }
+      #sp-pip-ui h3.scheduling-upcoming-title {
+        margin: 0 0 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .scheduling-add-fields-grid {
+        grid-column: 1 / -1;
+      }
+      #sp-pip-ui .scheduling-print-surface {
+        display: none;
+      }
+      #sp-pip-ui.scheduling-print-active .scheduling-print-surface {
+        display: block;
+      }
+      #sp-pip-ui .scheduling-unit-report {
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.45;
+        color: #1a1a1a;
+        background: #fff;
+        padding: 0.5in 0.6in;
+        max-width: 8.5in;
+        margin: 0 auto;
+      }
+      #sp-pip-ui .scheduling-unit-report-header {
+        border-bottom: 3px solid #1f3a5f;
+        padding-bottom: 14px;
+        margin-bottom: 22px;
+      }
+      #sp-pip-ui .scheduling-unit-report-header h1 {
+        margin: 0 0 6px;
+        font-size: 20pt;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: #1f3a5f;
+        text-transform: uppercase;
+      }
+      #sp-pip-ui .scheduling-unit-report-header p {
+        margin: 2px 0;
+        font-size: 10pt;
+        color: #444;
+      }
+      #sp-pip-ui .scheduling-unit-office-block {
+        margin-bottom: 22px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      #sp-pip-ui .scheduling-unit-office-block h2 {
+        margin: 0 0 8px;
+        padding: 6px 10px;
+        font-size: 12pt;
+        font-weight: 700;
+        color: #fff;
+        background: #1f3a5f;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      #sp-pip-ui table.scheduling-unit-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 4px;
+        font-size: 9.5pt;
+      }
+      #sp-pip-ui table.scheduling-unit-table th,
+      #sp-pip-ui table.scheduling-unit-table td {
+        border: 1px solid #bbb;
+        padding: 6px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      #sp-pip-ui table.scheduling-unit-table th {
+        background: #e8eef4;
+        color: #1f3a5f;
+        font-weight: 700;
+        font-size: 8.5pt;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      #sp-pip-ui table.scheduling-unit-table tr:nth-child(even) td {
+        background: #f7f9fb;
+      }
+      #sp-pip-ui .scheduling-unit-empty {
+        margin: 0;
+        font-style: italic;
+        color: #666;
+      }
+      #sp-pip-ui .scheduling-unit-footer {
+        margin-top: 28px;
+        padding-top: 12px;
+        border-top: 1px solid #ccc;
+        font-size: 9pt;
+        color: #555;
+      }
+      @media print {
+        body {
+          margin: 0;
+          padding: 0;
+          background: #fff !important;
+        }
+        #sp-pip-ui.scheduling-print-active .hub-access-gate,
+        #sp-pip-ui.scheduling-print-active .hub-top-banner-wrap,
+        #sp-pip-ui.scheduling-print-active .hub-header,
+        #sp-pip-ui.scheduling-print-active main,
+        #sp-pip-ui.scheduling-print-active .hub-section--diag {
+          display: none !important;
+        }
+        #sp-pip-ui.scheduling-print-active {
+          border: none !important;
+          background: #fff !important;
+          text-shadow: none !important;
+          color: #000 !important;
+          box-shadow: none !important;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface {
+          display: block !important;
+          position: static !important;
+          width: 100% !important;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-unit-report {
+          padding: 0;
+          max-width: none;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-unit-office-block {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
       }
       #sp-pip-ui .reports-hub-grid {
         display: grid;

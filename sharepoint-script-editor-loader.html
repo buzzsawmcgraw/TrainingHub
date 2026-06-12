@@ -218,6 +218,51 @@
             </div>
           </div>
         </section>
+        <section id="schedulingSection" class="hub-section hub-section--scheduling" hidden aria-label="Scheduling">
+          <div class="person-detail-panel scheduling-panel">
+            <div class="person-detail-toolbar">
+              <a id="schedulingBackLink" class="person-detail-back" href="#">Back to roster</a>
+              <div class="person-detail-toolbar-actions">
+                <button type="button" id="schedulingAddBtn" class="btn-secondary">Add appointment</button>
+                <button type="button" id="schedulingPrintReportBtn" class="btn-secondary">Print unit report</button>
+              </div>
+            </div>
+            <h2 class="hub-subtitle person-detail-title">Scheduling</h2>
+            <p class="scheduling-hint">
+              Schedule appointments for Personnel. New entries appear on each member's record. Print a unit-wide
+              appointments report grouped by office symbol (save as PDF from the print dialog).
+            </p>
+            <div id="schedulingReadState" class="read-state" hidden></div>
+            <div id="schedulingAddPanel" class="weapons-add-panel" hidden>
+              <h4 class="weapons-add-title">New appointment</h4>
+              <form id="schedulingAddForm" class="weapons-add-form add-form-stack" aria-label="Add appointment">
+                <div class="add-form-grid">
+                  <div class="add-field">
+                    <label for="schedulingPersonSelect">Personnel</label>
+                    <select id="schedulingPersonSelect" class="add-field-select--autosize" required>
+                      <option value="">Select Personnel...</option>
+                    </select>
+                  </div>
+                  <div id="schedulingAddFields" class="add-form-grid scheduling-add-fields-grid"></div>
+                </div>
+                <div class="add-form-actions">
+                  <button type="submit" id="schedulingSaveBtn">Save appointment</button>
+                  <button type="button" id="schedulingAddCancelBtn" class="btn-secondary">Cancel</button>
+                </div>
+              </form>
+            </div>
+            <div id="schedulingUpcomingWrap" class="scheduling-upcoming-wrap">
+              <h3 class="scheduling-upcoming-title">Unit appointments</h3>
+              <div class="roster-wrap scheduling-roster-wrap">
+                <table class="roster scheduling-table" aria-label="Unit appointments">
+                  <thead id="schedulingThead"></thead>
+                  <tbody id="schedulingTableBody"></tbody>
+                </table>
+              </div>
+              <p id="schedulingEmpty" class="weapons-empty" hidden>No appointments on file.</p>
+            </div>
+          </div>
+        </section>
         <section class="hub-section hub-section--diag">
           <details>
             <summary>Diagnostics (REST details &amp; raw JSON)</summary>
@@ -225,6 +270,7 @@
           </details>
         </section>
       </main>
+      <div id="schedulingPrintSurface" class="scheduling-print-surface" hidden aria-hidden="true"></div>
     </div>
 <script>
 (function () {
