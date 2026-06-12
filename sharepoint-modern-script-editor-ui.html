@@ -2274,8 +2274,9 @@
             </div>
             <h2 class="hub-subtitle person-detail-title">Phase-1 Tracker</h2>
             <p class="phase1-hint">
-              Track inbound members in Phase 1. Date arrived comes from the Personnel roster Record Date. Choose house
-              hunting when entering Phase 1 to delay the Phase 1 start date. Released members are archived to PhaseOneArchive.
+              Track inbound members in Phase 1. Date arrived comes from the Personnel roster Record Date. House hunting adds
+              10 days before Phase 1 starts (weekends and federal holidays roll to the following Monday when needed).
+              Released members are archived to PhaseOneArchive.
             </p>
             <div id="phase1ReadState" class="read-state" hidden></div>
             <div id="phase1AddPanel" class="weapons-add-panel" hidden>
@@ -2626,7 +2627,7 @@
         const PHASE_ONE_TRACKING_PERSON_FIELD = "PersonnelId";
         const PHASE_ONE_TRACKING_ITEMS_ORDERBY = "PhaseOneStartDate desc";
         const PHASE_ONE_ARCHIVE_ITEMS_ORDERBY = "ArchivedAt desc";
-        /** Days after DateArrived before Phase 1 starts when the member was on house-hunting leave. */
+        /** Calendar days of house-hunting leave before Phase 1 starts (weekends/federal holidays adjusted — see phaseOneStartDateAfterHouseHunting). */
         const PHASE_ONE_HOUSE_HUNTING_DAYS = 10;
         const PHASE_ONE_DUTY_STATUS_HOUSE_HUNTING = "House Hunting";
         const PHASE_ONE_DUTY_STATUS_ACTIVE = "Phase 1";
@@ -2636,7 +2637,7 @@
           { key: "DutySection", label: "Duty section" },
           { key: "DateArrived", label: "Date arrived" },
           { key: "PhaseOneStartDate", label: "Phase 1 start" },
-          { key: "ProjectedOfficeFlight", label: "Projected office flight" },
+          { key: "ProjectedOfficeFlight", label: "Projected Office/Flight" },
           { key: "DateReleased", label: "Date released" },
           { key: "Notes", label: "Notes" },
         ];
@@ -2646,7 +2647,7 @@
           { key: "DutySection", label: "Duty section" },
           { key: "DateArrived", label: "Date arrived" },
           { key: "PhaseOneStartDate", label: "Phase 1 start" },
-          { key: "ProjectedOfficeFlight", label: "Projected office flight" },
+          { key: "ProjectedOfficeFlight", label: "Projected Office/Flight" },
           { key: "DateReleased", label: "Date released" },
           { key: "ArchivedAt", label: "Archived" },
           { key: "Notes", label: "Notes" },
@@ -2655,7 +2656,7 @@
           { key: "DutyStatus", label: "Duty status", inputType: "text" },
           { key: "DutySection", label: "Duty section", inputType: "text" },
           { key: "PhaseOneStartDate", label: "Phase 1 start date", inputType: "date" },
-          { key: "ProjectedOfficeFlight", label: "Projected office flight", inputType: "date" },
+          { key: "ProjectedOfficeFlight", label: "Projected Office/Flight", inputType: "select" },
           { key: "DateReleased", label: "Date released", inputType: "date" },
           { key: "Notes", label: "Notes", inputType: "textarea" },
         ];
@@ -6188,6 +6189,99 @@
           out.setDate(out.getDate() + days);
           return out;
         }
+        function calendarDateKey(d) {
+          return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+        }
+        function nthWeekdayOfMonth(year, monthIndex, weekday, n) {
+          let count = 0;
+          for (let day = 1; day <= 31; day++) {
+            const cur = new Date(year, monthIndex, day);
+            if (cur.getMonth() !== monthIndex) break;
+            if (cur.getDay() === weekday) {
+              count++;
+              if (count === n) return cur;
+            }
+          }
+          return null;
+        }
+        function lastWeekdayOfMonth(year, monthIndex, weekday) {
+          let last = null;
+          for (let day = 1; day <= 31; day++) {
+            const cur = new Date(year, monthIndex, day);
+            if (cur.getMonth() !== monthIndex) break;
+            if (cur.getDay() === weekday) last = cur;
+          }
+          return last;
+        }
+        function observedFederalHoliday(year, month, day) {
+          const actual = new Date(year, month - 1, day);
+          const dow = actual.getDay();
+          if (dow === 6) return addCalendarDays(actual, -1);
+          if (dow === 0) return addCalendarDays(actual, 1);
+          return actual;
+        }
+        const phaseOneFederalHolidayCache = {};
+        function federalHolidayKeysForYear(year) {
+          if (phaseOneFederalHolidayCache[year]) return phaseOneFederalHolidayCache[year];
+          const keys = new Set();
+          function addKey(d) {
+            if (d) keys.add(calendarDateKey(d));
+          }
+          addKey(observedFederalHoliday(year, 1, 1));
+          addKey(nthWeekdayOfMonth(year, 0, 1, 3));
+          addKey(nthWeekdayOfMonth(year, 1, 1, 3));
+          addKey(lastWeekdayOfMonth(year, 4, 1));
+          addKey(observedFederalHoliday(year, 6, 19));
+          addKey(observedFederalHoliday(year, 7, 4));
+          addKey(nthWeekdayOfMonth(year, 8, 1, 1));
+          addKey(nthWeekdayOfMonth(year, 9, 1, 2));
+          addKey(observedFederalHoliday(year, 11, 11));
+          addKey(nthWeekdayOfMonth(year, 10, 4, 4));
+          addKey(observedFederalHoliday(year, 12, 25));
+          phaseOneFederalHolidayCache[year] = keys;
+          return keys;
+        }
+        function isUSFederalHoliday(d) {
+          const keys = federalHolidayKeysForYear(d.getFullYear());
+          if (keys.has(calendarDateKey(d))) return true;
+          const prev = federalHolidayKeysForYear(d.getFullYear() - 1);
+          const next = federalHolidayKeysForYear(d.getFullYear() + 1);
+          const key = calendarDateKey(d);
+          return prev.has(key) || next.has(key);
+        }
+        function isWeekendDate(d) {
+          const day = d.getDay();
+          return day === 0 || day === 6;
+        }
+        function hasWeekdayImmediatelyAfter(d) {
+          const next = addCalendarDays(d, 1);
+          if (isWeekendDate(next)) return false;
+          if (isUSFederalHoliday(next)) return false;
+          return true;
+        }
+        function mondayAfterDate(d) {
+          let cur = addCalendarDays(d, 1);
+          while (cur.getDay() !== 1) {
+            cur = addCalendarDays(cur, 1);
+          }
+          return cur;
+        }
+        function phaseOneStartDateAfterHouseHunting(dateArrived) {
+          const days = parseInt(String(PHASE_ONE_HOUSE_HUNTING_DAYS || "10"), 10) || 10;
+          let candidate = addCalendarDays(dateArrived, days);
+          for (let guard = 0; guard < 21; guard++) {
+            if (isWeekendDate(candidate)) {
+              candidate = candidate.getDay() === 6 ? addCalendarDays(candidate, 2) : addCalendarDays(candidate, 1);
+              continue;
+            }
+            if (isUSFederalHoliday(candidate) && !hasWeekdayImmediatelyAfter(candidate)) {
+              candidate = mondayAfterDate(candidate);
+              continue;
+            }
+            break;
+          }
+          return candidate;
+        }
         function spDateTimeFromCalendarDate(d) {
           return isoDateFromCalendarDate(d) + "T00:00:00Z";
         }
@@ -6237,7 +6331,7 @@
         }
         function phaseOneFieldText(item, col) {
           const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
-          if (col.key === "DateArrived" || col.key === "PhaseOneStartDate" || col.key === "ProjectedOfficeFlight" || col.key === "DateReleased" || col.key === "ArchivedAt") {
+          if (col.key === "DateArrived" || col.key === "PhaseOneStartDate" || col.key === "DateReleased" || col.key === "ArchivedAt") {
             return phaseOneDisplayDate(raw);
           }
           return displayCellText(raw !== undefined && raw !== null ? formatCellValue(raw) : "");
@@ -6407,8 +6501,7 @@
           }
           const seg = phaseOneTrackingListApiPath();
           const dateArrived = personnelRecordDate(person);
-          const houseDays = parseInt(String(PHASE_ONE_HOUSE_HUNTING_DAYS || "0"), 10) || 0;
-          const phaseOneStart = houseHunting ? addCalendarDays(dateArrived, houseDays) : dateArrived;
+          const phaseOneStart = houseHunting ? phaseOneStartDateAfterHouseHunting(dateArrived) : dateArrived;
           const dutyStatus = houseHunting ? PHASE_ONE_DUTY_STATUS_HOUSE_HUNTING : PHASE_ONE_DUTY_STATUS_ACTIVE;
           const dutySection = itemFieldText(person, "OfficeSymbol") || itemFieldText(person, "Squadron") || "";
           const personKey = await resolvePhaseOnePersonPostKey(seg, pw);
@@ -6457,6 +6550,13 @@
             let input;
             if (field.inputType === "textarea") {
               input = document.createElement("textarea");
+            } else if (field.inputType === "select") {
+              input = document.createElement("select");
+              input.className = "add-field-select--autosize";
+              const opt0 = document.createElement("option");
+              opt0.value = "";
+              opt0.textContent = "(select)";
+              input.appendChild(opt0);
             } else if (field.inputType === "date") {
               input = document.createElement("input");
               input.type = "date";
@@ -6468,12 +6568,35 @@
             input.dataset.writeKey = field.key;
             const raw = item ? valueFromItemByKeys(item, [field.key]) : "";
             if (field.inputType === "date") input.value = isoDateForDateInput(raw);
-            else input.value = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+            else if (field.inputType !== "select") {
+              input.value = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+            }
             fwrap.appendChild(input);
             phase1EditFields.appendChild(fwrap);
           });
         }
-        function openPhase1EditPanel(item) {
+        async function populatePhase1EditDropdowns(item) {
+          const pw = hubSession.pw;
+          if (!pw) return;
+          const seg = phaseOneTrackingListApiPath();
+          const fields = Array.isArray(PHASE_ONE_EDIT_FIELDS) ? PHASE_ONE_EDIT_FIELDS : [];
+          for (let i = 0; i < fields.length; i++) {
+            const field = fields[i];
+            if (!field || field.inputType !== "select") continue;
+            const sel = document.getElementById("p1e_" + field.key);
+            if (!sel || sel.tagName !== "SELECT") continue;
+            const col = { key: field.key, tryKeys: [field.key] };
+            await fillDropdownSelect(sel, col, seg, pw, item, item);
+            if (item) {
+              const raw = valueFromItemByKeys(item, [field.key]);
+              const display = formatCellValue(raw);
+              ensureSelectIncludesValue(sel, display);
+              sel.value = display;
+            }
+          }
+          if (phase1EditForm) applyAllSelectAutosizes(phase1EditForm);
+        }
+        async function openPhase1EditPanel(item) {
           if (!item || item.Id == null) return;
           phase1Session.editItem = item;
           if (phase1EditTitle) {
@@ -6481,6 +6604,7 @@
               "Edit Phase 1 — " + (phaseOneFieldText(item, { key: "PersonnelName", tryKeys: ["PersonnelName", "Title"] }) || "Personnel");
           }
           buildPhase1EditFormFields(item);
+          await populatePhase1EditDropdowns(item);
           setPhase1EditPanelVisible(true);
           setPhase1State("", "");
         }
@@ -6530,7 +6654,7 @@
             DutySection: formatCellValue(valueFromItemByKeys(item, ["DutySection"]) || ""),
             DateArrived: phaseOneDatePayloadValue(valueFromItemByKeys(item, ["DateArrived"])),
             PhaseOneStartDate: phaseOneDatePayloadValue(valueFromItemByKeys(item, ["PhaseOneStartDate"])),
-            ProjectedOfficeFlight: phaseOneDatePayloadValue(valueFromItemByKeys(item, ["ProjectedOfficeFlight"])),
+            ProjectedOfficeFlight: formatCellValue(valueFromItemByKeys(item, ["ProjectedOfficeFlight"]) || ""),
             DateReleased: phaseOneDatePayloadValue(valueFromItemByKeys(item, ["DateReleased"])),
             Notes: formatCellValue(valueFromItemByKeys(item, ["Notes"]) || ""),
             ArchivedAt: spDateTimeNowIso(),
