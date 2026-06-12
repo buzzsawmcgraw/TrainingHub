@@ -114,19 +114,22 @@
         const BYLAW_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "ByLaw", "TrainingName", "Training_x0020_Name"];
 
         /**
-         * Appointments list (SharePoint title **Appointments**). Rows are filtered by PersonnelId = personnel list item Id.
-         * List columns: PersonnelId, AppointmentDateTime, Location, ProviderOffice (Location), ReasonType,
-         * InstructorInitials, MissedAppointment, CreatedAt. PersonnelId is filter-only (not shown on record page).
+         * Appointments list (SharePoint title **Appointments**). Rows are filtered by PeronnelId = personnel list item Id.
+         * List columns: PeronnelId, AppointmentDateTime, Location, ProviderOffice (Location), ReasonType,
+         * InstructorInitials, MissedAppointment, CreatedAt. PeronnelId is filter-only (not shown on record page).
          */
         const LIST_APPOINTMENTS = "Appointments";
         const LIST_APPOINTMENTS_GUID = "";
-        const APPOINTMENTS_PERSON_FIELD = "PersonnelId";
+        const APPOINTMENTS_PERSON_FIELD = "PeronnelId";
         /** Additional REST filter field names to try if the primary name fails (lookup / casing variants). */
         const APPOINTMENTS_PERSON_FIELD_ALT = [
+          "PersonnelId",
           "PersonnelID",
           "PersonnelIdId",
+          "PeronnelIdId",
           "Personnel_x0020_Id",
           "Personnel_x0020_ID",
+          "Peronnel_x0020_Id",
           "Personnel/Id",
         ];
         const APPOINTMENTS_ITEMS_ORDERBY = "AppointmentDateTime asc";
@@ -177,6 +180,13 @@
         ];
         const APPOINTMENTS_SQUADRON_LABEL = "88 SFS";
         const APPOINTMENTS_MEMO_DEFAULT_FROM = "88 SFS/S3T";
+        const MEMO_SIGNATURE_TITLE_PRESETS = [
+          "Training NCOIC",
+          "Supervisor",
+          "Commander",
+          "First Sergeant",
+          "Superintendent",
+        ];
         const APPOINTMENTS_FORM_FIELDS = [
           {
             key: "AppointmentDateTime",
@@ -526,28 +536,28 @@
         const schedulingMemoBody = document.getElementById("schedulingMemoBody");
         const schedulingMemoSig1Person = document.getElementById("schedulingMemoSig1Person");
         const schedulingMemoSig1Title = document.getElementById("schedulingMemoSig1Title");
-        const schedulingMemoSig1Org = document.getElementById("schedulingMemoSig1Org");
+        const schedulingMemoSig1Squadron = document.getElementById("schedulingMemoSig1Squadron");
         const schedulingMemoSig2Person = document.getElementById("schedulingMemoSig2Person");
         const schedulingMemoSig2Title = document.getElementById("schedulingMemoSig2Title");
-        const schedulingMemoSig2Org = document.getElementById("schedulingMemoSig2Org");
+        const schedulingMemoSig2Squadron = document.getElementById("schedulingMemoSig2Squadron");
         const schedulingMemoSig3Person = document.getElementById("schedulingMemoSig3Person");
         const schedulingMemoSig3Title = document.getElementById("schedulingMemoSig3Title");
-        const schedulingMemoSig3Org = document.getElementById("schedulingMemoSig3Org");
+        const schedulingMemoSig3Squadron = document.getElementById("schedulingMemoSig3Squadron");
         const schedulingMemoSignatureBlocks = [
           {
             personSelect: schedulingMemoSig1Person,
-            titleEl: schedulingMemoSig1Title,
-            orgEl: schedulingMemoSig1Org,
+            titleSelect: schedulingMemoSig1Title,
+            squadronSelect: schedulingMemoSig1Squadron,
           },
           {
             personSelect: schedulingMemoSig2Person,
-            titleEl: schedulingMemoSig2Title,
-            orgEl: schedulingMemoSig2Org,
+            titleSelect: schedulingMemoSig2Title,
+            squadronSelect: schedulingMemoSig2Squadron,
           },
           {
             personSelect: schedulingMemoSig3Person,
-            titleEl: schedulingMemoSig3Title,
-            orgEl: schedulingMemoSig3Org,
+            titleSelect: schedulingMemoSig3Title,
+            squadronSelect: schedulingMemoSig3Squadron,
           },
         ];
         const schedulingMemoPrintBtn = document.getElementById("schedulingMemoPrintBtn");
@@ -2576,9 +2586,11 @@
         function appointmentPersonnelIdFromItem(item) {
           if (!item || typeof item !== "object") return null;
           const keys = appointmentsPersonFilterFieldCandidates().concat([
+            "PeronnelId",
             "PersonnelId",
             "PersonnelID",
             "PersonnelIdId",
+            "PeronnelIdId",
             "Personnel_x0020_Id",
           ]);
           for (let i = 0; i < keys.length; i++) {
@@ -2613,7 +2625,7 @@
               pw,
             );
             const fields = (data && data.value) || [];
-            const want = String(APPOINTMENTS_PERSON_FIELD || "PersonnelId").trim().toLowerCase();
+            const want = String(APPOINTMENTS_PERSON_FIELD || "PeronnelId").trim().toLowerCase();
             let hit = fields.find(function (f) {
               const title = String(f.Title || "").trim().toLowerCase();
               const internal = String(f.InternalName || f.StaticName || f.EntityPropertyName || "").trim();
@@ -2622,8 +2634,11 @@
                 internalLower === want ||
                 title === want ||
                 title === "personnel id" ||
+                title === "peronnel id" ||
                 internalLower === "personnelid" ||
-                internalLower === "personnelidid"
+                internalLower === "peronnelid" ||
+                internalLower === "personnelidid" ||
+                internalLower === "peronnelidid"
               );
             });
             if (!hit) {
@@ -3043,25 +3058,57 @@
         function setSchedulingMemoOverlayVisible(show) {
           if (schedulingMemoOverlay) schedulingMemoOverlay.hidden = !show;
           if (!show && schedulingMemoForm) schedulingMemoForm.reset();
-          if (show) populateMemoSignaturePersonSelects();
+          if (show) populateMemoSignatureDropdowns();
         }
 
         function defaultMemoSignatureBlocks() {
           return {
             sig1Title: "Training NCOIC",
-            sig1Org: String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+            sig1Squadron: String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
             sig2Title: "Supervisor",
             sig3Title: "Commander",
-            sig3Org: String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+            sig3Squadron: String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
           };
         }
 
-        function memoSignatureOrgFromPerson(person) {
+        function collectPersonnelFieldValues(fieldKey) {
+          const values = new Set();
+          const rows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+          rows.forEach(function (person) {
+            const v = String(itemFieldText(person, fieldKey) || "").trim();
+            if (v) values.add(v);
+          });
+          return Array.from(values).sort(function (a, b) {
+            return a.localeCompare(b, undefined, { sensitivity: "base" });
+          });
+        }
+
+        function memoTitleOptions() {
+          const set = new Set(Array.isArray(MEMO_SIGNATURE_TITLE_PRESETS) ? MEMO_SIGNATURE_TITLE_PRESETS : []);
+          collectPersonnelFieldValues("OfficeSymbol").forEach(function (v) {
+            set.add(v);
+          });
+          collectPersonnelFieldValues("Status").forEach(function (v) {
+            set.add(v);
+          });
+          return Array.from(set).sort(function (a, b) {
+            return a.localeCompare(b, undefined, { sensitivity: "base" });
+          });
+        }
+
+        function memoSquadronOptions() {
+          const set = new Set([String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS")]);
+          collectPersonnelFieldValues("Squadron").forEach(function (v) {
+            set.add(v);
+          });
+          return Array.from(set).sort(function (a, b) {
+            return a.localeCompare(b, undefined, { sensitivity: "base" });
+          });
+        }
+
+        function memoSignatureSquadronFromPerson(person) {
           if (!person) return String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS");
-          const squadron = itemFieldText(person, "Squadron");
-          const office = itemFieldText(person, "OfficeSymbol");
-          if (squadron && office) return squadron + " / " + office;
-          return squadron || office || String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS");
+          return itemFieldText(person, "Squadron") || String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS");
         }
 
         function memoSignatureTitleFromPerson(person) {
@@ -3069,24 +3116,51 @@
           return itemFieldText(person, "OfficeSymbol") || itemFieldText(person, "Status") || "";
         }
 
-        function applyMemoSignatureFieldsFromPerson(person, titleEl, orgEl) {
-          if (!person) return;
-          if (titleEl) titleEl.value = memoSignatureTitleFromPerson(person);
-          if (orgEl) orgEl.value = memoSignatureOrgFromPerson(person);
+        function setMemoSelectValue(sel, value) {
+          if (!sel) return;
+          const v = String(value || "").trim();
+          ensureSelectIncludesValue(sel, v);
+          sel.value = v;
         }
 
-        function populateMemoSignaturePersonSelects() {
+        function populateMemoSelectOptions(sel, options, emptyLabel) {
+          if (!sel) return;
+          const prior = String(sel.value || "").trim();
+          while (sel.options.length > 1) sel.remove(1);
+          (Array.isArray(options) ? options : []).forEach(function (opt) {
+            const text = String(opt || "").trim();
+            if (!text) return;
+            const o = document.createElement("option");
+            o.value = text;
+            o.textContent = text;
+            sel.appendChild(o);
+          });
+          if (prior) setMemoSelectValue(sel, prior);
+          else if (emptyLabel && sel.options.length) sel.options[0].textContent = emptyLabel;
+        }
+
+        function applyMemoSignatureFieldsFromPerson(person, titleSelect, squadronSelect) {
+          if (!person) return;
+          setMemoSelectValue(titleSelect, memoSignatureTitleFromPerson(person));
+          setMemoSelectValue(squadronSelect, memoSignatureSquadronFromPerson(person));
+        }
+
+        function populateMemoSignatureDropdowns() {
+          const titleOptions = memoTitleOptions();
+          const squadronOptions = memoSquadronOptions();
+          const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
+          rows.sort(function (a, b) {
+            return formatPersonDisplayName(a).localeCompare(formatPersonDisplayName(b), undefined, {
+              sensitivity: "base",
+            });
+          });
           schedulingMemoSignatureBlocks.forEach(function (block) {
+            populateMemoSelectOptions(block.titleSelect, titleOptions, "Select title...");
+            populateMemoSelectOptions(block.squadronSelect, squadronOptions, "Select squadron...");
             const sel = block.personSelect;
             if (!sel) return;
             const prior = String(sel.value || "").trim();
             while (sel.options.length > 1) sel.remove(1);
-            const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
-            rows.sort(function (a, b) {
-              return formatPersonDisplayName(a).localeCompare(formatPersonDisplayName(b), undefined, {
-                sensitivity: "base",
-              });
-            });
             rows.forEach(function (person) {
               if (!person || person.Id == null) return;
               const displayName = formatPersonDisplayName(person);
@@ -3097,7 +3171,6 @@
               sel.appendChild(o);
             });
             if (prior) sel.value = prior;
-            applySelectAutosize(sel);
           });
         }
 
@@ -3105,25 +3178,20 @@
           if (!block) return;
           const defaults = defaultMemoSignatureBlocks();
           const blockDefaults = [
-            { title: defaults.sig1Title, org: defaults.sig1Org },
-            { title: defaults.sig2Title, org: "" },
-            { title: defaults.sig3Title, org: defaults.sig3Org },
+            { title: defaults.sig1Title, squadron: defaults.sig1Squadron },
+            { title: defaults.sig2Title, squadron: "" },
+            { title: defaults.sig3Title, squadron: defaults.sig3Squadron },
           ];
           const blockIndex = schedulingMemoSignatureBlocks.indexOf(block);
-          const fallback = blockDefaults[blockIndex] || { title: "", org: "" };
+          const fallback = blockDefaults[blockIndex] || { title: "", squadron: "" };
           if (block.personSelect) {
             block.personSelect.value = opts && opts.personId ? String(opts.personId) : "";
-            applySelectAutosize(block.personSelect);
           }
-          if (block.titleEl) {
-            block.titleEl.value = (opts && opts.title) || fallback.title || "";
-          }
-          if (block.orgEl) {
-            block.orgEl.value = (opts && opts.org) || fallback.org || "";
-          }
+          setMemoSelectValue(block.titleSelect, (opts && opts.title) || fallback.title || "");
+          setMemoSelectValue(block.squadronSelect, (opts && opts.squadron) || fallback.squadron || "");
           if (block.personSelect && block.personSelect.value) {
             const person = personnelById(block.personSelect.value);
-            if (person) applyMemoSignatureFieldsFromPerson(person, block.titleEl, block.orgEl);
+            if (person) applyMemoSignatureFieldsFromPerson(person, block.titleSelect, block.squadronSelect);
           }
         }
 
@@ -3163,17 +3231,17 @@
           setMemoSignatureBlock(schedulingMemoSignatureBlocks[0], {
             personId: opts.sig1PersonId,
             title: opts.sig1Title || defaults.sig1Title,
-            org: opts.sig1Org || defaults.sig1Org,
+            squadron: opts.sig1Squadron || defaults.sig1Squadron,
           });
           setMemoSignatureBlock(schedulingMemoSignatureBlocks[1], {
             personId: opts.sig2PersonId,
             title: opts.sig2Title || defaults.sig2Title,
-            org: opts.sig2Org || "",
+            squadron: opts.sig2Squadron || "",
           });
           setMemoSignatureBlock(schedulingMemoSignatureBlocks[2], {
             personId: opts.sig3PersonId,
             title: opts.sig3Title || defaults.sig3Title,
-            org: opts.sig3Org || defaults.sig3Org,
+            squadron: opts.sig3Squadron || defaults.sig3Squadron,
           });
         }
 
@@ -3202,8 +3270,8 @@
               : null;
           return {
             name: person ? formatPersonDisplayName(person) : "",
-            title: val(block.titleEl),
-            org: val(block.orgEl),
+            title: val(block.titleSelect),
+            org: val(block.squadronSelect),
           };
         }
 
@@ -5766,8 +5834,7 @@
           if (!block.personSelect) return;
           block.personSelect.addEventListener("change", function () {
             const person = block.personSelect.value ? personnelById(block.personSelect.value) : null;
-            if (person) applyMemoSignatureFieldsFromPerson(person, block.titleEl, block.orgEl);
-            applySelectAutosize(block.personSelect);
+            if (person) applyMemoSignatureFieldsFromPerson(person, block.titleSelect, block.squadronSelect);
           });
         });
 

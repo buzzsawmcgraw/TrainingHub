@@ -509,27 +509,40 @@
         letter-spacing: 0.04em;
       }
       #sp-pip-ui .scheduling-memo-overlay {
-        position: absolute;
+        position: fixed;
         inset: 0;
-        z-index: 250;
+        z-index: 400;
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
-        padding: 24px 16px 32px;
+        padding: 20px;
         overflow-y: auto;
-        background: rgba(2, 6, 4, 0.88);
+        background: rgba(2, 6, 4, 0.92);
       }
       #sp-pip-ui .scheduling-memo-overlay[hidden] {
         display: none !important;
       }
       #sp-pip-ui .scheduling-memo-panel {
-        width: min(100%, 720px);
-        margin: 0;
-        padding: 20px 22px;
+        width: min(100%, 1040px);
+        max-height: min(92vh, 920px);
+        margin: auto;
+        padding: 22px 26px 24px;
+        overflow-y: auto;
         border: 1px solid var(--pip-border);
         border-radius: 8px;
-        background: rgba(5, 14, 10, 0.96);
-        box-shadow: 0 0 32px rgba(0, 0, 0, 0.55);
+        background: rgba(5, 14, 10, 0.98);
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.65);
+        flex-shrink: 0;
+      }
+      #sp-pip-ui .scheduling-memo-panel .scheduling-memo-form-fields {
+        margin-bottom: 4px;
+      }
+      #sp-pip-ui .scheduling-memo-panel select.scheduling-memo-sig-select {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0;
+        height: var(--pip-control-h);
+        min-height: var(--pip-control-h);
       }
       #sp-pip-ui .scheduling-memo-panel h4 {
         margin: 0 0 14px;
@@ -542,22 +555,22 @@
       #sp-pip-ui .scheduling-memo-sig-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
-        margin-top: 8px;
-        align-items: stretch;
+        gap: 16px;
+        margin-top: 10px;
+        align-items: start;
       }
       #sp-pip-ui .scheduling-memo-sig-block {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+        display: grid;
+        grid-template-rows: auto repeat(3, auto);
+        gap: 12px;
         min-width: 0;
-        padding: 12px 12px 14px;
+        padding: 14px 14px 16px;
         border: 1px dashed rgba(30, 74, 54, 0.65);
         border-radius: 6px;
         background: rgba(0, 0, 0, 0.2);
       }
       #sp-pip-ui .scheduling-memo-sig-block h5 {
-        margin: 0;
+        margin: 0 0 2px;
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.1em;
@@ -565,29 +578,21 @@
         color: var(--pip-amber);
       }
       #sp-pip-ui .scheduling-memo-sig-block .add-field {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-rows: auto var(--pip-control-h);
         gap: 6px;
         margin: 0;
         min-width: 0;
+        align-items: stretch;
       }
       #sp-pip-ui .scheduling-memo-sig-block .add-field label {
         margin: 0;
-        min-height: 2.4em;
-        display: flex;
-        align-items: flex-end;
+        min-height: 0;
+        display: block;
         line-height: 1.25;
+        font-size: 10px;
       }
-      #sp-pip-ui .scheduling-memo-sig-block .add-field input,
-      #sp-pip-ui .scheduling-memo-sig-block .add-field select {
-        width: 100%;
-        box-sizing: border-box;
-      }
-      #sp-pip-ui .scheduling-memo-sig-block .add-field select.add-field-select--autosize {
-        width: 100%;
-        max-width: none;
-      }
-      @media (max-width: 900px) {
+      @media (max-width: 960px) {
         #sp-pip-ui .scheduling-memo-sig-grid {
           grid-template-columns: 1fr;
         }
