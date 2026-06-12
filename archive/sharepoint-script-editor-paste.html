@@ -1573,8 +1573,8 @@
 
         /**
          * Appointments list (SharePoint title **Appointments**). Rows are filtered by PersonnelId = personnel list item Id.
-         * List columns: PersonnelId, AppointmentDate, Location, ProviderOffice, ReasonType, InstructorInitials,
-         * MissedAppointment, CreatedAt. PersonnelId is used for filtering only (not shown in the table on the record page).
+         * List columns: PersonnelId, AppointmentTimeDate, Location, ProviderOffice (Location), ReasonType,
+         * InstructorInitials, MissedAppointment, CreatedAt. PersonnelId is filter-only (not shown on record page).
          */
         const LIST_APPOINTMENTS = "Appointments";
         const LIST_APPOINTMENTS_GUID = "";
@@ -1587,18 +1587,28 @@
           "Personnel_x0020_ID",
           "Personnel/Id",
         ];
-        const APPOINTMENTS_ITEMS_ORDERBY = "AppointmentDate asc";
+        const APPOINTMENTS_ITEMS_ORDERBY = "AppointmentTimeDate asc";
         const APPOINTMENTS_COLUMNS = [
           {
-            key: "AppointmentDate",
-            label: "Appointment date",
-            altKeys: ["Appointment_x0020_Date", "Date"],
+            key: "AppointmentTimeDate",
+            label: "Appointment time/date",
+            altKeys: [
+              "AppointmentTime_x0020_Date",
+              "Appointment_x0020_Time_x0020_Date",
+              "AppointmentDate",
+              "Appointment_x0020_Date",
+              "Date",
+            ],
           },
           { key: "Location", label: "Location", altKeys: ["Location0"] },
           {
             key: "ProviderOffice",
-            label: "Provider office",
-            altKeys: ["Provider_x0020_Office", "ProviderOffice0"],
+            label: "Provider office (location)",
+            altKeys: [
+              "ProviderOffice_x0020__x0028_Location_x0029_",
+              "Provider_x0020_Office",
+              "ProviderOffice0",
+            ],
           },
           {
             key: "ReasonType",
@@ -3942,7 +3952,14 @@
 
           try {
             const rows = await fetchAppointmentsForPersonnel(seg, pw, personId);
-            const dateKeys = ["AppointmentDate", "Appointment_x0020_Date", "Date"];
+            const dateKeys = [
+              "AppointmentTimeDate",
+              "AppointmentTime_x0020_Date",
+              "Appointment_x0020_Time_x0020_Date",
+              "AppointmentDate",
+              "Appointment_x0020_Date",
+              "Date",
+            ];
             rows.sort(function (a, b) {
               const da = formatCellValue(valueFromItemByKeys(a, dateKeys) || "");
               const db = formatCellValue(valueFromItemByKeys(b, dateKeys) || "");
