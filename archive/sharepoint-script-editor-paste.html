@@ -1321,6 +1321,47 @@
       #sp-pip-ui .bylaw-add-panel[hidden] {
         display: none !important;
       }
+      #sp-pip-ui .bylaw-bulk-hint {
+        margin: 0 0 12px;
+        font-size: 11px;
+        line-height: 1.45;
+        color: rgba(210, 255, 224, 0.72);
+      }
+      #sp-pip-ui .bylaw-bulk-items-wrap {
+        margin-top: 4px;
+      }
+      #sp-pip-ui .bylaw-bulk-items-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      #sp-pip-ui .bylaw-bulk-items-toolbar button {
+        margin: 0;
+      }
+      #sp-pip-ui .bylaw-bulk-items {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 220px;
+        overflow-y: auto;
+        padding: 8px 10px;
+        border: 1px solid var(--pip-border);
+        border-radius: 6px;
+        background: rgba(5, 12, 9, 0.45);
+      }
+      #sp-pip-ui .bylaw-bulk-item-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        line-height: 1.35;
+        cursor: pointer;
+      }
+      #sp-pip-ui .bylaw-bulk-item-check input {
+        flex: 0 0 auto;
+        margin: 0;
+      }
       #sp-pip-ui h4.weapons-add-title,
       #sp-pip-ui h4.bylaw-add-title {
         margin: 0 0 12px;
@@ -1846,6 +1887,25 @@
               <p id="personBylawEmpty" class="bylaw-empty" hidden>No By-Law Training records on file for this person.</p>
               <div class="bylaw-add-toolbar">
                 <button type="button" id="personBylawAddBtn" class="btn-secondary">Add Training</button>
+                <button type="button" id="personBylawBulkAddBtn" class="btn-secondary">Add Multiple (same day)</button>
+              </div>
+              <div id="personBylawBulkPanel" class="bylaw-add-panel bylaw-bulk-panel" hidden>
+                <h4 class="bylaw-add-title">Add Multiple Trainings (same day)</h4>
+                <p class="bylaw-bulk-hint">Enter the certification date and certifier once, then check every training completed that day.</p>
+                <form id="personBylawBulkForm" class="bylaw-add-form add-form-stack" aria-label="Add multiple By-Law Training records">
+                  <div id="personBylawBulkSharedFields" class="add-form-grid"></div>
+                  <div class="bylaw-bulk-items-wrap">
+                    <div class="bylaw-bulk-items-toolbar">
+                      <button type="button" id="personBylawBulkSelectAll" class="btn-secondary">Select all</button>
+                      <button type="button" id="personBylawBulkClearAll" class="btn-secondary">Clear all</button>
+                    </div>
+                    <div id="personBylawBulkItems" class="bylaw-bulk-items" role="group" aria-label="Training items to add"></div>
+                  </div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="personBylawBulkSaveBtn">Save all selected</button>
+                    <button type="button" id="personBylawBulkCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
               </div>
               <div id="personBylawAddPanel" class="bylaw-add-panel" hidden>
                 <h4 id="personBylawFormTitle" class="bylaw-add-title">New By-Law Training Record</h4>
@@ -2009,6 +2069,25 @@
               <p id="ethosBylawEmpty" class="bylaw-empty" hidden>No By-Law Training records on file for this member.</p>
               <div class="bylaw-add-toolbar">
                 <button type="button" id="ethosBylawAddBtn" class="btn-secondary">Add Training</button>
+                <button type="button" id="ethosBylawBulkAddBtn" class="btn-secondary">Add Multiple (same day)</button>
+              </div>
+              <div id="ethosBylawBulkPanel" class="bylaw-add-panel bylaw-bulk-panel" hidden>
+                <h4 class="bylaw-add-title">Add Multiple Trainings (same day)</h4>
+                <p class="bylaw-bulk-hint">Enter the certification date and certifier once, then check every training completed that day.</p>
+                <form id="ethosBylawBulkForm" class="bylaw-add-form add-form-stack" aria-label="Add multiple ETHOS By-Law Training records">
+                  <div id="ethosBylawBulkSharedFields" class="add-form-grid"></div>
+                  <div class="bylaw-bulk-items-wrap">
+                    <div class="bylaw-bulk-items-toolbar">
+                      <button type="button" id="ethosBylawBulkSelectAll" class="btn-secondary">Select all</button>
+                      <button type="button" id="ethosBylawBulkClearAll" class="btn-secondary">Clear all</button>
+                    </div>
+                    <div id="ethosBylawBulkItems" class="bylaw-bulk-items" role="group" aria-label="Training items to add"></div>
+                  </div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="ethosBylawBulkSaveBtn">Save all selected</button>
+                    <button type="button" id="ethosBylawBulkCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
               </div>
               <div id="ethosBylawAddPanel" class="bylaw-add-panel" hidden>
                 <h4 id="ethosBylawFormTitle" class="bylaw-add-title">New By-Law Training Record</h4>
@@ -2723,6 +2802,15 @@
         const personBylawEmpty = document.getElementById("personBylawEmpty");
         const personBylawState = document.getElementById("personBylawState");
         const personBylawAddBtn = document.getElementById("personBylawAddBtn");
+        const personBylawBulkAddBtn = document.getElementById("personBylawBulkAddBtn");
+        const personBylawBulkPanel = document.getElementById("personBylawBulkPanel");
+        const personBylawBulkForm = document.getElementById("personBylawBulkForm");
+        const personBylawBulkSharedFields = document.getElementById("personBylawBulkSharedFields");
+        const personBylawBulkItems = document.getElementById("personBylawBulkItems");
+        const personBylawBulkSelectAll = document.getElementById("personBylawBulkSelectAll");
+        const personBylawBulkClearAll = document.getElementById("personBylawBulkClearAll");
+        const personBylawBulkSaveBtn = document.getElementById("personBylawBulkSaveBtn");
+        const personBylawBulkCancelBtn = document.getElementById("personBylawBulkCancelBtn");
         const personBylawAddPanel = document.getElementById("personBylawAddPanel");
         const personBylawAddForm = document.getElementById("personBylawAddForm");
         const personBylawAddFields = document.getElementById("personBylawAddFields");
@@ -2798,6 +2886,15 @@
         const ethosBylawEmpty = document.getElementById("ethosBylawEmpty");
         const ethosBylawState = document.getElementById("ethosBylawState");
         const ethosBylawAddBtn = document.getElementById("ethosBylawAddBtn");
+        const ethosBylawBulkAddBtn = document.getElementById("ethosBylawBulkAddBtn");
+        const ethosBylawBulkPanel = document.getElementById("ethosBylawBulkPanel");
+        const ethosBylawBulkForm = document.getElementById("ethosBylawBulkForm");
+        const ethosBylawBulkSharedFields = document.getElementById("ethosBylawBulkSharedFields");
+        const ethosBylawBulkItems = document.getElementById("ethosBylawBulkItems");
+        const ethosBylawBulkSelectAll = document.getElementById("ethosBylawBulkSelectAll");
+        const ethosBylawBulkClearAll = document.getElementById("ethosBylawBulkClearAll");
+        const ethosBylawBulkSaveBtn = document.getElementById("ethosBylawBulkSaveBtn");
+        const ethosBylawBulkCancelBtn = document.getElementById("ethosBylawBulkCancelBtn");
         const ethosBylawAddPanel = document.getElementById("ethosBylawAddPanel");
         const ethosBylawAddForm = document.getElementById("ethosBylawAddForm");
         const ethosBylawAddFields = document.getElementById("ethosBylawAddFields");
@@ -4172,7 +4269,9 @@
           bylawTrainingEditSession.item = null;
           hubSession.bylawTrainingRows = null;
           setBylawTrainingAddPanelVisible(false);
+          setBylawBulkPanelVisible(false);
           if (personBylawAddForm) personBylawAddForm.reset();
+          if (personBylawBulkForm) personBylawBulkForm.reset();
           if (personBylawEmpty) {
             personBylawEmpty.hidden = true;
             personBylawEmpty.textContent = "No By-Law Training records on file for this person.";
@@ -4202,11 +4301,21 @@
 
         function setBylawTrainingAddPanelVisible(visible) {
           if (personBylawAddPanel) personBylawAddPanel.hidden = !visible;
+          if (visible && personBylawBulkPanel) personBylawBulkPanel.hidden = true;
           if (!visible) {
             bylawTrainingEditSession.item = null;
             setBylawTrainingFormMode("add");
           } else {
             updateBylawTrainingToolbarLabel();
+          }
+        }
+
+        function setBylawBulkPanelVisible(visible) {
+          if (personBylawBulkPanel) personBylawBulkPanel.hidden = !visible;
+          if (visible) {
+            setBylawTrainingAddPanelVisible(false);
+            bylawTrainingEditSession.item = null;
+            setBylawTrainingFormMode("add");
           }
         }
 
@@ -4274,6 +4383,103 @@
             const f = buildBylawTrainingFieldWrap(col, sampleRow, options);
             if (f) personBylawAddFields.appendChild(f);
           });
+        }
+
+        function buildBylawBulkSharedFields(container, idPrefix, sampleRow, columns) {
+          if (!container) return;
+          container.innerHTML = "";
+          ["QualDate", "Certifier", "ExpirationDate"].forEach(function (key) {
+            const col = columns.find(function (c) {
+              return c.key === key;
+            });
+            if (!col) return;
+            const f = buildBylawTrainingFieldWrap(col, sampleRow, {
+              idPrefix: idPrefix,
+              readOnlyKeys: key === "ExpirationDate" ? ["ExpirationDate"] : [],
+            });
+            if (f) container.appendChild(f);
+          });
+        }
+
+        async function populateBylawBulkItemChecklist(container, seg, pw, sampleRow, columns) {
+          if (!container) return [];
+          container.innerHTML = "";
+          const itemCol = columns.find(function (c) {
+            return c.key === "Item";
+          });
+          if (!itemCol) {
+            container.textContent = "(Training Item field not configured.)";
+            return [];
+          }
+          const itemWriteKey = resolveBylawTrainingWriteKey(itemCol, sampleRow);
+          let choices = [];
+          try {
+            const r = await fetchChoiceOptionsForColumn(itemCol, seg, pw, sampleRow);
+            choices = (r.choices || []).map(function (c) {
+              return String(c).trim();
+            }).filter(Boolean);
+          } catch (e) {
+            container.textContent = "(Could not load training items: " + (e.message || String(e)).slice(0, 120) + ")";
+            return [];
+          }
+          if (!choices.length) {
+            container.textContent = "(No training items found in the list.)";
+            return [];
+          }
+          choices.forEach(function (choice) {
+            const label = document.createElement("label");
+            label.className = "bylaw-bulk-item-check";
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.value = choice;
+            cb.dataset.writeKey = itemWriteKey;
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(choice));
+            container.appendChild(label);
+          });
+          return choices;
+        }
+
+        function getSelectedBylawBulkItems(container) {
+          if (!container) return [];
+          return Array.prototype.slice
+            .call(container.querySelectorAll('input[type="checkbox"]:checked'))
+            .map(function (cb) {
+              return {
+                value: String(cb.value || "").trim(),
+                writeKey: String(cb.dataset.writeKey || "Item").trim() || "Item",
+              };
+            })
+            .filter(function (row) {
+              return !!row.value;
+            });
+        }
+
+        function collectBylawBulkSharedPayload(idPrefix, columns, sampleRow) {
+          const payload = {};
+          columns.forEach(function (col) {
+            if (col.key === "Item") return;
+            const el = document.getElementById(idPrefix + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || resolveBylawTrainingWriteKey(col, sampleRow);
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
+            payload[writeKey] = v;
+          });
+          return payload;
+        }
+
+        function setBylawBulkItemChecks(container, checked) {
+          if (!container) return;
+          Array.prototype.slice.call(container.querySelectorAll('input[type="checkbox"]')).forEach(function (cb) {
+            cb.checked = !!checked;
+          });
+        }
+
+        async function populateBylawBulkCertifierDropdown(idPrefix, seg, pw, sampleRow) {
+          const sel = document.getElementById(idPrefix + "Certifier");
+          if (!sel || sel.tagName !== "SELECT") return;
+          await fillBylawCertifierDropdown(sel, seg, pw, sampleRow);
         }
 
         function setBylawTrainingFormFieldValue(col, item, el) {
@@ -4370,6 +4576,90 @@
           wireBylawTrainingQualDateAutoExpiry(personBylawAddForm);
           const itemEl = document.getElementById("bf_Item");
           if (itemEl) itemEl.focus();
+        }
+
+        async function openBylawBulkAddPanel() {
+          if (!personDetailSession.item || personDetailSession.item.Id == null) {
+            setBylawTrainingState("warn", "Open a Personnel Record before adding training.");
+            return;
+          }
+          const pw = personDetailSession.pw;
+          if (!pw) {
+            setBylawTrainingState("warn", "Personnel record is still loading. Try again in a moment.");
+            return;
+          }
+          bylawTrainingEditSession.item = null;
+          setBylawBulkPanelVisible(true);
+          setBylawTrainingState("", "");
+          const seg = bylawTrainingListApiPath();
+          const sampleRow = hubSession.bylawTrainingSampleRow;
+          const columns = bylawTrainingFormColumns();
+          buildBylawBulkSharedFields(personBylawBulkSharedFields, "bb_", sampleRow, columns);
+          await populateBylawBulkCertifierDropdown("bb_", seg, pw, sampleRow);
+          await populateBylawBulkItemChecklist(personBylawBulkItems, seg, pw, sampleRow, columns);
+          if (personBylawBulkForm) {
+            delete personBylawBulkForm.dataset.bylawBulkAutoExpiryWired;
+            wireCertQualDateAutoExpiry(personBylawBulkForm, "bb_", "bylawBulkAutoExpiryWired");
+          }
+          const qualEl = document.getElementById("bb_QualDate");
+          if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+          applyCertExpirationFromQual("bb_");
+          if (personBylawBulkForm) applyAllSelectAutosizes(personBylawBulkForm);
+          if (qualEl) qualEl.focus();
+        }
+
+        async function submitBylawBulkSave() {
+          const personItem = personDetailSession.item;
+          const pw = personDetailSession.pw;
+          if (!personItem || personItem.Id == null || !pw) return;
+
+          const selected = getSelectedBylawBulkItems(personBylawBulkItems);
+          if (!selected.length) {
+            setBylawTrainingState("err", "Select at least one training item.");
+            return;
+          }
+          const qualEl = document.getElementById("bb_QualDate");
+          if (!qualEl || !String(qualEl.value || "").trim()) {
+            setBylawTrainingState("err", "Certification date is required.");
+            return;
+          }
+
+          const seg = bylawTrainingListApiPath();
+          const sampleRow = hubSession.bylawTrainingSampleRow;
+          const columns = bylawTrainingFormColumns();
+          const sharedPayload = collectBylawBulkSharedPayload("bb_", columns, sampleRow);
+          const personId = parseInt(String(personItem.Id), 10);
+          if (!personId || isNaN(personId)) {
+            setBylawTrainingState("err", "Invalid Personnel Record Id.");
+            return;
+          }
+          const personKey = await resolveBylawPersonPostKey(seg, pw);
+          sharedPayload[personKey] = personId;
+
+          try {
+            if (personBylawBulkSaveBtn) personBylawBulkSaveBtn.disabled = true;
+            let saved = 0;
+            for (let i = 0; i < selected.length; i++) {
+              setBylawTrainingState("loading", "Saving " + (i + 1) + " of " + selected.length + "...");
+              const payload = Object.assign({}, sharedPayload);
+              payload[selected[i].writeKey] = selected[i].value;
+              if (BYLAW_TRAINING_SET_TITLE) payload.Title = selected[i].value;
+              await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+              saved++;
+            }
+            setBylawBulkPanelVisible(false);
+            if (personBylawBulkForm) personBylawBulkForm.reset();
+            await loadPersonBylawTraining(personItem.Id, pw);
+            setBylawTrainingState("ok", "Saved " + saved + " training record(s).");
+            window.setTimeout(function () {
+              setBylawTrainingState("", "");
+            }, 2500);
+          } catch (e) {
+            setBylawTrainingState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+            log("By-Law bulk save failed:\n" + (e.message || String(e)), "err");
+          } finally {
+            if (personBylawBulkSaveBtn) personBylawBulkSaveBtn.disabled = false;
+          }
         }
 
         async function openBylawTrainingEditPanel(item) {
@@ -8260,7 +8550,19 @@
               if (ethosBylawAddForm) ethosBylawAddForm.reset();
               return;
             }
+            setEthosBylawBulkPanelVisible(false);
             void openEthosBylawTrainingAddPanel();
+          });
+        }
+
+        if (ethosBylawBulkAddBtn) {
+          ethosBylawBulkAddBtn.addEventListener("click", function () {
+            if (ethosBylawBulkPanel && !ethosBylawBulkPanel.hidden) {
+              setEthosBylawBulkPanelVisible(false);
+              if (ethosBylawBulkForm) ethosBylawBulkForm.reset();
+              return;
+            }
+            void openEthosBylawBulkAddPanel();
           });
         }
 
@@ -8271,10 +8573,36 @@
           });
         }
 
+        if (ethosBylawBulkForm) {
+          ethosBylawBulkForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void submitEthosBylawBulkSave();
+          });
+        }
+
+        if (ethosBylawBulkSelectAll) {
+          ethosBylawBulkSelectAll.addEventListener("click", function () {
+            setBylawBulkItemChecks(ethosBylawBulkItems, true);
+          });
+        }
+
+        if (ethosBylawBulkClearAll) {
+          ethosBylawBulkClearAll.addEventListener("click", function () {
+            setBylawBulkItemChecks(ethosBylawBulkItems, false);
+          });
+        }
+
         if (ethosBylawAddCancelBtn) {
           ethosBylawAddCancelBtn.addEventListener("click", function () {
             if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = true;
             if (ethosBylawAddForm) ethosBylawAddForm.reset();
+          });
+        }
+
+        if (ethosBylawBulkCancelBtn) {
+          ethosBylawBulkCancelBtn.addEventListener("click", function () {
+            setEthosBylawBulkPanelVisible(false);
+            if (ethosBylawBulkForm) ethosBylawBulkForm.reset();
           });
         }
 
@@ -8419,7 +8747,19 @@
               if (personBylawAddForm) personBylawAddForm.reset();
               return;
             }
+            setBylawBulkPanelVisible(false);
             void openBylawTrainingAddPanel();
+          });
+        }
+
+        if (personBylawBulkAddBtn) {
+          personBylawBulkAddBtn.addEventListener("click", function () {
+            if (personBylawBulkPanel && !personBylawBulkPanel.hidden) {
+              setBylawBulkPanelVisible(false);
+              if (personBylawBulkForm) personBylawBulkForm.reset();
+              return;
+            }
+            void openBylawBulkAddPanel();
           });
         }
 
@@ -8430,10 +8770,36 @@
           });
         }
 
+        if (personBylawBulkForm) {
+          personBylawBulkForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void submitBylawBulkSave();
+          });
+        }
+
+        if (personBylawBulkSelectAll) {
+          personBylawBulkSelectAll.addEventListener("click", function () {
+            setBylawBulkItemChecks(personBylawBulkItems, true);
+          });
+        }
+
+        if (personBylawBulkClearAll) {
+          personBylawBulkClearAll.addEventListener("click", function () {
+            setBylawBulkItemChecks(personBylawBulkItems, false);
+          });
+        }
+
         if (personBylawAddCancelBtn) {
           personBylawAddCancelBtn.addEventListener("click", function () {
             setBylawTrainingAddPanelVisible(false);
             if (personBylawAddForm) personBylawAddForm.reset();
+          });
+        }
+
+        if (personBylawBulkCancelBtn) {
+          personBylawBulkCancelBtn.addEventListener("click", function () {
+            setBylawBulkPanelVisible(false);
+            if (personBylawBulkForm) personBylawBulkForm.reset();
           });
         }
 
@@ -10094,13 +10460,23 @@
           if (ethosWeaponsAddForm) ethosWeaponsAddForm.reset();
         }
 
+        function setEthosBylawBulkPanelVisible(visible) {
+          if (ethosBylawBulkPanel) ethosBylawBulkPanel.hidden = !visible;
+          if (visible) {
+            if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = true;
+            ethosBylawTrainingEditSession.item = null;
+          }
+        }
+
         function clearEthosMemberBylawSection() {
           if (ethosBylawThead) ethosBylawThead.innerHTML = "";
           if (ethosBylawBody) ethosBylawBody.innerHTML = "";
           ethosBylawTrainingEditSession.item = null;
           if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = true;
+          setEthosBylawBulkPanelVisible(false);
           if (ethosBylawWrap) ethosBylawWrap.hidden = true;
           if (ethosBylawAddForm) ethosBylawAddForm.reset();
+          if (ethosBylawBulkForm) ethosBylawBulkForm.reset();
         }
 
         function clearEthosMemberDetailSection() {
@@ -10456,15 +10832,104 @@
         async function openEthosBylawTrainingAddPanel() {
           if (!ethosDetailSession.item || ethosDetailSession.item.Id == null) return;
           ethosBylawTrainingEditSession.item = null;
+          setEthosBylawBulkPanelVisible(false);
           buildEthosBylawAddFormFields();
           if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = false;
           await populateEthosBylawAddDropdowns();
           wireCertQualDateAutoExpiry(ethosBylawAddForm, "ebf_", "ethosBylawAutoExpiry");
         }
 
+        async function openEthosBylawBulkAddPanel() {
+          if (!ethosDetailSession.item || ethosDetailSession.item.Id == null) return;
+          const pw = ethosDetailSession.pw;
+          if (!pw) {
+            setEthosBylawState("warn", "Member record is still loading. Try again in a moment.");
+            return;
+          }
+          ethosBylawTrainingEditSession.item = null;
+          setEthosBylawBulkPanelVisible(true);
+          setEthosBylawState("", "");
+          const seg = ethosBylawTrainingListApiPath();
+          const sampleRow = ethosSession.bylawTrainingSampleRow;
+          const columns = ethosBylawFormColumns();
+          buildBylawBulkSharedFields(ethosBylawBulkSharedFields, "ebb_", sampleRow, columns);
+          await populateBylawBulkCertifierDropdown("ebb_", seg, pw, sampleRow);
+          await populateBylawBulkItemChecklist(ethosBylawBulkItems, seg, pw, sampleRow, columns);
+          if (ethosBylawBulkForm) {
+            delete ethosBylawBulkForm.dataset.ethosBylawBulkAutoExpiryWired;
+            wireCertQualDateAutoExpiry(ethosBylawBulkForm, "ebb_", "ethosBylawBulkAutoExpiryWired");
+          }
+          const qualEl = document.getElementById("ebb_QualDate");
+          if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+          applyCertExpirationFromQual("ebb_");
+          if (ethosBylawBulkForm) applyAllSelectAutosizes(ethosBylawBulkForm);
+          if (qualEl) qualEl.focus();
+        }
+
+        async function submitEthosBylawBulkSave() {
+          const memberItem = ethosDetailSession.item;
+          const pw = ethosDetailSession.pw;
+          if (!memberItem || memberItem.Id == null || !pw) return;
+
+          const selected = getSelectedBylawBulkItems(ethosBylawBulkItems);
+          if (!selected.length) {
+            setEthosBylawState("err", "Select at least one training item.");
+            return;
+          }
+          const qualEl = document.getElementById("ebb_QualDate");
+          if (!qualEl || !String(qualEl.value || "").trim()) {
+            setEthosBylawState("err", "Certification date is required.");
+            return;
+          }
+
+          const seg = ethosBylawTrainingListApiPath();
+          const sampleRow = ethosSession.bylawTrainingSampleRow;
+          const columns = ethosBylawFormColumns();
+          const sharedPayload = collectBylawBulkSharedPayload("ebb_", columns, sampleRow);
+          const memberId = parseInt(String(memberItem.Id), 10);
+          if (!memberId || isNaN(memberId)) {
+            setEthosBylawState("err", "Invalid ETHOS member Id.");
+            return;
+          }
+          const personKey = await resolveLinkedMemberPostKey(
+            seg,
+            pw,
+            ethosSession,
+            "bylawPersonFilterField",
+            "bylawPersonPostKey",
+            ETHOS_BYLAW_PERSON_FIELD,
+          );
+          sharedPayload[personKey] = memberId;
+
+          try {
+            if (ethosBylawBulkSaveBtn) ethosBylawBulkSaveBtn.disabled = true;
+            let saved = 0;
+            for (let i = 0; i < selected.length; i++) {
+              setEthosBylawState("loading", "Saving " + (i + 1) + " of " + selected.length + "...");
+              const payload = Object.assign({}, sharedPayload);
+              payload[selected[i].writeKey] = selected[i].value;
+              if (ETHOS_BYLAW_TRAINING_SET_TITLE) payload.Title = selected[i].value;
+              await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+              saved++;
+            }
+            setEthosBylawBulkPanelVisible(false);
+            if (ethosBylawBulkForm) ethosBylawBulkForm.reset();
+            await loadEthosMemberBylawTraining(memberItem.Id, pw);
+            setEthosBylawState("ok", "Saved " + saved + " training record(s).");
+            window.setTimeout(function () {
+              setEthosBylawState("", "");
+            }, 2500);
+          } catch (e) {
+            setEthosBylawState("err", "Save failed: " + (e.message || String(e)).slice(0, 200));
+          } finally {
+            if (ethosBylawBulkSaveBtn) ethosBylawBulkSaveBtn.disabled = false;
+          }
+        }
+
         async function openEthosBylawTrainingEditPanel(item) {
           if (!item || item.Id == null) return;
           ethosBylawTrainingEditSession.item = item;
+          setEthosBylawBulkPanelVisible(false);
           buildEthosBylawAddFormFields({ readOnlyKeys: ["Item"] });
           if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = false;
           await populateEthosBylawAddDropdowns();

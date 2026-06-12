@@ -133,6 +133,25 @@
               <p id="personBylawEmpty" class="bylaw-empty" hidden>No By-Law Training records on file for this person.</p>
               <div class="bylaw-add-toolbar">
                 <button type="button" id="personBylawAddBtn" class="btn-secondary">Add Training</button>
+                <button type="button" id="personBylawBulkAddBtn" class="btn-secondary">Add Multiple (same day)</button>
+              </div>
+              <div id="personBylawBulkPanel" class="bylaw-add-panel bylaw-bulk-panel" hidden>
+                <h4 class="bylaw-add-title">Add Multiple Trainings (same day)</h4>
+                <p class="bylaw-bulk-hint">Enter the certification date and certifier once, then check every training completed that day.</p>
+                <form id="personBylawBulkForm" class="bylaw-add-form add-form-stack" aria-label="Add multiple By-Law Training records">
+                  <div id="personBylawBulkSharedFields" class="add-form-grid"></div>
+                  <div class="bylaw-bulk-items-wrap">
+                    <div class="bylaw-bulk-items-toolbar">
+                      <button type="button" id="personBylawBulkSelectAll" class="btn-secondary">Select all</button>
+                      <button type="button" id="personBylawBulkClearAll" class="btn-secondary">Clear all</button>
+                    </div>
+                    <div id="personBylawBulkItems" class="bylaw-bulk-items" role="group" aria-label="Training items to add"></div>
+                  </div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="personBylawBulkSaveBtn">Save all selected</button>
+                    <button type="button" id="personBylawBulkCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
               </div>
               <div id="personBylawAddPanel" class="bylaw-add-panel" hidden>
                 <h4 id="personBylawFormTitle" class="bylaw-add-title">New By-Law Training Record</h4>
@@ -296,6 +315,25 @@
               <p id="ethosBylawEmpty" class="bylaw-empty" hidden>No By-Law Training records on file for this member.</p>
               <div class="bylaw-add-toolbar">
                 <button type="button" id="ethosBylawAddBtn" class="btn-secondary">Add Training</button>
+                <button type="button" id="ethosBylawBulkAddBtn" class="btn-secondary">Add Multiple (same day)</button>
+              </div>
+              <div id="ethosBylawBulkPanel" class="bylaw-add-panel bylaw-bulk-panel" hidden>
+                <h4 class="bylaw-add-title">Add Multiple Trainings (same day)</h4>
+                <p class="bylaw-bulk-hint">Enter the certification date and certifier once, then check every training completed that day.</p>
+                <form id="ethosBylawBulkForm" class="bylaw-add-form add-form-stack" aria-label="Add multiple ETHOS By-Law Training records">
+                  <div id="ethosBylawBulkSharedFields" class="add-form-grid"></div>
+                  <div class="bylaw-bulk-items-wrap">
+                    <div class="bylaw-bulk-items-toolbar">
+                      <button type="button" id="ethosBylawBulkSelectAll" class="btn-secondary">Select all</button>
+                      <button type="button" id="ethosBylawBulkClearAll" class="btn-secondary">Clear all</button>
+                    </div>
+                    <div id="ethosBylawBulkItems" class="bylaw-bulk-items" role="group" aria-label="Training items to add"></div>
+                  </div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="ethosBylawBulkSaveBtn">Save all selected</button>
+                    <button type="button" id="ethosBylawBulkCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
               </div>
               <div id="ethosBylawAddPanel" class="bylaw-add-panel" hidden>
                 <h4 id="ethosBylawFormTitle" class="bylaw-add-title">New By-Law Training Record</h4>
