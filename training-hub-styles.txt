@@ -314,6 +314,37 @@
         overflow-y: auto;
         overflow-x: auto;
       }
+      #sp-pip-ui .hub-section--roster .roster-wrap,
+      #sp-pip-ui .roster-wrap.roster-wrap--scroll {
+        scrollbar-width: thin;
+        scrollbar-color: var(--pip-green-dim) rgba(5, 14, 10, 0.9);
+      }
+      #sp-pip-ui .hub-section--roster .roster-wrap::-webkit-scrollbar,
+      #sp-pip-ui .roster-wrap.roster-wrap--scroll::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      #sp-pip-ui .hub-section--roster .roster-wrap::-webkit-scrollbar-track,
+      #sp-pip-ui .roster-wrap.roster-wrap--scroll::-webkit-scrollbar-track {
+        background: rgba(5, 14, 10, 0.9);
+        border-left: 1px solid var(--pip-border);
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+      }
+      #sp-pip-ui .hub-section--roster .roster-wrap::-webkit-scrollbar-thumb,
+      #sp-pip-ui .roster-wrap.roster-wrap--scroll::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, var(--pip-green-dim) 0%, #153d24 100%);
+        border: 1px solid var(--pip-border);
+        border-radius: 4px;
+        box-shadow: 0 0 6px var(--pip-green-glow);
+      }
+      #sp-pip-ui .hub-section--roster .roster-wrap::-webkit-scrollbar-thumb:hover,
+      #sp-pip-ui .roster-wrap.roster-wrap--scroll::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, var(--pip-green) 0%, var(--pip-green-dim) 100%);
+      }
+      #sp-pip-ui .hub-section--roster .roster-wrap::-webkit-scrollbar-corner,
+      #sp-pip-ui .roster-wrap.roster-wrap--scroll::-webkit-scrollbar-corner {
+        background: rgba(5, 14, 10, 0.9);
+      }
       #sp-pip-ui .person-detail-panel {
         border: 1px solid var(--pip-border);
         border-radius: 8px;

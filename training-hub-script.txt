@@ -115,7 +115,7 @@
 
         /**
          * Appointments list (SharePoint title **Appointments**). Rows are filtered by PersonnelId = personnel list item Id.
-         * List columns: PersonnelId, AppointmentTimeDate, Location, ProviderOffice (Location), ReasonType,
+         * List columns: PersonnelId, AppointmentDateTime, Location, ProviderOffice (Location), ReasonType,
          * InstructorInitials, MissedAppointment, CreatedAt. PersonnelId is filter-only (not shown on record page).
          */
         const LIST_APPOINTMENTS = "Appointments";
@@ -129,14 +129,16 @@
           "Personnel_x0020_ID",
           "Personnel/Id",
         ];
-        const APPOINTMENTS_ITEMS_ORDERBY = "AppointmentTimeDate asc";
+        const APPOINTMENTS_ITEMS_ORDERBY = "AppointmentDateTime asc";
         const APPOINTMENTS_COLUMNS = [
           {
-            key: "AppointmentTimeDate",
-            label: "Appointment time/date",
+            key: "AppointmentDateTime",
+            label: "Appointment date/time",
             altKeys: [
+              "Appointment_x0020_Date_x0020_Time",
+              "Appointment_x0020_DateTime",
+              "AppointmentTimeDate",
               "AppointmentTime_x0020_Date",
-              "Appointment_x0020_Time_x0020_Date",
               "AppointmentDate",
               "Appointment_x0020_Date",
               "Date",
@@ -2495,9 +2497,11 @@
           try {
             const rows = await fetchAppointmentsForPersonnel(seg, pw, personId);
             const dateKeys = [
+              "AppointmentDateTime",
+              "Appointment_x0020_Date_x0020_Time",
+              "Appointment_x0020_DateTime",
               "AppointmentTimeDate",
               "AppointmentTime_x0020_Date",
-              "Appointment_x0020_Time_x0020_Date",
               "AppointmentDate",
               "Appointment_x0020_Date",
               "Date",
