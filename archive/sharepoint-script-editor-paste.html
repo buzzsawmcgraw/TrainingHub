@@ -1360,10 +1360,50 @@
       }
       #sp-pip-ui .person-weapons-wrap,
       #sp-pip-ui .person-bylaw-wrap,
-      #sp-pip-ui .person-appointments-wrap {
+      #sp-pip-ui .person-appointments-wrap,
+      #sp-pip-ui .person-cleo-group {
         margin-top: 22px;
         padding-top: 18px;
         border-top: 1px solid var(--pip-border);
+      }
+      #sp-pip-ui fieldset.person-cleo-group {
+        margin-top: 18px;
+        padding-top: 0;
+        border-top: 1px solid var(--pip-border);
+      }
+      #sp-pip-ui .person-cleo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+        gap: 12px 16px;
+        align-items: start;
+      }
+      #sp-pip-ui .person-cleo-field .person-detail-value.cert-status--ok,
+      #sp-pip-ui .person-cleo-field .person-detail-value.cert-status--warn,
+      #sp-pip-ui .person-cleo-field .person-detail-value.cert-status--urgent,
+      #sp-pip-ui .person-cleo-field .person-detail-value.cert-status--expired {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      #sp-pip-ui .person-cleo-edit-grid .add-field--cleo-check {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+      }
+      #sp-pip-ui .person-cleo-edit-grid .add-field--cleo-check label {
+        margin: 0;
+        order: 2;
+      }
+      #sp-pip-ui .person-cleo-edit-grid .add-field--cleo-check input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        min-height: 18px;
+        margin: 0;
+        order: 1;
+        flex: 0 0 auto;
       }
       #sp-pip-ui h3.person-weapons-title,
       #sp-pip-ui h3.person-bylaw-title,
@@ -2916,6 +2956,22 @@
             placeholder:
               "Augmentee Report will highlight augmentee Personnel and their training posture. Augmentee identification rules will be added next.",
           },
+          {
+            id: "cleo-report",
+            title: "CLEO Report",
+            subtitle: "Certified Law Enforcement Officers and Post RC training completion status.",
+            badge: "CLEO",
+            implemented: true,
+            printable: true,
+          },
+          {
+            id: "post-rc-report",
+            title: "Post RC Report",
+            subtitle: "Post RC qualification and expiration status (same rules as By-Law Training).",
+            badge: "PRC",
+            implemented: true,
+            printable: true,
+          },
         ];
 
         /**
@@ -3008,6 +3064,42 @@
             keys: ["Address", "CellPhone", "WorkPhone", "Status", "OfficeSymbol", "Squadron", "Notes"],
             split: "right",
             layout: "contact-stack",
+          },
+        ];
+
+        /**
+         * Personnel list CLEO / Post RC fields (not shown on main roster table).
+         * Create on **Personnel**: IsCLEO (Yes/No), PostRCQualDate, PostRCExpirationDate (dates).
+         */
+        const PERSONNEL_CLEO_COLUMNS = [
+          {
+            key: "IsCLEO",
+            label: "CLEO",
+            inputType: "checkbox",
+            altKeys: ["Is_x0020_CLEO", "CLEO", "Cleo", "IsCLEO0"],
+          },
+          {
+            key: "PostRCQualDate",
+            label: "Post RC qual date",
+            inputType: "date",
+            altKeys: [
+              "PostRC_x0020_Qual_x0020_Date",
+              "PostRCQual_x0020_Date",
+              "PostRCQualDate0",
+              "PostRCDate",
+            ],
+          },
+          {
+            key: "PostRCExpirationDate",
+            label: "Post RC expiration",
+            inputType: "date",
+            readOnly: true,
+            altKeys: [
+              "PostRC_x0020_Expiration_x0020_Date",
+              "PostRCExpiration_x0020_Date",
+              "PostRCExpDate",
+              "PostRCExpirationDate0",
+            ],
           },
         ];
 
@@ -3986,6 +4078,135 @@
         function computeBylawTrainingStatus(item) {
           const columns = normalizedBylawTrainingColumns();
           return computeCertStatusFromExpiryKeys(item, bylawTrainingExpiryDateKeys(), certQualDateKeysFromColumns(columns));
+        }
+
+        function normalizedPersonnelCleoColumns() {
+          const arr = Array.isArray(PERSONNEL_CLEO_COLUMNS) ? PERSONNEL_CLEO_COLUMNS : [];
+          return arr
+            .map(function (entry) {
+              if (!entry || !entry.key) return null;
+              const key = String(entry.key).trim();
+              const label = String(entry.label || key).trim() || key;
+              const alt = Array.isArray(entry.altKeys)
+                ? entry.altKeys.map(function (x) {
+                    return String(x).trim();
+                  }).filter(Boolean)
+                : [];
+              const tryKeys = [key];
+              alt.forEach(function (a) {
+                if (tryKeys.indexOf(a) === -1) tryKeys.push(a);
+              });
+              return {
+                key: key,
+                label: label,
+                tryKeys: tryKeys,
+                inputType: entry.inputType || "text",
+                readOnly: !!entry.readOnly,
+              };
+            })
+            .filter(Boolean);
+        }
+
+        function personnelPostRCQualDateKeys() {
+          const col = normalizedPersonnelCleoColumns().find(function (c) {
+            return c.key === "PostRCQualDate";
+          });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["PostRCQualDate"];
+        }
+
+        function personnelPostRCExpiryDateKeys() {
+          const col = normalizedPersonnelCleoColumns().find(function (c) {
+            return c.key === "PostRCExpirationDate";
+          });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["PostRCExpirationDate"];
+        }
+
+        function personnelCleoFlagKeys() {
+          const col = normalizedPersonnelCleoColumns().find(function (c) {
+            return c.key === "IsCLEO";
+          });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["IsCLEO"];
+        }
+
+        function parsePersonnelCleoFlag(raw) {
+          if (raw === true || raw === 1) return true;
+          if (raw === false || raw === 0 || raw === null || raw === "") return false;
+          const s = String(formatCellValue(raw)).trim().toLowerCase();
+          return s === "yes" || s === "true" || s === "1";
+        }
+
+        function personIsCleo(item) {
+          return parsePersonnelCleoFlag(valueFromItemByKeys(item, personnelCleoFlagKeys()));
+        }
+
+        function formatPersonPostRCQualDisplay(item) {
+          const raw = valueFromItemByKeys(item, personnelPostRCQualDateKeys());
+          const d = parseWeaponsCertCalendarDate(raw);
+          if (!d) return formatCellValue(raw) || "-";
+          return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+        }
+
+        function formatPersonPostRCExpiryDisplay(item) {
+          const expiryKeys = personnelPostRCExpiryDateKeys();
+          const qualKeys = personnelPostRCQualDateKeys();
+          let raw = valueFromItemByKeys(item, expiryKeys);
+          if (raw === null || raw === undefined || raw === "") {
+            const qual = parseWeaponsCertCalendarDate(valueFromItemByKeys(item, qualKeys));
+            if (qual) {
+              const exp = expirationDateFromQualDate(qual);
+              return exp.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+            }
+          }
+          const d = parseWeaponsCertCalendarDate(raw);
+          if (!d) return formatCellValue(raw) || "-";
+          return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+        }
+
+        function computePersonPostRCStatus(item) {
+          return computeCertStatusFromExpiryKeys(
+            item,
+            personnelPostRCExpiryDateKeys(),
+            personnelPostRCQualDateKeys(),
+          );
+        }
+
+        function personnelCleoPayloadValue(el, writeKey, sampleRow) {
+          if (el && el.type === "checkbox") {
+            const checked = !!el.checked;
+            if (sampleRow && writeKey && Object.prototype.hasOwnProperty.call(sampleRow, writeKey)) {
+              const example = sampleRow[writeKey];
+              if (typeof example === "boolean") return checked;
+              if (typeof example === "number") return checked ? 1 : 0;
+              const s = String(example).trim().toLowerCase();
+              if (s === "yes" || s === "no") return checked ? "Yes" : "No";
+            }
+            return checked;
+          }
+          return formFieldPayloadValue(el, writeKey);
+        }
+
+        function applyPersonPostRCExpirationFromQual(idPrefix) {
+          const qualEl = document.getElementById(idPrefix + "PostRCQualDate");
+          const expEl = document.getElementById(idPrefix + "PostRCExpirationDate");
+          if (!qualEl || !expEl) return;
+          const qual = parseWeaponsCertCalendarDate(qualEl.value);
+          if (!qual) {
+            expEl.value = "";
+            return;
+          }
+          expEl.value = isoDateFromCalendarDate(expirationDateFromQualDate(qual));
+        }
+
+        function wirePersonPostRCQualAutoExpiry(form, idPrefix) {
+          if (!form || form.dataset.postRcExpiryWired === "1") return;
+          form.dataset.postRcExpiryWired = "1";
+          const qualFieldId = idPrefix + "PostRCQualDate";
+          form.addEventListener("input", function (ev) {
+            if (ev.target && ev.target.id === qualFieldId) applyPersonPostRCExpirationFromQual(idPrefix);
+          });
+          form.addEventListener("change", function (ev) {
+            if (ev.target && ev.target.id === qualFieldId) applyPersonPostRCExpirationFromQual(idPrefix);
+          });
         }
 
         function weaponsCertListTitle() {
@@ -9061,6 +9282,241 @@
           return wrap;
         }
 
+        function buildCleoReportRows(personRows) {
+          return (Array.isArray(personRows) ? personRows : [])
+            .filter(function (person) {
+              return person && personIsCleo(person);
+            })
+            .map(function (person) {
+              const postRcStatus = computePersonPostRCStatus(person);
+              let trainingComplete = "No Post RC on file";
+              if (postRcStatus.tone === "ok" || postRcStatus.tone === "warn" || postRcStatus.tone === "urgent") {
+                trainingComplete = "Current";
+              } else if (postRcStatus.tone === "expired") {
+                trainingComplete = "Expired";
+              }
+              return {
+                person: person,
+                postRcQual: formatPersonPostRCQualDisplay(person),
+                postRcExp: formatPersonPostRCExpiryDisplay(person),
+                postRcStatus: postRcStatus,
+                trainingComplete: trainingComplete,
+              };
+            });
+        }
+
+        function buildPostRCReportRows(personRows) {
+          return (Array.isArray(personRows) ? personRows : [])
+            .map(function (person) {
+              if (!person || person.Id == null) return null;
+              const postRcStatus = computePersonPostRCStatus(person);
+              return {
+                person: person,
+                isCleo: personIsCleo(person) ? "Yes" : "No",
+                postRcQual: formatPersonPostRCQualDisplay(person),
+                postRcExp: formatPersonPostRCExpiryDisplay(person),
+                postRcStatus: postRcStatus,
+              };
+            })
+            .filter(Boolean);
+        }
+
+        function renderCleoReportTable(rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "roster-wrap";
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "reports-office-empty";
+            p.textContent = "No Personnel marked CLEO.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          const table = document.createElement("table");
+          table.className = "roster reports-status-table";
+          table.setAttribute("aria-label", "CLEO Report");
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          ["Personnel", "Office / Squadron", "Post RC qual", "Post RC expiration", "Post RC status", "Training current"].forEach(
+            function (label) {
+              const th = document.createElement("th");
+              th.textContent = label;
+              trHead.appendChild(th);
+            },
+          );
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          const sorted = rows.slice().sort(function (a, b) {
+            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
+              sensitivity: "base",
+            });
+          });
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (entry) {
+            const tr = document.createElement("tr");
+            const tdName = document.createElement("td");
+            const nameBtn = document.createElement("button");
+            nameBtn.type = "button";
+            nameBtn.className = "reports-name-link";
+            nameBtn.textContent = formatPersonDisplayName(entry.person);
+            nameBtn.title = "Open Personnel Record";
+            nameBtn.addEventListener("click", function () {
+              navigateToPersonDetail(entry.person.Id);
+            });
+            tdName.appendChild(nameBtn);
+            tr.appendChild(tdName);
+            const tdOffice = document.createElement("td");
+            tdOffice.textContent = displayCellText(personOfficeLabel(entry.person));
+            tr.appendChild(tdOffice);
+            const tdQual = document.createElement("td");
+            tdQual.textContent = displayCellText(entry.postRcQual);
+            tr.appendChild(tdQual);
+            const tdExp = document.createElement("td");
+            tdExp.textContent = displayCellText(entry.postRcExp);
+            tr.appendChild(tdExp);
+            const tdStatus = document.createElement("td");
+            applyReportStatusCell(tdStatus, entry.postRcStatus);
+            tr.appendChild(tdStatus);
+            const tdComplete = document.createElement("td");
+            const completeTone =
+              entry.trainingComplete === "Current"
+                ? entry.postRcStatus.tone === "ok"
+                  ? "ok"
+                  : entry.postRcStatus.tone
+                : entry.trainingComplete === "Expired"
+                  ? "expired"
+                  : "unknown";
+            applyReportStatusCell(tdComplete, { text: entry.trainingComplete, tone: completeTone });
+            tr.appendChild(tdComplete);
+            frag.appendChild(tr);
+          });
+          tbody.appendChild(frag);
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        function renderPostRCReportTable(rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "roster-wrap";
+          const table = document.createElement("table");
+          table.className = "roster reports-status-table";
+          table.setAttribute("aria-label", "Post RC Report");
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          ["Personnel", "Office / Squadron", "CLEO", "Post RC qual", "Post RC expiration", "Status"].forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          const sorted = rows.slice().sort(function (a, b) {
+            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
+              sensitivity: "base",
+            });
+          });
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (entry) {
+            const tr = document.createElement("tr");
+            const tdName = document.createElement("td");
+            const nameBtn = document.createElement("button");
+            nameBtn.type = "button";
+            nameBtn.className = "reports-name-link";
+            nameBtn.textContent = formatPersonDisplayName(entry.person);
+            nameBtn.title = "Open Personnel Record";
+            nameBtn.addEventListener("click", function () {
+              navigateToPersonDetail(entry.person.Id);
+            });
+            tdName.appendChild(nameBtn);
+            tr.appendChild(tdName);
+            const tdOffice = document.createElement("td");
+            tdOffice.textContent = displayCellText(personOfficeLabel(entry.person));
+            tr.appendChild(tdOffice);
+            const tdCleo = document.createElement("td");
+            tdCleo.textContent = entry.isCleo;
+            tr.appendChild(tdCleo);
+            const tdQual = document.createElement("td");
+            tdQual.textContent = displayCellText(entry.postRcQual);
+            tr.appendChild(tdQual);
+            const tdExp = document.createElement("td");
+            tdExp.textContent = displayCellText(entry.postRcExp);
+            tr.appendChild(tdExp);
+            const tdStatus = document.createElement("td");
+            applyReportStatusCell(tdStatus, entry.postRcStatus);
+            tr.appendChild(tdStatus);
+            frag.appendChild(tr);
+          });
+          tbody.appendChild(frag);
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        async function loadCleoReport(reportDef) {
+          const pw = hubSession.pw;
+          if (!pw) {
+            setReportsState("err", "Hub not ready. Refresh the Personnel Roster first.");
+            return;
+          }
+          if (!reportsDetailBody) return;
+          showReportsDetail(reportDef);
+          reportsDetailBody.innerHTML = "";
+          setReportsState("loading", "Building CLEO report...");
+          try {
+            const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+            const rows = buildCleoReportRows(personRows);
+            const summary = document.createElement("p");
+            summary.className = "reports-hint";
+            summary.textContent =
+              rows.length +
+              " CLEO member(s). Post RC uses the same expiration rules as By-Law Training (qual date + 1 year).";
+            reportsDetailBody.appendChild(summary);
+            reportsDetailBody.appendChild(renderCleoReportTable(rows));
+            setReportsState("ok", "CLEO report updated.");
+            window.setTimeout(function () {
+              setReportsState("", "");
+            }, 2200);
+          } catch (e) {
+            setReportsState("err", "Could not build CLEO report: " + (e.message || String(e)).slice(0, 220));
+          }
+        }
+
+        async function loadPostRCReport(reportDef) {
+          const pw = hubSession.pw;
+          if (!pw) {
+            setReportsState("err", "Hub not ready. Refresh the Personnel Roster first.");
+            return;
+          }
+          if (!reportsDetailBody) return;
+          showReportsDetail(reportDef);
+          reportsDetailBody.innerHTML = "";
+          setReportsState("loading", "Building Post RC report...");
+          try {
+            const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+            const rows = buildPostRCReportRows(personRows);
+            const withQual = rows.filter(function (entry) {
+              return entry.postRcStatus.tone !== "unknown";
+            }).length;
+            const summary = document.createElement("p");
+            summary.className = "reports-hint";
+            summary.textContent =
+              withQual +
+              " of " +
+              rows.length +
+              " Personnel have Post RC dates on file. Expiration follows By-Law Training rules.";
+            reportsDetailBody.appendChild(summary);
+            reportsDetailBody.appendChild(renderPostRCReportTable(rows));
+            setReportsState("ok", "Post RC report updated.");
+            window.setTimeout(function () {
+              setReportsState("", "");
+            }, 2200);
+          } catch (e) {
+            setReportsState("err", "Could not build Post RC report: " + (e.message || String(e)).slice(0, 220));
+          }
+        }
+
         async function loadStatusOfTrainingReport(reportDef) {
           const pw = hubSession.pw;
           if (!pw) {
@@ -9130,6 +9586,14 @@
             await loadStatusOfTrainingReport(def);
             return;
           }
+          if (def.implemented && def.id === "cleo-report") {
+            await loadCleoReport(def);
+            return;
+          }
+          if (def.implemented && def.id === "post-rc-report") {
+            await loadPostRCReport(def);
+            return;
+          }
           renderPlaceholderReport(def);
         }
 
@@ -9143,6 +9607,10 @@
           if (!def || !def.printable) return;
           if (def.id === "status-of-training") {
             if (reportsSession.sotView !== "monthly") return;
+            window.print();
+            return;
+          }
+          if (def.id === "cleo-report" || def.id === "post-rc-report") {
             window.print();
             return;
           }
@@ -9510,10 +9978,104 @@
           return rank || name || "Personnel Record";
         }
 
+        function buildCleoDisplayField(label, text, tone) {
+          const fwrap = document.createElement("div");
+          fwrap.className = "add-field person-detail-field person-cleo-field";
+          const lab = document.createElement("div");
+          lab.className = "person-detail-label";
+          lab.textContent = label;
+          const val = document.createElement("div");
+          val.className = "person-detail-value";
+          val.textContent = displayCellText(text);
+          if (tone && tone !== "unknown") val.classList.add("cert-status--" + tone);
+          fwrap.appendChild(lab);
+          fwrap.appendChild(val);
+          return fwrap;
+        }
+
+        function buildCleoDetailFieldset(item) {
+          const fs = document.createElement("fieldset");
+          fs.className = "add-form-group person-cleo-group";
+          const leg = document.createElement("legend");
+          leg.className = "add-form-group-legend";
+          leg.textContent = "CLEO / Post RC";
+          fs.appendChild(leg);
+          const grid = document.createElement("div");
+          grid.className = "person-cleo-grid";
+          grid.appendChild(buildCleoDisplayField("CLEO", personIsCleo(item) ? "Yes" : "No"));
+          grid.appendChild(buildCleoDisplayField("Post RC qual date", formatPersonPostRCQualDisplay(item)));
+          grid.appendChild(buildCleoDisplayField("Post RC expiration", formatPersonPostRCExpiryDisplay(item)));
+          const postRcStatus = computePersonPostRCStatus(item);
+          grid.appendChild(buildCleoDisplayField("Post RC status", postRcStatus.text, postRcStatus.tone));
+          fs.appendChild(grid);
+          return fs;
+        }
+
+        function buildCleoAddFieldWrap(col, sampleRow, idPrefix) {
+          if (!col || col.key === "Id") return null;
+          const writeKey = resolveWriteKey(col, sampleRow);
+          const fwrap = document.createElement("div");
+          fwrap.className = "add-field";
+          if (col.inputType === "checkbox") fwrap.classList.add("add-field--cleo-check");
+          const lab = document.createElement("label");
+          lab.setAttribute("for", idPrefix + col.key);
+          lab.textContent = col.label;
+          lab.title = "REST write key: " + writeKey;
+          fwrap.appendChild(lab);
+          let input;
+          if (col.inputType === "checkbox") {
+            input = document.createElement("input");
+            input.type = "checkbox";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+          } else if (col.inputType === "date") {
+            input = document.createElement("input");
+            input.type = "date";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+            if (col.readOnly) input.readOnly = true;
+          } else {
+            input = document.createElement("input");
+            input.type = "text";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+          }
+          fwrap.appendChild(input);
+          return fwrap;
+        }
+
+        function buildCleoEditFieldset(item, sampleRow) {
+          const cols = normalizedPersonnelCleoColumns();
+          if (!cols.length) return null;
+          const idPrefix = "pf_";
+          const fs = document.createElement("fieldset");
+          fs.className = "add-form-group person-cleo-group";
+          const leg = document.createElement("legend");
+          leg.className = "add-form-group-legend";
+          leg.textContent = "CLEO / Post RC";
+          fs.appendChild(leg);
+          const grid = document.createElement("div");
+          grid.className = "person-cleo-grid person-cleo-edit-grid";
+          cols.forEach(function (col) {
+            const fwrap = buildCleoAddFieldWrap(col, sampleRow, idPrefix);
+            if (!fwrap) return;
+            const input = fwrap.querySelector("input");
+            if (input) setFieldValueFromItem(input, col, item);
+            grid.appendChild(fwrap);
+          });
+          if (!grid.childElementCount) return null;
+          fs.appendChild(grid);
+          fs.dataset.cleoEdit = "1";
+          return fs;
+        }
+
         function buildDetailFieldWrap(col, item) {
           const tryKeys = col.tryKeys || [col.key];
           const raw = valueFromItemByKeys(item, tryKeys);
-          const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+          let text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+          if (col.inputType === "checkbox" || col.key === "IsCLEO") {
+            text = parsePersonnelCleoFlag(raw) ? "Yes" : "No";
+          }
           const fwrap = document.createElement("div");
           fwrap.className = "add-field person-detail-field";
           if (col.key === "Address") fwrap.classList.add("add-field--address");
@@ -9616,6 +10178,10 @@
           }
           const tryKeys = col.tryKeys || [col.key];
           const raw = valueFromItemByKeys(item, tryKeys);
+          if (el.type === "checkbox") {
+            el.checked = parsePersonnelCleoFlag(raw);
+            return;
+          }
           if (raw === undefined || raw === null || raw === "") return;
           const text = formatCellValue(raw);
           if (el.type === "date") {
@@ -9755,6 +10321,9 @@
             });
           }
 
+          const cleoFs = editing ? buildCleoEditFieldset(item, sampleRow) : buildCleoDetailFieldset(item);
+          if (cleoFs) splitWrap.appendChild(cleoFs);
+
           if (!splitWrap.childElementCount) {
             const grid = document.createElement("div");
             grid.className = "add-form-grid add-form-grid--stack";
@@ -9804,6 +10373,8 @@
               form,
               item,
             );
+            wirePersonPostRCQualAutoExpiry(form, "pf_");
+            applyPersonPostRCExpirationFromQual("pf_");
             requestAnimationFrame(function () {
               requestAnimationFrame(function () {
                 balanceContactNotesToIdentityColumn(form);
@@ -9817,16 +10388,22 @@
         function mergePayloadIntoItem(item, body) {
           const updated = Object.assign({}, item);
           const cols = normalizedRosterColumns();
+          const cleoCols = normalizedPersonnelCleoColumns();
           Object.keys(body || {}).forEach(function (key) {
             if (key === "Title") {
               updated.Title = body[key];
               return;
             }
-            const col = cols.find(function (c) {
-              const writeKey = c.saveKey || c.key;
-              const tryKeys = c.tryKeys || [c.key];
-              return writeKey === key || tryKeys.indexOf(key) !== -1 || c.key === key;
-            });
+            const col =
+              cols.find(function (c) {
+                const writeKey = c.saveKey || c.key;
+                const tryKeys = c.tryKeys || [c.key];
+                return writeKey === key || tryKeys.indexOf(key) !== -1 || c.key === key;
+              }) ||
+              cleoCols.find(function (c) {
+                const tryKeys = c.tryKeys || [c.key];
+                return tryKeys.indexOf(key) !== -1 || c.key === key;
+              });
             const targetKey = col ? col.key : key;
             let val = body[key];
             if (typeof val === "string" && /T00:00:00Z$/.test(val)) val = val.slice(0, 10);
@@ -9880,6 +10457,31 @@
             if (v === null) return;
             payload[writeKey] = v;
           });
+
+          normalizedPersonnelCleoColumns().forEach(function (col) {
+            const el = document.getElementById("pf_" + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || resolveWriteKey(col, s.sampleRow);
+            if (col.inputType === "checkbox") {
+              payload[writeKey] = personnelCleoPayloadValue(el, writeKey, s.sampleRow);
+              return;
+            }
+            if (col.key === "PostRCExpirationDate") return;
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
+            payload[writeKey] = v;
+          });
+          const qualEl = document.getElementById("pf_PostRCQualDate");
+          const expCol = normalizedPersonnelCleoColumns().find(function (c) {
+            return c.key === "PostRCExpirationDate";
+          });
+          if (qualEl && qualEl.value && expCol) {
+            const qual = parseWeaponsCertCalendarDate(qualEl.value);
+            if (qual) {
+              const expWriteKey = resolveWriteKey(expCol, s.sampleRow);
+              payload[expWriteKey] = isoDateFromCalendarDate(expirationDateFromQualDate(qual)) + "T00:00:00Z";
+            }
+          }
 
           if (SET_TITLE_ON_CREATE) {
             payload.Title = [lastName, firstName].filter(Boolean).join(", ") || dod || "Personnel Record";

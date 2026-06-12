@@ -1356,10 +1356,50 @@
       }
       #sp-pip-ui .person-weapons-wrap,
       #sp-pip-ui .person-bylaw-wrap,
-      #sp-pip-ui .person-appointments-wrap {
+      #sp-pip-ui .person-appointments-wrap,
+      #sp-pip-ui .person-cleo-group {
         margin-top: 22px;
         padding-top: 18px;
         border-top: 1px solid var(--pip-border);
+      }
+      #sp-pip-ui fieldset.person-cleo-group {
+        margin-top: 18px;
+        padding-top: 0;
+        border-top: 1px solid var(--pip-border);
+      }
+      #sp-pip-ui .person-cleo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+        gap: 12px 16px;
+        align-items: start;
+      }
+      #sp-pip-ui .person-cleo-field .person-detail-value.cert-status--ok,
+      #sp-pip-ui .person-cleo-field .person-detail-value.cert-status--warn,
+      #sp-pip-ui .person-cleo-field .person-detail-value.cert-status--urgent,
+      #sp-pip-ui .person-cleo-field .person-detail-value.cert-status--expired {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      #sp-pip-ui .person-cleo-edit-grid .add-field--cleo-check {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+      }
+      #sp-pip-ui .person-cleo-edit-grid .add-field--cleo-check label {
+        margin: 0;
+        order: 2;
+      }
+      #sp-pip-ui .person-cleo-edit-grid .add-field--cleo-check input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        min-height: 18px;
+        margin: 0;
+        order: 1;
+        flex: 0 0 auto;
       }
       #sp-pip-ui h3.person-weapons-title,
       #sp-pip-ui h3.person-bylaw-title,
