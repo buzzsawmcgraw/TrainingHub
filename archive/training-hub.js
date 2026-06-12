@@ -3163,6 +3163,12 @@
           });
           return dateCol && dateCol.tryKeys ? dateCol.tryKeys.slice() : ["AppointmentDateTime"];
         }
+        function appointmentCreatedAtKeys() {
+          const col = normalizedAppointmentsColumns().find(function (c) {
+            return c.key === "CreatedAt";
+          });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["CreatedAt", "Created", "Created_x0020_At"];
+        }
         function appointmentDateTimeFromItem(item) {
           return parseAppointmentDateTime(valueFromItemByKeys(item, appointmentDateTimeKeys()));
         }
@@ -3878,6 +3884,7 @@
             missed: appointmentIsMissed(item) ? "Yes" : "No",
             archivedAt: formatArchivedAtDisplay(item),
             archiveRetentionTier: appointmentArchiveRetentionInfo(item).tier,
+            createdAt: formatAppointmentDateTimeDisplay(valueFromItemByKeys(item, appointmentCreatedAtKeys())),
           };
         }
 
@@ -4647,6 +4654,7 @@
           const isArchive = schedulingSession.listView === "archive";
           const headers = ["Office", "Personnel", "Date / time", "Location", "Description", "Instructor", "Missed"];
           if (isArchive) headers.push("Archived");
+          headers.push("Created");
           const trHead = document.createElement("tr");
           headers.forEach(function (label) {
             const th = document.createElement("th");
@@ -4698,6 +4706,7 @@
             if (isArchive) {
               cells.push(appointmentArchiveStatusLabel(view.item, view.pendingArchive));
             }
+            cells.push(view.createdAt);
             cells.forEach(function (text) {
               const td = document.createElement("td");
               td.textContent = displayCellText(text);
