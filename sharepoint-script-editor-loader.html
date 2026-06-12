@@ -225,12 +225,14 @@
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="schedulingAddBtn" class="btn-secondary">Add appointment</button>
                 <button type="button" id="schedulingPrintReportBtn" class="btn-secondary">Print unit report</button>
+                <button type="button" id="schedulingPrintMissedReportBtn" class="btn-secondary">Print missed report</button>
+                <button type="button" id="schedulingNewMemoBtn" class="btn-secondary">New memorandum</button>
               </div>
             </div>
             <h2 class="hub-subtitle person-detail-title">Scheduling</h2>
             <p class="scheduling-hint">
-              Schedule appointments for Personnel. New entries appear on each member's record. Print a unit-wide
-              appointments report grouped by office symbol (save as PDF from the print dialog).
+              Schedule appointments for Personnel. Mark missed appointments, track them on the Missed tab, and generate
+              printable memorandums with signature blocks (save as PDF from the print dialog).
             </p>
             <div id="schedulingReadState" class="read-state" hidden></div>
             <div id="schedulingAddPanel" class="weapons-add-panel" hidden>
@@ -252,7 +254,15 @@
               </form>
             </div>
             <div id="schedulingUpcomingWrap" class="scheduling-upcoming-wrap">
-              <h3 class="scheduling-upcoming-title">Unit appointments</h3>
+              <div class="scheduling-list-toolbar scheduling-no-print">
+                <button type="button" id="schedulingTabAll" class="btn-secondary scheduling-tab scheduling-tab--active">
+                  All appointments
+                </button>
+                <button type="button" id="schedulingTabMissed" class="btn-secondary scheduling-tab">
+                  Missed appointments
+                </button>
+              </div>
+              <h3 id="schedulingListTitle" class="scheduling-upcoming-title">Unit appointments</h3>
               <div class="roster-wrap scheduling-roster-wrap">
                 <table class="roster scheduling-table" aria-label="Unit appointments">
                   <thead id="schedulingThead"></thead>
@@ -271,6 +281,83 @@
         </section>
       </main>
       <div id="schedulingPrintSurface" class="scheduling-print-surface" hidden aria-hidden="true"></div>
+      <div id="schedulingMemoOverlay" class="scheduling-memo-overlay" hidden aria-label="Memorandum editor">
+        <div class="scheduling-memo-panel">
+          <h4>Memorandum</h4>
+          <form id="schedulingMemoForm" class="weapons-add-form add-form-stack" aria-label="Memorandum">
+            <div class="add-form-grid">
+              <div class="add-field add-field--address">
+                <label for="schedulingMemoFor">Memorandum for</label>
+                <input type="text" id="schedulingMemoFor" />
+              </div>
+              <div class="add-field">
+                <label for="schedulingMemoFrom">From</label>
+                <input type="text" id="schedulingMemoFrom" />
+              </div>
+              <div class="add-field add-field--address">
+                <label for="schedulingMemoSubject">Subject</label>
+                <input type="text" id="schedulingMemoSubject" />
+              </div>
+              <div class="add-field add-field--notes">
+                <label for="schedulingMemoBody">Body</label>
+                <textarea id="schedulingMemoBody" rows="8"></textarea>
+              </div>
+            </div>
+            <p class="scheduling-hint" style="margin: 12px 0 6px">Signature blocks (printed with signature lines)</p>
+            <div class="scheduling-memo-sig-grid">
+              <div class="scheduling-memo-sig-block">
+                <h5>Signature 1</h5>
+                <div class="add-field">
+                  <label for="schedulingMemoSig1Name">Name / rank</label>
+                  <input type="text" id="schedulingMemoSig1Name" />
+                </div>
+                <div class="add-field">
+                  <label for="schedulingMemoSig1Title">Title</label>
+                  <input type="text" id="schedulingMemoSig1Title" />
+                </div>
+                <div class="add-field">
+                  <label for="schedulingMemoSig1Org">Organization</label>
+                  <input type="text" id="schedulingMemoSig1Org" />
+                </div>
+              </div>
+              <div class="scheduling-memo-sig-block">
+                <h5>Signature 2</h5>
+                <div class="add-field">
+                  <label for="schedulingMemoSig2Name">Name / rank</label>
+                  <input type="text" id="schedulingMemoSig2Name" />
+                </div>
+                <div class="add-field">
+                  <label for="schedulingMemoSig2Title">Title</label>
+                  <input type="text" id="schedulingMemoSig2Title" />
+                </div>
+                <div class="add-field">
+                  <label for="schedulingMemoSig2Org">Organization</label>
+                  <input type="text" id="schedulingMemoSig2Org" />
+                </div>
+              </div>
+              <div class="scheduling-memo-sig-block">
+                <h5>Signature 3</h5>
+                <div class="add-field">
+                  <label for="schedulingMemoSig3Name">Name / rank</label>
+                  <input type="text" id="schedulingMemoSig3Name" />
+                </div>
+                <div class="add-field">
+                  <label for="schedulingMemoSig3Title">Title</label>
+                  <input type="text" id="schedulingMemoSig3Title" />
+                </div>
+                <div class="add-field">
+                  <label for="schedulingMemoSig3Org">Organization</label>
+                  <input type="text" id="schedulingMemoSig3Org" />
+                </div>
+              </div>
+            </div>
+            <div class="add-form-actions">
+              <button type="button" id="schedulingMemoPrintBtn">Print memorandum</button>
+              <button type="button" id="schedulingMemoCancelBtn" class="btn-secondary">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 <script>
 (function () {

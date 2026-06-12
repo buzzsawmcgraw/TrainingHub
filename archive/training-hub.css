@@ -477,6 +477,149 @@
         font-size: 9pt;
         color: #555;
       }
+      #sp-pip-ui .scheduling-list-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 12px;
+      }
+      #sp-pip-ui .scheduling-list-toolbar button {
+        margin: 0;
+      }
+      #sp-pip-ui .scheduling-tab--active {
+        border-color: var(--pip-green-dim);
+        color: var(--pip-green);
+        box-shadow: 0 0 10px var(--pip-green-glow);
+      }
+      #sp-pip-ui table.scheduling-table tr.scheduling-row--missed td,
+      #sp-pip-ui table.appointments-table tr.appointments-row--missed td {
+        background: rgba(92, 26, 10, 0.35);
+      }
+      #sp-pip-ui .scheduling-appt-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      #sp-pip-ui .scheduling-appt-actions button {
+        margin: 0;
+        padding: 4px 8px;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+      }
+      #sp-pip-ui .scheduling-memo-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 250;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 24px 16px 32px;
+        overflow-y: auto;
+        background: rgba(2, 6, 4, 0.88);
+      }
+      #sp-pip-ui .scheduling-memo-overlay[hidden] {
+        display: none !important;
+      }
+      #sp-pip-ui .scheduling-memo-panel {
+        width: min(100%, 720px);
+        margin: 0;
+        padding: 20px 22px;
+        border: 1px solid var(--pip-border);
+        border-radius: 8px;
+        background: rgba(5, 14, 10, 0.96);
+        box-shadow: 0 0 32px rgba(0, 0, 0, 0.55);
+      }
+      #sp-pip-ui .scheduling-memo-panel h4 {
+        margin: 0 0 14px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .scheduling-memo-sig-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+        margin-top: 8px;
+      }
+      #sp-pip-ui .scheduling-memo-sig-block {
+        padding: 10px 12px;
+        border: 1px dashed rgba(30, 74, 54, 0.65);
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+      #sp-pip-ui .scheduling-memo-sig-block h5 {
+        margin: 0 0 8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .scheduling-memo-document {
+        font-family: "Times New Roman", Times, serif;
+        font-size: 12pt;
+        line-height: 1.5;
+        color: #000;
+        background: #fff;
+        padding: 0.75in 0.85in;
+        max-width: 8.5in;
+        margin: 0 auto;
+      }
+      #sp-pip-ui .scheduling-memo-doc-title {
+        text-align: center;
+        font-weight: 700;
+        font-size: 12pt;
+        letter-spacing: 0.08em;
+        margin: 0 0 22px;
+      }
+      #sp-pip-ui .scheduling-memo-doc-row {
+        display: flex;
+        gap: 12px;
+        margin: 0 0 10px;
+        align-items: baseline;
+      }
+      #sp-pip-ui .scheduling-memo-doc-label {
+        flex: 0 0 auto;
+        min-width: 130px;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11pt;
+      }
+      #sp-pip-ui .scheduling-memo-doc-value {
+        flex: 1 1 auto;
+        border-bottom: 1px solid #000;
+        min-height: 1.2em;
+        padding-bottom: 2px;
+      }
+      #sp-pip-ui .scheduling-memo-doc-body {
+        margin: 22px 0 28px;
+        white-space: pre-wrap;
+      }
+      #sp-pip-ui .scheduling-memo-doc-sigs {
+        margin-top: 36px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 28px 36px;
+      }
+      #sp-pip-ui .scheduling-memo-doc-sig {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      #sp-pip-ui .scheduling-memo-doc-sig-line {
+        border-bottom: 1px solid #000;
+        height: 28px;
+        margin-bottom: 4px;
+      }
+      #sp-pip-ui .scheduling-memo-doc-sig-name,
+      #sp-pip-ui .scheduling-memo-doc-sig-title,
+      #sp-pip-ui .scheduling-memo-doc-sig-org {
+        margin: 0;
+        font-size: 11pt;
+      }
       @media print {
         body {
           margin: 0;
@@ -487,7 +630,8 @@
         #sp-pip-ui.scheduling-print-active .hub-top-banner-wrap,
         #sp-pip-ui.scheduling-print-active .hub-header,
         #sp-pip-ui.scheduling-print-active main,
-        #sp-pip-ui.scheduling-print-active .hub-section--diag {
+        #sp-pip-ui.scheduling-print-active .hub-section--diag,
+        #sp-pip-ui.scheduling-print-active .scheduling-memo-overlay {
           display: none !important;
         }
         #sp-pip-ui.scheduling-print-active {
@@ -507,6 +651,14 @@
           max-width: none;
         }
         #sp-pip-ui.scheduling-print-active .scheduling-unit-office-block {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-memo-document {
+          padding: 0;
+          max-width: none;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-memo-doc-sigs {
           break-inside: avoid;
           page-break-inside: avoid;
         }

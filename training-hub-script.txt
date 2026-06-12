@@ -176,6 +176,7 @@
           },
         ];
         const APPOINTMENTS_SQUADRON_LABEL = "88 SFS";
+        const APPOINTMENTS_MEMO_DEFAULT_FROM = "88 SFS/S3T";
         const APPOINTMENTS_FORM_FIELDS = [
           {
             key: "AppointmentDateTime",
@@ -512,6 +513,28 @@
         const schedulingTableBody = document.getElementById("schedulingTableBody");
         const schedulingEmpty = document.getElementById("schedulingEmpty");
         const schedulingPrintSurface = document.getElementById("schedulingPrintSurface");
+        const schedulingPrintMissedReportBtn = document.getElementById("schedulingPrintMissedReportBtn");
+        const schedulingNewMemoBtn = document.getElementById("schedulingNewMemoBtn");
+        const schedulingTabAll = document.getElementById("schedulingTabAll");
+        const schedulingTabMissed = document.getElementById("schedulingTabMissed");
+        const schedulingListTitle = document.getElementById("schedulingListTitle");
+        const schedulingMemoOverlay = document.getElementById("schedulingMemoOverlay");
+        const schedulingMemoForm = document.getElementById("schedulingMemoForm");
+        const schedulingMemoFor = document.getElementById("schedulingMemoFor");
+        const schedulingMemoFrom = document.getElementById("schedulingMemoFrom");
+        const schedulingMemoSubject = document.getElementById("schedulingMemoSubject");
+        const schedulingMemoBody = document.getElementById("schedulingMemoBody");
+        const schedulingMemoSig1Name = document.getElementById("schedulingMemoSig1Name");
+        const schedulingMemoSig1Title = document.getElementById("schedulingMemoSig1Title");
+        const schedulingMemoSig1Org = document.getElementById("schedulingMemoSig1Org");
+        const schedulingMemoSig2Name = document.getElementById("schedulingMemoSig2Name");
+        const schedulingMemoSig2Title = document.getElementById("schedulingMemoSig2Title");
+        const schedulingMemoSig2Org = document.getElementById("schedulingMemoSig2Org");
+        const schedulingMemoSig3Name = document.getElementById("schedulingMemoSig3Name");
+        const schedulingMemoSig3Title = document.getElementById("schedulingMemoSig3Title");
+        const schedulingMemoSig3Org = document.getElementById("schedulingMemoSig3Org");
+        const schedulingMemoPrintBtn = document.getElementById("schedulingMemoPrintBtn");
+        const schedulingMemoCancelBtn = document.getElementById("schedulingMemoCancelBtn");
 
         let hubSession = {
           rows: null,
@@ -538,6 +561,7 @@
 
         let schedulingSession = {
           rows: null,
+          listView: "all",
         };
 
         let instructorsSession = {
@@ -806,6 +830,7 @@
           if (schedulingSection) schedulingSection.hidden = true;
           setInstructorsAddPanelVisible(false);
           setSchedulingAddPanelVisible(false);
+          setSchedulingMemoOverlayVisible(false);
           showReportsHub();
           personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           clearPersonWeaponsCertSection();
@@ -2381,10 +2406,88 @@
           if (personAppointmentsWrap) personAppointmentsWrap.hidden = true;
         }
 
+        function appointmentMissedFieldSpec() {
+          const missedCol = normalizedAppointmentsColumns().find(function (c) {
+            return c.key === "MissedAppointment";
+          });
+          return {
+            key: "MissedAppointment",
+            tryKeys: missedCol ? missedCol.tryKeys.slice() : ["MissedAppointment", "Missed_x0020_Appointment"],
+          };
+        }
+
+        function appointmentIsMissed(item) {
+          const spec = appointmentMissedFieldSpec();
+          const raw = valueFromItemByKeys(item, spec.tryKeys);
+          if (raw === true || raw === 1) return true;
+          if (raw === false || raw === 0 || raw === null || raw === "") return false;
+          const s = String(formatCellValue(raw)).trim().toLowerCase();
+          return s === "yes" || s === "true" || s === "1";
+        }
+
+        function missedAppointmentPayloadValue(missed, sampleRow) {
+          const field = appointmentMissedFieldSpec();
+          const writeKey = resolveAppointmentsWriteKey(field, sampleRow);
+          if (sampleRow && writeKey && Object.prototype.hasOwnProperty.call(sampleRow, writeKey)) {
+            const example = sampleRow[writeKey];
+            if (typeof example === "boolean") return !!missed;
+            if (typeof example === "number") return missed ? 1 : 0;
+            const s = String(example).trim().toLowerCase();
+            if (s === "yes" || s === "no") return missed ? "Yes" : "No";
+          }
+          return !!missed;
+        }
+
+        async function updateAppointmentMissedStatus(item, missed, pw, onDone) {
+          if (!item || item.Id == null || !pw) return;
+          const seg = appointmentsListApiPath();
+          const sampleRow = hubSession.appointmentsSampleRow || item;
+          const field = appointmentMissedFieldSpec();
+          const writeKey = resolveAppointmentsWriteKey(field, sampleRow);
+          const payload = {};
+          payload[writeKey] = missedAppointmentPayloadValue(!!missed, sampleRow);
+          try {
+            await spFetch(`/_api/web/${seg}/items(${item.Id})`, { method: "MERGE", body: payload }, pw);
+            item[writeKey] = payload[writeKey];
+            if (typeof onDone === "function") await onDone();
+          } catch (e) {
+            const msg = "Could not update missed status: " + (e.message || String(e)).slice(0, 220);
+            if (schedulingSection && !schedulingSection.hidden) setSchedulingState("err", msg);
+            else setAppointmentsState("err", msg);
+            log("Appointment missed update failed:\n" + (e.message || String(e)), "err");
+          }
+        }
+
+        function buildAppointmentActionsCell(item, refreshFn) {
+          const td = document.createElement("td");
+          td.className = "roster-actions scheduling-appt-actions";
+          const missed = appointmentIsMissed(item);
+          const markBtn = document.createElement("button");
+          markBtn.type = "button";
+          markBtn.className = "btn-secondary";
+          markBtn.textContent = missed ? "Clear missed" : "Mark missed";
+          markBtn.addEventListener("click", function () {
+            const pw = hubSession.pw || personDetailSession.pw;
+            if (!pw) return;
+            void updateAppointmentMissedStatus(item, !missed, pw, refreshFn);
+          });
+          const memoBtn = document.createElement("button");
+          memoBtn.type = "button";
+          memoBtn.className = "btn-secondary";
+          memoBtn.textContent = "Memo";
+          memoBtn.addEventListener("click", function () {
+            openSchedulingMemoForAppointment(item);
+          });
+          td.appendChild(markBtn);
+          td.appendChild(memoBtn);
+          return td;
+        }
+
         function renderAppointmentsTable(rows) {
           clearAppointmentsTable();
           const columns = normalizedAppointmentsColumns();
           if (!personAppointmentsThead || !personAppointmentsBody || !columns.length) return;
+          const showActions = !!(personDetailSession.pw && personAppointmentsWrap && !personAppointmentsWrap.hidden);
 
           const trHead = document.createElement("tr");
           columns.forEach(function (col) {
@@ -2392,24 +2495,46 @@
             th.textContent = col.label;
             trHead.appendChild(th);
           });
+          if (showActions) {
+            const thAct = document.createElement("th");
+            thAct.className = "roster-actions";
+            thAct.textContent = " ";
+            thAct.title = "Mark missed / memorandum";
+            trHead.appendChild(thAct);
+          }
           personAppointmentsThead.appendChild(trHead);
 
           const frag = document.createDocumentFragment();
           rows.forEach(function (item) {
             const tr = document.createElement("tr");
+            if (appointmentIsMissed(item)) tr.className = "appointments-row--missed";
             columns.forEach(function (col) {
               const td = document.createElement("td");
               const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
               let text = "";
               if (raw !== undefined && raw !== null) {
-                text =
-                  col.key === "AppointmentDateTime"
-                    ? formatAppointmentDateTimeDisplay(raw)
-                    : formatCellValue(raw);
+                if (col.key === "AppointmentDateTime") {
+                  text = formatAppointmentDateTimeDisplay(raw);
+                } else if (col.key === "MissedAppointment") {
+                  text = appointmentIsMissed(item) ? "Yes" : "No";
+                } else {
+                  text = formatCellValue(raw);
+                }
+              } else if (col.key === "MissedAppointment") {
+                text = "No";
               }
               td.textContent = displayCellText(text);
               tr.appendChild(td);
             });
+            if (showActions) {
+              tr.appendChild(
+                buildAppointmentActionsCell(item, async function () {
+                  if (personDetailSession.item && personDetailSession.item.Id != null) {
+                    await loadPersonAppointments(personDetailSession.item.Id, personDetailSession.pw);
+                  }
+                }),
+              );
+            }
             frag.appendChild(tr);
           });
           personAppointmentsBody.appendChild(frag);
@@ -2604,6 +2729,7 @@
               const cb = formatCellValue(valueFromItemByKeys(b, ["CreatedAt", "Created"]) || "");
               return String(ca).localeCompare(String(cb));
             });
+            hubSession.appointmentsSampleRow = rows.length ? rows[0] : hubSession.appointmentsSampleRow;
             renderAppointmentsTable(rows);
             setAppointmentsState("", "");
           } catch (e) {
@@ -2749,10 +2875,52 @@
             instructor: formatCellValue(
               valueFromItemByKeys(item, instructorCol ? instructorCol.tryKeys : ["InstructorInitials"]) || "",
             ),
-            missed: formatCellValue(
-              valueFromItemByKeys(item, missedCol ? missedCol.tryKeys : ["MissedAppointment"]) || "",
-            ),
+            missedFlag: appointmentIsMissed(item),
+            missed: appointmentIsMissed(item) ? "Yes" : "No",
           };
+        }
+
+        function filterAppointmentRowsForListView(rows) {
+          const list = Array.isArray(rows) ? rows.slice() : [];
+          if (schedulingSession.listView === "missed") {
+            return list.filter(appointmentIsMissed);
+          }
+          return list;
+        }
+
+        function updateSchedulingListTitle(filteredCount, totalCount) {
+          if (!schedulingListTitle) return;
+          if (schedulingSession.listView === "missed") {
+            schedulingListTitle.textContent =
+              "Missed appointments (" + filteredCount + " of " + totalCount + " total)";
+          } else {
+            schedulingListTitle.textContent = "Unit appointments (" + totalCount + ")";
+          }
+        }
+
+        function setSchedulingListView(view) {
+          schedulingSession.listView = view === "missed" ? "missed" : "all";
+          if (schedulingTabAll) {
+            schedulingTabAll.classList.toggle("scheduling-tab--active", schedulingSession.listView === "all");
+          }
+          if (schedulingTabMissed) {
+            schedulingTabMissed.classList.toggle("scheduling-tab--active", schedulingSession.listView === "missed");
+          }
+          refreshSchedulingListDisplay();
+        }
+
+        function refreshSchedulingListDisplay() {
+          const rows = schedulingSession.rows || [];
+          const filtered = filterAppointmentRowsForListView(rows);
+          updateSchedulingListTitle(filtered.length, rows.length);
+          renderSchedulingTable(filtered, rows.length);
+          if (schedulingEmpty) {
+            schedulingEmpty.hidden = filtered.length > 0;
+            schedulingEmpty.textContent =
+              schedulingSession.listView === "missed"
+                ? "No missed appointments on file."
+                : "No appointments on file.";
+          }
         }
 
         async function fetchAllAppointmentsRows(seg, pw) {
@@ -2778,7 +2946,7 @@
           if (schedulingTableBody) schedulingTableBody.innerHTML = "";
         }
 
-        function renderSchedulingTable(rows) {
+        function renderSchedulingTable(rows, totalCount) {
           clearSchedulingTable();
           if (!schedulingThead || !schedulingTableBody) return;
           const headers = ["Office", "Personnel", "Date / time", "Location", "Description", "Instructor", "Missed"];
@@ -2788,6 +2956,11 @@
             th.textContent = label;
             trHead.appendChild(th);
           });
+          const thAct = document.createElement("th");
+          thAct.className = "roster-actions";
+          thAct.textContent = " ";
+          thAct.title = "Mark missed / memorandum";
+          trHead.appendChild(thAct);
           schedulingThead.appendChild(trHead);
 
           const views = (Array.isArray(rows) ? rows : []).map(schedulingRowViewModel);
@@ -2804,6 +2977,7 @@
           const frag = document.createDocumentFragment();
           views.forEach(function (view) {
             const tr = document.createElement("tr");
+            if (view.missedFlag) tr.className = "scheduling-row--missed";
             [view.office, view.name, view.when, view.location, view.description, view.instructor, view.missed].forEach(
               function (text) {
                 const td = document.createElement("td");
@@ -2811,10 +2985,16 @@
                 tr.appendChild(td);
               },
             );
+            tr.appendChild(
+              buildAppointmentActionsCell(view.item, async function () {
+                await loadSchedulingAppointmentsList();
+              }),
+            );
             frag.appendChild(tr);
           });
           schedulingTableBody.appendChild(frag);
-          if (schedulingEmpty) schedulingEmpty.hidden = views.length > 0;
+          if (typeof totalCount === "number") updateSchedulingListTitle(rows.length, totalCount);
+          else if (schedulingEmpty) schedulingEmpty.hidden = views.length > 0;
         }
 
         async function loadSchedulingAppointmentsList() {
@@ -2827,16 +3007,201 @@
           try {
             const rows = await fetchAllAppointmentsRows(seg, pw);
             schedulingSession.rows = rows.slice();
-            renderSchedulingTable(rows);
-            setSchedulingState("ok", "Loaded " + rows.length + " appointment(s).");
+            refreshSchedulingListDisplay();
+            const missedCount = rows.filter(appointmentIsMissed).length;
+            setSchedulingState(
+              "ok",
+              "Loaded " + rows.length + " appointment(s)" + (missedCount ? " (" + missedCount + " missed)." : "."),
+            );
             window.setTimeout(function () {
               setSchedulingState("", "");
             }, 2200);
           } catch (e) {
             schedulingSession.rows = null;
-            renderSchedulingTable([]);
+            refreshSchedulingListDisplay();
             setSchedulingState("err", "Could not load appointments: " + (e.message || String(e)).slice(0, 220));
           }
+        }
+
+        function setSchedulingMemoOverlayVisible(show) {
+          if (schedulingMemoOverlay) schedulingMemoOverlay.hidden = !show;
+          if (!show && schedulingMemoForm) schedulingMemoForm.reset();
+        }
+
+        function defaultMemoSignatureBlocks() {
+          return {
+            sig1Title: "Training NCOIC",
+            sig1Org: String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+            sig2Title: "Supervisor",
+            sig3Title: "Commander",
+            sig3Org: String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+          };
+        }
+
+        function fillSchedulingMemoForm(view, options) {
+          const opts = options || {};
+          const person = view && view.personnelId ? personnelById(view.personnelId) : null;
+          const office = view ? view.office : "";
+          const name = view ? view.name : "";
+          const defaults = defaultMemoSignatureBlocks();
+          if (schedulingMemoFor) {
+            schedulingMemoFor.value = office && office !== "Unassigned" ? office + " Leadership" : "";
+          }
+          if (schedulingMemoFrom) {
+            schedulingMemoFrom.value = String(APPOINTMENTS_MEMO_DEFAULT_FROM || "88 SFS/S3T");
+          }
+          if (schedulingMemoSubject) {
+            schedulingMemoSubject.value = name
+              ? "Missed Training Appointment - " + name
+              : "Missed Training Appointment";
+          }
+          if (schedulingMemoBody) {
+            if (view) {
+              schedulingMemoBody.value =
+                "1. On " +
+                (view.when || "the scheduled date") +
+                ", " +
+                name +
+                " failed to report for a scheduled training appointment" +
+                (view.location ? " at " + view.location : "") +
+                "." +
+                (view.description ? " Purpose: " + view.description + "." : "") +
+                "\n\n2. Provide corrective action and document follow-up in accordance with unit policy.";
+            } else {
+              schedulingMemoBody.value =
+                "1. [State the facts of the missed appointment.]\n\n2. [State recommended actions or follow-up.]";
+            }
+          }
+          if (schedulingMemoSig1Name) schedulingMemoSig1Name.value = opts.sig1Name || "";
+          if (schedulingMemoSig1Title) schedulingMemoSig1Title.value = opts.sig1Title || defaults.sig1Title;
+          if (schedulingMemoSig1Org) schedulingMemoSig1Org.value = opts.sig1Org || defaults.sig1Org;
+          if (schedulingMemoSig2Name) schedulingMemoSig2Name.value = opts.sig2Name || "";
+          if (schedulingMemoSig2Title) schedulingMemoSig2Title.value = opts.sig2Title || defaults.sig2Title;
+          if (schedulingMemoSig2Org) schedulingMemoSig2Org.value = opts.sig2Org || "";
+          if (schedulingMemoSig3Name) schedulingMemoSig3Name.value = opts.sig3Name || "";
+          if (schedulingMemoSig3Title) schedulingMemoSig3Title.value = opts.sig3Title || defaults.sig3Title;
+          if (schedulingMemoSig3Org) schedulingMemoSig3Org.value = opts.sig3Org || defaults.sig3Org;
+        }
+
+        function openSchedulingMemoForAppointment(item) {
+          if (!item) return;
+          const view = schedulingRowViewModel(item);
+          fillSchedulingMemoForm(view, {});
+          setSchedulingMemoOverlayVisible(true);
+          if (schedulingMemoFor) schedulingMemoFor.focus();
+        }
+
+        function openBlankSchedulingMemo() {
+          fillSchedulingMemoForm(null, {});
+          setSchedulingMemoOverlayVisible(true);
+          if (schedulingMemoFor) schedulingMemoFor.focus();
+        }
+
+        function readSchedulingMemoFormData() {
+          function val(el) {
+            return el ? String(el.value || "").trim() : "";
+          }
+          return {
+            memorandumFor: val(schedulingMemoFor),
+            from: val(schedulingMemoFrom),
+            subject: val(schedulingMemoSubject),
+            body: val(schedulingMemoBody),
+            signatures: [
+              { name: val(schedulingMemoSig1Name), title: val(schedulingMemoSig1Title), org: val(schedulingMemoSig1Org) },
+              { name: val(schedulingMemoSig2Name), title: val(schedulingMemoSig2Title), org: val(schedulingMemoSig2Org) },
+              { name: val(schedulingMemoSig3Name), title: val(schedulingMemoSig3Title), org: val(schedulingMemoSig3Org) },
+            ],
+          };
+        }
+
+        function renderSchedulingMemoPrintDocument(data) {
+          const wrap = document.createElement("div");
+          wrap.className = "scheduling-memo-document";
+          const title = document.createElement("p");
+          title.className = "scheduling-memo-doc-title";
+          title.textContent = "MEMORANDUM";
+          wrap.appendChild(title);
+
+          function headerRow(label, value) {
+            const row = document.createElement("div");
+            row.className = "scheduling-memo-doc-row";
+            const lab = document.createElement("span");
+            lab.className = "scheduling-memo-doc-label";
+            lab.textContent = label;
+            const val = document.createElement("span");
+            val.className = "scheduling-memo-doc-value";
+            val.textContent = value || " ";
+            row.appendChild(lab);
+            row.appendChild(val);
+            return row;
+          }
+
+          wrap.appendChild(headerRow("Memorandum for", data.memorandumFor));
+          wrap.appendChild(headerRow("From", data.from));
+          wrap.appendChild(headerRow("Subject", data.subject));
+
+          const body = document.createElement("div");
+          body.className = "scheduling-memo-doc-body";
+          body.textContent = data.body || "";
+          wrap.appendChild(body);
+
+          const sigWrap = document.createElement("div");
+          sigWrap.className = "scheduling-memo-doc-sigs";
+          (data.signatures || []).forEach(function (sig) {
+            if (!sig || (!sig.name && !sig.title && !sig.org)) return;
+            const block = document.createElement("div");
+            block.className = "scheduling-memo-doc-sig";
+            const line = document.createElement("div");
+            line.className = "scheduling-memo-doc-sig-line";
+            block.appendChild(line);
+            if (sig.name) {
+              const name = document.createElement("p");
+              name.className = "scheduling-memo-doc-sig-name";
+              name.textContent = sig.name;
+              block.appendChild(name);
+            }
+            if (sig.title) {
+              const titleLine = document.createElement("p");
+              titleLine.className = "scheduling-memo-doc-sig-title";
+              titleLine.textContent = sig.title;
+              block.appendChild(titleLine);
+            }
+            if (sig.org) {
+              const org = document.createElement("p");
+              org.className = "scheduling-memo-doc-sig-org";
+              org.textContent = sig.org;
+              block.appendChild(org);
+            }
+            sigWrap.appendChild(block);
+          });
+          wrap.appendChild(sigWrap);
+          return wrap;
+        }
+
+        function triggerSchedulingPrint(node) {
+          if (!schedulingPrintSurface || !node) return;
+          schedulingPrintSurface.innerHTML = "";
+          schedulingPrintSurface.appendChild(node);
+          schedulingPrintSurface.hidden = false;
+          const root = document.getElementById("sp-pip-ui");
+          if (root) root.classList.add("scheduling-print-active");
+          window.setTimeout(function () {
+            window.print();
+            window.setTimeout(function () {
+              if (root) root.classList.remove("scheduling-print-active");
+              schedulingPrintSurface.hidden = true;
+            }, 500);
+          }, 120);
+        }
+
+        function printSchedulingMemo() {
+          const data = readSchedulingMemoFormData();
+          if (!data.subject && !data.body) {
+            setSchedulingState("warn", "Enter a subject or body before printing the memorandum.");
+            return;
+          }
+          setSchedulingMemoOverlayVisible(false);
+          triggerSchedulingPrint(renderSchedulingMemoPrintDocument(data));
         }
 
         function setSchedulingState(kind, message) {
@@ -3006,14 +3371,14 @@
           return out;
         }
 
-        function renderSchedulingUnitPrintReport(officeGroups) {
+        function renderSchedulingUnitPrintReport(officeGroups, reportTitle) {
           const wrap = document.createElement("div");
           wrap.className = "scheduling-unit-report";
 
           const header = document.createElement("div");
           header.className = "scheduling-unit-report-header";
           const title = document.createElement("h1");
-          title.textContent = "Unit Appointments Schedule";
+          title.textContent = reportTitle || "Unit Appointments Schedule";
           const squadron = document.createElement("p");
           squadron.textContent = "Squadron: " + String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS");
           const generated = document.createElement("p");
@@ -3081,33 +3446,27 @@
           return wrap;
         }
 
-        async function printSchedulingUnitReport() {
+        async function printSchedulingUnitReport(missedOnly) {
           const pw = hubSession.pw;
           const seg = appointmentsListApiPath();
           if (!pw) {
             setSchedulingState("warn", "Load the Personnel Roster first.");
             return;
           }
-          if (!schedulingPrintSurface) return;
           try {
-            setSchedulingState("loading", "Preparing unit report...");
+            setSchedulingState("loading", missedOnly ? "Preparing missed report..." : "Preparing unit report...");
             let rows = schedulingSession.rows;
             if (!rows) rows = await fetchAllAppointmentsRows(seg, pw);
             schedulingSession.rows = rows.slice();
+            if (missedOnly) rows = rows.filter(appointmentIsMissed);
             const officeGroups = groupAppointmentsByOffice(rows);
-            schedulingPrintSurface.innerHTML = "";
-            schedulingPrintSurface.appendChild(renderSchedulingUnitPrintReport(officeGroups));
-            schedulingPrintSurface.hidden = false;
-            const root = document.getElementById("sp-pip-ui");
-            if (root) root.classList.add("scheduling-print-active");
             setSchedulingState("", "");
-            window.setTimeout(function () {
-              window.print();
-              window.setTimeout(function () {
-                if (root) root.classList.remove("scheduling-print-active");
-                schedulingPrintSurface.hidden = true;
-              }, 500);
-            }, 120);
+            triggerSchedulingPrint(
+              renderSchedulingUnitPrintReport(
+                officeGroups,
+                missedOnly ? "Missed Appointments Report" : "Unit Appointments Schedule",
+              ),
+            );
           } catch (e) {
             setSchedulingState("err", "Could not prepare report: " + (e.message || String(e)).slice(0, 220));
           }
@@ -5257,7 +5616,43 @@
 
         if (schedulingPrintReportBtn) {
           schedulingPrintReportBtn.addEventListener("click", function () {
-            void printSchedulingUnitReport();
+            void printSchedulingUnitReport(false);
+          });
+        }
+
+        if (schedulingPrintMissedReportBtn) {
+          schedulingPrintMissedReportBtn.addEventListener("click", function () {
+            void printSchedulingUnitReport(true);
+          });
+        }
+
+        if (schedulingNewMemoBtn) {
+          schedulingNewMemoBtn.addEventListener("click", function () {
+            openBlankSchedulingMemo();
+          });
+        }
+
+        if (schedulingTabAll) {
+          schedulingTabAll.addEventListener("click", function () {
+            setSchedulingListView("all");
+          });
+        }
+
+        if (schedulingTabMissed) {
+          schedulingTabMissed.addEventListener("click", function () {
+            setSchedulingListView("missed");
+          });
+        }
+
+        if (schedulingMemoPrintBtn) {
+          schedulingMemoPrintBtn.addEventListener("click", function () {
+            printSchedulingMemo();
+          });
+        }
+
+        if (schedulingMemoCancelBtn) {
+          schedulingMemoCancelBtn.addEventListener("click", function () {
+            setSchedulingMemoOverlayVisible(false);
           });
         }
 
