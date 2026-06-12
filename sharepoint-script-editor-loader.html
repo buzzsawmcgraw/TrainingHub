@@ -109,6 +109,25 @@
               <p id="personWeaponsEmpty" class="weapons-empty" hidden>No Weapons Qualifications on file for this person.</p>
               <div class="weapons-add-toolbar">
                 <button type="button" id="personWeaponsAddBtn" class="btn-secondary">Add qualification</button>
+                <button type="button" id="personWeaponsBulkAddBtn" class="btn-secondary">Add Multiple (same day)</button>
+              </div>
+              <div id="personWeaponsBulkPanel" class="weapons-add-panel bylaw-bulk-panel" hidden>
+                <h4 class="weapons-add-title">Add Multiple Qualifications (same day)</h4>
+                <p class="bylaw-bulk-hint">Enter the certification date once, then check every weapon qualified that day.</p>
+                <form id="personWeaponsBulkForm" class="weapons-add-form add-form-stack" aria-label="Add multiple Weapons Qualifications">
+                  <div id="personWeaponsBulkSharedFields" class="add-form-grid"></div>
+                  <div class="bylaw-bulk-items-wrap">
+                    <div class="bylaw-bulk-items-toolbar">
+                      <button type="button" id="personWeaponsBulkSelectAll" class="btn-secondary">Select all</button>
+                      <button type="button" id="personWeaponsBulkClearAll" class="btn-secondary">Clear all</button>
+                    </div>
+                    <div id="personWeaponsBulkItems" class="bylaw-bulk-items" role="group" aria-label="Weapons to qualify"></div>
+                  </div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="personWeaponsBulkSaveBtn">Save all selected</button>
+                    <button type="button" id="personWeaponsBulkCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
               </div>
               <div id="personWeaponsAddPanel" class="weapons-add-panel" hidden>
                 <h4 id="personWeaponsFormTitle" class="weapons-add-title">New Weapons Qualification</h4>
@@ -291,6 +310,25 @@
               <p id="ethosWeaponsEmpty" class="weapons-empty" hidden>No Weapons Qualifications on file for this member.</p>
               <div class="weapons-add-toolbar">
                 <button type="button" id="ethosWeaponsAddBtn" class="btn-secondary">Add qualification</button>
+                <button type="button" id="ethosWeaponsBulkAddBtn" class="btn-secondary">Add Multiple (same day)</button>
+              </div>
+              <div id="ethosWeaponsBulkPanel" class="weapons-add-panel bylaw-bulk-panel" hidden>
+                <h4 class="weapons-add-title">Add Multiple Qualifications (same day)</h4>
+                <p class="bylaw-bulk-hint">Enter the certification date once, then check every weapon qualified that day.</p>
+                <form id="ethosWeaponsBulkForm" class="weapons-add-form add-form-stack" aria-label="Add multiple ETHOS Weapons Qualifications">
+                  <div id="ethosWeaponsBulkSharedFields" class="add-form-grid"></div>
+                  <div class="bylaw-bulk-items-wrap">
+                    <div class="bylaw-bulk-items-toolbar">
+                      <button type="button" id="ethosWeaponsBulkSelectAll" class="btn-secondary">Select all</button>
+                      <button type="button" id="ethosWeaponsBulkClearAll" class="btn-secondary">Clear all</button>
+                    </div>
+                    <div id="ethosWeaponsBulkItems" class="bylaw-bulk-items" role="group" aria-label="Weapons to qualify"></div>
+                  </div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="ethosWeaponsBulkSaveBtn">Save all selected</button>
+                    <button type="button" id="ethosWeaponsBulkCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
               </div>
               <div id="ethosWeaponsAddPanel" class="weapons-add-panel" hidden>
                 <h4 id="ethosWeaponsFormTitle" class="weapons-add-title">New Weapons Qualification</h4>

@@ -523,6 +523,15 @@
         const personWeaponsEmpty = document.getElementById("personWeaponsEmpty");
         const personWeaponsState = document.getElementById("personWeaponsState");
         const personWeaponsAddBtn = document.getElementById("personWeaponsAddBtn");
+        const personWeaponsBulkAddBtn = document.getElementById("personWeaponsBulkAddBtn");
+        const personWeaponsBulkPanel = document.getElementById("personWeaponsBulkPanel");
+        const personWeaponsBulkForm = document.getElementById("personWeaponsBulkForm");
+        const personWeaponsBulkSharedFields = document.getElementById("personWeaponsBulkSharedFields");
+        const personWeaponsBulkItems = document.getElementById("personWeaponsBulkItems");
+        const personWeaponsBulkSelectAll = document.getElementById("personWeaponsBulkSelectAll");
+        const personWeaponsBulkClearAll = document.getElementById("personWeaponsBulkClearAll");
+        const personWeaponsBulkSaveBtn = document.getElementById("personWeaponsBulkSaveBtn");
+        const personWeaponsBulkCancelBtn = document.getElementById("personWeaponsBulkCancelBtn");
         const personWeaponsAddPanel = document.getElementById("personWeaponsAddPanel");
         const personWeaponsAddForm = document.getElementById("personWeaponsAddForm");
         const personWeaponsAddFields = document.getElementById("personWeaponsAddFields");
@@ -607,6 +616,15 @@
         const ethosWeaponsEmpty = document.getElementById("ethosWeaponsEmpty");
         const ethosWeaponsState = document.getElementById("ethosWeaponsState");
         const ethosWeaponsAddBtn = document.getElementById("ethosWeaponsAddBtn");
+        const ethosWeaponsBulkAddBtn = document.getElementById("ethosWeaponsBulkAddBtn");
+        const ethosWeaponsBulkPanel = document.getElementById("ethosWeaponsBulkPanel");
+        const ethosWeaponsBulkForm = document.getElementById("ethosWeaponsBulkForm");
+        const ethosWeaponsBulkSharedFields = document.getElementById("ethosWeaponsBulkSharedFields");
+        const ethosWeaponsBulkItems = document.getElementById("ethosWeaponsBulkItems");
+        const ethosWeaponsBulkSelectAll = document.getElementById("ethosWeaponsBulkSelectAll");
+        const ethosWeaponsBulkClearAll = document.getElementById("ethosWeaponsBulkClearAll");
+        const ethosWeaponsBulkSaveBtn = document.getElementById("ethosWeaponsBulkSaveBtn");
+        const ethosWeaponsBulkCancelBtn = document.getElementById("ethosWeaponsBulkCancelBtn");
         const ethosWeaponsAddPanel = document.getElementById("ethosWeaponsAddPanel");
         const ethosWeaponsAddForm = document.getElementById("ethosWeaponsAddForm");
         const ethosWeaponsAddFields = document.getElementById("ethosWeaponsAddFields");
@@ -1371,7 +1389,9 @@
           weaponsCertEditSession.item = null;
           hubSession.weaponsCertRows = null;
           setWeaponsCertAddPanelVisible(false);
+          setWeaponsBulkPanelVisible(false);
           if (personWeaponsAddForm) personWeaponsAddForm.reset();
+          if (personWeaponsBulkForm) personWeaponsBulkForm.reset();
           if (personWeaponsEmpty) {
             personWeaponsEmpty.hidden = true;
             personWeaponsEmpty.textContent = "No Weapons Qualifications on file for this person.";
@@ -1401,11 +1421,21 @@
 
         function setWeaponsCertAddPanelVisible(visible) {
           if (personWeaponsAddPanel) personWeaponsAddPanel.hidden = !visible;
+          if (visible && personWeaponsBulkPanel) personWeaponsBulkPanel.hidden = true;
           if (!visible) {
             weaponsCertEditSession.item = null;
             setWeaponsCertFormMode("add");
           } else {
             updateWeaponsCertToolbarLabel();
+          }
+        }
+
+        function setWeaponsBulkPanelVisible(visible) {
+          if (personWeaponsBulkPanel) personWeaponsBulkPanel.hidden = !visible;
+          if (visible) {
+            setWeaponsCertAddPanelVisible(false);
+            weaponsCertEditSession.item = null;
+            setWeaponsCertFormMode("add");
           }
         }
 
@@ -1473,6 +1503,75 @@
             const f = buildWeaponsCertFieldWrap(col, sampleRow, options);
             if (f) personWeaponsAddFields.appendChild(f);
           });
+        }
+
+        function buildWeaponsBulkSharedFields(container, idPrefix, sampleRow, columns) {
+          if (!container) return;
+          container.innerHTML = "";
+          ["QualDate", "ExpirationDate"].forEach(function (key) {
+            const col = columns.find(function (c) {
+              return c.key === key;
+            });
+            if (!col) return;
+            const f = buildWeaponsCertFieldWrap(col, sampleRow, {
+              idPrefix: idPrefix,
+              readOnlyKeys: key === "ExpirationDate" ? ["ExpirationDate"] : [],
+            });
+            if (f) container.appendChild(f);
+          });
+        }
+
+        async function populateWeaponsBulkWeaponChecklist(container, seg, pw, sampleRow, columns) {
+          if (!container) return [];
+          container.innerHTML = "";
+          const weaponCol = columns.find(function (c) {
+            return c.key === "Weapon";
+          });
+          if (!weaponCol) {
+            container.textContent = "(Weapon field not configured.)";
+            return [];
+          }
+          const weaponWriteKey = resolveWeaponsCertWriteKey(weaponCol, sampleRow);
+          let choices = [];
+          try {
+            const r = await fetchChoiceOptionsForColumn(weaponCol, seg, pw, sampleRow);
+            choices = (r.choices || []).map(function (c) {
+              return String(c).trim();
+            }).filter(Boolean);
+          } catch (e) {
+            container.textContent = "(Could not load weapons: " + (e.message || String(e)).slice(0, 120) + ")";
+            return [];
+          }
+          if (!choices.length) {
+            container.textContent = "(No weapons found in the list.)";
+            return [];
+          }
+          choices.forEach(function (choice) {
+            const label = document.createElement("label");
+            label.className = "bylaw-bulk-item-check";
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.value = choice;
+            cb.dataset.writeKey = weaponWriteKey;
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(choice));
+            container.appendChild(label);
+          });
+          return choices;
+        }
+
+        function collectWeaponsBulkSharedPayload(idPrefix, columns, sampleRow) {
+          const payload = {};
+          columns.forEach(function (col) {
+            if (col.key === "Weapon") return;
+            const el = document.getElementById(idPrefix + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || resolveWeaponsCertWriteKey(col, sampleRow);
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
+            payload[writeKey] = v;
+          });
+          return payload;
         }
 
         function setWeaponsCertFormFieldValue(col, item, el) {
@@ -1562,12 +1661,95 @@
           if (weaponEl) weaponEl.focus();
         }
 
+        async function openWeaponsBulkAddPanel() {
+          if (!personDetailSession.item || personDetailSession.item.Id == null) {
+            setWeaponsCertState("warn", "Open a Personnel Record before adding qualifications.");
+            return;
+          }
+          const pw = personDetailSession.pw;
+          if (!pw) {
+            setWeaponsCertState("warn", "Personnel record is still loading. Try again in a moment.");
+            return;
+          }
+          weaponsCertEditSession.item = null;
+          setWeaponsBulkPanelVisible(true);
+          setWeaponsCertState("", "");
+          const seg = weaponsCertListApiPath();
+          const sampleRow = hubSession.weaponsCertSampleRow;
+          const columns = weaponsCertFormColumns();
+          buildWeaponsBulkSharedFields(personWeaponsBulkSharedFields, "wb_", sampleRow, columns);
+          await populateWeaponsBulkWeaponChecklist(personWeaponsBulkItems, seg, pw, sampleRow, columns);
+          if (personWeaponsBulkForm) {
+            delete personWeaponsBulkForm.dataset.weaponsBulkAutoExpiryWired;
+            wireCertQualDateAutoExpiry(personWeaponsBulkForm, "wb_", "weaponsBulkAutoExpiryWired");
+          }
+          const qualEl = document.getElementById("wb_QualDate");
+          if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+          applyCertExpirationFromQual("wb_");
+          if (qualEl) qualEl.focus();
+        }
+
+        async function submitWeaponsBulkSave() {
+          const personItem = personDetailSession.item;
+          const pw = personDetailSession.pw;
+          if (!personItem || personItem.Id == null || !pw) return;
+
+          const selected = getSelectedBylawBulkItems(personWeaponsBulkItems);
+          if (!selected.length) {
+            setWeaponsCertState("err", "Select at least one weapon.");
+            return;
+          }
+          const qualEl = document.getElementById("wb_QualDate");
+          if (!qualEl || !String(qualEl.value || "").trim()) {
+            setWeaponsCertState("err", "Certification date is required.");
+            return;
+          }
+
+          const seg = weaponsCertListApiPath();
+          const sampleRow = hubSession.weaponsCertSampleRow;
+          const columns = weaponsCertFormColumns();
+          const sharedPayload = collectWeaponsBulkSharedPayload("wb_", columns, sampleRow);
+          const personId = parseInt(String(personItem.Id), 10);
+          if (!personId || isNaN(personId)) {
+            setWeaponsCertState("err", "Invalid Personnel Record Id.");
+            return;
+          }
+          const personKey = await resolveWeaponsPersonPostKey(seg, pw);
+          sharedPayload[personKey] = personId;
+
+          try {
+            if (personWeaponsBulkSaveBtn) personWeaponsBulkSaveBtn.disabled = true;
+            let saved = 0;
+            for (let i = 0; i < selected.length; i++) {
+              setWeaponsCertState("loading", "Saving " + (i + 1) + " of " + selected.length + "...");
+              const payload = Object.assign({}, sharedPayload);
+              payload[selected[i].writeKey] = selected[i].value;
+              if (WEAPONS_CERT_SET_TITLE) payload.Title = selected[i].value;
+              await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+              saved++;
+            }
+            setWeaponsBulkPanelVisible(false);
+            if (personWeaponsBulkForm) personWeaponsBulkForm.reset();
+            await loadPersonWeaponsCertifications(personItem.Id, pw);
+            setWeaponsCertState("ok", "Saved " + saved + " qualification(s).");
+            window.setTimeout(function () {
+              setWeaponsCertState("", "");
+            }, 2500);
+          } catch (e) {
+            setWeaponsCertState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+            log("Weapons bulk save failed:\n" + (e.message || String(e)), "err");
+          } finally {
+            if (personWeaponsBulkSaveBtn) personWeaponsBulkSaveBtn.disabled = false;
+          }
+        }
+
         async function openWeaponsCertEditPanel(item) {
           if (!personDetailSession.item || personDetailSession.item.Id == null) {
             setWeaponsCertState("warn", "Open a Personnel Record before requalifying.");
             return;
           }
           if (!item || item.Id == null) return;
+          setWeaponsBulkPanelVisible(false);
           weaponsCertEditSession.item = item;
           setWeaponsCertFormMode("edit");
           buildWeaponsCertAddFormFields({ readOnlyKeys: ["Weapon"] });
@@ -6258,7 +6440,19 @@
               if (ethosWeaponsAddForm) ethosWeaponsAddForm.reset();
               return;
             }
+            setEthosWeaponsBulkPanelVisible(false);
             void openEthosWeaponsCertAddPanel();
+          });
+        }
+
+        if (ethosWeaponsBulkAddBtn) {
+          ethosWeaponsBulkAddBtn.addEventListener("click", function () {
+            if (ethosWeaponsBulkPanel && !ethosWeaponsBulkPanel.hidden) {
+              setEthosWeaponsBulkPanelVisible(false);
+              if (ethosWeaponsBulkForm) ethosWeaponsBulkForm.reset();
+              return;
+            }
+            void openEthosWeaponsBulkAddPanel();
           });
         }
 
@@ -6269,10 +6463,36 @@
           });
         }
 
+        if (ethosWeaponsBulkForm) {
+          ethosWeaponsBulkForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void submitEthosWeaponsBulkSave();
+          });
+        }
+
+        if (ethosWeaponsBulkSelectAll) {
+          ethosWeaponsBulkSelectAll.addEventListener("click", function () {
+            setBylawBulkItemChecks(ethosWeaponsBulkItems, true);
+          });
+        }
+
+        if (ethosWeaponsBulkClearAll) {
+          ethosWeaponsBulkClearAll.addEventListener("click", function () {
+            setBylawBulkItemChecks(ethosWeaponsBulkItems, false);
+          });
+        }
+
         if (ethosWeaponsAddCancelBtn) {
           ethosWeaponsAddCancelBtn.addEventListener("click", function () {
             if (ethosWeaponsAddPanel) ethosWeaponsAddPanel.hidden = true;
             if (ethosWeaponsAddForm) ethosWeaponsAddForm.reset();
+          });
+        }
+
+        if (ethosWeaponsBulkCancelBtn) {
+          ethosWeaponsBulkCancelBtn.addEventListener("click", function () {
+            setEthosWeaponsBulkPanelVisible(false);
+            if (ethosWeaponsBulkForm) ethosWeaponsBulkForm.reset();
           });
         }
 
@@ -6455,7 +6675,19 @@
               if (personWeaponsAddForm) personWeaponsAddForm.reset();
               return;
             }
+            setWeaponsBulkPanelVisible(false);
             void openWeaponsCertAddPanel();
+          });
+        }
+
+        if (personWeaponsBulkAddBtn) {
+          personWeaponsBulkAddBtn.addEventListener("click", function () {
+            if (personWeaponsBulkPanel && !personWeaponsBulkPanel.hidden) {
+              setWeaponsBulkPanelVisible(false);
+              if (personWeaponsBulkForm) personWeaponsBulkForm.reset();
+              return;
+            }
+            void openWeaponsBulkAddPanel();
           });
         }
 
@@ -6466,10 +6698,36 @@
           });
         }
 
+        if (personWeaponsBulkForm) {
+          personWeaponsBulkForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void submitWeaponsBulkSave();
+          });
+        }
+
+        if (personWeaponsBulkSelectAll) {
+          personWeaponsBulkSelectAll.addEventListener("click", function () {
+            setBylawBulkItemChecks(personWeaponsBulkItems, true);
+          });
+        }
+
+        if (personWeaponsBulkClearAll) {
+          personWeaponsBulkClearAll.addEventListener("click", function () {
+            setBylawBulkItemChecks(personWeaponsBulkItems, false);
+          });
+        }
+
         if (personWeaponsAddCancelBtn) {
           personWeaponsAddCancelBtn.addEventListener("click", function () {
             setWeaponsCertAddPanelVisible(false);
             if (personWeaponsAddForm) personWeaponsAddForm.reset();
+          });
+        }
+
+        if (personWeaponsBulkCancelBtn) {
+          personWeaponsBulkCancelBtn.addEventListener("click", function () {
+            setWeaponsBulkPanelVisible(false);
+            if (personWeaponsBulkForm) personWeaponsBulkForm.reset();
           });
         }
 
@@ -8184,13 +8442,23 @@
           }
         }
 
+        function setEthosWeaponsBulkPanelVisible(visible) {
+          if (ethosWeaponsBulkPanel) ethosWeaponsBulkPanel.hidden = !visible;
+          if (visible) {
+            if (ethosWeaponsAddPanel) ethosWeaponsAddPanel.hidden = true;
+            ethosWeaponsCertEditSession.item = null;
+          }
+        }
+
         function clearEthosMemberWeaponsSection() {
           if (ethosWeaponsThead) ethosWeaponsThead.innerHTML = "";
           if (ethosWeaponsBody) ethosWeaponsBody.innerHTML = "";
           ethosWeaponsCertEditSession.item = null;
           if (ethosWeaponsAddPanel) ethosWeaponsAddPanel.hidden = true;
+          setEthosWeaponsBulkPanelVisible(false);
           if (ethosWeaponsWrap) ethosWeaponsWrap.hidden = true;
           if (ethosWeaponsAddForm) ethosWeaponsAddForm.reset();
+          if (ethosWeaponsBulkForm) ethosWeaponsBulkForm.reset();
         }
 
         function setEthosBylawBulkPanelVisible(visible) {
@@ -8356,6 +8624,7 @@
         async function openEthosWeaponsCertAddPanel() {
           if (!ethosDetailSession.item || ethosDetailSession.item.Id == null) return;
           ethosWeaponsCertEditSession.item = null;
+          setEthosWeaponsBulkPanelVisible(false);
           if (ethosWeaponsFormTitle) ethosWeaponsFormTitle.textContent = "New Weapons Qualification";
           if (ethosWeaponsSaveBtn) ethosWeaponsSaveBtn.textContent = "Save qualification";
           buildEthosWeaponsCertAddFormFields();
@@ -8364,8 +8633,94 @@
           wireCertQualDateAutoExpiry(ethosWeaponsAddForm, "ewf_", "ethosWeaponsAutoExpiry");
         }
 
+        async function openEthosWeaponsBulkAddPanel() {
+          if (!ethosDetailSession.item || ethosDetailSession.item.Id == null) return;
+          const pw = ethosDetailSession.pw;
+          if (!pw) {
+            setEthosWeaponsState("warn", "Member record is still loading. Try again in a moment.");
+            return;
+          }
+          ethosWeaponsCertEditSession.item = null;
+          setEthosWeaponsBulkPanelVisible(true);
+          setEthosWeaponsState("", "");
+          const seg = ethosWeaponsCertListApiPath();
+          const sampleRow = ethosSession.weaponsCertSampleRow;
+          const columns = ethosWeaponsCertFormColumns();
+          buildWeaponsBulkSharedFields(ethosWeaponsBulkSharedFields, "ewb_", sampleRow, columns);
+          await populateWeaponsBulkWeaponChecklist(ethosWeaponsBulkItems, seg, pw, sampleRow, columns);
+          if (ethosWeaponsBulkForm) {
+            delete ethosWeaponsBulkForm.dataset.ethosWeaponsBulkAutoExpiryWired;
+            wireCertQualDateAutoExpiry(ethosWeaponsBulkForm, "ewb_", "ethosWeaponsBulkAutoExpiryWired");
+          }
+          const qualEl = document.getElementById("ewb_QualDate");
+          if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+          applyCertExpirationFromQual("ewb_");
+          if (qualEl) qualEl.focus();
+        }
+
+        async function submitEthosWeaponsBulkSave() {
+          const memberItem = ethosDetailSession.item;
+          const pw = ethosDetailSession.pw;
+          if (!memberItem || memberItem.Id == null || !pw) return;
+
+          const selected = getSelectedBylawBulkItems(ethosWeaponsBulkItems);
+          if (!selected.length) {
+            setEthosWeaponsState("err", "Select at least one weapon.");
+            return;
+          }
+          const qualEl = document.getElementById("ewb_QualDate");
+          if (!qualEl || !String(qualEl.value || "").trim()) {
+            setEthosWeaponsState("err", "Certification date is required.");
+            return;
+          }
+
+          const seg = ethosWeaponsCertListApiPath();
+          const sampleRow = ethosSession.weaponsCertSampleRow;
+          const columns = ethosWeaponsCertFormColumns();
+          const sharedPayload = collectWeaponsBulkSharedPayload("ewb_", columns, sampleRow);
+          const memberId = parseInt(String(memberItem.Id), 10);
+          if (!memberId || isNaN(memberId)) {
+            setEthosWeaponsState("err", "Invalid ETHOS member Id.");
+            return;
+          }
+          const personKey = await resolveLinkedMemberPostKey(
+            seg,
+            pw,
+            ethosSession,
+            "weaponsPersonFilterField",
+            "weaponsPersonPostKey",
+            ETHOS_WEAPONS_PERSON_FIELD,
+          );
+          sharedPayload[personKey] = memberId;
+
+          try {
+            if (ethosWeaponsBulkSaveBtn) ethosWeaponsBulkSaveBtn.disabled = true;
+            let saved = 0;
+            for (let i = 0; i < selected.length; i++) {
+              setEthosWeaponsState("loading", "Saving " + (i + 1) + " of " + selected.length + "...");
+              const payload = Object.assign({}, sharedPayload);
+              payload[selected[i].writeKey] = selected[i].value;
+              if (ETHOS_WEAPONS_CERT_SET_TITLE) payload.Title = selected[i].value;
+              await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+              saved++;
+            }
+            setEthosWeaponsBulkPanelVisible(false);
+            if (ethosWeaponsBulkForm) ethosWeaponsBulkForm.reset();
+            await loadEthosMemberWeaponsCertifications(memberItem.Id, pw);
+            setEthosWeaponsState("ok", "Saved " + saved + " qualification(s).");
+            window.setTimeout(function () {
+              setEthosWeaponsState("", "");
+            }, 2500);
+          } catch (e) {
+            setEthosWeaponsState("err", "Save failed: " + (e.message || String(e)).slice(0, 200));
+          } finally {
+            if (ethosWeaponsBulkSaveBtn) ethosWeaponsBulkSaveBtn.disabled = false;
+          }
+        }
+
         async function openEthosWeaponsCertEditPanel(item) {
           if (!item || item.Id == null) return;
+          setEthosWeaponsBulkPanelVisible(false);
           ethosWeaponsCertEditSession.item = item;
           if (ethosWeaponsFormTitle) ethosWeaponsFormTitle.textContent = "Requalify Weapon";
           if (ethosWeaponsSaveBtn) ethosWeaponsSaveBtn.textContent = "Save requalification";
