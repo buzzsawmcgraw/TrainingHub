@@ -303,13 +303,17 @@
                 <textarea id="schedulingMemoBody" rows="8"></textarea>
               </div>
             </div>
-            <p class="scheduling-hint" style="margin: 12px 0 6px">Signature blocks (printed with signature lines)</p>
+            <p class="scheduling-hint" style="margin: 12px 0 6px">
+              Signature blocks - select Personnel from the roster; title and organization can be edited before printing.
+            </p>
             <div class="scheduling-memo-sig-grid">
               <div class="scheduling-memo-sig-block">
                 <h5>Signature 1</h5>
                 <div class="add-field">
-                  <label for="schedulingMemoSig1Name">Name / rank</label>
-                  <input type="text" id="schedulingMemoSig1Name" />
+                  <label for="schedulingMemoSig1Person">Personnel</label>
+                  <select id="schedulingMemoSig1Person" class="add-field-select--autosize scheduling-memo-sig-person">
+                    <option value="">Select Personnel...</option>
+                  </select>
                 </div>
                 <div class="add-field">
                   <label for="schedulingMemoSig1Title">Title</label>
@@ -323,8 +327,10 @@
               <div class="scheduling-memo-sig-block">
                 <h5>Signature 2</h5>
                 <div class="add-field">
-                  <label for="schedulingMemoSig2Name">Name / rank</label>
-                  <input type="text" id="schedulingMemoSig2Name" />
+                  <label for="schedulingMemoSig2Person">Personnel</label>
+                  <select id="schedulingMemoSig2Person" class="add-field-select--autosize scheduling-memo-sig-person">
+                    <option value="">Select Personnel...</option>
+                  </select>
                 </div>
                 <div class="add-field">
                   <label for="schedulingMemoSig2Title">Title</label>
@@ -338,8 +344,10 @@
               <div class="scheduling-memo-sig-block">
                 <h5>Signature 3</h5>
                 <div class="add-field">
-                  <label for="schedulingMemoSig3Name">Name / rank</label>
-                  <input type="text" id="schedulingMemoSig3Name" />
+                  <label for="schedulingMemoSig3Person">Personnel</label>
+                  <select id="schedulingMemoSig3Person" class="add-field-select--autosize scheduling-memo-sig-person">
+                    <option value="">Select Personnel...</option>
+                  </select>
                 </div>
                 <div class="add-field">
                   <label for="schedulingMemoSig3Title">Title</label>

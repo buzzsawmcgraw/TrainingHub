@@ -545,23 +545,56 @@
       }
       #sp-pip-ui .scheduling-memo-sig-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
         margin-top: 8px;
+        align-items: stretch;
       }
       #sp-pip-ui .scheduling-memo-sig-block {
-        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        padding: 12px 12px 14px;
         border: 1px dashed rgba(30, 74, 54, 0.65);
         border-radius: 6px;
         background: rgba(0, 0, 0, 0.2);
       }
       #sp-pip-ui .scheduling-memo-sig-block h5 {
-        margin: 0 0 8px;
+        margin: 0;
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--pip-amber);
+      }
+      #sp-pip-ui .scheduling-memo-sig-block .add-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin: 0;
+        min-width: 0;
+      }
+      #sp-pip-ui .scheduling-memo-sig-block .add-field label {
+        margin: 0;
+        min-height: 2.4em;
+        display: flex;
+        align-items: flex-end;
+        line-height: 1.25;
+      }
+      #sp-pip-ui .scheduling-memo-sig-block .add-field input,
+      #sp-pip-ui .scheduling-memo-sig-block .add-field select {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      #sp-pip-ui .scheduling-memo-sig-block .add-field select.add-field-select--autosize {
+        width: 100%;
+        max-width: none;
+      }
+      @media (max-width: 900px) {
+        #sp-pip-ui .scheduling-memo-sig-grid {
+          grid-template-columns: 1fr;
+        }
       }
       #sp-pip-ui .scheduling-memo-document {
         font-family: "Times New Roman", Times, serif;
@@ -1849,13 +1882,17 @@
                 <textarea id="schedulingMemoBody" rows="8"></textarea>
               </div>
             </div>
-            <p class="scheduling-hint" style="margin: 12px 0 6px">Signature blocks (printed with signature lines)</p>
+            <p class="scheduling-hint" style="margin: 12px 0 6px">
+              Signature blocks - select Personnel from the roster; title and organization can be edited before printing.
+            </p>
             <div class="scheduling-memo-sig-grid">
               <div class="scheduling-memo-sig-block">
                 <h5>Signature 1</h5>
                 <div class="add-field">
-                  <label for="schedulingMemoSig1Name">Name / rank</label>
-                  <input type="text" id="schedulingMemoSig1Name" />
+                  <label for="schedulingMemoSig1Person">Personnel</label>
+                  <select id="schedulingMemoSig1Person" class="add-field-select--autosize scheduling-memo-sig-person">
+                    <option value="">Select Personnel...</option>
+                  </select>
                 </div>
                 <div class="add-field">
                   <label for="schedulingMemoSig1Title">Title</label>
@@ -1869,8 +1906,10 @@
               <div class="scheduling-memo-sig-block">
                 <h5>Signature 2</h5>
                 <div class="add-field">
-                  <label for="schedulingMemoSig2Name">Name / rank</label>
-                  <input type="text" id="schedulingMemoSig2Name" />
+                  <label for="schedulingMemoSig2Person">Personnel</label>
+                  <select id="schedulingMemoSig2Person" class="add-field-select--autosize scheduling-memo-sig-person">
+                    <option value="">Select Personnel...</option>
+                  </select>
                 </div>
                 <div class="add-field">
                   <label for="schedulingMemoSig2Title">Title</label>
@@ -1884,8 +1923,10 @@
               <div class="scheduling-memo-sig-block">
                 <h5>Signature 3</h5>
                 <div class="add-field">
-                  <label for="schedulingMemoSig3Name">Name / rank</label>
-                  <input type="text" id="schedulingMemoSig3Name" />
+                  <label for="schedulingMemoSig3Person">Personnel</label>
+                  <select id="schedulingMemoSig3Person" class="add-field-select--autosize scheduling-memo-sig-person">
+                    <option value="">Select Personnel...</option>
+                  </select>
                 </div>
                 <div class="add-field">
                   <label for="schedulingMemoSig3Title">Title</label>
@@ -2432,15 +2473,32 @@
         const schedulingMemoFrom = document.getElementById("schedulingMemoFrom");
         const schedulingMemoSubject = document.getElementById("schedulingMemoSubject");
         const schedulingMemoBody = document.getElementById("schedulingMemoBody");
-        const schedulingMemoSig1Name = document.getElementById("schedulingMemoSig1Name");
+        const schedulingMemoSig1Person = document.getElementById("schedulingMemoSig1Person");
         const schedulingMemoSig1Title = document.getElementById("schedulingMemoSig1Title");
         const schedulingMemoSig1Org = document.getElementById("schedulingMemoSig1Org");
-        const schedulingMemoSig2Name = document.getElementById("schedulingMemoSig2Name");
+        const schedulingMemoSig2Person = document.getElementById("schedulingMemoSig2Person");
         const schedulingMemoSig2Title = document.getElementById("schedulingMemoSig2Title");
         const schedulingMemoSig2Org = document.getElementById("schedulingMemoSig2Org");
-        const schedulingMemoSig3Name = document.getElementById("schedulingMemoSig3Name");
+        const schedulingMemoSig3Person = document.getElementById("schedulingMemoSig3Person");
         const schedulingMemoSig3Title = document.getElementById("schedulingMemoSig3Title");
         const schedulingMemoSig3Org = document.getElementById("schedulingMemoSig3Org");
+        const schedulingMemoSignatureBlocks = [
+          {
+            personSelect: schedulingMemoSig1Person,
+            titleEl: schedulingMemoSig1Title,
+            orgEl: schedulingMemoSig1Org,
+          },
+          {
+            personSelect: schedulingMemoSig2Person,
+            titleEl: schedulingMemoSig2Title,
+            orgEl: schedulingMemoSig2Org,
+          },
+          {
+            personSelect: schedulingMemoSig3Person,
+            titleEl: schedulingMemoSig3Title,
+            orgEl: schedulingMemoSig3Org,
+          },
+        ];
         const schedulingMemoPrintBtn = document.getElementById("schedulingMemoPrintBtn");
         const schedulingMemoCancelBtn = document.getElementById("schedulingMemoCancelBtn");
 
@@ -4934,6 +4992,7 @@
         function setSchedulingMemoOverlayVisible(show) {
           if (schedulingMemoOverlay) schedulingMemoOverlay.hidden = !show;
           if (!show && schedulingMemoForm) schedulingMemoForm.reset();
+          if (show) populateMemoSignaturePersonSelects();
         }
 
         function defaultMemoSignatureBlocks() {
@@ -4946,9 +5005,79 @@
           };
         }
 
+        function memoSignatureOrgFromPerson(person) {
+          if (!person) return String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS");
+          const squadron = itemFieldText(person, "Squadron");
+          const office = itemFieldText(person, "OfficeSymbol");
+          if (squadron && office) return squadron + " / " + office;
+          return squadron || office || String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS");
+        }
+
+        function memoSignatureTitleFromPerson(person) {
+          if (!person) return "";
+          return itemFieldText(person, "OfficeSymbol") || itemFieldText(person, "Status") || "";
+        }
+
+        function applyMemoSignatureFieldsFromPerson(person, titleEl, orgEl) {
+          if (!person) return;
+          if (titleEl) titleEl.value = memoSignatureTitleFromPerson(person);
+          if (orgEl) orgEl.value = memoSignatureOrgFromPerson(person);
+        }
+
+        function populateMemoSignaturePersonSelects() {
+          schedulingMemoSignatureBlocks.forEach(function (block) {
+            const sel = block.personSelect;
+            if (!sel) return;
+            const prior = String(sel.value || "").trim();
+            while (sel.options.length > 1) sel.remove(1);
+            const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
+            rows.sort(function (a, b) {
+              return formatPersonDisplayName(a).localeCompare(formatPersonDisplayName(b), undefined, {
+                sensitivity: "base",
+              });
+            });
+            rows.forEach(function (person) {
+              if (!person || person.Id == null) return;
+              const displayName = formatPersonDisplayName(person);
+              if (!displayName) return;
+              const o = document.createElement("option");
+              o.value = String(person.Id);
+              o.textContent = displayName;
+              sel.appendChild(o);
+            });
+            if (prior) sel.value = prior;
+            applySelectAutosize(sel);
+          });
+        }
+
+        function setMemoSignatureBlock(block, opts) {
+          if (!block) return;
+          const defaults = defaultMemoSignatureBlocks();
+          const blockDefaults = [
+            { title: defaults.sig1Title, org: defaults.sig1Org },
+            { title: defaults.sig2Title, org: "" },
+            { title: defaults.sig3Title, org: defaults.sig3Org },
+          ];
+          const blockIndex = schedulingMemoSignatureBlocks.indexOf(block);
+          const fallback = blockDefaults[blockIndex] || { title: "", org: "" };
+          if (block.personSelect) {
+            block.personSelect.value = opts && opts.personId ? String(opts.personId) : "";
+            applySelectAutosize(block.personSelect);
+          }
+          if (block.titleEl) {
+            block.titleEl.value = (opts && opts.title) || fallback.title || "";
+          }
+          if (block.orgEl) {
+            block.orgEl.value = (opts && opts.org) || fallback.org || "";
+          }
+          if (block.personSelect && block.personSelect.value) {
+            const person = personnelById(block.personSelect.value);
+            if (person) applyMemoSignatureFieldsFromPerson(person, block.titleEl, block.orgEl);
+          }
+        }
+
         function fillSchedulingMemoForm(view, options) {
           const opts = options || {};
-          const person = view && view.personnelId ? personnelById(view.personnelId) : null;
           const office = view ? view.office : "";
           const name = view ? view.name : "";
           const defaults = defaultMemoSignatureBlocks();
@@ -4980,29 +5109,51 @@
                 "1. [State the facts of the missed appointment.]\n\n2. [State recommended actions or follow-up.]";
             }
           }
-          if (schedulingMemoSig1Name) schedulingMemoSig1Name.value = opts.sig1Name || "";
-          if (schedulingMemoSig1Title) schedulingMemoSig1Title.value = opts.sig1Title || defaults.sig1Title;
-          if (schedulingMemoSig1Org) schedulingMemoSig1Org.value = opts.sig1Org || defaults.sig1Org;
-          if (schedulingMemoSig2Name) schedulingMemoSig2Name.value = opts.sig2Name || "";
-          if (schedulingMemoSig2Title) schedulingMemoSig2Title.value = opts.sig2Title || defaults.sig2Title;
-          if (schedulingMemoSig2Org) schedulingMemoSig2Org.value = opts.sig2Org || "";
-          if (schedulingMemoSig3Name) schedulingMemoSig3Name.value = opts.sig3Name || "";
-          if (schedulingMemoSig3Title) schedulingMemoSig3Title.value = opts.sig3Title || defaults.sig3Title;
-          if (schedulingMemoSig3Org) schedulingMemoSig3Org.value = opts.sig3Org || defaults.sig3Org;
+          setMemoSignatureBlock(schedulingMemoSignatureBlocks[0], {
+            personId: opts.sig1PersonId,
+            title: opts.sig1Title || defaults.sig1Title,
+            org: opts.sig1Org || defaults.sig1Org,
+          });
+          setMemoSignatureBlock(schedulingMemoSignatureBlocks[1], {
+            personId: opts.sig2PersonId,
+            title: opts.sig2Title || defaults.sig2Title,
+            org: opts.sig2Org || "",
+          });
+          setMemoSignatureBlock(schedulingMemoSignatureBlocks[2], {
+            personId: opts.sig3PersonId,
+            title: opts.sig3Title || defaults.sig3Title,
+            org: opts.sig3Org || defaults.sig3Org,
+          });
         }
 
         function openSchedulingMemoForAppointment(item) {
           if (!item) return;
           const view = schedulingRowViewModel(item);
-          fillSchedulingMemoForm(view, {});
           setSchedulingMemoOverlayVisible(true);
+          fillSchedulingMemoForm(view, {});
           if (schedulingMemoFor) schedulingMemoFor.focus();
         }
 
         function openBlankSchedulingMemo() {
-          fillSchedulingMemoForm(null, {});
           setSchedulingMemoOverlayVisible(true);
+          fillSchedulingMemoForm(null, {});
           if (schedulingMemoFor) schedulingMemoFor.focus();
+        }
+
+        function readMemoSignatureBlockData(block) {
+          function val(el) {
+            return el ? String(el.value || "").trim() : "";
+          }
+          if (!block) return { name: "", title: "", org: "" };
+          const person =
+            block.personSelect && block.personSelect.value
+              ? personnelById(block.personSelect.value)
+              : null;
+          return {
+            name: person ? formatPersonDisplayName(person) : "",
+            title: val(block.titleEl),
+            org: val(block.orgEl),
+          };
         }
 
         function readSchedulingMemoFormData() {
@@ -5014,11 +5165,7 @@
             from: val(schedulingMemoFrom),
             subject: val(schedulingMemoSubject),
             body: val(schedulingMemoBody),
-            signatures: [
-              { name: val(schedulingMemoSig1Name), title: val(schedulingMemoSig1Title), org: val(schedulingMemoSig1Org) },
-              { name: val(schedulingMemoSig2Name), title: val(schedulingMemoSig2Title), org: val(schedulingMemoSig2Org) },
-              { name: val(schedulingMemoSig3Name), title: val(schedulingMemoSig3Title), org: val(schedulingMemoSig3Org) },
-            ],
+            signatures: schedulingMemoSignatureBlocks.map(readMemoSignatureBlockData),
           };
         }
 
@@ -7563,6 +7710,15 @@
             setSchedulingMemoOverlayVisible(false);
           });
         }
+
+        schedulingMemoSignatureBlocks.forEach(function (block) {
+          if (!block.personSelect) return;
+          block.personSelect.addEventListener("change", function () {
+            const person = block.personSelect.value ? personnelById(block.personSelect.value) : null;
+            if (person) applyMemoSignatureFieldsFromPerson(person, block.titleEl, block.orgEl);
+            applySelectAutosize(block.personSelect);
+          });
+        });
 
         if (reportsPrintBtn) {
           reportsPrintBtn.addEventListener("click", function () {
