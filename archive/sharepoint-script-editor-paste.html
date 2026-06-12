@@ -786,13 +786,15 @@
         min-height: 52px;
       }
       #sp-pip-ui .person-weapons-wrap,
-      #sp-pip-ui .person-bylaw-wrap {
+      #sp-pip-ui .person-bylaw-wrap,
+      #sp-pip-ui .person-appointments-wrap {
         margin-top: 22px;
         padding-top: 18px;
         border-top: 1px solid var(--pip-border);
       }
       #sp-pip-ui h3.person-weapons-title,
-      #sp-pip-ui h3.person-bylaw-title {
+      #sp-pip-ui h3.person-bylaw-title,
+      #sp-pip-ui h3.person-appointments-title {
         margin: 0 0 12px;
         font-size: 11px;
         font-weight: 700;
@@ -802,7 +804,8 @@
         text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
       }
       #sp-pip-ui .weapons-empty,
-      #sp-pip-ui .bylaw-empty {
+      #sp-pip-ui .bylaw-empty,
+      #sp-pip-ui .appointments-empty {
         margin: 0;
         padding: 12px 14px;
         font-size: 12px;
@@ -1370,6 +1373,17 @@
                 </form>
               </div>
             </div>
+            <div id="personAppointmentsWrap" class="person-appointments-wrap" hidden>
+              <h3 class="person-appointments-title">Appointments</h3>
+              <div id="personAppointmentsState" class="read-state" hidden></div>
+              <div class="roster-wrap appointments-roster-wrap">
+                <table class="roster appointments-table" aria-label="Personnel appointments">
+                  <thead id="personAppointmentsThead"></thead>
+                  <tbody id="personAppointmentsBody"></tbody>
+                </table>
+              </div>
+              <p id="personAppointmentsEmpty" class="appointments-empty" hidden>No appointments on file for this person.</p>
+            </div>
           </div>
         </section>
         <section id="instructorsSection" class="hub-section hub-section--instructors" hidden aria-label="Instructors">
@@ -1556,6 +1570,57 @@
         /** Set SharePoint Title on new rows from the Item value when the list still requires Title. */
         const BYLAW_TRAINING_SET_TITLE = true;
         const BYLAW_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "ByLaw", "TrainingName", "Training_x0020_Name"];
+
+        /**
+         * Appointments list (SharePoint title **Appointments**). Rows are filtered by PersonnelId = personnel list item Id.
+         * List columns: PersonnelId, AppointmentDate, Location, ProviderOffice, ReasonType, InstructorInitials,
+         * MissedAppointment, CreatedAt. PersonnelId is used for filtering only (not shown in the table on the record page).
+         */
+        const LIST_APPOINTMENTS = "Appointments";
+        const LIST_APPOINTMENTS_GUID = "";
+        const APPOINTMENTS_PERSON_FIELD = "PersonnelId";
+        /** Additional REST filter field names to try if the primary name fails (lookup / casing variants). */
+        const APPOINTMENTS_PERSON_FIELD_ALT = [
+          "PersonnelID",
+          "PersonnelIdId",
+          "Personnel_x0020_Id",
+          "Personnel_x0020_ID",
+          "Personnel/Id",
+        ];
+        const APPOINTMENTS_ITEMS_ORDERBY = "AppointmentDate asc";
+        const APPOINTMENTS_COLUMNS = [
+          {
+            key: "AppointmentDate",
+            label: "Appointment date",
+            altKeys: ["Appointment_x0020_Date", "Date"],
+          },
+          { key: "Location", label: "Location", altKeys: ["Location0"] },
+          {
+            key: "ProviderOffice",
+            label: "Provider office",
+            altKeys: ["Provider_x0020_Office", "ProviderOffice0"],
+          },
+          {
+            key: "ReasonType",
+            label: "Reason type",
+            altKeys: ["Reason_x0020_Type", "ReasonType0"],
+          },
+          {
+            key: "InstructorInitials",
+            label: "Instructor initials",
+            altKeys: ["Instructor_x0020_Initials", "InstructorInitials0"],
+          },
+          {
+            key: "MissedAppointment",
+            label: "Missed appointment",
+            altKeys: ["Missed_x0020_Appointment", "MissedAppointment0"],
+          },
+          {
+            key: "CreatedAt",
+            label: "Created at",
+            altKeys: ["Created", "Created_x0020_At"],
+          },
+        ];
 
         /** Monthly Status of Training print: months shown in the dropdown (including current month). */
         const SOT_REPORT_MONTHS_BACK = 24;
@@ -1803,6 +1868,11 @@
         const personBylawAddCancelBtn = document.getElementById("personBylawAddCancelBtn");
         const personBylawSaveBtn = document.getElementById("personBylawSaveBtn");
         const personBylawFormTitle = document.getElementById("personBylawFormTitle");
+        const personAppointmentsWrap = document.getElementById("personAppointmentsWrap");
+        const personAppointmentsThead = document.getElementById("personAppointmentsThead");
+        const personAppointmentsBody = document.getElementById("personAppointmentsBody");
+        const personAppointmentsEmpty = document.getElementById("personAppointmentsEmpty");
+        const personAppointmentsState = document.getElementById("personAppointmentsState");
         const hubNavInstructors = document.getElementById("hubNavInstructors");
         const instructorsSection = document.getElementById("instructorsSection");
         const instructorsThead = document.getElementById("instructorsThead");
@@ -1846,6 +1916,8 @@
           certifiersPersonPostKey: undefined,
           certifiersPersonDisplayKey: null,
           certifiersSampleRow: null,
+          appointmentsPersonFilterField: null,
+          appointmentsPersonFilterFields: null,
         };
 
         let instructorsSession = {
@@ -2116,6 +2188,7 @@
           personDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           clearPersonWeaponsCertSection();
           clearPersonBylawTrainingSection();
+          clearPersonAppointmentsSection();
           setPersonDetailEditMode(false);
           setHubListViewVisible(true);
           await ensureRosterViewRendered();
@@ -3605,6 +3678,288 @@
               personBylawEmpty.hidden = false;
               personBylawEmpty.textContent =
                 "No By-Law Training records loaded. If PersonnelId exists on the list, check that values match the Personnel Record Id.";
+            }
+          }
+        }
+
+        function normalizedAppointmentsColumns() {
+          const arr = Array.isArray(APPOINTMENTS_COLUMNS) ? APPOINTMENTS_COLUMNS : [];
+          return arr
+            .map(function (entry) {
+              if (!entry || !entry.key) return null;
+              const key = String(entry.key).trim();
+              const label = String(entry.label || key).trim() || key;
+              const alt = Array.isArray(entry.altKeys) ? entry.altKeys.map(function (x) { return String(x).trim(); }).filter(Boolean) : [];
+              const tryKeys = [key];
+              alt.forEach(function (a) {
+                if (tryKeys.indexOf(a) === -1) tryKeys.push(a);
+              });
+              return { key: key, label: label, tryKeys: tryKeys };
+            })
+            .filter(Boolean);
+        }
+
+        function appointmentsListTitle() {
+          return String(LIST_APPOINTMENTS || "").trim();
+        }
+
+        function appointmentsGuidRaw() {
+          return String(LIST_APPOINTMENTS_GUID || "").trim();
+        }
+
+        function appointmentsListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(appointmentsGuidRaw());
+        }
+
+        function appointmentsListApiPath() {
+          if (appointmentsListUsesGuid()) return "lists(guid'" + appointmentsGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(appointmentsListTitle()) + "')";
+        }
+
+        function setAppointmentsState(kind, message) {
+          if (!personAppointmentsState) return;
+          if (!message) {
+            personAppointmentsState.hidden = true;
+            personAppointmentsState.textContent = "";
+            return;
+          }
+          personAppointmentsState.hidden = false;
+          personAppointmentsState.className = "read-state " + kind;
+          personAppointmentsState.textContent = message;
+        }
+
+        function clearAppointmentsTable() {
+          if (personAppointmentsThead) personAppointmentsThead.innerHTML = "";
+          if (personAppointmentsBody) personAppointmentsBody.innerHTML = "";
+        }
+
+        function clearPersonAppointmentsSection() {
+          clearAppointmentsTable();
+          setAppointmentsState("", "");
+          if (personAppointmentsEmpty) {
+            personAppointmentsEmpty.hidden = true;
+            personAppointmentsEmpty.textContent = "No appointments on file for this person.";
+          }
+          if (personAppointmentsWrap) personAppointmentsWrap.hidden = true;
+        }
+
+        function renderAppointmentsTable(rows) {
+          clearAppointmentsTable();
+          const columns = normalizedAppointmentsColumns();
+          if (!personAppointmentsThead || !personAppointmentsBody || !columns.length) return;
+
+          const trHead = document.createElement("tr");
+          columns.forEach(function (col) {
+            const th = document.createElement("th");
+            th.textContent = col.label;
+            trHead.appendChild(th);
+          });
+          personAppointmentsThead.appendChild(trHead);
+
+          const frag = document.createDocumentFragment();
+          rows.forEach(function (item) {
+            const tr = document.createElement("tr");
+            columns.forEach(function (col) {
+              const td = document.createElement("td");
+              const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+              const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+              td.textContent = text === "" ? "-" : text;
+              tr.appendChild(td);
+            });
+            frag.appendChild(tr);
+          });
+          personAppointmentsBody.appendChild(frag);
+
+          if (personAppointmentsEmpty) {
+            personAppointmentsEmpty.hidden = rows.length > 0;
+          }
+        }
+
+        function appointmentsPersonFilterFieldCandidates() {
+          const primary = String(APPOINTMENTS_PERSON_FIELD || "PersonnelId").trim();
+          const out = [];
+          if (primary) out.push(primary);
+          const alts = Array.isArray(APPOINTMENTS_PERSON_FIELD_ALT) ? APPOINTMENTS_PERSON_FIELD_ALT : [];
+          alts.forEach(function (name) {
+            const n = String(name || "").trim();
+            if (n && out.indexOf(n) === -1) out.push(n);
+          });
+          return out;
+        }
+
+        function appointmentPersonnelIdFromItem(item) {
+          if (!item || typeof item !== "object") return null;
+          const keys = appointmentsPersonFilterFieldCandidates().concat([
+            "PersonnelId",
+            "PersonnelID",
+            "PersonnelIdId",
+            "Personnel_x0020_Id",
+          ]);
+          for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            if (!k || k.indexOf("/") !== -1) continue;
+            if (Object.prototype.hasOwnProperty.call(item, k) && item[k] !== null && item[k] !== "") {
+              return String(item[k]);
+            }
+          }
+          if (item.Personnel && typeof item.Personnel === "object" && item.Personnel.Id != null) {
+            return String(item.Personnel.Id);
+          }
+          return null;
+        }
+
+        function appointmentRowsMatchPersonnel(rows, personnelId) {
+          const want = String(personnelId);
+          return (Array.isArray(rows) ? rows : []).filter(function (item) {
+            return appointmentPersonnelIdFromItem(item) === want;
+          });
+        }
+
+        async function discoverAppointmentsPersonFilterFields(seg, pw) {
+          if (hubSession.appointmentsPersonFilterFields && hubSession.appointmentsPersonFilterFields.length) {
+            return hubSession.appointmentsPersonFilterFields.slice();
+          }
+          const out = [];
+          try {
+            const data = await spFetch(
+              `/_api/web/${seg}/fields?$select=InternalName,Title,EntityPropertyName,StaticName,TypeAsString&$filter=Hidden eq false&$top=200`,
+              {},
+              pw,
+            );
+            const fields = (data && data.value) || [];
+            const want = String(APPOINTMENTS_PERSON_FIELD || "PersonnelId").trim().toLowerCase();
+            let hit = fields.find(function (f) {
+              const title = String(f.Title || "").trim().toLowerCase();
+              const internal = String(f.InternalName || f.StaticName || f.EntityPropertyName || "").trim();
+              const internalLower = internal.toLowerCase();
+              return (
+                internalLower === want ||
+                title === want ||
+                title === "personnel id" ||
+                internalLower === "personnelid" ||
+                internalLower === "personnelidid"
+              );
+            });
+            if (!hit) {
+              hit = fields.find(function (f) {
+                const internal = String(f.InternalName || f.StaticName || "").toLowerCase();
+                return internal.indexOf("personnel") !== -1 && internal.indexOf("id") !== -1;
+              });
+            }
+            if (hit) {
+              const internal = String(hit.InternalName || hit.StaticName || hit.EntityPropertyName || "").trim();
+              const type = String(hit.TypeAsString || "");
+              if (internal) out.push(internal);
+              if (/lookup/i.test(type) && internal) {
+                const lookupIdField = internal.endsWith("Id") ? internal + "Id" : internal + "Id";
+                if (out.indexOf(lookupIdField) === -1) out.push(lookupIdField);
+                const slashField = internal + "/Id";
+                if (out.indexOf(slashField) === -1) out.push(slashField);
+              }
+            }
+          } catch (_) {}
+          hubSession.appointmentsPersonFilterFields = out.slice();
+          return out;
+        }
+
+        async function fetchAppointmentsForPersonnel(seg, pw, personnelId) {
+          const id = parseInt(String(personnelId), 10);
+          if (!id || isNaN(id)) return [];
+          const orderByClause = String(APPOINTMENTS_ITEMS_ORDERBY || "").trim();
+          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
+          const tried = [];
+          const candidates = appointmentsPersonFilterFieldCandidates().slice();
+
+          const discovered = await discoverAppointmentsPersonFilterFields(seg, pw);
+          discovered.forEach(function (name) {
+            if (name && candidates.indexOf(name) === -1) candidates.unshift(name);
+          });
+          if (discovered.length) {
+            discovered.slice().reverse().forEach(function (name) {
+              if (name && candidates.indexOf(name) !== -1) {
+                candidates.splice(candidates.indexOf(name), 1);
+                candidates.unshift(name);
+              }
+            });
+          }
+
+          for (let i = 0; i < candidates.length; i++) {
+            const personField = candidates[i];
+            if (!personField || tried.indexOf(personField) !== -1) continue;
+            tried.push(personField);
+            const filterRaw = personField + " eq " + id;
+            const filter = encodeURIComponent(filterRaw);
+            try {
+              let data = null;
+              try {
+                data = await spFetch(`/_api/web/${seg}/items?$top=500&$filter=${filter}` + orderByQs, {}, pw);
+              } catch (e0) {
+                if (/\b400\b/.test(String(e0.message || "")) && orderByQs) {
+                  data = await spFetch(`/_api/web/${seg}/items?$top=500&$filter=${filter}`, {}, pw);
+                } else {
+                  throw e0;
+                }
+              }
+              hubSession.appointmentsPersonFilterField = personField;
+              return (data && data.value) || [];
+            } catch (e1) {
+              if (!/\b400\b/.test(String(e1.message || "")) && !/does not exist/i.test(String(e1.message || ""))) {
+                throw e1;
+              }
+            }
+          }
+
+          let data = null;
+          try {
+            data = await spFetch(`/_api/web/${seg}/items?$top=500` + orderByQs, {}, pw);
+          } catch (e2) {
+            if (/\b400\b/.test(String(e2.message || "")) && orderByQs) {
+              data = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
+            } else {
+              throw e2;
+            }
+          }
+          return appointmentRowsMatchPersonnel((data && data.value) || [], id);
+        }
+
+        async function loadPersonAppointments(personId, pw) {
+          if (!personId) return;
+          if (personAppointmentsWrap) personAppointmentsWrap.hidden = false;
+          setAppointmentsState("loading", "Loading appointments...");
+          clearAppointmentsTable();
+          if (personAppointmentsEmpty) personAppointmentsEmpty.hidden = true;
+
+          const seg = appointmentsListApiPath();
+          if (!appointmentsListTitle() && !appointmentsListUsesGuid()) {
+            renderAppointmentsTable([]);
+            setAppointmentsState("", "");
+            if (personAppointmentsEmpty) {
+              personAppointmentsEmpty.hidden = false;
+              personAppointmentsEmpty.textContent = "Appointments list is not configured.";
+            }
+            return;
+          }
+
+          try {
+            const rows = await fetchAppointmentsForPersonnel(seg, pw, personId);
+            const dateKeys = ["AppointmentDate", "Appointment_x0020_Date", "Date"];
+            rows.sort(function (a, b) {
+              const da = formatCellValue(valueFromItemByKeys(a, dateKeys) || "");
+              const db = formatCellValue(valueFromItemByKeys(b, dateKeys) || "");
+              if (da !== db) return String(da).localeCompare(String(db));
+              const ca = formatCellValue(valueFromItemByKeys(a, ["CreatedAt", "Created"]) || "");
+              const cb = formatCellValue(valueFromItemByKeys(b, ["CreatedAt", "Created"]) || "");
+              return String(ca).localeCompare(String(cb));
+            });
+            renderAppointmentsTable(rows);
+            setAppointmentsState("", "");
+          } catch (e) {
+            renderAppointmentsTable([]);
+            setAppointmentsState("warn", "Could not load appointments: " + (e.message || String(e)).slice(0, 220));
+            if (personAppointmentsEmpty) {
+              personAppointmentsEmpty.hidden = false;
+              personAppointmentsEmpty.textContent =
+                "No appointments loaded. If PersonnelId exists on the list, check that values match the personnel record Id.";
             }
           }
         }
@@ -5575,6 +5930,7 @@
             syncPersonInHubSession(updated);
             if (personDetailTitle) personDetailTitle.textContent = formatPersonDisplayName(updated);
             await renderPersonDetailView(updated, false);
+            await loadPersonAppointments(updated.Id, s.pw);
             setPersonDetailState("ok", "Record saved.");
             window.setTimeout(function () {
               setPersonDetailState("", "");
@@ -5623,6 +5979,7 @@
           await renderPersonDetailView(item, false);
           await loadPersonWeaponsCertifications(item.Id, personDetailSession.pw);
           await loadPersonBylawTraining(item.Id, personDetailSession.pw);
+          await loadPersonAppointments(item.Id, personDetailSession.pw);
         }
 
         async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {

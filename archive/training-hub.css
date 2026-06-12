@@ -782,13 +782,15 @@
         min-height: 52px;
       }
       #sp-pip-ui .person-weapons-wrap,
-      #sp-pip-ui .person-bylaw-wrap {
+      #sp-pip-ui .person-bylaw-wrap,
+      #sp-pip-ui .person-appointments-wrap {
         margin-top: 22px;
         padding-top: 18px;
         border-top: 1px solid var(--pip-border);
       }
       #sp-pip-ui h3.person-weapons-title,
-      #sp-pip-ui h3.person-bylaw-title {
+      #sp-pip-ui h3.person-bylaw-title,
+      #sp-pip-ui h3.person-appointments-title {
         margin: 0 0 12px;
         font-size: 11px;
         font-weight: 700;
@@ -798,7 +800,8 @@
         text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
       }
       #sp-pip-ui .weapons-empty,
-      #sp-pip-ui .bylaw-empty {
+      #sp-pip-ui .bylaw-empty,
+      #sp-pip-ui .appointments-empty {
         margin: 0;
         padding: 12px 14px;
         font-size: 12px;
