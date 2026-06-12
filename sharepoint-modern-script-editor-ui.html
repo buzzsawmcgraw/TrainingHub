@@ -3230,6 +3230,17 @@
           await ensureRosterViewRendered();
         }
 
+        function hubAlternateNavActive() {
+          return (
+            (ethosSection && !ethosSection.hidden) ||
+            (ethosMemberDetailSection && !ethosMemberDetailSection.hidden) ||
+            (reportsSection && !reportsSection.hidden) ||
+            (schedulingSection && !schedulingSection.hidden) ||
+            (instructorsSection && !instructorsSection.hidden) ||
+            (personDetailSection && !personDetailSection.hidden)
+          );
+        }
+
         async function navigateToEthosRoster() {
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = true;
@@ -3244,10 +3255,25 @@
           clearEthosMemberBylawSection();
           setEthosMemberDetailEditMode(false);
           setEthosViewVisible(true);
-          if (!ethosSession.rows || !ethosSession.pw) {
-            await runEthosProbe();
-          } else {
-            await ensureEthosRosterRendered();
+          const pw = resolvedPersonnelRestBase() || hubSession.pw || ethosSession.pw;
+          if (!pw) {
+            clearEthosRosterTable();
+            const addPanel = document.getElementById("ethosAddMemberPanel");
+            if (addPanel) addPanel.innerHTML = "";
+            setEthosReadState(
+              "warn",
+              "Load the Personnel Roster first (wait for list to load or click Refresh list).",
+            );
+            return;
+          }
+          try {
+            if (ethosSession.rows == null || !ethosSession.pw || !ethosSession.seg) {
+              await runEthosProbe();
+            } else {
+              await ensureEthosRosterRendered();
+            }
+          } catch (e) {
+            setEthosReadState("err", "Could not open ETHOS roster: " + (e.message || String(e)).slice(0, 280));
           }
         }
 
@@ -8030,6 +8056,7 @@
 
         async function openPersonDetailRecord(itemId, meta, pw, seg, cachedRows, sampleRow) {
           if (!personDetailSection || !personDetailContent) return;
+          hideEthosSections();
           setHubListViewVisible(false);
           personDetailSection.hidden = false;
           setPersonDetailEditMode(false);
@@ -8143,6 +8170,124 @@
         if (hubNavScheduling) {
           hubNavScheduling.addEventListener("click", function () {
             void navigateToScheduling();
+          });
+        }
+
+        if (hubNavEthos) {
+          hubNavEthos.addEventListener("click", function () {
+            void navigateToEthos();
+          });
+        }
+
+        if (ethosBackLink) {
+          ethosBackLink.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            void navigateToRoster();
+          });
+        }
+
+        if (ethosMemberDetailBackLink) {
+          ethosMemberDetailBackLink.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            void navigateToEthosRoster();
+          });
+        }
+
+        if (ethosProbeRun) {
+          ethosProbeRun.addEventListener("click", function () {
+            runEthosProbe().catch(function (e) {
+              setEthosReadState("err", "Unexpected error: " + (e.message || String(e)).slice(0, 280));
+            });
+          });
+        }
+
+        if (ethosMqlReportBtn) {
+          ethosMqlReportBtn.addEventListener("click", function () {
+            void showEthosMqlReport();
+          });
+        }
+
+        if (ethosMqlPrintBtn) {
+          ethosMqlPrintBtn.addEventListener("click", function () {
+            printEthosMqlReport();
+          });
+        }
+
+        if (ethosMqlCloseBtn) {
+          ethosMqlCloseBtn.addEventListener("click", function () {
+            if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = true;
+            if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = true;
+            if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = true;
+          });
+        }
+
+        if (ethosMemberDetailEditBtn) {
+          ethosMemberDetailEditBtn.addEventListener("click", function () {
+            if (!ethosDetailSession.item) return;
+            void renderEthosMemberDetailView(ethosDetailSession.item, true);
+          });
+        }
+
+        if (ethosMemberDetailSaveBtn) {
+          ethosMemberDetailSaveBtn.addEventListener("click", function () {
+            void saveEthosMemberDetailEdits();
+          });
+        }
+
+        if (ethosMemberDetailCancelBtn) {
+          ethosMemberDetailCancelBtn.addEventListener("click", function () {
+            if (!ethosDetailSession.item) return;
+            void renderEthosMemberDetailView(ethosDetailSession.item, false);
+          });
+        }
+
+        if (ethosWeaponsAddBtn) {
+          ethosWeaponsAddBtn.addEventListener("click", function () {
+            if (ethosWeaponsAddPanel && !ethosWeaponsAddPanel.hidden) {
+              ethosWeaponsAddPanel.hidden = true;
+              if (ethosWeaponsAddForm) ethosWeaponsAddForm.reset();
+              return;
+            }
+            void openEthosWeaponsCertAddPanel();
+          });
+        }
+
+        if (ethosWeaponsAddForm) {
+          ethosWeaponsAddForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void submitEthosWeaponsCertSave();
+          });
+        }
+
+        if (ethosWeaponsAddCancelBtn) {
+          ethosWeaponsAddCancelBtn.addEventListener("click", function () {
+            if (ethosWeaponsAddPanel) ethosWeaponsAddPanel.hidden = true;
+            if (ethosWeaponsAddForm) ethosWeaponsAddForm.reset();
+          });
+        }
+
+        if (ethosBylawAddBtn) {
+          ethosBylawAddBtn.addEventListener("click", function () {
+            if (ethosBylawAddPanel && !ethosBylawAddPanel.hidden) {
+              ethosBylawAddPanel.hidden = true;
+              if (ethosBylawAddForm) ethosBylawAddForm.reset();
+              return;
+            }
+            void openEthosBylawTrainingAddPanel();
+          });
+        }
+
+        if (ethosBylawAddForm) {
+          ethosBylawAddForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void submitEthosBylawTrainingSave();
+          });
+        }
+
+        if (ethosBylawAddCancelBtn) {
+          ethosBylawAddCancelBtn.addEventListener("click", function () {
+            if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = true;
+            if (ethosBylawAddForm) ethosBylawAddForm.reset();
           });
         }
 
@@ -9332,6 +9477,1270 @@
           }
         }
 
+        // ----- ETHOS Members -----
+        function normalizedEthosRosterColumns() {
+          const arr = Array.isArray(ETHOS_ROSTER_COLUMNS) ? ETHOS_ROSTER_COLUMNS : [];
+          const result = [];
+          arr.forEach(function (entry) {
+            if (!entry || !entry.key) return;
+            const key = String(entry.key).trim();
+            const label = String(entry.label || key).trim() || key;
+            const alt = Array.isArray(entry.altKeys) ? entry.altKeys.map(function (x) { return String(x).trim(); }).filter(Boolean) : [];
+            const tryKeys = [key];
+            alt.forEach(function (a) {
+              if (tryKeys.indexOf(a) === -1) tryKeys.push(a);
+            });
+            result.push({ key: key, label: label, tryKeys: tryKeys, saveKey: entry.saveKey || null });
+          });
+          return result;
+        }
+
+        function resolveEthosRosterColumnPlan(rows) {
+          const explicit = normalizedEthosRosterColumns();
+          if (explicit.length > 0) return { mode: "explicit", columns: explicit };
+          const keys = collectColumnKeys(rows);
+          return { mode: "auto", columns: keys.map(function (k) { return { key: k, label: k, tryKeys: [k], saveKey: null }; }) };
+        }
+
+        function sortEthosRowsAlphabetical(rows) {
+          if (!Array.isArray(rows) || rows.length < 2) return rows;
+          const cols = normalizedEthosRosterColumns();
+          function colFor(fieldKey) {
+            return cols.find(function (c) { return c.key === fieldKey; }) || { key: fieldKey, tryKeys: sortKeysForPersonnelName(fieldKey) };
+          }
+          const lastCol = colFor("LastName");
+          const firstCol = colFor("FirstName");
+          function nameVal(item, col) {
+            const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+            return String(raw != null ? raw : "").trim().toLowerCase();
+          }
+          return rows.slice().sort(function (a, b) {
+            const la = nameVal(a, lastCol);
+            const lb = nameVal(b, lastCol);
+            if (la !== lb) return la < lb ? -1 : 1;
+            const fa = nameVal(a, firstCol);
+            const fb = nameVal(b, firstCol);
+            if (fa !== fb) return fa < fb ? -1 : 1;
+            return (a.Id || 0) - (b.Id || 0);
+          });
+        }
+
+        function ethosMembersListTitle() { return String(LIST_ETHOS_MEMBERS || "").trim(); }
+        function ethosMembersGuidRaw() { return String(LIST_ETHOS_MEMBERS_GUID || "").trim(); }
+        function ethosMembersListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(ethosMembersGuidRaw());
+        }
+        function ethosMembersListApiPath() {
+          if (ethosMembersListUsesGuid()) return "lists(guid'" + ethosMembersGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(ethosMembersListTitle()) + "')";
+        }
+        function ethosWeaponsCertListTitle() { return String(LIST_ETHOS_WEAPONS_CERTIFICATIONS || "").trim(); }
+        function ethosWeaponsCertGuidRaw() { return String(LIST_ETHOS_WEAPONS_CERTIFICATIONS_GUID || "").trim(); }
+        function ethosWeaponsCertListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(ethosWeaponsCertGuidRaw());
+        }
+        function ethosWeaponsCertListApiPath() {
+          if (ethosWeaponsCertListUsesGuid()) return "lists(guid'" + ethosWeaponsCertGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(ethosWeaponsCertListTitle()) + "')";
+        }
+        function ethosBylawListTitle() { return String(LIST_ETHOS_BYLAW_TRAINING || "").trim(); }
+        function ethosBylawGuidRaw() { return String(LIST_ETHOS_BYLAW_TRAINING_GUID || "").trim(); }
+        function ethosBylawListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(ethosBylawGuidRaw());
+        }
+        function ethosBylawTrainingListApiPath() {
+          if (ethosBylawListUsesGuid()) return "lists(guid'" + ethosBylawGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(ethosBylawListTitle()) + "')";
+        }
+
+        function normalizedEthosWeaponsCertColumns() {
+          const arr = Array.isArray(ETHOS_WEAPONS_CERT_COLUMNS) ? ETHOS_WEAPONS_CERT_COLUMNS : [];
+          return arr.map(function (entry) {
+            if (!entry || !entry.key) return null;
+            const key = String(entry.key).trim();
+            const alt = Array.isArray(entry.altKeys) ? entry.altKeys.map(function (x) { return String(x).trim(); }).filter(Boolean) : [];
+            const tryKeys = [key];
+            alt.forEach(function (a) { if (tryKeys.indexOf(a) === -1) tryKeys.push(a); });
+            return { key: key, label: String(entry.label || key).trim() || key, tryKeys: tryKeys, computed: !!entry.computed };
+          }).filter(Boolean);
+        }
+        function ethosWeaponsCertFormColumns() {
+          return normalizedEthosWeaponsCertColumns().filter(function (c) { return !c.computed; });
+        }
+        function ethosWeaponsCertExpiryDateKeys() {
+          const col = normalizedEthosWeaponsCertColumns().find(function (c) { return c.key === "ExpirationDate" || c.key === "ExpiryDate"; });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["ExpirationDate", "ExpiryDate"];
+        }
+        function computeEthosWeaponsCertStatus(item) {
+          return computeCertStatusFromExpiryKeys(item, ethosWeaponsCertExpiryDateKeys(), certQualDateKeysFromColumns(normalizedEthosWeaponsCertColumns()));
+        }
+        function normalizedEthosBylawColumns() {
+          const arr = Array.isArray(ETHOS_BYLAW_TRAINING_COLUMNS) ? ETHOS_BYLAW_TRAINING_COLUMNS : [];
+          return arr.map(function (entry) {
+            if (!entry || !entry.key) return null;
+            const key = String(entry.key).trim();
+            const alt = Array.isArray(entry.altKeys) ? entry.altKeys.map(function (x) { return String(x).trim(); }).filter(Boolean) : [];
+            const tryKeys = [key];
+            alt.forEach(function (a) { if (tryKeys.indexOf(a) === -1) tryKeys.push(a); });
+            return { key: key, label: String(entry.label || key).trim() || key, tryKeys: tryKeys, computed: !!entry.computed };
+          }).filter(Boolean);
+        }
+        function ethosBylawFormColumns() {
+          return normalizedEthosBylawColumns().filter(function (c) { return !c.computed; });
+        }
+        function ethosBylawExpiryDateKeys() {
+          const col = normalizedEthosBylawColumns().find(function (c) { return c.key === "ExpirationDate" || c.key === "ExpiryDate"; });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["ExpirationDate", "ExpiryDate"];
+        }
+        function computeEthosBylawTrainingStatus(item) {
+          return computeCertStatusFromExpiryKeys(item, ethosBylawExpiryDateKeys(), certQualDateKeysFromColumns(normalizedEthosBylawColumns()));
+        }
+
+        function linkedMemberFilterCandidates(primary, alts) {
+          const out = [];
+          const p = String(primary || "").trim();
+          if (p) out.push(p);
+          (Array.isArray(alts) ? alts : []).forEach(function (name) {
+            const n = String(name || "").trim();
+            if (n && out.indexOf(n) === -1) out.push(n);
+          });
+          return out;
+        }
+
+        function linkedMemberIdFromItem(item, candidates, lookupBase) {
+          if (!item) return null;
+          for (let i = 0; i < candidates.length; i++) {
+            const k = candidates[i];
+            if (!k || k.indexOf("/") !== -1) continue;
+            if (Object.prototype.hasOwnProperty.call(item, k) && item[k] !== null && item[k] !== "") return String(item[k]);
+          }
+          if (lookupBase && item[lookupBase] && typeof item[lookupBase] === "object" && item[lookupBase].Id != null) {
+            return String(item[lookupBase].Id);
+          }
+          return null;
+        }
+
+        async function fetchLinkedCertRowsForMember(seg, pw, memberId, opts) {
+          const id = parseInt(String(memberId), 10);
+          if (!id || isNaN(id)) return [];
+          const orderByClause = String(opts.orderBy || "").trim();
+          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
+          const candidates = linkedMemberFilterCandidates(opts.personField, opts.personFieldAlt);
+          if (opts.session && opts.session[opts.filterFieldsKey] && opts.session[opts.filterFieldsKey].length) {
+            opts.session[opts.filterFieldsKey].forEach(function (name) {
+              if (name && candidates.indexOf(name) === -1) candidates.unshift(name);
+            });
+          }
+          const tried = [];
+          for (let i = 0; i < candidates.length; i++) {
+            const personField = candidates[i];
+            if (!personField || tried.indexOf(personField) !== -1) continue;
+            tried.push(personField);
+            const filter = encodeURIComponent(personField + " eq " + id);
+            try {
+              let data = null;
+              try {
+                data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}` + orderByQs, {}, pw);
+              } catch (e0) {
+                if (/\b400\b/.test(String(e0.message || "")) && orderByQs) {
+                  data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}`, {}, pw);
+                } else throw e0;
+              }
+              if (opts.session) opts.session[opts.filterFieldKey] = personField;
+              return (data && data.value) || [];
+            } catch (e1) {
+              if (!/\b400\b/.test(String(e1.message || "")) && !/does not exist/i.test(String(e1.message || ""))) throw e1;
+            }
+          }
+          let data = null;
+          try {
+            data = await spFetch(`/_api/web/${seg}/items?$top=500` + orderByQs, {}, pw);
+          } catch (e2) {
+            if (/\b400\b/.test(String(e2.message || "")) && orderByQs) data = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
+            else throw e2;
+          }
+          const all = (data && data.value) || [];
+          return all.filter(function (row) {
+            return linkedMemberIdFromItem(row, candidates, opts.lookupBase) === String(id);
+          });
+        }
+
+        async function resolveLinkedMemberPostKey(seg, pw, session, filterFieldKey, postKeyKey, defaultField) {
+          if (session[postKeyKey]) return session[postKeyKey];
+          const filterField = String(session[filterFieldKey] || defaultField || "").trim();
+          let postKey = filterField;
+          try {
+            const esc = filterField.replace(/'/g, "''");
+            const data = await spFetch(`/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=InternalName,TypeAsString`, {}, pw);
+            const internal = String(data.InternalName || filterField).trim();
+            if (/lookup/i.test(String(data.TypeAsString || ""))) postKey = internal.endsWith("Id") ? internal : internal + "Id";
+            else postKey = internal;
+          } catch (_) {
+            if (/Id$/i.test(filterField)) postKey = filterField;
+            else postKey = filterField + "Id";
+          }
+          session[postKeyKey] = postKey;
+          return postKey;
+        }
+
+        function setEthosReadState(kind, message) {
+          if (!ethosReadState) return;
+          if (!message) {
+            ethosReadState.hidden = true;
+            ethosReadState.textContent = "";
+            return;
+          }
+          ethosReadState.hidden = false;
+          ethosReadState.className = "read-state " + (kind || "");
+          ethosReadState.textContent = message;
+        }
+
+        function clearEthosRosterTable() {
+          const thead = document.getElementById("ethosRosterThead");
+          if (thead) thead.innerHTML = "";
+          if (ethosRosterTableBody) ethosRosterTableBody.innerHTML = "";
+        }
+
+        function ethosItemFieldText(item, fieldKey) {
+          const col = normalizedEthosRosterColumns().find(function (c) { return c.key === fieldKey; });
+          const keys = col ? col.tryKeys || [col.key] : sortKeysForPersonnelName(fieldKey);
+          const raw = valueFromItemByKeys(item, keys);
+          return raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+        }
+
+        function formatEthosMemberDisplayName(item) {
+          const rank = ethosItemFieldText(item, "Rank");
+          const last = ethosItemFieldText(item, "LastName");
+          const first = ethosItemFieldText(item, "FirstName");
+          const mi = ethosItemFieldText(item, "MiddleInitial");
+          let name = [last, first].filter(Boolean).join(", ");
+          if (mi) name = name ? name + " " + mi + "." : mi + ".";
+          if (rank && name) return rank + " " + name;
+          return rank || name || "ETHOS Member";
+        }
+
+        function renderEthosRosterTable(rows, meta, pw, seg) {
+          clearEthosRosterTable();
+          const thead = document.getElementById("ethosRosterThead");
+          if (!ethosRosterTableBody || !thead) return;
+          const plan = resolveEthosRosterColumnPlan(rows);
+          const columns = plan.columns;
+          const showActions = !!(pw && seg);
+          const trHead = document.createElement("tr");
+          columns.forEach(function (col) {
+            const th = document.createElement("th");
+            th.textContent = col.label;
+            trHead.appendChild(th);
+          });
+          if (showActions) {
+            const thx = document.createElement("th");
+            thx.className = "roster-actions";
+            thx.textContent = " ";
+            trHead.appendChild(thx);
+          }
+          thead.appendChild(trHead);
+          const frag = document.createDocumentFragment();
+          rows.forEach(function (item) {
+            const tr = document.createElement("tr");
+            columns.forEach(function (col) {
+              const td = document.createElement("td");
+              const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+              td.textContent = displayCellText(raw !== undefined && raw !== null ? formatCellValue(raw) : "");
+              tr.appendChild(td);
+            });
+            if (showActions && item.Id != null) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              const inner = document.createElement("div");
+              inner.className = "roster-actions-inner";
+              const recordBtn = document.createElement("button");
+              recordBtn.type = "button";
+              recordBtn.className = "btn-record";
+              recordBtn.textContent = "Record";
+              recordBtn.addEventListener("click", function () { void openEthosMemberDetailRecord(item.Id, meta, pw, seg, rows); });
+              inner.appendChild(recordBtn);
+              const delBtn = document.createElement("button");
+              delBtn.type = "button";
+              delBtn.className = "btn-danger";
+              delBtn.textContent = "Delete";
+              delBtn.addEventListener("click", function () { void deleteEthosMemberRow(item.Id, pw, seg); });
+              inner.appendChild(delBtn);
+              tdAct.appendChild(inner);
+              tr.appendChild(tdAct);
+            }
+            frag.appendChild(tr);
+          });
+          ethosRosterTableBody.appendChild(frag);
+          const listTitle = meta && meta.Title ? String(meta.Title) : ethosMembersListTitle();
+          if (rows.length > 0) {
+            setEthosReadState("ok", "Loaded " + rows.length + " ETHOS member(s). List \"" + listTitle + "\".");
+          } else {
+            setEthosReadState(
+              "warn",
+              "No ETHOS members in list \"" + listTitle + "\". Use Add ETHOS Member below or click Refresh list.",
+            );
+          }
+        }
+
+        async function deleteEthosMemberRow(id, pw, seg) {
+          const sid = parseInt(String(id), 10);
+          if (!sid || isNaN(sid)) { setEthosReadState("err", "Invalid row Id for delete."); return; }
+          if (!confirm("Delete ETHOS Member Id " + sid + "? This cannot be undone.")) return;
+          try {
+            setEthosReadState("loading", "Deleting member...");
+            await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
+            await runEthosProbe();
+            setEthosReadState("ok", "Deleted member Id " + sid + ".");
+          } catch (e) {
+            setEthosReadState("err", "Delete failed: " + (e.message || String(e)).slice(0, 280));
+          }
+        }
+
+        function ethosAddFormGroupedKeySet() {
+          const s = new Set();
+          if (!Array.isArray(ETHOS_ADD_FORM_FIELD_GROUPS)) return s;
+          ETHOS_ADD_FORM_FIELD_GROUPS.forEach(function (g) {
+            (g.keys || []).forEach(function (k) { s.add(k); });
+          });
+          return s;
+        }
+
+        async function renderEthosAddMemberForm(meta, pw, seg, sampleRow) {
+          const panel = document.getElementById("ethosAddMemberPanel");
+          if (!panel) return;
+          panel.innerHTML = "";
+          const cols = normalizedEthosRosterColumns();
+          if (!cols.length) return;
+          const h = document.createElement("h2");
+          h.className = "hub-subtitle";
+          h.textContent = "Add ETHOS Member";
+          panel.appendChild(h);
+          const form = document.createElement("form");
+          form.id = "newEthosMemberForm";
+          form.className = "add-form-stack";
+          form.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void submitNewEthosMember(meta, pw, seg, sampleRow);
+          });
+          let splitWrap = null;
+          if (Array.isArray(ETHOS_ADD_FORM_FIELD_GROUPS)) {
+            ETHOS_ADD_FORM_FIELD_GROUPS.forEach(function (group) {
+              if (!group || !group.title || !Array.isArray(group.keys)) return;
+              const grid = document.createElement("div");
+              grid.className = "add-form-grid";
+              if (group.layout === "stack") grid.classList.add("add-form-grid--stack");
+              group.keys.forEach(function (key) {
+                const col = cols.find(function (c) { return c.key === key; });
+                if (!col) return;
+                const fwrap = buildAddFieldWrap(col, sampleRow, { idPrefix: "enf_" });
+                if (fwrap) grid.appendChild(fwrap);
+              });
+              if (!grid.childElementCount) return;
+              const fs = document.createElement("fieldset");
+              fs.className = "add-form-group";
+              const leg = document.createElement("legend");
+              leg.className = "add-form-group-legend";
+              leg.textContent = group.title;
+              fs.appendChild(leg);
+              fs.appendChild(grid);
+              if (group.split === "left") {
+                splitWrap = document.createElement("div");
+                splitWrap.className = "add-form-split add-form-split--primary";
+                splitWrap.appendChild(fs);
+                form.appendChild(splitWrap);
+              } else if (group.split === "right") {
+                if (!splitWrap) { splitWrap = document.createElement("div"); splitWrap.className = "add-form-split"; form.appendChild(splitWrap); }
+                splitWrap.appendChild(fs);
+              } else form.appendChild(fs);
+            });
+          }
+          const bar = document.createElement("div");
+          bar.className = "add-form-actions";
+          const submitBtn = document.createElement("button");
+          submitBtn.type = "submit";
+          submitBtn.textContent = "Submit";
+          bar.appendChild(submitBtn);
+          form.appendChild(bar);
+          panel.appendChild(form);
+          for (let i = 0; i < cols.length; i++) {
+            const col = cols[i];
+            if (ETHOS_DROPDOWN_COLUMN_KEYS.indexOf(col.key) === -1) continue;
+            const sel = document.getElementById("enf_" + col.key);
+            await fillDropdownSelect(sel, col, seg, pw, sampleRow, sampleRow);
+          }
+          applyAllSelectAutosizes(form);
+        }
+
+        async function submitNewEthosMember(meta, pw, seg, sampleRow) {
+          const cols = normalizedEthosRosterColumns();
+          let lastName = "";
+          let firstName = "";
+          cols.forEach(function (col) {
+            const el = document.getElementById("enf_" + col.key);
+            if (!el) return;
+            const v = String(el.value || "").trim();
+            if (col.key === "LastName") lastName = v;
+            if (col.key === "FirstName") firstName = v;
+          });
+          if (!lastName || !firstName) {
+            setEthosReadState("err", "Last name and First name are required.");
+            return;
+          }
+          const payload = {};
+          cols.forEach(function (col) {
+            const el = document.getElementById("enf_" + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || resolveWriteKey(col, sampleRow);
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
+            payload[writeKey] = v;
+          });
+          if (ETHOS_SET_TITLE_ON_CREATE) payload.Title = [lastName, firstName].filter(Boolean).join(", ") || "ETHOS Member";
+          try {
+            setEthosReadState("loading", "Submitting...");
+            await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            const form = document.getElementById("newEthosMemberForm");
+            if (form) form.reset();
+            await runEthosProbe();
+            setEthosReadState("ok", "ETHOS member submitted. Table refreshed.");
+          } catch (e) {
+            setEthosReadState("err", "Submit failed: " + (e.message || String(e)).slice(0, 280));
+          }
+        }
+
+        async function ensureEthosRosterRendered() {
+          if (ethosSession.rows == null || !ethosSession.pw || !ethosSession.seg) return;
+          renderEthosRosterTable(ethosSession.rows, ethosSession.meta, ethosSession.pw, ethosSession.seg);
+          try {
+            await renderEthosAddMemberForm(ethosSession.meta, ethosSession.pw, ethosSession.seg, ethosSession.sampleRow);
+          } catch (e) {
+            setEthosReadState(
+              "warn",
+              "Roster loaded but add form failed: " + (e.message || String(e)).slice(0, 220),
+            );
+          }
+        }
+
+        async function runEthosProbe() {
+          try {
+            clearEthosRosterTable();
+            const addPanel = document.getElementById("ethosAddMemberPanel");
+            if (addPanel) addPanel.innerHTML = "";
+            setEthosReadState("loading", "Loading ETHOS Members list from SharePoint...");
+            const pw = resolvedPersonnelRestBase() || ethosSession.pw || hubSession.pw;
+            if (!pw) {
+              setEthosReadState(
+                "warn",
+                "Load the Personnel Roster first (wait for list to load or click Refresh list).",
+              );
+              return;
+            }
+            const seg = ethosMembersListApiPath();
+            let meta = null;
+            try {
+              meta = await spFetch(`/_api/web/${seg}?$select=Title,ItemCount`, {}, pw);
+            } catch (e) {
+              setEthosReadState("err", "Cannot read EthosMembers list: " + (e.message || String(e)).slice(0, 280));
+              return;
+            }
+            const orderByClause = String(ETHOS_ITEMS_ORDERBY || "").trim();
+            const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
+            let items = null;
+            try {
+              items = await spFetch(`/_api/web/${seg}/items?$top=500` + orderByQs, {}, pw);
+            } catch (e0) {
+              if (/\b400\b/.test(String(e0.message || ""))) {
+                items = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
+              } else {
+                setEthosReadState("err", "Cannot read ETHOS items: " + (e0.message || String(e0)).slice(0, 280));
+                return;
+              }
+            }
+            let rows = sortEthosRowsAlphabetical((items && items.value) || []);
+            const sampleRow = rows.length ? rows[0] : null;
+            ethosSession = Object.assign({}, ethosSession, { rows: rows, meta: meta, pw: pw, seg: seg, sampleRow: sampleRow });
+            renderEthosRosterTable(rows, meta, pw, seg);
+            try {
+              await renderEthosAddMemberForm(meta, pw, seg, sampleRow);
+            } catch (eForm) {
+              setEthosReadState(
+                "warn",
+                "List loaded but add form failed: " + (eForm.message || String(eForm)).slice(0, 220),
+              );
+            }
+          } catch (e) {
+            setEthosReadState("err", "Unexpected error loading ETHOS: " + (e.message || String(e)).slice(0, 280));
+          }
+        }
+
+        function setEthosMemberDetailState(kind, message) {
+          if (!ethosMemberDetailReadState) return;
+          if (!message) { ethosMemberDetailReadState.hidden = true; ethosMemberDetailReadState.textContent = ""; return; }
+          ethosMemberDetailReadState.hidden = false;
+          ethosMemberDetailReadState.className = "read-state " + kind;
+          ethosMemberDetailReadState.textContent = message;
+        }
+
+        function setEthosMemberDetailEditMode(editing) {
+          ethosDetailSession.editing = !!editing;
+          if (ethosMemberDetailEditBtn) ethosMemberDetailEditBtn.hidden = !!editing;
+          if (ethosMemberDetailSaveBtn) ethosMemberDetailSaveBtn.hidden = !editing;
+          if (ethosMemberDetailCancelBtn) ethosMemberDetailCancelBtn.hidden = !editing;
+        }
+
+        function buildEthosDetailFieldWrap(col, item) {
+          const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+          const fwrap = document.createElement("div");
+          fwrap.className = "add-field person-detail-field";
+          const lab = document.createElement("div");
+          lab.className = "person-detail-label";
+          lab.textContent = col.label;
+          const val = document.createElement("div");
+          val.className = "person-detail-value";
+          val.textContent = displayCellText(raw !== undefined && raw !== null ? formatCellValue(raw) : "");
+          fwrap.appendChild(lab);
+          fwrap.appendChild(val);
+          return fwrap;
+        }
+
+        function buildEthosMemberDetailFields(item, editing) {
+          const cols = normalizedEthosRosterColumns();
+          const sampleRow = ethosDetailSession.sampleRow || item;
+          const splitWrap = document.createElement("div");
+          splitWrap.className = "add-form-split add-form-split--primary";
+          if (Array.isArray(ETHOS_ADD_FORM_FIELD_GROUPS)) {
+            ETHOS_ADD_FORM_FIELD_GROUPS.forEach(function (group) {
+              const grid = document.createElement("div");
+              grid.className = "add-form-grid add-form-grid--stack";
+              group.keys.forEach(function (key) {
+                const col = cols.find(function (c) { return c.key === key; });
+                if (!col) return;
+                if (editing) {
+                  const f = buildAddFieldWrap(col, sampleRow, { idPrefix: "ef_" });
+                  const input = f && f.querySelector("input, select, textarea");
+                  if (input) setFieldValueFromItem(input, col, item);
+                  if (f) grid.appendChild(f);
+                } else grid.appendChild(buildEthosDetailFieldWrap(col, item));
+              });
+              if (!grid.childElementCount) return;
+              const fs = document.createElement("fieldset");
+              fs.className = "add-form-group";
+              const leg = document.createElement("legend");
+              leg.className = "add-form-group-legend";
+              leg.textContent = group.title;
+              fs.appendChild(leg);
+              fs.appendChild(grid);
+              splitWrap.appendChild(fs);
+            });
+          }
+          return splitWrap.childElementCount ? splitWrap : document.createElement("div");
+        }
+
+        async function renderEthosMemberDetailView(item, editing) {
+          if (!ethosMemberDetailContent || !item) return;
+          ethosMemberDetailContent.innerHTML = "";
+          setEthosMemberDetailEditMode(!!editing);
+          setEthosMemberDetailState("", "");
+          if (ethosMemberDetailTitle) ethosMemberDetailTitle.textContent = formatEthosMemberDisplayName(item);
+          const fields = buildEthosMemberDetailFields(item, editing);
+          if (editing) {
+            const form = document.createElement("div");
+            form.id = "ethosEditForm";
+            form.className = "add-form-stack";
+            form.appendChild(fields);
+            ethosMemberDetailContent.appendChild(form);
+            const cols = normalizedEthosRosterColumns();
+            for (let i = 0; i < cols.length; i++) {
+              const col = cols[i];
+              if (ETHOS_DROPDOWN_COLUMN_KEYS.indexOf(col.key) === -1) continue;
+              const sel = form.querySelector("#ef_" + col.key);
+              await fillDropdownSelect(sel, col, ethosDetailSession.seg, ethosDetailSession.pw, ethosDetailSession.sampleRow, item);
+            }
+            applyAllSelectAutosizes(form);
+          } else ethosMemberDetailContent.appendChild(fields);
+        }
+
+        function syncEthosMemberInSession(updatedItem) {
+          if (!updatedItem || updatedItem.Id == null) return;
+          if (!Array.isArray(ethosSession.rows)) ethosSession.rows = [];
+          const idx = ethosSession.rows.findIndex(function (r) { return r && String(r.Id) === String(updatedItem.Id); });
+          if (idx === -1) ethosSession.rows.push(updatedItem);
+          else ethosSession.rows[idx] = Object.assign({}, ethosSession.rows[idx], updatedItem);
+          ethosSession.rows = sortEthosRowsAlphabetical(ethosSession.rows);
+          if (ethosSession.pw && ethosSession.seg) renderEthosRosterTable(ethosSession.rows, ethosSession.meta, ethosSession.pw, ethosSession.seg);
+        }
+
+        async function saveEthosMemberDetailEdits() {
+          const s = ethosDetailSession;
+          if (!s.item || s.item.Id == null || !s.pw || !s.seg) return;
+          const cols = normalizedEthosRosterColumns();
+          const payload = {};
+          cols.forEach(function (col) {
+            const el = document.getElementById("ef_" + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || resolveWriteKey(col, s.sampleRow);
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
+            payload[writeKey] = v;
+          });
+          try {
+            setEthosMemberDetailState("loading", "Saving changes...");
+            await spFetch(`/_api/web/${s.seg}/items(${s.item.Id})`, { method: "MERGE", body: payload }, s.pw);
+            const updated = mergePayloadIntoItem(s.item, payload);
+            updated.Id = s.item.Id;
+            ethosDetailSession.item = updated;
+            syncEthosMemberInSession(updated);
+            await renderEthosMemberDetailView(updated, false);
+            setEthosMemberDetailState("ok", "Record saved.");
+            window.setTimeout(function () { setEthosMemberDetailState("", ""); }, 2500);
+          } catch (e) {
+            setEthosMemberDetailState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+          }
+        }
+
+        function clearEthosMemberWeaponsSection() {
+          if (ethosWeaponsThead) ethosWeaponsThead.innerHTML = "";
+          if (ethosWeaponsBody) ethosWeaponsBody.innerHTML = "";
+          ethosWeaponsCertEditSession.item = null;
+          if (ethosWeaponsAddPanel) ethosWeaponsAddPanel.hidden = true;
+          if (ethosWeaponsWrap) ethosWeaponsWrap.hidden = true;
+          if (ethosWeaponsAddForm) ethosWeaponsAddForm.reset();
+        }
+
+        function clearEthosMemberBylawSection() {
+          if (ethosBylawThead) ethosBylawThead.innerHTML = "";
+          if (ethosBylawBody) ethosBylawBody.innerHTML = "";
+          ethosBylawTrainingEditSession.item = null;
+          if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = true;
+          if (ethosBylawWrap) ethosBylawWrap.hidden = true;
+          if (ethosBylawAddForm) ethosBylawAddForm.reset();
+        }
+
+        function clearEthosMemberDetailSection() {
+          clearEthosMemberWeaponsSection();
+          clearEthosMemberBylawSection();
+          setEthosMemberDetailEditMode(false);
+        }
+
+        function setEthosWeaponsState(kind, message) {
+          if (!ethosWeaponsState) return;
+          if (!message) { ethosWeaponsState.hidden = true; ethosWeaponsState.textContent = ""; return; }
+          ethosWeaponsState.hidden = false;
+          ethosWeaponsState.className = "read-state " + kind;
+          ethosWeaponsState.textContent = message;
+        }
+
+        function setEthosBylawState(kind, message) {
+          if (!ethosBylawState) return;
+          if (!message) { ethosBylawState.hidden = true; ethosBylawState.textContent = ""; return; }
+          ethosBylawState.hidden = false;
+          ethosBylawState.className = "read-state " + kind;
+          ethosBylawState.textContent = message;
+        }
+
+        function renderEthosWeaponsCertTable(rows) {
+          if (ethosWeaponsThead) ethosWeaponsThead.innerHTML = "";
+          if (ethosWeaponsBody) ethosWeaponsBody.innerHTML = "";
+          const columns = normalizedEthosWeaponsCertColumns();
+          if (!ethosWeaponsThead || !ethosWeaponsBody || !columns.length) return;
+          const showActions = !!(ethosDetailSession.pw && ethosWeaponsWrap && !ethosWeaponsWrap.hidden);
+          const trHead = document.createElement("tr");
+          columns.forEach(function (col) {
+            const th = document.createElement("th");
+            th.textContent = col.label;
+            trHead.appendChild(th);
+          });
+          if (showActions) {
+            const thAct = document.createElement("th");
+            thAct.className = "roster-actions";
+            thAct.textContent = " ";
+            trHead.appendChild(thAct);
+          }
+          ethosWeaponsThead.appendChild(trHead);
+          const frag = document.createDocumentFragment();
+          rows.forEach(function (item) {
+            const tr = document.createElement("tr");
+            columns.forEach(function (col) {
+              const td = document.createElement("td");
+              if (col.computed && col.key === "Status") {
+                const status = computeEthosWeaponsCertStatus(item);
+                td.textContent = displayCellText(status.text);
+                if (status.tone && status.tone !== "unknown") td.className = "weapons-status weapons-status--" + status.tone;
+              } else if (isWeaponsCertDateColumn(col)) {
+                td.textContent = displayCellText(formatWeaponsCertDisplayDate(valueFromItemByKeys(item, col.tryKeys || [col.key])));
+              } else {
+                const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+                td.textContent = displayCellText(raw !== undefined && raw !== null ? formatCellValue(raw) : "");
+              }
+              tr.appendChild(td);
+            });
+            if (showActions && item.Id != null) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              const inner = document.createElement("div");
+              inner.className = "roster-actions-inner";
+              const requalBtn = document.createElement("button");
+              requalBtn.type = "button";
+              requalBtn.className = "btn-record";
+              requalBtn.textContent = "Requalify";
+              requalBtn.addEventListener("click", function () { void openEthosWeaponsCertEditPanel(item); });
+              inner.appendChild(requalBtn);
+              const delBtn = document.createElement("button");
+              delBtn.type = "button";
+              delBtn.className = "btn-danger";
+              delBtn.textContent = "Delete";
+              delBtn.addEventListener("click", function () {
+                const memberId = ethosDetailSession.item && ethosDetailSession.item.Id;
+                void deleteEthosWeaponsCertRow(item.Id, ethosDetailSession.pw, ethosWeaponsCertListApiPath(), memberId);
+              });
+              inner.appendChild(delBtn);
+              tdAct.appendChild(inner);
+              tr.appendChild(tdAct);
+            }
+            frag.appendChild(tr);
+          });
+          ethosWeaponsBody.appendChild(frag);
+          if (ethosWeaponsEmpty) ethosWeaponsEmpty.hidden = rows.length > 0;
+        }
+
+        async function loadEthosMemberWeaponsCertifications(memberId, pw) {
+          if (!memberId) return;
+          if (ethosWeaponsWrap) ethosWeaponsWrap.hidden = false;
+          setEthosWeaponsState("loading", "Loading Weapons Qualifications...");
+          const seg = ethosWeaponsCertListApiPath();
+          if (!ethosWeaponsCertListTitle() && !ethosWeaponsCertListUsesGuid()) {
+            renderEthosWeaponsCertTable([]);
+            setEthosWeaponsState("", "");
+            return;
+          }
+          try {
+            const rows = await fetchLinkedCertRowsForMember(seg, pw, memberId, {
+              personField: ETHOS_WEAPONS_PERSON_FIELD,
+              personFieldAlt: ETHOS_WEAPONS_PERSON_FIELD_ALT,
+              orderBy: ETHOS_WEAPONS_CERT_ITEMS_ORDERBY,
+              session: ethosSession,
+              filterFieldKey: "weaponsPersonFilterField",
+              filterFieldsKey: "weaponsPersonFilterFields",
+              lookupBase: "EthosMember",
+            });
+            ethosSession.weaponsCertSampleRow = rows.length ? rows[0] : ethosSession.weaponsCertSampleRow;
+            ethosSession.weaponsCertRows = rows.slice();
+            renderEthosWeaponsCertTable(rows);
+            setEthosWeaponsState("", "");
+          } catch (e) {
+            renderEthosWeaponsCertTable([]);
+            setEthosWeaponsState("warn", "Could not load weapons qualifications: " + (e.message || String(e)).slice(0, 200));
+          }
+        }
+
+        function buildEthosWeaponsCertAddFormFields(options) {
+          if (!ethosWeaponsAddFields) return;
+          ethosWeaponsAddFields.innerHTML = "";
+          const sampleRow = ethosSession.weaponsCertSampleRow;
+          ethosWeaponsCertFormColumns().forEach(function (col) {
+            const f = buildWeaponsCertFieldWrap(col, sampleRow, Object.assign({ idPrefix: "ewf_" }, options || {}));
+            if (f) ethosWeaponsAddFields.appendChild(f);
+          });
+        }
+
+        async function populateEthosWeaponsCertAddDropdowns() {
+          if (!ethosWeaponsAddForm || !ethosDetailSession.pw) return;
+          const seg = ethosWeaponsCertListApiPath();
+          const pw = ethosDetailSession.pw;
+          const sampleRow = ethosSession.weaponsCertSampleRow;
+          for (let i = 0; i < normalizedEthosWeaponsCertColumns().length; i++) {
+            const col = normalizedEthosWeaponsCertColumns()[i];
+            if (ETHOS_WEAPONS_CERT_DROPDOWN_KEYS.indexOf(col.key) === -1) continue;
+            const sel = document.getElementById("ewf_" + col.key);
+            if (sel && sel.tagName === "SELECT") await fillDropdownSelect(sel, col, seg, pw, sampleRow, null);
+          }
+          applyAllSelectAutosizes(ethosWeaponsAddForm);
+        }
+
+        async function openEthosWeaponsCertAddPanel() {
+          if (!ethosDetailSession.item || ethosDetailSession.item.Id == null) return;
+          ethosWeaponsCertEditSession.item = null;
+          if (ethosWeaponsFormTitle) ethosWeaponsFormTitle.textContent = "New Weapons Qualification";
+          if (ethosWeaponsSaveBtn) ethosWeaponsSaveBtn.textContent = "Save qualification";
+          buildEthosWeaponsCertAddFormFields();
+          if (ethosWeaponsAddPanel) ethosWeaponsAddPanel.hidden = false;
+          await populateEthosWeaponsCertAddDropdowns();
+          wireCertQualDateAutoExpiry(ethosWeaponsAddForm, "ewf_", "ethosWeaponsAutoExpiry");
+        }
+
+        async function openEthosWeaponsCertEditPanel(item) {
+          if (!item || item.Id == null) return;
+          ethosWeaponsCertEditSession.item = item;
+          if (ethosWeaponsFormTitle) ethosWeaponsFormTitle.textContent = "Requalify Weapon";
+          if (ethosWeaponsSaveBtn) ethosWeaponsSaveBtn.textContent = "Save requalification";
+          buildEthosWeaponsCertAddFormFields({ readOnlyKeys: ["Weapon"] });
+          if (ethosWeaponsAddPanel) ethosWeaponsAddPanel.hidden = false;
+          await populateEthosWeaponsCertAddDropdowns();
+          ethosWeaponsCertFormColumns().forEach(function (col) {
+            const el = document.getElementById("ewf_" + col.key);
+            if (!el || !item) return;
+            const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+            if (isWeaponsCertDateColumn(col) && col.key !== "QualDate") el.value = isoDateForDateInput(raw);
+            else if (col.key !== "QualDate") el.value = formatCellValue(raw);
+          });
+          const qualEl = document.getElementById("ewf_QualDate");
+          if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+          applyCertExpirationFromQual("ewf_");
+          wireCertQualDateAutoExpiry(ethosWeaponsAddForm, "ewf_", "ethosWeaponsAutoExpiry");
+        }
+
+        async function deleteEthosWeaponsCertRow(id, pw, seg, memberId) {
+          const sid = parseInt(String(id), 10);
+          if (!sid || isNaN(sid) || !confirm("Delete Weapons Qualification Id " + sid + "?")) return;
+          try {
+            setEthosWeaponsState("loading", "Deleting...");
+            await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
+            if (memberId) await loadEthosMemberWeaponsCertifications(memberId, pw);
+            if (ethosWeaponsAddPanel) ethosWeaponsAddPanel.hidden = true;
+            setEthosWeaponsState("ok", "Qualification deleted.");
+          } catch (e) {
+            setEthosWeaponsState("err", "Delete failed: " + (e.message || String(e)).slice(0, 200));
+          }
+        }
+
+        async function submitEthosWeaponsCertSave() {
+          const memberItem = ethosDetailSession.item;
+          const pw = ethosDetailSession.pw;
+          if (!memberItem || memberItem.Id == null || !pw) return;
+          const editItem = ethosWeaponsCertEditSession.item;
+          const isEdit = editItem && editItem.Id != null;
+          const seg = ethosWeaponsCertListApiPath();
+          const weaponEl = document.getElementById("ewf_Weapon");
+          const weaponVal = weaponEl ? String(weaponEl.value || "").trim() : "";
+          if (!isEdit && !weaponVal) { setEthosWeaponsState("err", "Weapon is required."); return; }
+          const qualEl = document.getElementById("ewf_QualDate");
+          if (!qualEl || !String(qualEl.value || "").trim()) { setEthosWeaponsState("err", "Certification date is required."); return; }
+          const payload = {};
+          ethosWeaponsCertFormColumns().forEach(function (col) {
+            if (isEdit && col.key === "Weapon") return;
+            const el = document.getElementById("ewf_" + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || col.key;
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
+            payload[writeKey] = v;
+          });
+          if (!isEdit) {
+            const personKey = await resolveLinkedMemberPostKey(seg, pw, ethosSession, "weaponsPersonFilterField", "weaponsPersonPostKey", ETHOS_WEAPONS_PERSON_FIELD);
+            payload[personKey] = parseInt(String(memberItem.Id), 10);
+            if (ETHOS_WEAPONS_CERT_SET_TITLE) payload.Title = weaponVal;
+          }
+          try {
+            setEthosWeaponsState("loading", "Saving...");
+            if (isEdit) await spFetch(`/_api/web/${seg}/items(${editItem.Id})`, { method: "MERGE", body: payload }, pw);
+            else await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            if (ethosWeaponsAddPanel) ethosWeaponsAddPanel.hidden = true;
+            if (ethosWeaponsAddForm) ethosWeaponsAddForm.reset();
+            await loadEthosMemberWeaponsCertifications(memberItem.Id, pw);
+            setEthosWeaponsState("ok", "Saved.");
+          } catch (e) {
+            setEthosWeaponsState("err", "Save failed: " + (e.message || String(e)).slice(0, 200));
+          }
+        }
+
+        function renderEthosBylawTrainingTable(rows) {
+          if (ethosBylawThead) ethosBylawThead.innerHTML = "";
+          if (ethosBylawBody) ethosBylawBody.innerHTML = "";
+          const columns = normalizedEthosBylawColumns();
+          if (!ethosBylawThead || !ethosBylawBody) return;
+          const showActions = !!(ethosDetailSession.pw && ethosBylawWrap && !ethosBylawWrap.hidden);
+          const trHead = document.createElement("tr");
+          columns.forEach(function (col) {
+            const th = document.createElement("th");
+            th.textContent = col.label;
+            trHead.appendChild(th);
+          });
+          if (showActions) {
+            const thAct = document.createElement("th");
+            thAct.className = "roster-actions";
+            thAct.textContent = " ";
+            trHead.appendChild(thAct);
+          }
+          ethosBylawThead.appendChild(trHead);
+          const frag = document.createDocumentFragment();
+          rows.forEach(function (item) {
+            const tr = document.createElement("tr");
+            columns.forEach(function (col) {
+              const td = document.createElement("td");
+              if (col.computed && col.key === "Status") {
+                const status = computeEthosBylawTrainingStatus(item);
+                td.textContent = displayCellText(status.text);
+                if (status.tone && status.tone !== "unknown") td.className = "cert-status cert-status--" + status.tone;
+              } else if (isWeaponsCertDateColumn(col)) {
+                td.textContent = displayCellText(formatWeaponsCertDisplayDate(valueFromItemByKeys(item, col.tryKeys || [col.key])));
+              } else if (col.key === "Certifier") {
+                td.textContent = displayCellText(formatSharePointLookupDisplay(valueFromItemByKeys(item, col.tryKeys || [col.key])));
+              } else {
+                const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+                td.textContent = displayCellText(raw !== undefined && raw !== null ? formatCellValue(raw) : "");
+              }
+              tr.appendChild(td);
+            });
+            if (showActions && item.Id != null) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              const inner = document.createElement("div");
+              inner.className = "roster-actions-inner";
+              const requalBtn = document.createElement("button");
+              requalBtn.type = "button";
+              requalBtn.className = "btn-record";
+              requalBtn.textContent = "Requalify";
+              requalBtn.addEventListener("click", function () { void openEthosBylawTrainingEditPanel(item); });
+              inner.appendChild(requalBtn);
+              const delBtn = document.createElement("button");
+              delBtn.type = "button";
+              delBtn.className = "btn-danger";
+              delBtn.textContent = "Delete";
+              delBtn.addEventListener("click", function () {
+                const memberId = ethosDetailSession.item && ethosDetailSession.item.Id;
+                void deleteEthosBylawTrainingRow(item.Id, ethosDetailSession.pw, ethosBylawTrainingListApiPath(), memberId);
+              });
+              inner.appendChild(delBtn);
+              tdAct.appendChild(inner);
+              tr.appendChild(tdAct);
+            }
+            frag.appendChild(tr);
+          });
+          ethosBylawBody.appendChild(frag);
+          if (ethosBylawEmpty) ethosBylawEmpty.hidden = rows.length > 0;
+        }
+
+        async function loadEthosMemberBylawTraining(memberId, pw) {
+          if (!memberId) return;
+          if (ethosBylawWrap) ethosBylawWrap.hidden = false;
+          setEthosBylawState("loading", "Loading By-Law Training...");
+          const seg = ethosBylawTrainingListApiPath();
+          if (!ethosBylawListTitle() && !ethosBylawListUsesGuid()) {
+            renderEthosBylawTrainingTable([]);
+            setEthosBylawState("", "");
+            return;
+          }
+          try {
+            const rows = await fetchLinkedCertRowsForMember(seg, pw, memberId, {
+              personField: ETHOS_BYLAW_PERSON_FIELD,
+              personFieldAlt: ETHOS_BYLAW_PERSON_FIELD_ALT,
+              orderBy: ETHOS_BYLAW_TRAINING_ITEMS_ORDERBY,
+              session: ethosSession,
+              filterFieldKey: "bylawPersonFilterField",
+              filterFieldsKey: "bylawPersonFilterFields",
+              lookupBase: "EthosMember",
+            });
+            ethosSession.bylawTrainingSampleRow = rows.length ? rows[0] : ethosSession.bylawTrainingSampleRow;
+            ethosSession.bylawTrainingRows = rows.slice();
+            renderEthosBylawTrainingTable(rows);
+            setEthosBylawState("", "");
+          } catch (e) {
+            renderEthosBylawTrainingTable([]);
+            setEthosBylawState("warn", "Could not load By-Law Training: " + (e.message || String(e)).slice(0, 200));
+          }
+        }
+
+        function buildEthosBylawAddFormFields(options) {
+          if (!ethosBylawAddFields) return;
+          ethosBylawAddFields.innerHTML = "";
+          const sampleRow = ethosSession.bylawTrainingSampleRow;
+          ethosBylawFormColumns().forEach(function (col) {
+            const f = buildBylawTrainingFieldWrap(col, sampleRow, Object.assign({ idPrefix: "ebf_" }, options || {}));
+            if (f) ethosBylawAddFields.appendChild(f);
+          });
+        }
+
+        async function populateEthosBylawAddDropdowns() {
+          if (!ethosBylawAddForm || !ethosDetailSession.pw) return;
+          const seg = ethosBylawTrainingListApiPath();
+          const pw = ethosDetailSession.pw;
+          const sampleRow = ethosSession.bylawTrainingSampleRow;
+          for (let i = 0; i < normalizedEthosBylawColumns().length; i++) {
+            const col = normalizedEthosBylawColumns()[i];
+            if (ETHOS_BYLAW_TRAINING_DROPDOWN_KEYS.indexOf(col.key) === -1) continue;
+            const sel = document.getElementById("ebf_" + col.key);
+            if (!sel || sel.tagName !== "SELECT") continue;
+            if (col.key === "Certifier") await fillBylawCertifierDropdown(sel, seg, pw, sampleRow);
+            else await fillDropdownSelect(sel, col, seg, pw, sampleRow, null);
+          }
+          applyAllSelectAutosizes(ethosBylawAddForm);
+        }
+
+        async function openEthosBylawTrainingAddPanel() {
+          if (!ethosDetailSession.item || ethosDetailSession.item.Id == null) return;
+          ethosBylawTrainingEditSession.item = null;
+          buildEthosBylawAddFormFields();
+          if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = false;
+          await populateEthosBylawAddDropdowns();
+          wireCertQualDateAutoExpiry(ethosBylawAddForm, "ebf_", "ethosBylawAutoExpiry");
+        }
+
+        async function openEthosBylawTrainingEditPanel(item) {
+          if (!item || item.Id == null) return;
+          ethosBylawTrainingEditSession.item = item;
+          buildEthosBylawAddFormFields({ readOnlyKeys: ["Item"] });
+          if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = false;
+          await populateEthosBylawAddDropdowns();
+          ethosBylawFormColumns().forEach(function (col) {
+            const el = document.getElementById("ebf_" + col.key);
+            if (!el) return;
+            const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+            if (isWeaponsCertDateColumn(col) && col.key !== "QualDate") el.value = isoDateForDateInput(raw);
+            else if (col.key !== "QualDate") {
+              if (el.tagName === "SELECT") ensureSelectIncludesValue(el, formatSharePointLookupDisplay(raw));
+              el.value = col.key === "Certifier" ? String(item.CertifierId || raw || "") : formatCellValue(raw);
+            }
+          });
+          const qualEl = document.getElementById("ebf_QualDate");
+          if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+          applyCertExpirationFromQual("ebf_");
+          wireCertQualDateAutoExpiry(ethosBylawAddForm, "ebf_", "ethosBylawAutoExpiry");
+        }
+
+        async function deleteEthosBylawTrainingRow(id, pw, seg, memberId) {
+          const sid = parseInt(String(id), 10);
+          if (!sid || isNaN(sid) || !confirm("Delete By-Law Training record Id " + sid + "?")) return;
+          try {
+            setEthosBylawState("loading", "Deleting...");
+            await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
+            if (memberId) await loadEthosMemberBylawTraining(memberId, pw);
+            if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = true;
+            setEthosBylawState("ok", "Record deleted.");
+          } catch (e) {
+            setEthosBylawState("err", "Delete failed: " + (e.message || String(e)).slice(0, 200));
+          }
+        }
+
+        async function submitEthosBylawTrainingSave() {
+          const memberItem = ethosDetailSession.item;
+          const pw = ethosDetailSession.pw;
+          if (!memberItem || memberItem.Id == null || !pw) return;
+          const editItem = ethosBylawTrainingEditSession.item;
+          const isEdit = editItem && editItem.Id != null;
+          const seg = ethosBylawTrainingListApiPath();
+          const itemEl = document.getElementById("ebf_Item");
+          const itemVal = itemEl ? String(itemEl.value || "").trim() : "";
+          if (!isEdit && !itemVal) { setEthosBylawState("err", "Item is required."); return; }
+          const qualEl = document.getElementById("ebf_QualDate");
+          if (!qualEl || !String(qualEl.value || "").trim()) { setEthosBylawState("err", "Certification date is required."); return; }
+          const payload = {};
+          ethosBylawFormColumns().forEach(function (col) {
+            if (isEdit && col.key === "Item") return;
+            const el = document.getElementById("ebf_" + col.key);
+            if (!el) return;
+            const writeKey = el.dataset.writeKey || col.key;
+            const v = formFieldPayloadValue(el, writeKey);
+            if (v === null) return;
+            payload[writeKey] = v;
+          });
+          if (!isEdit) {
+            const personKey = await resolveLinkedMemberPostKey(seg, pw, ethosSession, "bylawPersonFilterField", "bylawPersonPostKey", ETHOS_BYLAW_PERSON_FIELD);
+            payload[personKey] = parseInt(String(memberItem.Id), 10);
+            if (ETHOS_BYLAW_TRAINING_SET_TITLE) payload.Title = itemVal;
+          }
+          try {
+            setEthosBylawState("loading", "Saving...");
+            if (isEdit) await spFetch(`/_api/web/${seg}/items(${editItem.Id})`, { method: "MERGE", body: payload }, pw);
+            else await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            if (ethosBylawAddPanel) ethosBylawAddPanel.hidden = true;
+            if (ethosBylawAddForm) ethosBylawAddForm.reset();
+            await loadEthosMemberBylawTraining(memberItem.Id, pw);
+            setEthosBylawState("ok", "Saved.");
+          } catch (e) {
+            setEthosBylawState("err", "Save failed: " + (e.message || String(e)).slice(0, 200));
+          }
+        }
+
+        async function openEthosMemberDetailRecord(itemId, meta, pw, seg, cachedRows, sampleRow) {
+          if (!ethosMemberDetailSection || !ethosMemberDetailContent) return;
+          if (ethosSection) ethosSection.hidden = true;
+          ethosMemberDetailSection.hidden = false;
+          setEthosMemberDetailEditMode(false);
+          const rows = Array.isArray(cachedRows) ? cachedRows : ethosSession.rows;
+          let item = Array.isArray(rows) && rows.find(function (r) { return r && String(r.Id) === String(itemId); });
+          if (!item) {
+            setEthosMemberDetailState("loading", "Loading ETHOS member...");
+            try {
+              item = await spFetch(`/_api/web/${seg}/items(${itemId})`, {}, pw);
+            } catch (e) {
+              setEthosMemberDetailState("err", "Cannot load member: " + (e.message || String(e)).slice(0, 280));
+              return;
+            }
+          }
+          ethosDetailSession = {
+            item: item,
+            editing: false,
+            meta: meta || ethosSession.meta,
+            pw: pw || ethosSession.pw,
+            seg: seg || ethosSession.seg,
+            sampleRow: sampleRow || (rows && rows.length ? rows[0] : item),
+          };
+          await renderEthosMemberDetailView(item, false);
+          await loadEthosMemberWeaponsCertifications(item.Id, ethosDetailSession.pw);
+          await loadEthosMemberBylawTraining(item.Id, ethosDetailSession.pw);
+        }
+
+        function buildEthosMqlCertTable(rows, columns, statusFn, itemLabelKey) {
+          const table = document.createElement("table");
+          table.className = "ethos-mql-table";
+          const itemCol = columns.find(function (c) { return c.key === itemLabelKey; }) || columns.find(function (c) { return c.key === "Weapon" || c.key === "Item"; }) || columns[0];
+          const thead = document.createElement("thead");
+          const htr = document.createElement("tr");
+          [itemCol ? itemCol.label : "Item", "Qual Date", "Expiration", "Status"].forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            htr.appendChild(th);
+          });
+          thead.appendChild(htr);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          if (!rows.length) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 4;
+            td.textContent = "No records on file.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+          } else {
+            rows.forEach(function (row) {
+              const tr = document.createElement("tr");
+              const itemCol = columns.find(function (c) { return c.key === itemLabelKey || c.key === "Weapon" || c.key === "Item"; }) || columns[0];
+              const qualCol = columns.find(function (c) { return c.key === "QualDate"; });
+              const expCol = columns.find(function (c) { return c.key === "ExpirationDate" || c.key === "ExpiryDate"; });
+              const status = statusFn(row);
+              [itemCol, qualCol, expCol].forEach(function (col, idx) {
+                const td = document.createElement("td");
+                if (!col) { td.textContent = "-"; tr.appendChild(td); return; }
+                const raw = valueFromItemByKeys(row, col.tryKeys || [col.key]);
+                td.textContent = displayCellText(isWeaponsCertDateColumn(col) ? formatWeaponsCertDisplayDate(raw) : formatCellValue(raw));
+                tr.appendChild(td);
+              });
+              const tdStatus = document.createElement("td");
+              tdStatus.textContent = displayCellText(status.text);
+              tr.appendChild(tdStatus);
+              tbody.appendChild(tr);
+            });
+          }
+          table.appendChild(tbody);
+          return table;
+        }
+
+        function buildEthosMqlMemberBlock(member, weaponsRows, bylawRows, forPrint) {
+          const block = document.createElement("div");
+          block.className = "ethos-mql-member-block";
+          const h3 = document.createElement("h3");
+          const squadron = ethosItemFieldText(member, "Squadron") || ETHOS_SQUADRON_LABEL;
+          h3.textContent = formatEthosMemberDisplayName(member) + " - " + squadron;
+          block.appendChild(h3);
+          const wTitle = document.createElement("h4");
+          wTitle.textContent = "Weapons Qualifications";
+          block.appendChild(wTitle);
+          block.appendChild(buildEthosMqlCertTable(weaponsRows, normalizedEthosWeaponsCertColumns(), computeEthosWeaponsCertStatus, "Weapon"));
+          const bTitle = document.createElement("h4");
+          bTitle.textContent = "By-Law Training";
+          block.appendChild(bTitle);
+          block.appendChild(buildEthosMqlCertTable(bylawRows, normalizedEthosBylawColumns(), computeEthosBylawTrainingStatus, "Item"));
+          return block;
+        }
+
+        function renderEthosMqlReportDocument(members, weaponsByMember, bylawByMember, forPrint) {
+          const wrap = document.createElement("div");
+          wrap.className = forPrint ? "ethos-mql-report-print" : "ethos-mql-report-screen";
+          if (forPrint) {
+            const header = document.createElement("div");
+            header.className = "ethos-mql-report-header";
+            const h1 = document.createElement("h1");
+            h1.textContent = "ETHOS MQL Report";
+            header.appendChild(h1);
+            const sub = document.createElement("p");
+            sub.textContent = ETHOS_SQUADRON_LABEL + " - Generated " + new Date().toLocaleString();
+            header.appendChild(sub);
+            wrap.appendChild(header);
+          }
+          members.forEach(function (member) {
+            if (!member || member.Id == null) return;
+            const wid = String(member.Id);
+            wrap.appendChild(buildEthosMqlMemberBlock(member, weaponsByMember[wid] || [], bylawByMember[wid] || [], forPrint));
+          });
+          return wrap;
+        }
+
+        async function fetchAllEthosLinkedRows(seg, pw, opts) {
+          const orderByClause = String(opts.orderBy || "").trim();
+          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
+          let data = null;
+          try {
+            data = await spFetch(`/_api/web/${seg}/items?$top=2000` + orderByQs, {}, pw);
+          } catch (e) {
+            if (/\b400\b/.test(String(e.message || "")) && orderByQs) data = await spFetch(`/_api/web/${seg}/items?$top=2000`, {}, pw);
+            else throw e;
+          }
+          return (data && data.value) || [];
+        }
+
+        function groupLinkedRowsByMember(rows, personField, personFieldAlt, lookupBase) {
+          const candidates = linkedMemberFilterCandidates(personField, personFieldAlt);
+          const map = {};
+          (rows || []).forEach(function (row) {
+            const mid = linkedMemberIdFromItem(row, candidates, lookupBase);
+            if (!mid) return;
+            if (!map[mid]) map[mid] = [];
+            map[mid].push(row);
+          });
+          return map;
+        }
+
+        async function showEthosMqlReport() {
+          const pw = ethosSession.pw || hubSession.pw;
+          if (!pw) { setEthosReadState("warn", "Load ETHOS roster first."); return; }
+          if (!ethosSession.rows || !ethosSession.rows.length) { setEthosReadState("warn", "No ETHOS members loaded."); return; }
+          try {
+            setEthosReadState("loading", "Building ETHOS MQL report...");
+            const weaponsSeg = ethosWeaponsCertListApiPath();
+            const bylawSeg = ethosBylawTrainingListApiPath();
+            const allWeapons = await fetchAllEthosLinkedRows(weaponsSeg, pw, { orderBy: ETHOS_WEAPONS_CERT_ITEMS_ORDERBY });
+            const allBylaw = await fetchAllEthosLinkedRows(bylawSeg, pw, { orderBy: ETHOS_BYLAW_TRAINING_ITEMS_ORDERBY });
+            const weaponsByMember = groupLinkedRowsByMember(allWeapons, ETHOS_WEAPONS_PERSON_FIELD, ETHOS_WEAPONS_PERSON_FIELD_ALT, "EthosMember");
+            const bylawByMember = groupLinkedRowsByMember(allBylaw, ETHOS_BYLAW_PERSON_FIELD, ETHOS_BYLAW_PERSON_FIELD_ALT, "EthosMember");
+            const members = sortEthosRowsAlphabetical(ethosSession.rows.slice());
+            if (ethosMqlReportBody) {
+              ethosMqlReportBody.innerHTML = "";
+              ethosMqlReportBody.appendChild(renderEthosMqlReportDocument(members, weaponsByMember, bylawByMember, false));
+            }
+            if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = false;
+            if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = false;
+            if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = false;
+            ethosSession.mqlWeaponsByMember = weaponsByMember;
+            ethosSession.mqlBylawByMember = bylawByMember;
+            setEthosReadState("", "");
+          } catch (e) {
+            setEthosReadState("err", "Could not build MQL report: " + (e.message || String(e)).slice(0, 220));
+          }
+        }
+
+        function triggerEthosPrint(node) {
+          if (!ethosPrintSurface || !node) return;
+          ethosPrintSurface.innerHTML = "";
+          ethosPrintSurface.appendChild(node);
+          ethosPrintSurface.hidden = false;
+          const root = document.getElementById("sp-pip-ui");
+          if (root) root.classList.add("ethos-print-active");
+          window.setTimeout(function () {
+            window.print();
+            window.setTimeout(function () {
+              if (root) root.classList.remove("ethos-print-active");
+              ethosPrintSurface.hidden = true;
+            }, 500);
+          }, 120);
+        }
+
+        function printEthosMqlReport() {
+          const members = sortEthosRowsAlphabetical((ethosSession.rows || []).slice());
+          const weaponsByMember = ethosSession.mqlWeaponsByMember || {};
+          const bylawByMember = ethosSession.mqlBylawByMember || {};
+          triggerEthosPrint(renderEthosMqlReportDocument(members, weaponsByMember, bylawByMember, true));
+        }
+
         async function runProbe() {
           out.innerHTML = "";
           clearRosterTable();
@@ -9479,7 +10888,9 @@
 
           await renderAddPersonForm(meta, pw, seg2, sampleRow);
           renderRosterTable(rows, meta, pw, seg2);
-          setHubListViewVisible(true);
+          if (!hubAlternateNavActive()) {
+            setHubListViewVisible(true);
+          }
         }
 
         btn.addEventListener("click", () => {
