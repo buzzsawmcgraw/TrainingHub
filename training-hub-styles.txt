@@ -511,6 +511,22 @@
         line-height: 1.1;
         white-space: nowrap;
       }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--compact td:nth-child(2) {
+        white-space: normal;
+        word-break: break-word;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--many-cols {
+        font-size: 6pt;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--many-cols th,
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--many-cols td {
+        font-size: 6pt;
+        padding: 1px 2px;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--many-cols th {
+        white-space: normal;
+        line-height: 1.05;
+      }
       #sp-pip-ui .scheduling-print-surface .af-official-section-heading {
         margin: 14px 0 4px;
         padding: 0;
@@ -539,24 +555,41 @@
         margin-top: 0;
         margin-bottom: 0;
       }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--ok {
-        color: #1a6b3a !important;
-        font-weight: 600;
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired,
+      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--expired {
+        background: #f5c2c7 !important;
+        color: #000 !important;
       }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--warn {
-        color: #9a6700 !important;
-        font-weight: 600;
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--urgent,
+      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--urgent {
+        background: #ffc78a !important;
+        color: #000 !important;
       }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--urgent {
-        color: #b91c1c !important;
-        font-weight: 700;
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--warn,
+      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--warn {
+        background: #fff3a0 !important;
+        color: #000 !important;
       }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--expired {
-        color: #7f1d1d !important;
-        font-weight: 700;
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--recert,
+      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--recert {
+        background: #b8e6b8 !important;
+        color: #000 !important;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell,
+      #sp-pip-ui table.reports-mql-table td.mql-cert-cell {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
       #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table {
-        font-size: 8pt;
+        font-size: 7pt;
+      }
+      #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table th,
+      #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table td {
+        padding: 1px 2px;
+        line-height: 1.1;
+      }
+      #sp-pip-ui .scheduling-print-surface .mql-print-signature-stamp .mql-print-sig-signing-space {
+        height: 0.6in;
       }
       #sp-pip-ui .scheduling-print-surface .mql-signed-print-header {
         margin: 0 0 12px;
@@ -673,22 +706,6 @@
       #sp-pip-ui table.reports-mql-table {
         width: 100%;
         min-width: 960px;
-      }
-      #sp-pip-ui table.reports-mql-table td.reports-mql-cert.cert-status--ok {
-        color: #3cff7a;
-        font-weight: 600;
-      }
-      #sp-pip-ui table.reports-mql-table td.reports-mql-cert.cert-status--warn {
-        color: #e6b800;
-        font-weight: 600;
-      }
-      #sp-pip-ui table.reports-mql-table td.reports-mql-cert.cert-status--urgent {
-        color: #ff6b6b;
-        font-weight: 700;
-      }
-      #sp-pip-ui table.reports-mql-table td.reports-mql-cert.cert-status--expired {
-        color: #ff4444;
-        font-weight: 700;
       }
       #sp-pip-ui table.reports-mql-table th,
       #sp-pip-ui table.reports-mql-table td {
@@ -1028,18 +1045,59 @@
           size: letter;
           margin: 0.75in;
         }
-        html.hub-print-mql-landscape @page {
-          size: letter landscape;
-          margin: 0.45in 0.5in 1.05in 0.5in;
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface--mql {
+          page-break-before: avoid;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface--mql .af-official-doc {
+          max-width: none !important;
+          width: 100% !important;
+          margin: 0 !important;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface--mql .af-official-section-block {
+          page-break-inside: auto;
+          break-inside: auto;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface--mql .mql-print-signature-stamp {
+          height: 0;
+          overflow: visible;
+          page-break-before: avoid;
         }
         #sp-pip-ui.scheduling-print-active .mql-print-signature-stamp {
           display: block !important;
           position: fixed;
-          bottom: 0.35in;
-          right: 0.5in;
+          bottom: 0.25in;
+          right: 0.4in;
           width: 2.75in;
           margin: 0;
           z-index: 2;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired,
+        #sp-pip-ui table.reports-mql-table td.mql-cert-cell--expired {
+          background: #f5c2c7 !important;
+          color: #000 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table td.mql-cert-cell--urgent,
+        #sp-pip-ui table.reports-mql-table td.mql-cert-cell--urgent {
+          background: #ffc78a !important;
+          color: #000 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table td.mql-cert-cell--warn,
+        #sp-pip-ui table.reports-mql-table td.mql-cert-cell--warn {
+          background: #fff3a0 !important;
+          color: #000 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table td.mql-cert-cell--recert,
+        #sp-pip-ui table.reports-mql-table td.mql-cert-cell--recert {
+          background: #b8e6b8 !important;
+          color: #000 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
         body {
           margin: 0;
@@ -1616,34 +1674,6 @@
         #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table th,
         #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.scheduling-unit-table th {
           position: static !important;
-        }
-        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table td.cert-status--ok,
-        #sp-pip-ui table.reports-mql-table td.reports-mql-cert.cert-status--ok {
-          color: #1a6b3a !important;
-          font-weight: 600;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table td.cert-status--warn,
-        #sp-pip-ui table.reports-mql-table td.reports-mql-cert.cert-status--warn {
-          color: #9a6700 !important;
-          font-weight: 600;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table td.cert-status--urgent,
-        #sp-pip-ui table.reports-mql-table td.reports-mql-cert.cert-status--urgent {
-          color: #b91c1c !important;
-          font-weight: 700;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table td.cert-status--expired,
-        #sp-pip-ui table.reports-mql-table td.reports-mql-cert.cert-status--expired {
-          color: #7f1d1d !important;
-          font-weight: 700;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
         }
       }
       #sp-pip-ui a.person-detail-back {

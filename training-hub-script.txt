@@ -261,7 +261,10 @@
         const DEFAULT_MQL_SIGNATURE_TITLE = "Commander";
         /** Always shown on standard MQL report/PDF (qual / exp per column). */
         const MQL_REQUIRED_WEAPON_LABELS = ["M4", "M18"];
+        /** By-law columns omitted from all MQL reports (case-insensitive partial match). */
+        const MQL_EXCLUDED_CATALOG_LABELS = ["airfield driving", "combatives", "cqb"];
         const MQL_EXPORT_PRINT_TITLE = "MQL Data Export";
+        const MQL_PRINT_STYLE_ID = "hubMqlLandscapePrintStyle";
         /**
          * Future hub footer quick links (render when populated). Example:
          * { label: "SharePoint", url: "https://..." }
@@ -1543,6 +1546,40 @@
           if (daysLeft <= 30) return { text: "Qualified", tone: "urgent" };
           if (daysLeft <= 60) return { text: "Qualified", tone: "warn" };
           return { text: "Qualified", tone: "ok" };
+        }
+
+        function sameCalendarMonth(a, b) {
+          if (!a || !b || isNaN(a.getTime()) || isNaN(b.getTime())) return false;
+          return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+        }
+
+        function mqlExpiringNextCalendarMonth(expiry, today) {
+          if (!expiry || !today) return false;
+          const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+          return expiry.getFullYear() === next.getFullYear() && expiry.getMonth() === next.getMonth();
+        }
+
+        function computeMqlCertCellStatus(item, expiryKeys, qualKeys) {
+          if (!item) return { tone: "expired" };
+          const today = new Date();
+          const qual = parseWeaponsCertCalendarDate(valueFromItemByKeys(item, qualKeys));
+          const exp = resolveCertExpirationDate(item, expiryKeys, qualKeys);
+          if (qual && sameCalendarMonth(qual, today)) return { tone: "recert" };
+          const expRaw = parseWeaponsCertCalendarDate(valueFromItemByKeys(item, expiryKeys));
+          if (!qual && !expRaw) return { tone: "expired" };
+          if (!exp) return qual ? { tone: "ok" } : { tone: "expired" };
+          if (calendarDaysBetween(today, exp) < 0) return { tone: "expired" };
+          if (sameCalendarMonth(exp, today)) return { tone: "urgent" };
+          if (mqlExpiringNextCalendarMonth(exp, today)) return { tone: "warn" };
+          return { tone: "ok" };
+        }
+
+        function computeMqlWeaponsCertCellStatus(item) {
+          return computeMqlCertCellStatus(item, weaponsCertExpiryDateKeys(), weaponsQualDateKeys());
+        }
+
+        function computeMqlBylawCertCellStatus(item) {
+          return computeMqlCertCellStatus(item, bylawTrainingExpiryDateKeys(), bylawQualDateKeys());
         }
 
         function computeWeaponsCertStatus(item) {
@@ -5431,6 +5468,12 @@
           sig = sig || hubSession.mqlSignature || {};
           const block = document.createElement("div");
           block.className = asPageStamp ? "mql-print-signature-stamp" : "mql-print-doc-signature";
+          if (asPageStamp) {
+            const signSpace = document.createElement("div");
+            signSpace.className = "mql-print-sig-signing-space";
+            signSpace.setAttribute("aria-hidden", "true");
+            block.appendChild(signSpace);
+          }
           const line = document.createElement("div");
           line.className = "mql-print-sig-line";
           block.appendChild(line);
@@ -5479,24 +5522,27 @@
           };
         }
 
-        function mqlCertToneColor(tone) {
-          const colors = {
-            ok: "#3cff7a",
-            warn: "#e6b800",
-            urgent: "#ff6b6b",
-            expired: "#ff4444",
-          };
-          return colors[String(tone || "")] || "";
+        function applyMqlCertCellStyle(td, tone) {
+          if (!td || !tone || tone === "unknown" || tone === "ok") return;
+          td.classList.add("mql-cert-cell", "mql-cert-cell--" + tone);
         }
 
-        function applyMqlCertToneToCell(td, tone) {
-          if (!td || !tone || tone === "unknown") return;
-          td.classList.add("cert-status", "cert-status--" + tone);
-          const color = mqlCertToneColor(tone);
-          if (color) td.style.setProperty("color", color, "important");
-          td.style.setProperty("font-weight", tone === "expired" || tone === "urgent" ? "700" : "600", "important");
-          td.style.setProperty("-webkit-print-color-adjust", "exact", "important");
-          td.style.setProperty("print-color-adjust", "exact", "important");
+        function setMqlLandscapePrintMode(enabled) {
+          let el = document.getElementById(MQL_PRINT_STYLE_ID);
+          if (enabled) {
+            if (!el) {
+              el = document.createElement("style");
+              el.id = MQL_PRINT_STYLE_ID;
+              el.textContent =
+                "@media print {" +
+                "@page { size: landscape; margin: 0.35in 0.4in 1.5in 0.4in; }" +
+                "body { margin: 0; }" +
+                "}";
+              document.head.appendChild(el);
+            }
+          } else if (el) {
+            el.remove();
+          }
         }
 
         function defaultMemoSignatureBlocks() {
@@ -5804,28 +5850,23 @@
           options = options || {};
           if (!schedulingPrintSurface || !node) return;
           const root = document.getElementById("sp-pip-ui");
-          const html = document.documentElement;
           schedulingPrintSurface.className = "scheduling-print-surface";
           if (options.mqlLandscape) {
             schedulingPrintSurface.classList.add("scheduling-print-surface--mql");
-            if (root) root.classList.add("scheduling-print-mql-landscape");
-            if (html) html.classList.add("hub-print-mql-landscape");
+            setMqlLandscapePrintMode(true);
           }
           schedulingPrintSurface.innerHTML = "";
+          schedulingPrintSurface.appendChild(node);
           if (options.mqlSignature) {
             schedulingPrintSurface.appendChild(buildMqlPrintSignatureBlock(options.mqlSignature, true));
           }
-          schedulingPrintSurface.appendChild(node);
           schedulingPrintSurface.hidden = false;
           if (root) root.classList.add("scheduling-print-active");
           window.setTimeout(function () {
             window.print();
             window.setTimeout(function () {
-              if (root) {
-                root.classList.remove("scheduling-print-active");
-                root.classList.remove("scheduling-print-mql-landscape");
-              }
-              if (html) html.classList.remove("hub-print-mql-landscape");
+              if (root) root.classList.remove("scheduling-print-active");
+              setMqlLandscapePrintMode(false);
               schedulingPrintSurface.className = "scheduling-print-surface";
               schedulingPrintSurface.hidden = true;
             }, 500);
@@ -7358,9 +7399,22 @@
           if (n === 3) return ["40%", "35%", "25%"];
           if (n > 3) {
             const certCount = n - 3;
-            const dutyPct = 11;
-            const namePct = 22;
-            const rankPct = 9;
+            let dutyPct = 10;
+            let namePct = 20;
+            let rankPct = 8;
+            if (n > 16) {
+              dutyPct = 7;
+              namePct = 12;
+              rankPct = 6;
+            } else if (n > 12) {
+              dutyPct = 8;
+              namePct = 14;
+              rankPct = 7;
+            } else if (n > 8) {
+              dutyPct = 9;
+              namePct = 16;
+              rankPct = 7;
+            }
             const certTotal = 100 - dutyPct - namePct - rankPct;
             const certEach = certTotal / certCount;
             return [dutyPct + "%", namePct + "%", rankPct + "%"].concat(
@@ -7394,7 +7448,10 @@
           options = options || {};
           const columnLabels = options.columns || [];
           const sections = options.sections || [];
-          const tableClass = options.compact ? "af-official-table af-official-table--compact" : "af-official-table";
+          const manyCols = columnLabels.length > 14;
+          const tableClass =
+            (options.compact ? "af-official-table af-official-table--compact" : "af-official-table") +
+            (manyCols ? " af-official-table--many-cols" : "");
           const buildCells = options.buildCells;
           const sectionLabelFn =
             typeof options.sectionLabelFn === "function"
@@ -7442,7 +7499,7 @@
                 const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
                 td.textContent = text === "" || text == null ? "-" : String(text);
                 const tone = cell && typeof cell === "object" ? cell.tone : null;
-                applyMqlCertToneToCell(td, tone);
+                applyMqlCertCellStyle(td, tone);
                 tr.appendChild(td);
               });
               tbody.appendChild(tr);
@@ -7494,6 +7551,16 @@
           return { text: text, tone: tone };
         }
 
+        function mqlIsExcludedCatalogLabel(label) {
+          const norm = String(label || "").trim().toLowerCase();
+          if (!norm) return true;
+          return (Array.isArray(MQL_EXCLUDED_CATALOG_LABELS) ? MQL_EXCLUDED_CATALOG_LABELS : []).some(function (ex) {
+            const x = String(ex || "").trim().toLowerCase();
+            if (!x) return false;
+            return norm === x || norm.indexOf(x) >= 0;
+          });
+        }
+
         function mqlIsRequiredWeapon(label) {
           return (Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).some(function (req) {
             return String(req).toLowerCase() === String(label || "").toLowerCase();
@@ -7503,7 +7570,7 @@
         function mqlMergeBylawCatalogLabels(bylawMap, labels) {
           (Array.isArray(labels) ? labels : []).forEach(function (raw) {
             const label = String(raw || "").trim();
-            if (!label) return;
+            if (!label || mqlIsExcludedCatalogLabel(label)) return;
             const key = label.toLowerCase();
             if (!bylawMap.has(key)) bylawMap.set(key, label);
           });
@@ -7629,7 +7696,7 @@
             mqlMergeBylawCatalogLabels(bylawMap, opts.bylawItemChoices);
             (Array.isArray(bylawRows) ? bylawRows : []).forEach(function (row) {
               const label = bylawLabelFromRow(row);
-              if (!label) return;
+              if (!label || mqlIsExcludedCatalogLabel(label)) return;
               const key = String(label).toLowerCase();
               if (!bylawMap.has(key)) bylawMap.set(key, label);
             });
@@ -7746,10 +7813,10 @@
             display.rankFn(person),
           ];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
-            cells.push(mqlCertCell(mqlLookupCertRow(entry.weapons, label), computeWeaponsCertStatus));
+            cells.push(mqlCertCell(mqlLookupCertRow(entry.weapons, label), computeMqlWeaponsCertCellStatus));
           });
           (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (label) {
-            cells.push(mqlCertCell(mqlLookupCertRow(entry.bylaws, label), computeBylawTrainingStatus));
+            cells.push(mqlCertCell(mqlLookupCertRow(entry.bylaws, label), computeMqlBylawCertCellStatus));
           });
           return cells;
         }
@@ -7764,13 +7831,13 @@
           ];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
             const row = mqlLookupCertRow(entry.weapons, label);
-            cells.push(mqlExportCertCell(row, "qual", computeWeaponsCertStatus));
-            cells.push(mqlExportCertCell(row, "exp", computeWeaponsCertStatus));
+            cells.push(mqlExportCertCell(row, "qual", computeMqlWeaponsCertCellStatus));
+            cells.push(mqlExportCertCell(row, "exp", computeMqlWeaponsCertCellStatus));
           });
           (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (label) {
             const row = mqlLookupCertRow(entry.bylaws, label);
-            cells.push(mqlExportCertCell(row, "qual", computeBylawTrainingStatus));
-            cells.push(mqlExportCertCell(row, "exp", computeBylawTrainingStatus));
+            cells.push(mqlExportCertCell(row, "qual", computeMqlBylawCertCellStatus));
+            cells.push(mqlExportCertCell(row, "exp", computeMqlBylawCertCellStatus));
           });
           return cells;
         }
@@ -7792,7 +7859,7 @@
           } else {
             td.textContent = displayCellText(text);
             td.className = "reports-mql-cert";
-            applyMqlCertToneToCell(td, tone);
+            applyMqlCertCellStyle(td, tone);
           }
           tr.appendChild(td);
         }
@@ -7931,11 +7998,14 @@
             wrap.appendChild(p);
             return wrap;
           }
-          const table = document.createElement("table");
-          table.className = "af-official-table af-official-table--columns af-official-table--compact";
-          table.style.width = "100%";
           const exportColumns = mqlExportColumnLabels(catalog);
           const widths = officialColumnWidths(exportColumns);
+          const manyCols = exportColumns.length > 14;
+          const table = document.createElement("table");
+          table.className =
+            "af-official-table af-official-table--columns af-official-table--compact" +
+            (manyCols ? " af-official-table--many-cols" : "");
+          table.style.width = "100%";
           appendOfficialColgroup(table, widths);
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
@@ -7954,7 +8024,7 @@
               const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
               td.textContent = text === "" || text == null ? "-" : String(text);
               const tone = cell && typeof cell === "object" ? cell.tone : null;
-              applyMqlCertToneToCell(td, tone);
+              applyMqlCertCellStyle(td, tone);
               tr.appendChild(td);
             });
             tbody.appendChild(tr);
