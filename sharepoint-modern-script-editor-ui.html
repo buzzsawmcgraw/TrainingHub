@@ -510,7 +510,12 @@
       }
       #sp-pip-ui .scheduling-print-surface table.af-official-table--compact {
         font-size: 7pt;
-        table-layout: auto;
+        table-layout: fixed;
+        width: 100%;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table {
+        table-layout: fixed;
+        width: 100%;
       }
       #sp-pip-ui .scheduling-print-surface table.af-official-table--compact th,
       #sp-pip-ui .scheduling-print-surface table.af-official-table--compact td {
@@ -518,6 +523,37 @@
         padding: 1px 3px;
         line-height: 1.1;
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-official-section-heading {
+        margin: 14px 0 4px;
+        padding: 0;
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        font-size: 10pt;
+        font-weight: 700;
+        color: #000;
+        text-transform: none;
+        letter-spacing: normal;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-official-section-block {
+        margin-bottom: 10px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-official-table-header-wrap {
+        margin-bottom: 0;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--columns {
+        margin-bottom: 0;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--section-body {
+        margin-top: 0;
+        margin-bottom: 0;
+        border-top: none;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--section-body tbody tr:first-child td {
+        border-top: none;
       }
       #sp-pip-ui .reports-mql-wrap {
         overflow-x: auto;
@@ -749,6 +785,39 @@
         padding: 0.75in 0.85in;
         max-width: 8.5in;
         margin: 0 auto;
+      }
+      #sp-pip-ui .scheduling-memo-doc-letterhead-header,
+      #sp-pip-ui .scheduling-memo-doc-letterhead-footer {
+        white-space: pre-wrap;
+        font-size: 11pt;
+        line-height: 1.35;
+        color: #000;
+      }
+      #sp-pip-ui .scheduling-memo-doc-letterhead-header {
+        margin: 0 0 18px;
+        text-align: center;
+      }
+      #sp-pip-ui .scheduling-memo-doc-letterhead-footer {
+        margin: 28px 0 0;
+        text-align: left;
+      }
+      #sp-pip-ui details.scheduling-memo-letterhead-panel {
+        margin: 0 0 14px;
+        padding: 12px 14px;
+        border: 1px dashed rgba(30, 74, 54, 0.65);
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.18);
+      }
+      #sp-pip-ui details.scheduling-memo-letterhead-panel summary {
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui details.scheduling-memo-letterhead-panel .scheduling-hint {
+        margin-top: 10px;
       }
       #sp-pip-ui .scheduling-memo-doc-title {
         text-align: center;
@@ -2599,6 +2668,22 @@
                   <textarea id="schedulingMemoBody" rows="10"></textarea>
                 </div>
               </div>
+              <details class="scheduling-memo-letterhead-panel" id="schedulingMemoLetterheadPanel">
+                <summary>Letterhead settings</summary>
+                <p class="scheduling-hint">
+                  Update the printed memo header and footer when Air Force letterhead guidance changes. Saves to the
+                  <strong>HubLetterhead</strong> SharePoint list when available; otherwise saves in this browser.
+                </p>
+                <div class="add-field add-field--notes">
+                  <label for="schedulingMemoLetterheadHeader">Memo header</label>
+                  <textarea id="schedulingMemoLetterheadHeader" rows="5" placeholder="Department / unit / address block"></textarea>
+                </div>
+                <div class="add-field add-field--notes">
+                  <label for="schedulingMemoLetterheadFooter">Memo footer</label>
+                  <textarea id="schedulingMemoLetterheadFooter" rows="3" placeholder="Distribution, page note, or footer text"></textarea>
+                </div>
+                <button type="button" id="schedulingMemoLetterheadSaveBtn" class="btn-secondary">Save letterhead</button>
+              </details>
               <p class="scheduling-hint">
                 Signature blocks — choose Personnel, title, and squadron from the dropdowns below.
               </p>
@@ -2787,6 +2872,16 @@
         /** SharePoint Certifiers list (lookup source for the Certifier field on ByLawTraining). */
         const LIST_CERTIFIERS = "Certifiers";
         const LIST_CERTIFIERS_GUID = "";
+        /**
+         * Optional memo letterhead store (single row). Columns: MemoHeader, MemoFooter (multiline text).
+         * Create on the site as **HubLetterhead** so all users share the same header/footer.
+         */
+        const LIST_HUB_LETTERHEAD = "HubLetterhead";
+        const LIST_HUB_LETTERHEAD_GUID = "";
+        const MEMO_LETTERHEAD_STORAGE_KEY = "trainingHub.memoLetterhead.v1";
+        const DEFAULT_MEMO_LETTERHEAD_HEADER =
+          "DEPARTMENT OF THE AIR FORCE\n88TH SECURITY FORCES SQUADRON\nWRIGHT-PATTERSON AFB OH  45433";
+        const DEFAULT_MEMO_LETTERHEAD_FOOTER = "";
         const CERTIFIERS_PERSON_FIELD = "PersonnelId";
         const CERTIFIERS_LIST_DISPLAY_FIELD = "Certifier";
         /** Set SharePoint Title on new rows from the Item value when the list still requires Title. */
@@ -3531,6 +3626,9 @@
         ];
         const schedulingMemoPrintBtn = document.getElementById("schedulingMemoPrintBtn");
         const schedulingMemoCancelBtn = document.getElementById("schedulingMemoCancelBtn");
+        const schedulingMemoLetterheadHeader = document.getElementById("schedulingMemoLetterheadHeader");
+        const schedulingMemoLetterheadFooter = document.getElementById("schedulingMemoLetterheadFooter");
+        const schedulingMemoLetterheadSaveBtn = document.getElementById("schedulingMemoLetterheadSaveBtn");
 
         let hubSession = {
           rows: null,
@@ -3555,6 +3653,10 @@
           appointmentsSampleRow: null,
           appointmentsArchivePersonPostKey: null,
           appointmentsArchiveSampleRow: null,
+          memoLetterhead: null,
+          memoLetterheadItemId: null,
+          memoLetterheadLoaded: false,
+          memoLetterheadUsesSharePoint: false,
         };
 
         let phase1Session = {
@@ -7698,7 +7800,155 @@
         function setSchedulingMemoOverlayVisible(show) {
           if (schedulingMemoOverlay) schedulingMemoOverlay.hidden = !show;
           if (!show && schedulingMemoForm) schedulingMemoForm.reset();
-          if (show) populateMemoSignatureDropdowns();
+          if (show) {
+            populateMemoSignatureDropdowns();
+            void populateMemoLetterheadFields();
+          }
+        }
+
+        function hubLetterheadGuidRaw() {
+          return String(LIST_HUB_LETTERHEAD_GUID || "").trim();
+        }
+
+        function hubLetterheadListUsesGuid() {
+          return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+            hubLetterheadGuidRaw(),
+          );
+        }
+
+        function hubLetterheadListApiPath() {
+          if (hubLetterheadListUsesGuid()) return "lists(guid'" + hubLetterheadGuidRaw() + "')";
+          return "lists/getbytitle('" + escListTitle(String(LIST_HUB_LETTERHEAD || "HubLetterhead")) + "')";
+        }
+
+        function memoLetterheadFromStorage() {
+          try {
+            const raw = localStorage.getItem(MEMO_LETTERHEAD_STORAGE_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object") return null;
+            return {
+              header: String(parsed.header || ""),
+              footer: String(parsed.footer || ""),
+            };
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function saveMemoLetterheadToStorage(header, footer) {
+          try {
+            localStorage.setItem(
+              MEMO_LETTERHEAD_STORAGE_KEY,
+              JSON.stringify({ header: String(header || ""), footer: String(footer || "") }),
+            );
+          } catch (e) {
+            /* ignore quota / privacy errors */
+          }
+        }
+
+        function memoLetterheadFieldText(item, keys) {
+          const raw = valueFromItemByKeys(item, keys);
+          if (raw === null || raw === undefined) return "";
+          return String(raw);
+        }
+
+        async function loadMemoLetterhead(pw, force) {
+          if (hubSession.memoLetterheadLoaded && !force) return hubSession.memoLetterhead;
+          let header = String(DEFAULT_MEMO_LETTERHEAD_HEADER || "");
+          let footer = String(DEFAULT_MEMO_LETTERHEAD_FOOTER || "");
+          let itemId = null;
+          let usesSharePoint = false;
+          if (pw) {
+            try {
+              const seg = hubLetterheadListApiPath();
+              const data = await spFetch(`/_api/web/${seg}/items?$top=1&$orderby=Id asc`, {}, pw);
+              const item = data && data.value && data.value[0];
+              if (item) {
+                const h = memoLetterheadFieldText(item, [
+                  "MemoHeader",
+                  "Memo_x0020_Header",
+                  "Header",
+                  "LetterheadHeader",
+                ]);
+                const f = memoLetterheadFieldText(item, [
+                  "MemoFooter",
+                  "Memo_x0020_Footer",
+                  "Footer",
+                  "LetterheadFooter",
+                ]);
+                if (h) header = h;
+                footer = f;
+                itemId = item.Id;
+                usesSharePoint = true;
+              }
+            } catch (e) {
+              log("HubLetterhead load skipped:\n" + (e.message || String(e)), "warn");
+            }
+          }
+          if (!usesSharePoint) {
+            const stored = memoLetterheadFromStorage();
+            if (stored) {
+              if (stored.header) header = stored.header;
+              if (stored.footer !== undefined) footer = stored.footer;
+            }
+          }
+          hubSession.memoLetterhead = { header: header, footer: footer };
+          hubSession.memoLetterheadItemId = itemId;
+          hubSession.memoLetterheadUsesSharePoint = usesSharePoint;
+          hubSession.memoLetterheadLoaded = true;
+          return hubSession.memoLetterhead;
+        }
+
+        async function saveMemoLetterhead(pw, header, footer) {
+          header = String(header || "");
+          footer = String(footer || "");
+          let savedToSharePoint = false;
+          if (pw) {
+            try {
+              const seg = hubLetterheadListApiPath();
+              const payload = {
+                Title: "Default",
+                MemoHeader: header,
+                MemoFooter: footer,
+              };
+              if (hubSession.memoLetterheadItemId) {
+                await spFetch(`/_api/web/${seg}/items(${hubSession.memoLetterheadItemId})`, { method: "MERGE", body: payload }, pw);
+              } else {
+                const created = await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+                if (created && created.Id != null) hubSession.memoLetterheadItemId = created.Id;
+              }
+              savedToSharePoint = true;
+              hubSession.memoLetterheadUsesSharePoint = true;
+            } catch (e) {
+              log("HubLetterhead save failed; using browser storage:\n" + (e.message || String(e)), "warn");
+            }
+          }
+          saveMemoLetterheadToStorage(header, footer);
+          hubSession.memoLetterhead = { header: header, footer: footer };
+          hubSession.memoLetterheadLoaded = true;
+          return { savedToSharePoint: savedToSharePoint };
+        }
+
+        async function populateMemoLetterheadFields() {
+          const pw = hubSession.pw;
+          const letterhead = await loadMemoLetterhead(pw, false);
+          if (schedulingMemoLetterheadHeader) schedulingMemoLetterheadHeader.value = letterhead.header || "";
+          if (schedulingMemoLetterheadFooter) schedulingMemoLetterheadFooter.value = letterhead.footer || "";
+        }
+
+        function currentMemoLetterheadForPrint() {
+          const header = schedulingMemoLetterheadHeader
+            ? String(schedulingMemoLetterheadHeader.value || "")
+            : "";
+          const footer = schedulingMemoLetterheadFooter
+            ? String(schedulingMemoLetterheadFooter.value || "")
+            : "";
+          const cached = hubSession.memoLetterhead || {};
+          return {
+            header: header || cached.header || String(DEFAULT_MEMO_LETTERHEAD_HEADER || ""),
+            footer: footer || cached.footer || String(DEFAULT_MEMO_LETTERHEAD_FOOTER || ""),
+          };
         }
 
         function defaultMemoSignatureBlocks() {
@@ -7931,6 +8181,13 @@
         function renderSchedulingMemoPrintDocument(data) {
           const wrap = document.createElement("div");
           wrap.className = "scheduling-memo-document";
+          const letterhead = currentMemoLetterheadForPrint();
+          if (letterhead.header) {
+            const letterheadHeader = document.createElement("div");
+            letterheadHeader.className = "scheduling-memo-doc-letterhead-header";
+            letterheadHeader.textContent = letterhead.header;
+            wrap.appendChild(letterheadHeader);
+          }
           const title = document.createElement("p");
           title.className = "scheduling-memo-doc-title";
           title.textContent = "MEMORANDUM";
@@ -7989,6 +8246,12 @@
             sigWrap.appendChild(block);
           });
           wrap.appendChild(sigWrap);
+          if (letterhead.footer) {
+            const letterheadFooter = document.createElement("div");
+            letterheadFooter.className = "scheduling-memo-doc-letterhead-footer";
+            letterheadFooter.textContent = letterhead.footer;
+            wrap.appendChild(letterheadFooter);
+          }
           return wrap;
         }
 
@@ -8260,41 +8523,19 @@
           }
 
           const columns = ["Name", "Rank", "Date", "Time", "Appointment", "Remarks", "Date Entered"];
-
-          officeGroups.forEach(function (group) {
-            const block = document.createElement("div");
-            block.className = "scheduling-unit-office-block";
-
-            const table = document.createElement("table");
-            table.className = "scheduling-unit-table af-official-table--compact";
-            const thead = document.createElement("thead");
-            const headRow = document.createElement("tr");
-            columns.forEach(function (label) {
-              const th = document.createElement("th");
-              th.textContent = label;
-              headRow.appendChild(th);
-            });
-            thead.appendChild(headRow);
-            table.appendChild(thead);
-
-            const tbody = document.createElement("tbody");
-            const officeRow = document.createElement("tr");
-            officeRow.className = "scheduling-unit-office-row";
-            const officeCell = document.createElement("td");
-            officeCell.colSpan = columns.length;
-            officeCell.textContent = group.office;
-            officeRow.appendChild(officeCell);
-            tbody.appendChild(officeRow);
-
-            group.items.forEach(function (view) {
-              const tr = document.createElement("tr");
+          const sections = officeGroups.map(function (group) {
+            return { section: group.office, items: group.items };
+          });
+          renderOfficialSectionedTables(wrap, {
+            columns: columns,
+            sections: sections,
+            compact: true,
+            buildCells: function (view) {
               const whenDate = view.whenSort;
-              const createdDate = parseAppointmentDateTime(
-                valueFromItemByKeys(view.item, appointmentCreatedAtKeys()),
-              );
+              const createdDate = parseAppointmentDateTime(valueFromItemByKeys(view.item, appointmentCreatedAtKeys()));
               const appointmentText = [view.description, view.location].filter(Boolean).join("; ");
               const remarks = view.instructor || "";
-              [
+              return [
                 view.name,
                 view.rank,
                 formatAfShortDate(whenDate) || "-",
@@ -8302,16 +8543,8 @@
                 appointmentText || "-",
                 remarks || "-",
                 formatAfShortDate(createdDate) || displayCellText(view.createdAt) || "-",
-              ].forEach(function (text) {
-                const td = document.createElement("td");
-                td.textContent = text === "" || text == null ? "-" : String(text);
-                tr.appendChild(td);
-              });
-              tbody.appendChild(tr);
-            });
-            table.appendChild(tbody);
-            block.appendChild(table);
-            wrap.appendChild(block);
+              ];
+            },
           });
 
           return wrap;
@@ -9530,34 +9763,88 @@
         }
 
         function appendOfficialSectionTable(parent, options) {
+          renderOfficialSectionedTables(parent, options);
+        }
+
+        function officialColumnWidths(columnLabels) {
+          const n = columnLabels.length;
+          if (!n) return [];
+          if (n === 2) return ["44%", "56%"];
+          if (n === 3) return ["40%", "30%", "30%"];
+          if (n === 7) return ["16%", "7%", "9%", "7%", "24%", "14%", "13%"];
+          if (n > 3) {
+            const certCount = n - 3;
+            const certEach = 66 / certCount;
+            return ["10%", "20%", "8%"].concat(
+              Array(certCount)
+                .fill(null)
+                .map(function () {
+                  return certEach + "%";
+                }),
+            );
+          }
+          const each = 100 / n;
+          return columnLabels.map(function () {
+            return each + "%";
+          });
+        }
+
+        function appendOfficialColgroup(table, widths) {
+          const existing = table.querySelector("colgroup");
+          if (existing) existing.remove();
+          const colgroup = document.createElement("colgroup");
+          (widths || []).forEach(function (width) {
+            const col = document.createElement("col");
+            if (width) col.style.width = width;
+            colgroup.appendChild(col);
+          });
+          if (table.firstChild) table.insertBefore(colgroup, table.firstChild);
+          else table.appendChild(colgroup);
+        }
+
+        function renderOfficialSectionedTables(parent, options) {
           options = options || {};
           const columnLabels = options.columns || [];
           const sections = options.sections || [];
           const tableClass = options.compact ? "af-official-table af-official-table--compact" : "af-official-table";
           const buildCells = options.buildCells;
+          const sectionLabelFn =
+            typeof options.sectionLabelFn === "function"
+              ? options.sectionLabelFn
+              : function (group) {
+                  return group.section;
+                };
           if (!parent || !columnLabels.length || !sections.length || typeof buildCells !== "function") return;
+
+          const widths = officialColumnWidths(columnLabels);
+          const headerWrap = document.createElement("div");
+          headerWrap.className = "af-official-table-header-wrap";
+          const headerTable = document.createElement("table");
+          headerTable.className = tableClass + " af-official-table--columns";
+          appendOfficialColgroup(headerTable, widths);
+          const thead = document.createElement("thead");
+          const headRow = document.createElement("tr");
+          columnLabels.forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            headRow.appendChild(th);
+          });
+          thead.appendChild(headRow);
+          headerTable.appendChild(thead);
+          headerWrap.appendChild(headerTable);
+          parent.appendChild(headerWrap);
+
           sections.forEach(function (group) {
             const block = document.createElement("div");
-            block.className = "scheduling-unit-office-block";
+            block.className = "af-official-section-block";
+            const heading = document.createElement("h3");
+            heading.className = "af-official-section-heading";
+            heading.textContent = sectionLabelFn(group) || "Unassigned";
+            block.appendChild(heading);
             const table = document.createElement("table");
-            table.className = tableClass;
-            const thead = document.createElement("thead");
-            const headRow = document.createElement("tr");
-            columnLabels.forEach(function (label) {
-              const th = document.createElement("th");
-              th.textContent = label;
-              headRow.appendChild(th);
-            });
-            thead.appendChild(headRow);
-            table.appendChild(thead);
+            table.className = tableClass + " af-official-table--section-body";
+            appendOfficialColgroup(table, widths);
             const tbody = document.createElement("tbody");
-            const sectionRow = document.createElement("tr");
-            sectionRow.className = "scheduling-unit-office-row";
-            const sectionCell = document.createElement("td");
-            sectionCell.colSpan = columnLabels.length;
-            sectionCell.textContent = group.section;
-            sectionRow.appendChild(sectionCell);
-            tbody.appendChild(sectionRow);
             group.items.forEach(function (entry) {
               const tr = document.createElement("tr");
               (buildCells(entry) || []).forEach(function (text) {
@@ -11602,6 +11889,35 @@
         if (schedulingMemoCancelBtn) {
           schedulingMemoCancelBtn.addEventListener("click", function () {
             setSchedulingMemoOverlayVisible(false);
+          });
+        }
+
+        if (schedulingMemoLetterheadSaveBtn) {
+          schedulingMemoLetterheadSaveBtn.addEventListener("click", function () {
+            void (async function () {
+              const pw = hubSession.pw;
+              if (!pw) {
+                setSchedulingState("warn", "Load the Personnel Roster first.");
+                return;
+              }
+              const header = schedulingMemoLetterheadHeader ? schedulingMemoLetterheadHeader.value : "";
+              const footer = schedulingMemoLetterheadFooter ? schedulingMemoLetterheadFooter.value : "";
+              try {
+                setSchedulingState("loading", "Saving letterhead...");
+                const result = await saveMemoLetterhead(pw, header, footer);
+                setSchedulingState(
+                  "ok",
+                  result.savedToSharePoint
+                    ? "Letterhead saved to HubLetterhead."
+                    : "Letterhead saved in this browser (create HubLetterhead list for squadron-wide sharing).",
+                );
+                window.setTimeout(function () {
+                  setSchedulingState("", "");
+                }, 3200);
+              } catch (e) {
+                setSchedulingState("err", "Could not save letterhead: " + (e.message || String(e)).slice(0, 220));
+              }
+            })();
           });
         }
 

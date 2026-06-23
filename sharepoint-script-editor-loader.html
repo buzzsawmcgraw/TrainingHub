@@ -544,6 +544,22 @@
                   <textarea id="schedulingMemoBody" rows="10"></textarea>
                 </div>
               </div>
+              <details class="scheduling-memo-letterhead-panel" id="schedulingMemoLetterheadPanel">
+                <summary>Letterhead settings</summary>
+                <p class="scheduling-hint">
+                  Update the printed memo header and footer when Air Force letterhead guidance changes. Saves to the
+                  <strong>HubLetterhead</strong> SharePoint list when available; otherwise saves in this browser.
+                </p>
+                <div class="add-field add-field--notes">
+                  <label for="schedulingMemoLetterheadHeader">Memo header</label>
+                  <textarea id="schedulingMemoLetterheadHeader" rows="5" placeholder="Department / unit / address block"></textarea>
+                </div>
+                <div class="add-field add-field--notes">
+                  <label for="schedulingMemoLetterheadFooter">Memo footer</label>
+                  <textarea id="schedulingMemoLetterheadFooter" rows="3" placeholder="Distribution, page note, or footer text"></textarea>
+                </div>
+                <button type="button" id="schedulingMemoLetterheadSaveBtn" class="btn-secondary">Save letterhead</button>
+              </details>
               <p class="scheduling-hint">
                 Signature blocks - choose Personnel, title, and squadron from the dropdowns below.
               </p>
