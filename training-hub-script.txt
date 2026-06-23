@@ -108,15 +108,14 @@
         const LIST_CERTIFIERS = "Certifiers";
         const LIST_CERTIFIERS_GUID = "";
         /**
-         * Printed memo letterhead uses an official AF graphic (image), not text in a SharePoint list.
-         * Upload the squadron letterhead PNG/JPG to Site Assets, then set the path or full URL below.
+         * Official AF letterhead is maintained as a Word/PDF template (not in a SharePoint list).
+         * Upload the squadron letterhead PDF to Site Assets and set the path below.
+         * Printed memos leave top margin for letterhead; use the template link to print letterhead PDF separately.
          */
-        const MEMO_LETTERHEAD_IMAGE_URL = "";
-        /** Path from site root (spaces as %20). Example: S3T%20Files/AF-Letterhead.png */
-        const MEMO_LETTERHEAD_SITE_RELATIVE_PATH = "S3T%20Files/AF-Letterhead.png";
-        const MEMO_LETTERHEAD_IMAGE_ALT = "Department of the Air Force letterhead";
-        /** Optional printed memo footer (distribution note, etc.). */
-        const MEMO_LETTERHEAD_STORAGE_KEY = "trainingHub.memoLetterhead.v2";
+        const MEMO_LETTERHEAD_PDF_URL = "";
+        const MEMO_LETTERHEAD_PDF_SITE_RELATIVE_PATH = "S3T%20Files/AF-Letterhead.pdf";
+        const DEFAULT_MEMO_PRINT_TOP_MARGIN_IN = 1.35;
+        const MEMO_LETTERHEAD_STORAGE_KEY = "trainingHub.memoLetterhead.v3";
         const DEFAULT_MEMO_LETTERHEAD_FOOTER = "";
         /**
          * Optional MQL signature store (single row). Columns: MqlSignatureName, MqlSignatureTitle.
@@ -873,8 +872,8 @@
         ];
         const schedulingMemoPrintBtn = document.getElementById("schedulingMemoPrintBtn");
         const schedulingMemoCancelBtn = document.getElementById("schedulingMemoCancelBtn");
-        const schedulingMemoLetterheadImageUrl = document.getElementById("schedulingMemoLetterheadImageUrl");
-        const schedulingMemoLetterheadPreview = document.getElementById("schedulingMemoLetterheadPreview");
+        const schedulingMemoLetterheadPdfLink = document.getElementById("schedulingMemoLetterheadPdfLink");
+        const schedulingMemoPrintTopMargin = document.getElementById("schedulingMemoPrintTopMargin");
         const schedulingMemoLetterheadFooter = document.getElementById("schedulingMemoLetterheadFooter");
         const schedulingMemoLetterheadSaveBtn = document.getElementById("schedulingMemoLetterheadSaveBtn");
 
@@ -5078,17 +5077,17 @@
           return "lists/getbytitle('" + escListTitle(String(LIST_HUB_LETTERHEAD || "HubLetterhead")) + "')";
         }
 
-        function resolveMemoLetterheadImageUrl(overrideUrl) {
-          const userUrl = String(overrideUrl || "").trim();
-          if (userUrl) return userUrl;
+        function resolveMemoLetterheadPdfUrl() {
           const explicit =
-            typeof MEMO_LETTERHEAD_IMAGE_URL === "string" ? MEMO_LETTERHEAD_IMAGE_URL.trim() : "";
+            typeof MEMO_LETTERHEAD_PDF_URL === "string" ? MEMO_LETTERHEAD_PDF_URL.trim() : "";
           if (explicit) return explicit;
           const root = (typeof PERSONNEL_SITE_ROOT_URL === "string" ? PERSONNEL_SITE_ROOT_URL : "")
             .trim()
             .replace(/\/$/, "");
           const rel = (
-            typeof MEMO_LETTERHEAD_SITE_RELATIVE_PATH === "string" ? MEMO_LETTERHEAD_SITE_RELATIVE_PATH : ""
+            typeof MEMO_LETTERHEAD_PDF_SITE_RELATIVE_PATH === "string"
+              ? MEMO_LETTERHEAD_PDF_SITE_RELATIVE_PATH
+              : ""
           )
             .trim()
             .replace(/^\//, "");
@@ -5096,17 +5095,16 @@
           return root + "/" + rel;
         }
 
-        function updateMemoLetterheadPreview(url) {
-          if (!schedulingMemoLetterheadPreview) return;
-          const resolved = resolveMemoLetterheadImageUrl(url);
-          if (!resolved) {
-            schedulingMemoLetterheadPreview.hidden = true;
-            schedulingMemoLetterheadPreview.removeAttribute("src");
+        function updateMemoLetterheadPdfLink() {
+          if (!schedulingMemoLetterheadPdfLink) return;
+          const url = resolveMemoLetterheadPdfUrl();
+          if (!url) {
+            schedulingMemoLetterheadPdfLink.hidden = true;
+            schedulingMemoLetterheadPdfLink.removeAttribute("href");
             return;
           }
-          schedulingMemoLetterheadPreview.src = resolved;
-          schedulingMemoLetterheadPreview.alt = MEMO_LETTERHEAD_IMAGE_ALT || "Letterhead preview";
-          schedulingMemoLetterheadPreview.hidden = false;
+          schedulingMemoLetterheadPdfLink.href = url;
+          schedulingMemoLetterheadPdfLink.hidden = false;
         }
 
         function memoLetterheadFromStorage() {
@@ -5116,7 +5114,10 @@
             const parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== "object") return null;
             return {
-              headerImageUrl: String(parsed.headerImageUrl || ""),
+              topMarginIn:
+                parsed.topMarginIn != null && parsed.topMarginIn !== ""
+                  ? Number(parsed.topMarginIn)
+                  : DEFAULT_MEMO_PRINT_TOP_MARGIN_IN,
               footer: String(parsed.footer || ""),
             };
           } catch (e) {
@@ -5124,41 +5125,42 @@
           }
         }
 
-        function saveMemoLetterheadToStorage(headerImageUrl, footer) {
+        function saveMemoLetterheadToStorage(topMarginIn, footer) {
           try {
             localStorage.setItem(
               MEMO_LETTERHEAD_STORAGE_KEY,
               JSON.stringify({
-                headerImageUrl: String(headerImageUrl || ""),
+                topMarginIn: topMarginIn != null ? Number(topMarginIn) : DEFAULT_MEMO_PRINT_TOP_MARGIN_IN,
                 footer: String(footer || ""),
               }),
             );
           } catch (e) {
-            /* ignore quota / privacy errors */
+            /* ignore */
           }
         }
 
         async function loadMemoLetterhead(pw, force) {
           if (hubSession.memoLetterheadLoaded && !force) return hubSession.memoLetterhead;
-          let headerImageUrl = "";
+          let topMarginIn = DEFAULT_MEMO_PRINT_TOP_MARGIN_IN;
           let footer = String(DEFAULT_MEMO_LETTERHEAD_FOOTER || "");
           const stored = memoLetterheadFromStorage();
           if (stored) {
-            headerImageUrl = stored.headerImageUrl || "";
+            if (stored.topMarginIn != null && !isNaN(stored.topMarginIn)) topMarginIn = stored.topMarginIn;
             if (stored.footer !== undefined) footer = stored.footer;
           }
-          hubSession.memoLetterhead = { headerImageUrl: headerImageUrl, footer: footer };
+          hubSession.memoLetterhead = { topMarginIn: topMarginIn, footer: footer };
           hubSession.memoLetterheadItemId = null;
           hubSession.memoLetterheadUsesSharePoint = false;
           hubSession.memoLetterheadLoaded = true;
           return hubSession.memoLetterhead;
         }
 
-        async function saveMemoLetterhead(pw, headerImageUrl, footer) {
-          headerImageUrl = String(headerImageUrl || "");
+        async function saveMemoLetterhead(pw, topMarginIn, footer) {
+          topMarginIn =
+            topMarginIn != null && topMarginIn !== "" ? Number(topMarginIn) : DEFAULT_MEMO_PRINT_TOP_MARGIN_IN;
           footer = String(footer || "");
-          saveMemoLetterheadToStorage(headerImageUrl, footer);
-          hubSession.memoLetterhead = { headerImageUrl: headerImageUrl, footer: footer };
+          saveMemoLetterheadToStorage(topMarginIn, footer);
+          hubSession.memoLetterhead = { topMarginIn: topMarginIn, footer: footer };
           hubSession.memoLetterheadLoaded = true;
           return { savedToSharePoint: false };
         }
@@ -5425,10 +5427,10 @@
           return header;
         }
 
-        function buildMqlPrintSignatureBlock(sig) {
+        function buildMqlPrintSignatureBlock(sig, asPageStamp) {
           sig = sig || hubSession.mqlSignature || {};
           const block = document.createElement("div");
-          block.className = "mql-print-doc-signature";
+          block.className = asPageStamp ? "mql-print-signature-stamp" : "mql-print-doc-signature";
           const line = document.createElement("div");
           line.className = "mql-print-sig-line";
           block.appendChild(line);
@@ -5446,27 +5448,55 @@
         async function populateMemoLetterheadFields() {
           const pw = hubSession.pw;
           const letterhead = await loadMemoLetterhead(pw, false);
-          if (schedulingMemoLetterheadImageUrl) {
-            schedulingMemoLetterheadImageUrl.value = letterhead.headerImageUrl || "";
+          if (schedulingMemoPrintTopMargin) {
+            schedulingMemoPrintTopMargin.value =
+              letterhead.topMarginIn != null ? String(letterhead.topMarginIn) : String(DEFAULT_MEMO_PRINT_TOP_MARGIN_IN);
           }
           if (schedulingMemoLetterheadFooter) {
             schedulingMemoLetterheadFooter.value = letterhead.footer || "";
           }
-          updateMemoLetterheadPreview(letterhead.headerImageUrl || "");
+          updateMemoLetterheadPdfLink();
         }
 
         function currentMemoLetterheadForPrint() {
-          const imageOverride = schedulingMemoLetterheadImageUrl
-            ? String(schedulingMemoLetterheadImageUrl.value || "").trim()
+          const marginRaw = schedulingMemoPrintTopMargin
+            ? String(schedulingMemoPrintTopMargin.value || "").trim()
             : "";
           const footer = schedulingMemoLetterheadFooter
             ? String(schedulingMemoLetterheadFooter.value || "")
             : "";
           const cached = hubSession.memoLetterhead || {};
+          const topMarginIn =
+            marginRaw !== ""
+              ? Number(marginRaw)
+              : cached.topMarginIn != null
+                ? cached.topMarginIn
+                : DEFAULT_MEMO_PRINT_TOP_MARGIN_IN;
           return {
-            headerImageUrl: resolveMemoLetterheadImageUrl(imageOverride || cached.headerImageUrl || ""),
+            topMarginIn: isNaN(topMarginIn) ? DEFAULT_MEMO_PRINT_TOP_MARGIN_IN : topMarginIn,
             footer: footer || cached.footer || String(DEFAULT_MEMO_LETTERHEAD_FOOTER || ""),
+            pdfUrl: resolveMemoLetterheadPdfUrl(),
           };
+        }
+
+        function mqlCertToneColor(tone) {
+          const colors = {
+            ok: "#3cff7a",
+            warn: "#e6b800",
+            urgent: "#ff6b6b",
+            expired: "#ff4444",
+          };
+          return colors[String(tone || "")] || "";
+        }
+
+        function applyMqlCertToneToCell(td, tone) {
+          if (!td || !tone || tone === "unknown") return;
+          td.classList.add("cert-status", "cert-status--" + tone);
+          const color = mqlCertToneColor(tone);
+          if (color) td.style.setProperty("color", color, "important");
+          td.style.setProperty("font-weight", tone === "expired" || tone === "urgent" ? "700" : "600", "important");
+          td.style.setProperty("-webkit-print-color-adjust", "exact", "important");
+          td.style.setProperty("print-color-adjust", "exact", "important");
         }
 
         function defaultMemoSignatureBlocks() {
@@ -5700,16 +5730,8 @@
           const wrap = document.createElement("div");
           wrap.className = "scheduling-memo-document";
           const letterhead = currentMemoLetterheadForPrint();
-          if (letterhead.headerImageUrl) {
-            const letterheadHeader = document.createElement("div");
-            letterheadHeader.className =
-              "scheduling-memo-doc-letterhead-header scheduling-memo-doc-letterhead-header--image";
-            const img = document.createElement("img");
-            img.className = "scheduling-memo-doc-letterhead-img";
-            img.src = letterhead.headerImageUrl;
-            img.alt = MEMO_LETTERHEAD_IMAGE_ALT || "Department of the Air Force letterhead";
-            letterheadHeader.appendChild(img);
-            wrap.appendChild(letterheadHeader);
+          if (letterhead.topMarginIn > 0) {
+            wrap.style.paddingTop = String(letterhead.topMarginIn) + "in";
           }
           const title = document.createElement("p");
           title.className = "scheduling-memo-doc-title";
@@ -5778,20 +5800,44 @@
           return wrap;
         }
 
-        function triggerSchedulingPrint(node) {
+        function triggerSchedulingPrint(node, options) {
+          options = options || {};
           if (!schedulingPrintSurface || !node) return;
+          const root = document.getElementById("sp-pip-ui");
+          const html = document.documentElement;
+          schedulingPrintSurface.className = "scheduling-print-surface";
+          if (options.mqlLandscape) {
+            schedulingPrintSurface.classList.add("scheduling-print-surface--mql");
+            if (root) root.classList.add("scheduling-print-mql-landscape");
+            if (html) html.classList.add("hub-print-mql-landscape");
+          }
           schedulingPrintSurface.innerHTML = "";
+          if (options.mqlSignature) {
+            schedulingPrintSurface.appendChild(buildMqlPrintSignatureBlock(options.mqlSignature, true));
+          }
           schedulingPrintSurface.appendChild(node);
           schedulingPrintSurface.hidden = false;
-          const root = document.getElementById("sp-pip-ui");
           if (root) root.classList.add("scheduling-print-active");
           window.setTimeout(function () {
             window.print();
             window.setTimeout(function () {
-              if (root) root.classList.remove("scheduling-print-active");
+              if (root) {
+                root.classList.remove("scheduling-print-active");
+                root.classList.remove("scheduling-print-mql-landscape");
+              }
+              if (html) html.classList.remove("hub-print-mql-landscape");
+              schedulingPrintSurface.className = "scheduling-print-surface";
               schedulingPrintSurface.hidden = true;
             }, 500);
           }, 120);
+        }
+
+        function triggerMqlPrint(node, options) {
+          options = options || {};
+          triggerSchedulingPrint(node, {
+            mqlLandscape: true,
+            mqlSignature: options.signed ? options.signature : null,
+          });
         }
 
         function printSchedulingMemo() {
@@ -6031,7 +6077,7 @@
 
         function renderSchedulingUnitPrintReport(officeGroups, reportTitle) {
           const wrap = document.createElement("div");
-          wrap.className = "scheduling-unit-report af-official-doc af-official-doc--landscape";
+          wrap.className = "scheduling-unit-report af-official-doc";
 
           wrap.appendChild(
             buildAfOfficialDocHeader(reportTitle || "Appointment Roster Report", { includeSeconds: true }),
@@ -7386,6 +7432,7 @@
             block.appendChild(heading);
             const table = document.createElement("table");
             table.className = tableClass + " af-official-table--section-body";
+            table.style.width = "100%";
             appendOfficialColgroup(table, widths);
             const tbody = document.createElement("tbody");
             group.items.forEach(function (entry) {
@@ -7395,7 +7442,7 @@
                 const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
                 td.textContent = text === "" || text == null ? "-" : String(text);
                 const tone = cell && typeof cell === "object" ? cell.tone : null;
-                if (tone && tone !== "unknown") td.className = "cert-status cert-status--" + tone;
+                applyMqlCertToneToCell(td, tone);
                 tr.appendChild(td);
               });
               tbody.appendChild(tr);
@@ -7578,16 +7625,21 @@
             });
 
           const bylawMap = new Map();
-          mqlMergeBylawCatalogLabels(bylawMap, opts.bylawItemChoices);
-          (Array.isArray(bylawRows) ? bylawRows : []).forEach(function (row) {
-            const label = bylawLabelFromRow(row);
-            if (!label) return;
-            const key = String(label).toLowerCase();
-            if (!bylawMap.has(key)) bylawMap.set(key, label);
-          });
-          const bylaws = Array.from(bylawMap.values()).sort(function (a, b) {
-            return a.localeCompare(b, undefined, { sensitivity: "base" });
-          });
+          if (mode !== "heavy") {
+            mqlMergeBylawCatalogLabels(bylawMap, opts.bylawItemChoices);
+            (Array.isArray(bylawRows) ? bylawRows : []).forEach(function (row) {
+              const label = bylawLabelFromRow(row);
+              if (!label) return;
+              const key = String(label).toLowerCase();
+              if (!bylawMap.has(key)) bylawMap.set(key, label);
+            });
+          }
+          const bylaws =
+            mode === "heavy"
+              ? []
+              : Array.from(bylawMap.values()).sort(function (a, b) {
+                  return a.localeCompare(b, undefined, { sensitivity: "base" });
+                });
           return { weapons: weapons, bylaws: bylaws, mode: mode };
         }
 
@@ -7740,7 +7792,7 @@
           } else {
             td.textContent = displayCellText(text);
             td.className = "reports-mql-cert";
-            if (tone && tone !== "unknown") td.classList.add("cert-status", "cert-status--" + tone);
+            applyMqlCertToneToCell(td, tone);
           }
           tr.appendChild(td);
         }
@@ -7834,7 +7886,7 @@
               ? "Heavy Weapons Qual / Authorization Report"
               : MQL_REPORT_PRINT_TITLE);
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc af-official-doc--landscape af-official-doc--mql-signed";
+          wrap.className = "af-official-doc af-official-doc--mql-landscape af-official-doc--mql-signed";
           wrap.appendChild(
             buildMqlSignedPrintHeader(title, {
               unitLabel: opts.unitLabel || String(AF_REPORT_UNIT_LABEL || "88th Security Forces Squadron"),
@@ -7858,7 +7910,6 @@
               return mqlRowCells(entry, catalog, display);
             },
           });
-          wrap.appendChild(buildMqlPrintSignatureBlock(opts.signature || hubSession.mqlSignature));
           return wrap;
         }
 
@@ -7866,7 +7917,7 @@
           opts = opts || {};
           const display = mqlDisplayOpts(opts);
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc af-official-doc--landscape mql-export-doc";
+          wrap.className = "af-official-doc af-official-doc--mql-landscape mql-export-doc";
           wrap.appendChild(
             buildMqlSignedPrintHeader(opts.printTitle || MQL_EXPORT_PRINT_TITLE, {
               unitLabel: opts.unitLabel || String(AF_REPORT_UNIT_LABEL || "88th Security Forces Squadron"),
@@ -7882,6 +7933,7 @@
           }
           const table = document.createElement("table");
           table.className = "af-official-table af-official-table--columns af-official-table--compact";
+          table.style.width = "100%";
           const exportColumns = mqlExportColumnLabels(catalog);
           const widths = officialColumnWidths(exportColumns);
           appendOfficialColgroup(table, widths);
@@ -7902,7 +7954,7 @@
               const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
               td.textContent = text === "" || text == null ? "-" : String(text);
               const tone = cell && typeof cell === "object" ? cell.tone : null;
-              if (tone && tone !== "unknown") td.className = "cert-status cert-status--" + tone;
+              applyMqlCertToneToCell(td, tone);
               tr.appendChild(td);
             });
             tbody.appendChild(tr);
@@ -7999,7 +8051,7 @@
 
         function renderCleoReportPrintDocument(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc af-official-doc--landscape";
+          wrap.className = "af-official-doc";
           wrap.appendChild(
             buildAfOfficialDocHeader("CLEO Report", {
               includeSeconds: true,
@@ -8084,7 +8136,7 @@
 
         function renderPostRCReportPrintDocument(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc af-official-doc--landscape";
+          wrap.className = "af-official-doc";
           wrap.appendChild(
             buildAfOfficialDocHeader("Post RC Report", {
               includeSeconds: true,
@@ -8199,9 +8251,7 @@
               data.rows.length +
               " Personnel with heavy weapon quals | " +
               data.catalog.weapons.length +
-              " heavy weapon column(s) (excluding M4/M18) | " +
-              data.catalog.bylaws.length +
-              " By-Law column(s).";
+              " heavy weapon column(s) (excluding M4/M18).";
             reportsDetailBody.appendChild(sigPanel);
             void populateMqlSignaturePanel(sigPanel);
             reportsDetailBody.appendChild(summary);
@@ -8392,9 +8442,10 @@
             const sigPanel =
               reportsDetailBody && reportsDetailBody.querySelector(".reports-mql-signature-panel");
             const sig = currentMqlSignatureForPrint(sigPanel || reportsDetailBody);
-            triggerSchedulingPrint(
-              renderMqlSignedPrintDocument(data.rows, data.catalog, { signature: sig }),
-            );
+            triggerMqlPrint(renderMqlSignedPrintDocument(data.rows, data.catalog), {
+              signed: true,
+              signature: sig,
+            });
             return;
           }
           if (def.id === "heavy-weapons") {
@@ -8407,9 +8458,10 @@
             const sigPanel =
               reportsDetailBody && reportsDetailBody.querySelector(".reports-mql-signature-panel");
             const sig = currentMqlSignatureForPrint(sigPanel || reportsDetailBody);
-            triggerSchedulingPrint(
-              renderMqlSignedPrintDocument(data.rows, data.catalog, { signature: sig }),
-            );
+            triggerMqlPrint(renderMqlSignedPrintDocument(data.rows, data.catalog), {
+              signed: true,
+              signature: sig,
+            });
             return;
           }
           if (def.id === "mql-pdf") {
@@ -8418,7 +8470,7 @@
               reportsSession.mqlRows && reportsSession.mqlCatalog && reportsSession.mqlMode === "standard"
                 ? { rows: reportsSession.mqlRows, catalog: reportsSession.mqlCatalog }
                 : await ensureMqlReportData(pw, { mode: "standard" });
-            triggerSchedulingPrint(renderMqlExportPrintDocument(data.rows, data.catalog));
+            triggerMqlPrint(renderMqlExportPrintDocument(data.rows, data.catalog), { signed: false });
             return;
           }
           if (def.id === "cleo-report") {
@@ -9832,13 +9884,13 @@
                 setSchedulingState("warn", "Load the Personnel Roster first.");
                 return;
               }
-              const headerImageUrl = schedulingMemoLetterheadImageUrl ? schedulingMemoLetterheadImageUrl.value : "";
+              const topMarginIn = schedulingMemoPrintTopMargin ? schedulingMemoPrintTopMargin.value : "";
               const footer = schedulingMemoLetterheadFooter ? schedulingMemoLetterheadFooter.value : "";
               try {
                 setSchedulingState("loading", "Saving letterhead...");
-                await saveMemoLetterhead(pw, headerImageUrl, footer);
-                updateMemoLetterheadPreview(headerImageUrl);
-                setSchedulingState("ok", "Letterhead saved in this browser.");
+                await saveMemoLetterhead(pw, topMarginIn, footer);
+                updateMemoLetterheadPdfLink();
+                setSchedulingState("ok", "Letterhead settings saved in this browser.");
                 window.setTimeout(function () {
                   setSchedulingState("", "");
                 }, 3200);
@@ -9846,12 +9898,6 @@
                 setSchedulingState("err", "Could not save letterhead: " + (e.message || String(e)).slice(0, 220));
               }
             })();
-          });
-        }
-
-        if (schedulingMemoLetterheadImageUrl) {
-          schedulingMemoLetterheadImageUrl.addEventListener("input", function () {
-            updateMemoLetterheadPreview(schedulingMemoLetterheadImageUrl.value);
           });
         }
 
@@ -12534,8 +12580,9 @@
             const sigPanel =
               ethosMqlReportBody && ethosMqlReportBody.querySelector(".reports-mql-signature-panel");
             const sig = currentMqlSignatureForPrint(sigPanel || ethosMqlReportBody);
-            triggerSchedulingPrint(
-              renderMqlSignedPrintDocument(rows, catalog, Object.assign({}, ethosMqlDisplayOpts(), { signature: sig })),
+            triggerMqlPrint(
+              renderMqlSignedPrintDocument(rows, catalog, ethosMqlDisplayOpts()),
+              { signed: true, signature: sig },
             );
           })();
         }

@@ -549,24 +549,26 @@
               <details class="scheduling-memo-letterhead-panel" id="schedulingMemoLetterheadPanel">
                 <summary>Letterhead settings</summary>
                 <p class="scheduling-hint">
-                  Official Air Force letterhead is a graphic - upload your squadron letterhead image to Site Assets
-                  (for example <strong>S3T Files/AF-Letterhead.png</strong>), set the default path in the script, or paste
-                  a full image URL below. Optional footer text saves in this browser.
+                  Official letterhead is a Word document saved as PDF - not stored in SharePoint lists. Upload your
+                  squadron letterhead PDF to Site Assets (default: <strong>S3T Files/AF-Letterhead.pdf</strong>), then
+                  print memos with top margin for that stock or open the template below.
+                </p>
+                <p class="scheduling-hint">
+                  <a id="schedulingMemoLetterheadPdfLink" href="#" target="_blank" rel="noopener noreferrer" hidden>
+                    Open letterhead template (PDF)
+                  </a>
                 </p>
                 <div class="add-field">
-                  <label for="schedulingMemoLetterheadImageUrl">Letterhead image URL</label>
+                  <label for="schedulingMemoPrintTopMargin">Top margin for letterhead (inches)</label>
                   <input
-                    type="url"
-                    id="schedulingMemoLetterheadImageUrl"
-                    placeholder="Leave blank to use the default Site Assets path"
+                    type="number"
+                    id="schedulingMemoPrintTopMargin"
+                    min="0"
+                    max="3"
+                    step="0.05"
+                    placeholder="1.35"
                   />
                 </div>
-                <img
-                  id="schedulingMemoLetterheadPreview"
-                  class="scheduling-memo-letterhead-preview"
-                  hidden
-                  alt="Letterhead preview"
-                />
                 <div class="add-field add-field--notes">
                   <label for="schedulingMemoLetterheadFooter">Memo footer (optional)</label>
                   <textarea id="schedulingMemoLetterheadFooter" rows="3" placeholder="Distribution, page note, or footer text"></textarea>
