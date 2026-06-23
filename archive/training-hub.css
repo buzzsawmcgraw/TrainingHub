@@ -510,8 +510,6 @@
         padding: 1px 3px;
         line-height: 1.1;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
       #sp-pip-ui .scheduling-print-surface .af-official-section-heading {
         margin: 14px 0 4px;
@@ -534,13 +532,12 @@
       #sp-pip-ui .scheduling-print-surface table.af-official-table--columns {
         margin-bottom: 0;
       }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--columns th {
+        border-top: 1px solid #000 !important;
+      }
       #sp-pip-ui .scheduling-print-surface table.af-official-table--section-body {
         margin-top: 0;
         margin-bottom: 0;
-        border-top: none;
-      }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table--section-body tbody tr:first-child td {
-        border-top: none;
       }
       #sp-pip-ui .reports-mql-wrap {
         overflow-x: auto;
@@ -549,10 +546,15 @@
       #sp-pip-ui table.reports-mql-table {
         min-width: 960px;
       }
+      #sp-pip-ui table.reports-mql-table th,
+      #sp-pip-ui table.reports-mql-table td {
+        white-space: nowrap;
+        font-size: 11px;
+        line-height: 1.15;
+        font-variant-numeric: tabular-nums;
+      }
       #sp-pip-ui table.reports-mql-table td.reports-mql-cert {
         font-size: 11px;
-        white-space: nowrap;
-        font-variant-numeric: tabular-nums;
       }
       #sp-pip-ui tr.reports-mql-section-row td {
         font-weight: 700;

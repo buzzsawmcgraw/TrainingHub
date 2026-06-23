@@ -514,8 +514,6 @@
         padding: 1px 3px;
         line-height: 1.1;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
       #sp-pip-ui .scheduling-print-surface .af-official-section-heading {
         margin: 14px 0 4px;
@@ -538,13 +536,12 @@
       #sp-pip-ui .scheduling-print-surface table.af-official-table--columns {
         margin-bottom: 0;
       }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--columns th {
+        border-top: 1px solid #000 !important;
+      }
       #sp-pip-ui .scheduling-print-surface table.af-official-table--section-body {
         margin-top: 0;
         margin-bottom: 0;
-        border-top: none;
-      }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table--section-body tbody tr:first-child td {
-        border-top: none;
       }
       #sp-pip-ui .reports-mql-wrap {
         overflow-x: auto;
@@ -553,10 +550,15 @@
       #sp-pip-ui table.reports-mql-table {
         min-width: 960px;
       }
+      #sp-pip-ui table.reports-mql-table th,
+      #sp-pip-ui table.reports-mql-table td {
+        white-space: nowrap;
+        font-size: 11px;
+        line-height: 1.15;
+        font-variant-numeric: tabular-nums;
+      }
       #sp-pip-ui table.reports-mql-table td.reports-mql-cert {
         font-size: 11px;
-        white-space: nowrap;
-        font-variant-numeric: tabular-nums;
       }
       #sp-pip-ui tr.reports-mql-section-row td {
         font-weight: 700;
@@ -3001,6 +3003,8 @@
         const APPOINTMENTS_SQUADRON_LABEL = "88 SFS";
         const AF_REPORT_UNIT_LABEL = "88th Security Forces Squadron";
         const MQL_REPORT_PRINT_TITLE = "Weapons Qual/Auth Report";
+        /** Always shown on MQL report/PDF (qual / exp per column). */
+        const MQL_REQUIRED_WEAPON_LABELS = ["M4", "M18"];
         const APPOINTMENTS_MEMO_DEFAULT_FROM = "88 SFS/S3T";
         const MEMO_SIGNATURE_TITLE_PRESETS = [
           "Training NCOIC",
@@ -9858,29 +9862,75 @@
           return qual || exp;
         }
 
+        function mqlNormalizeColumnKey(label) {
+          const s = String(label || "").trim();
+          const upper = s.toUpperCase();
+          if (upper === "M4" || upper.indexOf("M4") >= 0) return "M4";
+          if (upper === "M18" || upper.indexOf("M18") >= 0) return "M18";
+          return s;
+        }
+
+        function mqlLookupCertRow(certMap, columnLabel) {
+          if (!certMap || !columnLabel) return null;
+          if (certMap[columnLabel]) return certMap[columnLabel];
+          const colNorm = mqlNormalizeColumnKey(columnLabel).toLowerCase();
+          const keys = Object.keys(certMap);
+          for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            if (k.toLowerCase() === String(columnLabel).toLowerCase()) return certMap[k];
+            if (mqlNormalizeColumnKey(k).toLowerCase() === colNorm) return certMap[k];
+          }
+          return null;
+        }
+
+        function mqlAugmentCertMapAliases(certMap) {
+          if (!certMap || typeof certMap !== "object") return certMap;
+          const aliases = {};
+          Object.keys(certMap).forEach(function (label) {
+            const norm = mqlNormalizeColumnKey(label);
+            if (norm && certMap[norm] == null) aliases[norm] = certMap[label];
+          });
+          Object.keys(aliases).forEach(function (key) {
+            certMap[key] = aliases[key];
+          });
+          return certMap;
+        }
+
         function buildMqlCertCatalog(weaponsRows, bylawRows) {
-          const weapons = [];
-          const bylaws = [];
-          const seenW = new Set();
-          const seenB = new Set();
+          const weaponMap = new Map();
+          (Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).forEach(function (label) {
+            weaponMap.set(String(label).toLowerCase(), label);
+          });
           (Array.isArray(weaponsRows) ? weaponsRows : []).forEach(function (row) {
             const label = weaponLabelFromRow(row);
-            const key = String(label).toLowerCase();
-            if (seenW.has(key)) return;
-            seenW.add(key);
+            const norm = mqlNormalizeColumnKey(label);
+            const key = String(norm || label).toLowerCase();
+            if (!weaponMap.has(key)) weaponMap.set(key, norm || label);
+          });
+          const weapons = [];
+          (Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).forEach(function (label) {
             weapons.push(label);
           });
-          weapons.sort(function (a, b) {
-            return a.localeCompare(b, undefined, { sensitivity: "base" });
-          });
+          Array.from(weaponMap.values())
+            .filter(function (label) {
+              return !(Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).some(function (req) {
+                return String(req).toLowerCase() === String(label).toLowerCase();
+              });
+            })
+            .sort(function (a, b) {
+              return a.localeCompare(b, undefined, { sensitivity: "base" });
+            })
+            .forEach(function (label) {
+              weapons.push(label);
+            });
+
+          const bylawMap = new Map();
           (Array.isArray(bylawRows) ? bylawRows : []).forEach(function (row) {
             const label = bylawLabelFromRow(row);
             const key = String(label).toLowerCase();
-            if (seenB.has(key)) return;
-            seenB.add(key);
-            bylaws.push(label);
+            if (!bylawMap.has(key)) bylawMap.set(key, label);
           });
-          bylaws.sort(function (a, b) {
+          const bylaws = Array.from(bylawMap.values()).sort(function (a, b) {
             return a.localeCompare(b, undefined, { sensitivity: "base" });
           });
           return { weapons: weapons, bylaws: bylaws };
@@ -9917,8 +9967,8 @@
               const pid = String(person.Id);
               return {
                 person: person,
-                weapons: weaponsByPerson[pid] || {},
-                bylaws: bylawByPerson[pid] || {},
+                weapons: mqlAugmentCertMapAliases(Object.assign({}, weaponsByPerson[pid] || {})),
+                bylaws: mqlAugmentCertMapAliases(Object.assign({}, bylawByPerson[pid] || {})),
               };
             });
         }
@@ -9942,10 +9992,10 @@
             itemFieldText(person, "Rank") || "-",
           ];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
-            cells.push(mqlCertPairText(entry.weapons[label]));
+            cells.push(mqlCertPairText(mqlLookupCertRow(entry.weapons, label)));
           });
           (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (label) {
-            cells.push(mqlCertPairText(entry.bylaws[label]));
+            cells.push(mqlCertPairText(mqlLookupCertRow(entry.bylaws, label)));
           });
           return cells;
         }
@@ -10015,7 +10065,7 @@
                 td.appendChild(nameBtn);
               } else {
                 td.textContent = displayCellText(text);
-                if (idx > 2) td.className = "reports-mql-cert";
+                td.className = "reports-mql-cert";
               }
               tr.appendChild(td);
             });
