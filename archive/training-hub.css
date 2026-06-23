@@ -495,6 +495,37 @@
         color: #000;
         text-align: left;
       }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--compact {
+        font-size: 7pt;
+        table-layout: auto;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--compact th,
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--compact td {
+        font-size: 7pt;
+        padding: 1px 3px;
+        line-height: 1.1;
+        white-space: nowrap;
+      }
+      #sp-pip-ui .reports-mql-wrap {
+        overflow-x: auto;
+        max-width: 100%;
+      }
+      #sp-pip-ui table.reports-mql-table {
+        min-width: 960px;
+      }
+      #sp-pip-ui table.reports-mql-table td.reports-mql-cert {
+        font-size: 11px;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      #sp-pip-ui tr.reports-mql-section-row td {
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        background: rgba(0, 0, 0, 0.25);
+        border-top: 2px solid rgba(30, 74, 54, 0.75);
+      }
       #sp-pip-ui .scheduling-list-toolbar {
         display: flex;
         flex-wrap: wrap;
@@ -559,7 +590,7 @@
         display: flex;
         align-items: flex-start;
         justify-content: center;
-        padding: 12px;
+        padding: 48px 16px 20px;
         overflow-y: auto;
         background: rgba(2, 6, 4, 0.92);
       }
@@ -568,12 +599,12 @@
       }
       #sp-pip-ui .scheduling-memo-panel {
         width: min(100%, 920px);
-        max-height: calc(100dvh - 24px);
-        margin: 12px auto;
+        max-height: calc(100dvh - 64px);
+        margin: 0 auto;
         padding: 18px 20px 20px;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        overflow: visible;
         border: 1px solid var(--pip-border);
         border-radius: 8px;
         background: rgba(5, 14, 10, 0.98);
@@ -595,7 +626,7 @@
         flex-direction: column;
         flex: 1 1 auto;
         min-height: 0;
-        overflow: hidden;
+        overflow: visible;
       }
       #sp-pip-ui .scheduling-memo-form.weapons-add-form .add-form-grid.scheduling-memo-form-fields {
         display: grid;
@@ -651,7 +682,8 @@
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
-        padding-right: 4px;
+        overflow-x: visible;
+        padding: 12px 4px 8px 0;
       }
       #sp-pip-ui .scheduling-memo-form .scheduling-hint {
         margin: 10px 0 8px;

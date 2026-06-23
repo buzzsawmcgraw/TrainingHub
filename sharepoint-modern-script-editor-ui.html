@@ -508,6 +508,37 @@
         color: #000;
         text-align: left;
       }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--compact {
+        font-size: 7pt;
+        table-layout: auto;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--compact th,
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--compact td {
+        font-size: 7pt;
+        padding: 1px 3px;
+        line-height: 1.1;
+        white-space: nowrap;
+      }
+      #sp-pip-ui .reports-mql-wrap {
+        overflow-x: auto;
+        max-width: 100%;
+      }
+      #sp-pip-ui table.reports-mql-table {
+        min-width: 960px;
+      }
+      #sp-pip-ui table.reports-mql-table td.reports-mql-cert {
+        font-size: 11px;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      #sp-pip-ui tr.reports-mql-section-row td {
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        background: rgba(0, 0, 0, 0.25);
+        border-top: 2px solid rgba(30, 74, 54, 0.75);
+      }
       #sp-pip-ui .scheduling-list-toolbar {
         display: flex;
         flex-wrap: wrap;
@@ -572,7 +603,7 @@
         display: flex;
         align-items: flex-start;
         justify-content: center;
-        padding: 12px;
+        padding: 48px 16px 20px;
         overflow-y: auto;
         background: rgba(2, 6, 4, 0.92);
       }
@@ -581,12 +612,12 @@
       }
       #sp-pip-ui .scheduling-memo-panel {
         width: min(100%, 920px);
-        max-height: calc(100dvh - 24px);
-        margin: 12px auto;
+        max-height: calc(100dvh - 64px);
+        margin: 0 auto;
         padding: 18px 20px 20px;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        overflow: visible;
         border: 1px solid var(--pip-border);
         border-radius: 8px;
         background: rgba(5, 14, 10, 0.98);
@@ -608,7 +639,7 @@
         flex-direction: column;
         flex: 1 1 auto;
         min-height: 0;
-        overflow: hidden;
+        overflow: visible;
       }
       #sp-pip-ui .scheduling-memo-form.weapons-add-form .add-form-grid.scheduling-memo-form-fields {
         display: grid;
@@ -664,7 +695,8 @@
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
-        padding-right: 4px;
+        overflow-x: visible;
+        padding: 12px 4px 8px 0;
       }
       #sp-pip-ui .scheduling-memo-form .scheduling-hint {
         margin: 10px 0 8px;
@@ -2886,6 +2918,7 @@
 
         const APPOINTMENTS_SQUADRON_LABEL = "88 SFS";
         const AF_REPORT_UNIT_LABEL = "88th Security Forces Squadron";
+        const MQL_REPORT_PRINT_TITLE = "Weapons Qual/Auth Report";
         const APPOINTMENTS_MEMO_DEFAULT_FROM = "88 SFS/S3T";
         const MEMO_SIGNATURE_TITLE_PRESETS = [
           "Training NCOIC",
@@ -3028,19 +3061,15 @@
             title: "MQL Report",
             subtitle: "Minimum Qualification Level listing for review and tracking.",
             badge: "MQL",
-            implemented: false,
-            placeholder:
-              "MQL Report will list minimum qualification levels across the Personnel Roster. This view is queued for a follow-up build.",
+            implemented: true,
           },
           {
             id: "mql-pdf",
             title: "MQL PDF",
             subtitle: "Printable MQL export suitable for signatures and filing.",
             badge: "PDF",
-            implemented: false,
+            implemented: true,
             printable: true,
-            placeholder:
-              "MQL PDF will generate a print-ready minimum qualification document. Use Print report here once the export is wired.",
           },
           {
             id: "heavy-weapons",
@@ -3550,6 +3579,8 @@
           activeReportId: null,
           weaponsRows: null,
           bylawRows: null,
+          mqlRows: null,
+          mqlCatalog: null,
           sotView: "active",
           selectedMonth: null,
           sotRows: null,
@@ -8235,7 +8266,7 @@
             block.className = "scheduling-unit-office-block";
 
             const table = document.createElement("table");
-            table.className = "scheduling-unit-table";
+            table.className = "scheduling-unit-table af-official-table--compact";
             const thead = document.createElement("thead");
             const headRow = document.createElement("tr");
             columns.forEach(function (label) {
@@ -9475,6 +9506,282 @@
           return wrap;
         }
 
+        function groupReportEntriesBySection(entries, getPerson) {
+          const groups = new Map();
+          (Array.isArray(entries) ? entries : []).forEach(function (entry) {
+            const person = getPerson(entry);
+            const section = person ? personOfficeKey(person) : "Unassigned";
+            if (!groups.has(section)) groups.set(section, []);
+            groups.get(section).push(entry);
+          });
+          const out = [];
+          groups.forEach(function (items, section) {
+            items.sort(function (a, b) {
+              return formatPersonDisplayName(getPerson(a)).localeCompare(formatPersonDisplayName(getPerson(b)), undefined, {
+                sensitivity: "base",
+              });
+            });
+            out.push({ section: section, items: items });
+          });
+          out.sort(function (a, b) {
+            return String(a.section).localeCompare(String(b.section), undefined, { sensitivity: "base" });
+          });
+          return out;
+        }
+
+        function appendOfficialSectionTable(parent, options) {
+          options = options || {};
+          const columnLabels = options.columns || [];
+          const sections = options.sections || [];
+          const tableClass = options.compact ? "af-official-table af-official-table--compact" : "af-official-table";
+          const buildCells = options.buildCells;
+          if (!parent || !columnLabels.length || !sections.length || typeof buildCells !== "function") return;
+          sections.forEach(function (group) {
+            const block = document.createElement("div");
+            block.className = "scheduling-unit-office-block";
+            const table = document.createElement("table");
+            table.className = tableClass;
+            const thead = document.createElement("thead");
+            const headRow = document.createElement("tr");
+            columnLabels.forEach(function (label) {
+              const th = document.createElement("th");
+              th.textContent = label;
+              headRow.appendChild(th);
+            });
+            thead.appendChild(headRow);
+            table.appendChild(thead);
+            const tbody = document.createElement("tbody");
+            const sectionRow = document.createElement("tr");
+            sectionRow.className = "scheduling-unit-office-row";
+            const sectionCell = document.createElement("td");
+            sectionCell.colSpan = columnLabels.length;
+            sectionCell.textContent = group.section;
+            sectionRow.appendChild(sectionCell);
+            tbody.appendChild(sectionRow);
+            group.items.forEach(function (entry) {
+              const tr = document.createElement("tr");
+              (buildCells(entry) || []).forEach(function (text) {
+                const td = document.createElement("td");
+                td.textContent = text === "" || text == null ? "-" : String(text);
+                tr.appendChild(td);
+              });
+              tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            block.appendChild(table);
+            parent.appendChild(block);
+          });
+        }
+
+        function mqlCertPairText(row) {
+          if (!row) return "-";
+          const qualKeys = weaponsQualDateKeys();
+          const expKeys = weaponsCertExpiryDateKeys();
+          const qual = formatWeaponsCertDisplayDate(valueFromItemByKeys(row, qualKeys));
+          const exp = formatWeaponsCertDisplayDate(valueFromItemByKeys(row, expKeys));
+          if (!qual && !exp) return "-";
+          if (qual && exp) return qual + " / " + exp;
+          return qual || exp;
+        }
+
+        function buildMqlCertCatalog(weaponsRows, bylawRows) {
+          const weapons = [];
+          const bylaws = [];
+          const seenW = new Set();
+          const seenB = new Set();
+          (Array.isArray(weaponsRows) ? weaponsRows : []).forEach(function (row) {
+            const label = weaponLabelFromRow(row);
+            const key = String(label).toLowerCase();
+            if (seenW.has(key)) return;
+            seenW.add(key);
+            weapons.push(label);
+          });
+          weapons.sort(function (a, b) {
+            return a.localeCompare(b, undefined, { sensitivity: "base" });
+          });
+          (Array.isArray(bylawRows) ? bylawRows : []).forEach(function (row) {
+            const label = bylawLabelFromRow(row);
+            const key = String(label).toLowerCase();
+            if (seenB.has(key)) return;
+            seenB.add(key);
+            bylaws.push(label);
+          });
+          bylaws.sort(function (a, b) {
+            return a.localeCompare(b, undefined, { sensitivity: "base" });
+          });
+          return { weapons: weapons, bylaws: bylaws };
+        }
+
+        function indexCertRowsByPersonLabel(rows, personIdFn, labelFn) {
+          const out = {};
+          const qualKeys = weaponsQualDateKeys();
+          (Array.isArray(rows) ? rows : []).forEach(function (row) {
+            const pid = personIdFn(row);
+            if (!pid) return;
+            const label = labelFn(row);
+            if (!out[pid]) out[pid] = {};
+            const existing = out[pid][label];
+            if (!existing) {
+              out[pid][label] = row;
+              return;
+            }
+            const da = parseWeaponsCertCalendarDate(valueFromItemByKeys(existing, qualKeys));
+            const db = parseWeaponsCertCalendarDate(valueFromItemByKeys(row, qualKeys));
+            if (!da || (db && db.getTime() >= da.getTime())) out[pid][label] = row;
+          });
+          return out;
+        }
+
+        function buildMqlReportRows(personRows, weaponsRows, bylawRows) {
+          const weaponsByPerson = indexCertRowsByPersonLabel(weaponsRows, weaponsPersonnelIdFromItem, weaponLabelFromRow);
+          const bylawByPerson = indexCertRowsByPersonLabel(bylawRows, bylawPersonnelIdFromItem, bylawLabelFromRow);
+          return (Array.isArray(personRows) ? personRows : [])
+            .filter(function (person) {
+              return person && person.Id != null;
+            })
+            .map(function (person) {
+              const pid = String(person.Id);
+              return {
+                person: person,
+                weapons: weaponsByPerson[pid] || {},
+                bylaws: bylawByPerson[pid] || {},
+              };
+            });
+        }
+
+        function mqlColumnLabels(catalog) {
+          const labels = ["Duty Status", "Full Name", "Rank"];
+          (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (w) {
+            labels.push(w);
+          });
+          (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (b) {
+            labels.push(b);
+          });
+          return labels;
+        }
+
+        function mqlRowCells(entry, catalog) {
+          const person = entry.person;
+          const cells = [
+            personStatusLabel(person),
+            formatPersonDisplayName(person),
+            itemFieldText(person, "Rank") || "-",
+          ];
+          (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
+            cells.push(mqlCertPairText(entry.weapons[label]));
+          });
+          (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (label) {
+            cells.push(mqlCertPairText(entry.bylaws[label]));
+          });
+          return cells;
+        }
+
+        function sortMqlReportRows(rows) {
+          return rows.slice().sort(function (a, b) {
+            const statusCmp = personStatusLabel(a.person).localeCompare(personStatusLabel(b.person), undefined, {
+              sensitivity: "base",
+            });
+            if (statusCmp !== 0) return statusCmp;
+            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
+              sensitivity: "base",
+            });
+          });
+        }
+
+        async function ensureMqlReportData(pw) {
+          const cache = await ensureReportsTrainingCache(pw);
+          const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+          const catalog = buildMqlCertCatalog(cache.weaponsRows, cache.bylawRows);
+          const rows = buildMqlReportRows(personRows, cache.weaponsRows, cache.bylawRows);
+          reportsSession.mqlCatalog = catalog;
+          reportsSession.mqlRows = rows;
+          return { rows: rows, catalog: catalog };
+        }
+
+        function renderMqlReportTable(rows, catalog) {
+          const wrap = document.createElement("div");
+          wrap.className = "roster-wrap reports-mql-wrap";
+          const columnLabels = mqlColumnLabels(catalog);
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "reports-office-empty";
+            p.textContent = "No Personnel on file.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          const table = document.createElement("table");
+          table.className = "roster reports-status-table reports-mql-table";
+          table.setAttribute("aria-label", "MQL Report");
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          columnLabels.forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          const sorted = sortMqlReportRows(rows);
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (entry) {
+            const tr = document.createElement("tr");
+            const cells = mqlRowCells(entry, catalog);
+            cells.forEach(function (text, idx) {
+              const td = document.createElement("td");
+              if (idx === 1) {
+                const nameBtn = document.createElement("button");
+                nameBtn.type = "button";
+                nameBtn.className = "reports-name-link";
+                nameBtn.textContent = text;
+                nameBtn.title = "Open Personnel Record";
+                nameBtn.addEventListener("click", function () {
+                  navigateToPersonDetail(entry.person.Id);
+                });
+                td.appendChild(nameBtn);
+              } else {
+                td.textContent = displayCellText(text);
+                if (idx > 2) td.className = "reports-mql-cert";
+              }
+              tr.appendChild(td);
+            });
+            frag.appendChild(tr);
+          });
+          tbody.appendChild(frag);
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        function renderMqlReportPrintDocument(rows, catalog) {
+          const wrap = document.createElement("div");
+          wrap.className = "af-official-doc";
+          wrap.appendChild(
+            buildAfOfficialDocHeader(MQL_REPORT_PRINT_TITLE, {
+              includeSeconds: true,
+              subtitle: String(AF_REPORT_UNIT_LABEL || SOT_SQUADRON_LABEL || "88 SFS"),
+            }),
+          );
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "af-official-doc-empty";
+            p.textContent = "No Personnel on file.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          appendOfficialSectionTable(wrap, {
+            columns: mqlColumnLabels(catalog),
+            sections: groupReportEntriesBySection(rows, function (entry) {
+              return entry.person;
+            }),
+            compact: true,
+            buildCells: function (entry) {
+              return mqlRowCells(entry, catalog);
+            },
+          });
+          return wrap;
+        }
+
         function buildCleoReportRows(personRows) {
           return (Array.isArray(personRows) ? personRows : [])
             .filter(function (person) {
@@ -9517,7 +9824,7 @@
           table.setAttribute("aria-label", "CLEO Report");
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
-          ["Personnel", "Date became CLEO"].forEach(function (label) {
+          ["Personnel", "Certified date"].forEach(function (label) {
             const th = document.createElement("th");
             th.textContent = label;
             trHead.appendChild(th);
@@ -9562,7 +9869,6 @@
             buildAfOfficialDocHeader("CLEO Report", {
               includeSeconds: true,
               subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
-              sortLine: "Alphabetical by name",
             }),
           );
           if (!rows.length) {
@@ -9572,38 +9878,16 @@
             wrap.appendChild(p);
             return wrap;
           }
-          const table = document.createElement("table");
-          table.className = "af-official-table";
-          table.setAttribute("aria-label", "CLEO Report");
-          const thead = document.createElement("thead");
-          const trHead = document.createElement("tr");
-          ["Personnel", "Date became CLEO"].forEach(function (label) {
-            const th = document.createElement("th");
-            th.textContent = label;
-            trHead.appendChild(th);
+          appendOfficialSectionTable(wrap, {
+            columns: ["Personnel", "Certified date"],
+            sections: groupReportEntriesBySection(rows, function (entry) {
+              return entry.person;
+            }),
+            compact: true,
+            buildCells: function (entry) {
+              return [formatPersonDisplayName(entry.person), displayCellText(entry.cleoDate)];
+            },
           });
-          thead.appendChild(trHead);
-          table.appendChild(thead);
-          const tbody = document.createElement("tbody");
-          const sorted = rows.slice().sort(function (a, b) {
-            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
-              sensitivity: "base",
-            });
-          });
-          const frag = document.createDocumentFragment();
-          sorted.forEach(function (entry) {
-            const tr = document.createElement("tr");
-            const tdName = document.createElement("td");
-            tdName.textContent = formatPersonDisplayName(entry.person);
-            tr.appendChild(tdName);
-            const tdCleoDate = document.createElement("td");
-            tdCleoDate.textContent = displayCellText(entry.cleoDate);
-            tr.appendChild(tdCleoDate);
-            frag.appendChild(tr);
-          });
-          tbody.appendChild(frag);
-          table.appendChild(tbody);
-          wrap.appendChild(table);
           return wrap;
         }
 
@@ -9670,7 +9954,6 @@
             buildAfOfficialDocHeader("Post RC Report", {
               includeSeconds: true,
               subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
-              sortLine: "Alphabetical by name",
             }),
           );
           if (!rows.length) {
@@ -9680,42 +9963,81 @@
             wrap.appendChild(p);
             return wrap;
           }
-          const table = document.createElement("table");
-          table.className = "af-official-table";
-          table.setAttribute("aria-label", "Post RC Report");
-          const thead = document.createElement("thead");
-          const trHead = document.createElement("tr");
-          ["Personnel", "Post RC qual date", "Post RC expiration"].forEach(function (label) {
-            const th = document.createElement("th");
-            th.textContent = label;
-            trHead.appendChild(th);
+          appendOfficialSectionTable(wrap, {
+            columns: ["Personnel", "Post RC qual date", "Post RC expiration"],
+            sections: groupReportEntriesBySection(rows, function (entry) {
+              return entry.person;
+            }),
+            compact: true,
+            buildCells: function (entry) {
+              return [
+                formatPersonDisplayName(entry.person),
+                displayCellText(entry.postRcQual),
+                displayCellText(entry.postRcExp),
+              ];
+            },
           });
-          thead.appendChild(trHead);
-          table.appendChild(thead);
-          const tbody = document.createElement("tbody");
-          const sorted = rows.slice().sort(function (a, b) {
-            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
-              sensitivity: "base",
-            });
-          });
-          const frag = document.createDocumentFragment();
-          sorted.forEach(function (entry) {
-            const tr = document.createElement("tr");
-            const tdName = document.createElement("td");
-            tdName.textContent = formatPersonDisplayName(entry.person);
-            tr.appendChild(tdName);
-            const tdQual = document.createElement("td");
-            tdQual.textContent = displayCellText(entry.postRcQual);
-            tr.appendChild(tdQual);
-            const tdExp = document.createElement("td");
-            tdExp.textContent = displayCellText(entry.postRcExp);
-            tr.appendChild(tdExp);
-            frag.appendChild(tr);
-          });
-          tbody.appendChild(frag);
-          table.appendChild(tbody);
-          wrap.appendChild(table);
           return wrap;
+        }
+
+        async function loadMqlReport(reportDef) {
+          const pw = hubSession.pw;
+          if (!pw) {
+            setReportsState("err", "Hub not ready. Refresh the Personnel Roster first.");
+            return;
+          }
+          if (!reportsDetailBody) return;
+          showReportsDetail(reportDef);
+          reportsDetailBody.innerHTML = "";
+          setReportsState("loading", "Building MQL report...");
+          try {
+            const data = await ensureMqlReportData(pw);
+            const summary = document.createElement("p");
+            summary.className = "reports-hint";
+            summary.textContent =
+              data.rows.length +
+              " Personnel | " +
+              data.catalog.weapons.length +
+              " weapon column(s) | " +
+              data.catalog.bylaws.length +
+              " By-Law column(s).";
+            reportsDetailBody.appendChild(summary);
+            reportsDetailBody.appendChild(renderMqlReportTable(data.rows, data.catalog));
+            setReportsState("ok", "MQL report updated.");
+            window.setTimeout(function () {
+              setReportsState("", "");
+            }, 2200);
+          } catch (e) {
+            setReportsState("err", "Could not build MQL report: " + (e.message || String(e)).slice(0, 220));
+          }
+        }
+
+        async function loadMqlPdf(reportDef) {
+          const pw = hubSession.pw;
+          if (!pw) {
+            setReportsState("err", "Hub not ready. Refresh the Personnel Roster first.");
+            return;
+          }
+          if (!reportsDetailBody) return;
+          showReportsDetail(reportDef);
+          reportsDetailBody.innerHTML = "";
+          setReportsState("loading", "Preparing MQL PDF...");
+          try {
+            const data = await ensureMqlReportData(pw);
+            const summary = document.createElement("p");
+            summary.className = "reports-hint";
+            summary.textContent =
+              data.rows.length +
+              " Personnel ready for print. Use Print report for the official Weapons Qual/Auth PDF (grouped by section).";
+            reportsDetailBody.appendChild(summary);
+            reportsDetailBody.appendChild(renderMqlReportTable(data.rows, data.catalog));
+            setReportsState("ok", "MQL PDF ready.");
+            window.setTimeout(function () {
+              setReportsState("", "");
+            }, 2200);
+          } catch (e) {
+            setReportsState("err", "Could not prepare MQL PDF: " + (e.message || String(e)).slice(0, 220));
+          }
         }
 
         async function loadCleoReport(reportDef) {
@@ -9841,6 +10163,14 @@
             await loadStatusOfTrainingReport(def);
             return;
           }
+          if (def.implemented && def.id === "mql-report") {
+            await loadMqlReport(def);
+            return;
+          }
+          if (def.implemented && def.id === "mql-pdf") {
+            await loadMqlPdf(def);
+            return;
+          }
           if (def.implemented && def.id === "cleo-report") {
             await loadCleoReport(def);
             return;
@@ -9855,9 +10185,11 @@
         function invalidateReportsTrainingCache() {
           reportsSession.weaponsRows = null;
           reportsSession.bylawRows = null;
+          reportsSession.mqlRows = null;
+          reportsSession.mqlCatalog = null;
         }
 
-        function printActiveReport() {
+        async function printActiveReport() {
           const def = reportTypeById(reportsSession.activeReportId);
           if (!def || !def.printable) return;
           if (def.id === "status-of-training") {
@@ -9866,6 +10198,16 @@
             return;
           }
           const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+          if (def.id === "mql-pdf") {
+            const pw = hubSession.pw;
+            if (!pw) return;
+            const data =
+              reportsSession.mqlRows && reportsSession.mqlCatalog
+                ? { rows: reportsSession.mqlRows, catalog: reportsSession.mqlCatalog }
+                : await ensureMqlReportData(pw);
+            triggerSchedulingPrint(renderMqlReportPrintDocument(data.rows, data.catalog));
+            return;
+          }
           if (def.id === "cleo-report") {
             triggerSchedulingPrint(renderCleoReportPrintDocument(buildCleoReportRows(personRows)));
             return;
@@ -11273,7 +11615,7 @@
 
         if (reportsPrintBtn) {
           reportsPrintBtn.addEventListener("click", function () {
-            printActiveReport();
+            void printActiveReport();
           });
         }
 
