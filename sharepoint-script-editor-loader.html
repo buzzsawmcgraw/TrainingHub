@@ -549,15 +549,26 @@
               <details class="scheduling-memo-letterhead-panel" id="schedulingMemoLetterheadPanel">
                 <summary>Letterhead settings</summary>
                 <p class="scheduling-hint">
-                  Update the printed memo header and footer when Air Force letterhead guidance changes. Saves to the
-                  <strong>HubLetterhead</strong> SharePoint list when available; otherwise saves in this browser.
+                  Official Air Force letterhead is a graphic - upload your squadron letterhead image to Site Assets
+                  (for example <strong>S3T Files/AF-Letterhead.png</strong>), set the default path in the script, or paste
+                  a full image URL below. Optional footer text saves in this browser.
                 </p>
-                <div class="add-field add-field--notes">
-                  <label for="schedulingMemoLetterheadHeader">Memo header</label>
-                  <textarea id="schedulingMemoLetterheadHeader" rows="5" placeholder="Department / unit / address block"></textarea>
+                <div class="add-field">
+                  <label for="schedulingMemoLetterheadImageUrl">Letterhead image URL</label>
+                  <input
+                    type="url"
+                    id="schedulingMemoLetterheadImageUrl"
+                    placeholder="Leave blank to use the default Site Assets path"
+                  />
                 </div>
+                <img
+                  id="schedulingMemoLetterheadPreview"
+                  class="scheduling-memo-letterhead-preview"
+                  hidden
+                  alt="Letterhead preview"
+                />
                 <div class="add-field add-field--notes">
-                  <label for="schedulingMemoLetterheadFooter">Memo footer</label>
+                  <label for="schedulingMemoLetterheadFooter">Memo footer (optional)</label>
                   <textarea id="schedulingMemoLetterheadFooter" rows="3" placeholder="Distribution, page note, or footer text"></textarea>
                 </div>
                 <button type="button" id="schedulingMemoLetterheadSaveBtn" class="btn-secondary">Save letterhead</button>

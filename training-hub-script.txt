@@ -108,15 +108,22 @@
         const LIST_CERTIFIERS = "Certifiers";
         const LIST_CERTIFIERS_GUID = "";
         /**
-         * Optional memo letterhead store (single row). Columns: MemoHeader, MemoFooter (multiline text).
-         * Create on the site as **HubLetterhead** so all users share the same header/footer.
+         * Printed memo letterhead uses an official AF graphic (image), not text in a SharePoint list.
+         * Upload the squadron letterhead PNG/JPG to Site Assets, then set the path or full URL below.
+         */
+        const MEMO_LETTERHEAD_IMAGE_URL = "";
+        /** Path from site root (spaces as %20). Example: S3T%20Files/AF-Letterhead.png */
+        const MEMO_LETTERHEAD_SITE_RELATIVE_PATH = "S3T%20Files/AF-Letterhead.png";
+        const MEMO_LETTERHEAD_IMAGE_ALT = "Department of the Air Force letterhead";
+        /** Optional printed memo footer (distribution note, etc.). */
+        const MEMO_LETTERHEAD_STORAGE_KEY = "trainingHub.memoLetterhead.v2";
+        const DEFAULT_MEMO_LETTERHEAD_FOOTER = "";
+        /**
+         * Optional MQL signature store (single row). Columns: MqlSignatureName, MqlSignatureTitle.
+         * Create on the site as **HubLetterhead** so all users share the same commander signature block.
          */
         const LIST_HUB_LETTERHEAD = "HubLetterhead";
         const LIST_HUB_LETTERHEAD_GUID = "";
-        const MEMO_LETTERHEAD_STORAGE_KEY = "trainingHub.memoLetterhead.v1";
-        const DEFAULT_MEMO_LETTERHEAD_HEADER =
-          "DEPARTMENT OF THE AIR FORCE\n88TH SECURITY FORCES SQUADRON\nWRIGHT-PATTERSON AFB OH  45433";
-        const DEFAULT_MEMO_LETTERHEAD_FOOTER = "";
         const CERTIFIERS_PERSON_FIELD = "PersonnelId";
         const CERTIFIERS_LIST_DISPLAY_FIELD = "Certifier";
         /** Set SharePoint Title on new rows from the Item value when the list still requires Title. */
@@ -866,7 +873,8 @@
         ];
         const schedulingMemoPrintBtn = document.getElementById("schedulingMemoPrintBtn");
         const schedulingMemoCancelBtn = document.getElementById("schedulingMemoCancelBtn");
-        const schedulingMemoLetterheadHeader = document.getElementById("schedulingMemoLetterheadHeader");
+        const schedulingMemoLetterheadImageUrl = document.getElementById("schedulingMemoLetterheadImageUrl");
+        const schedulingMemoLetterheadPreview = document.getElementById("schedulingMemoLetterheadPreview");
         const schedulingMemoLetterheadFooter = document.getElementById("schedulingMemoLetterheadFooter");
         const schedulingMemoLetterheadSaveBtn = document.getElementById("schedulingMemoLetterheadSaveBtn");
 
@@ -5070,6 +5078,37 @@
           return "lists/getbytitle('" + escListTitle(String(LIST_HUB_LETTERHEAD || "HubLetterhead")) + "')";
         }
 
+        function resolveMemoLetterheadImageUrl(overrideUrl) {
+          const userUrl = String(overrideUrl || "").trim();
+          if (userUrl) return userUrl;
+          const explicit =
+            typeof MEMO_LETTERHEAD_IMAGE_URL === "string" ? MEMO_LETTERHEAD_IMAGE_URL.trim() : "";
+          if (explicit) return explicit;
+          const root = (typeof PERSONNEL_SITE_ROOT_URL === "string" ? PERSONNEL_SITE_ROOT_URL : "")
+            .trim()
+            .replace(/\/$/, "");
+          const rel = (
+            typeof MEMO_LETTERHEAD_SITE_RELATIVE_PATH === "string" ? MEMO_LETTERHEAD_SITE_RELATIVE_PATH : ""
+          )
+            .trim()
+            .replace(/^\//, "");
+          if (!root || !rel) return "";
+          return root + "/" + rel;
+        }
+
+        function updateMemoLetterheadPreview(url) {
+          if (!schedulingMemoLetterheadPreview) return;
+          const resolved = resolveMemoLetterheadImageUrl(url);
+          if (!resolved) {
+            schedulingMemoLetterheadPreview.hidden = true;
+            schedulingMemoLetterheadPreview.removeAttribute("src");
+            return;
+          }
+          schedulingMemoLetterheadPreview.src = resolved;
+          schedulingMemoLetterheadPreview.alt = MEMO_LETTERHEAD_IMAGE_ALT || "Letterhead preview";
+          schedulingMemoLetterheadPreview.hidden = false;
+        }
+
         function memoLetterheadFromStorage() {
           try {
             const raw = localStorage.getItem(MEMO_LETTERHEAD_STORAGE_KEY);
@@ -5077,7 +5116,7 @@
             const parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== "object") return null;
             return {
-              header: String(parsed.header || ""),
+              headerImageUrl: String(parsed.headerImageUrl || ""),
               footer: String(parsed.footer || ""),
             };
           } catch (e) {
@@ -5085,98 +5124,49 @@
           }
         }
 
-        function saveMemoLetterheadToStorage(header, footer) {
+        function saveMemoLetterheadToStorage(headerImageUrl, footer) {
           try {
             localStorage.setItem(
               MEMO_LETTERHEAD_STORAGE_KEY,
-              JSON.stringify({ header: String(header || ""), footer: String(footer || "") }),
+              JSON.stringify({
+                headerImageUrl: String(headerImageUrl || ""),
+                footer: String(footer || ""),
+              }),
             );
           } catch (e) {
             /* ignore quota / privacy errors */
           }
         }
 
-        function memoLetterheadFieldText(item, keys) {
-          const raw = valueFromItemByKeys(item, keys);
-          if (raw === null || raw === undefined) return "";
-          return String(raw);
-        }
-
         async function loadMemoLetterhead(pw, force) {
           if (hubSession.memoLetterheadLoaded && !force) return hubSession.memoLetterhead;
-          let header = String(DEFAULT_MEMO_LETTERHEAD_HEADER || "");
+          let headerImageUrl = "";
           let footer = String(DEFAULT_MEMO_LETTERHEAD_FOOTER || "");
-          let itemId = null;
-          let usesSharePoint = false;
-          if (pw) {
-            try {
-              const seg = hubLetterheadListApiPath();
-              const data = await spFetch(`/_api/web/${seg}/items?$top=1&$orderby=Id asc`, {}, pw);
-              const item = data && data.value && data.value[0];
-              if (item) {
-                const h = memoLetterheadFieldText(item, [
-                  "MemoHeader",
-                  "Memo_x0020_Header",
-                  "Header",
-                  "LetterheadHeader",
-                ]);
-                const f = memoLetterheadFieldText(item, [
-                  "MemoFooter",
-                  "Memo_x0020_Footer",
-                  "Footer",
-                  "LetterheadFooter",
-                ]);
-                if (h) header = h;
-                footer = f;
-                itemId = item.Id;
-                usesSharePoint = true;
-              }
-            } catch (e) {
-              log("HubLetterhead load skipped:\n" + (e.message || String(e)), "warn");
-            }
+          const stored = memoLetterheadFromStorage();
+          if (stored) {
+            headerImageUrl = stored.headerImageUrl || "";
+            if (stored.footer !== undefined) footer = stored.footer;
           }
-          if (!usesSharePoint) {
-            const stored = memoLetterheadFromStorage();
-            if (stored) {
-              if (stored.header) header = stored.header;
-              if (stored.footer !== undefined) footer = stored.footer;
-            }
-          }
-          hubSession.memoLetterhead = { header: header, footer: footer };
-          hubSession.memoLetterheadItemId = itemId;
-          hubSession.memoLetterheadUsesSharePoint = usesSharePoint;
+          hubSession.memoLetterhead = { headerImageUrl: headerImageUrl, footer: footer };
+          hubSession.memoLetterheadItemId = null;
+          hubSession.memoLetterheadUsesSharePoint = false;
           hubSession.memoLetterheadLoaded = true;
           return hubSession.memoLetterhead;
         }
 
-        async function saveMemoLetterhead(pw, header, footer) {
-          header = String(header || "");
+        async function saveMemoLetterhead(pw, headerImageUrl, footer) {
+          headerImageUrl = String(headerImageUrl || "");
           footer = String(footer || "");
-          let savedToSharePoint = false;
-          if (pw) {
-            try {
-              const seg = hubLetterheadListApiPath();
-              const payload = {
-                Title: "Default",
-                MemoHeader: header,
-                MemoFooter: footer,
-              };
-              if (hubSession.memoLetterheadItemId) {
-                await spFetch(`/_api/web/${seg}/items(${hubSession.memoLetterheadItemId})`, { method: "MERGE", body: payload }, pw);
-              } else {
-                const created = await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
-                if (created && created.Id != null) hubSession.memoLetterheadItemId = created.Id;
-              }
-              savedToSharePoint = true;
-              hubSession.memoLetterheadUsesSharePoint = true;
-            } catch (e) {
-              log("HubLetterhead save failed; using browser storage:\n" + (e.message || String(e)), "warn");
-            }
-          }
-          saveMemoLetterheadToStorage(header, footer);
-          hubSession.memoLetterhead = { header: header, footer: footer };
+          saveMemoLetterheadToStorage(headerImageUrl, footer);
+          hubSession.memoLetterhead = { headerImageUrl: headerImageUrl, footer: footer };
           hubSession.memoLetterheadLoaded = true;
-          return { savedToSharePoint: savedToSharePoint };
+          return { savedToSharePoint: false };
+        }
+
+        function memoLetterheadFieldText(item, keys) {
+          const raw = valueFromItemByKeys(item, keys);
+          if (raw === null || raw === undefined) return "";
+          return String(raw);
         }
 
         function mqlSignatureFromStorage() {
@@ -5438,7 +5428,7 @@
         function buildMqlPrintSignatureBlock(sig) {
           sig = sig || hubSession.mqlSignature || {};
           const block = document.createElement("div");
-          block.className = "mql-print-page-signature";
+          block.className = "mql-print-doc-signature";
           const line = document.createElement("div");
           line.className = "mql-print-sig-line";
           block.appendChild(line);
@@ -5456,20 +5446,25 @@
         async function populateMemoLetterheadFields() {
           const pw = hubSession.pw;
           const letterhead = await loadMemoLetterhead(pw, false);
-          if (schedulingMemoLetterheadHeader) schedulingMemoLetterheadHeader.value = letterhead.header || "";
-          if (schedulingMemoLetterheadFooter) schedulingMemoLetterheadFooter.value = letterhead.footer || "";
+          if (schedulingMemoLetterheadImageUrl) {
+            schedulingMemoLetterheadImageUrl.value = letterhead.headerImageUrl || "";
+          }
+          if (schedulingMemoLetterheadFooter) {
+            schedulingMemoLetterheadFooter.value = letterhead.footer || "";
+          }
+          updateMemoLetterheadPreview(letterhead.headerImageUrl || "");
         }
 
         function currentMemoLetterheadForPrint() {
-          const header = schedulingMemoLetterheadHeader
-            ? String(schedulingMemoLetterheadHeader.value || "")
+          const imageOverride = schedulingMemoLetterheadImageUrl
+            ? String(schedulingMemoLetterheadImageUrl.value || "").trim()
             : "";
           const footer = schedulingMemoLetterheadFooter
             ? String(schedulingMemoLetterheadFooter.value || "")
             : "";
           const cached = hubSession.memoLetterhead || {};
           return {
-            header: header || cached.header || String(DEFAULT_MEMO_LETTERHEAD_HEADER || ""),
+            headerImageUrl: resolveMemoLetterheadImageUrl(imageOverride || cached.headerImageUrl || ""),
             footer: footer || cached.footer || String(DEFAULT_MEMO_LETTERHEAD_FOOTER || ""),
           };
         }
@@ -5705,10 +5700,15 @@
           const wrap = document.createElement("div");
           wrap.className = "scheduling-memo-document";
           const letterhead = currentMemoLetterheadForPrint();
-          if (letterhead.header) {
+          if (letterhead.headerImageUrl) {
             const letterheadHeader = document.createElement("div");
-            letterheadHeader.className = "scheduling-memo-doc-letterhead-header";
-            letterheadHeader.textContent = letterhead.header;
+            letterheadHeader.className =
+              "scheduling-memo-doc-letterhead-header scheduling-memo-doc-letterhead-header--image";
+            const img = document.createElement("img");
+            img.className = "scheduling-memo-doc-letterhead-img";
+            img.src = letterhead.headerImageUrl;
+            img.alt = MEMO_LETTERHEAD_IMAGE_ALT || "Department of the Air Force letterhead";
+            letterheadHeader.appendChild(img);
             wrap.appendChild(letterheadHeader);
           }
           const title = document.createElement("p");
@@ -7309,12 +7309,15 @@
           const n = columnLabels.length;
           if (!n) return [];
           if (n === 2) return ["44%", "56%"];
-          if (n === 3) return ["40%", "30%", "30%"];
-          if (n === 7) return ["16%", "7%", "9%", "7%", "24%", "14%", "13%"];
+          if (n === 3) return ["40%", "35%", "25%"];
           if (n > 3) {
             const certCount = n - 3;
-            const certEach = 66 / certCount;
-            return ["10%", "20%", "8%"].concat(
+            const dutyPct = 11;
+            const namePct = 22;
+            const rankPct = 9;
+            const certTotal = 100 - dutyPct - namePct - rankPct;
+            const certEach = certTotal / certCount;
+            return [dutyPct + "%", namePct + "%", rankPct + "%"].concat(
               Array(certCount)
                 .fill(null)
                 .map(function () {
@@ -7360,6 +7363,7 @@
           headerWrap.className = "af-official-table-header-wrap";
           const headerTable = document.createElement("table");
           headerTable.className = tableClass + " af-official-table--columns";
+          headerTable.style.width = "100%";
           appendOfficialColgroup(headerTable, widths);
           const thead = document.createElement("thead");
           const headRow = document.createElement("tr");
@@ -7426,17 +7430,21 @@
         }
 
         function mqlCertCell(row, statusFn) {
+          if (!row) return { text: "-", tone: "expired" };
           const text = mqlCertPairText(row);
-          if (!row) return { text: text, tone: "unknown" };
           const status = typeof statusFn === "function" ? statusFn(row) : { tone: "unknown" };
-          return { text: text, tone: status && status.tone ? status.tone : "unknown" };
+          let tone = status && status.tone ? status.tone : "unknown";
+          if (!text || text === "-") tone = "expired";
+          return { text: text, tone: tone };
         }
 
         function mqlExportCertCell(row, part, statusFn) {
           const text = part === "qual" ? mqlCertQualText(row) : mqlCertExpText(row);
-          if (!row) return { text: text, tone: "unknown" };
+          if (!row) return { text: text, tone: "expired" };
           const status = typeof statusFn === "function" ? statusFn(row) : { tone: "unknown" };
-          return { text: text, tone: status && status.tone ? status.tone : "unknown" };
+          let tone = status && status.tone ? status.tone : "unknown";
+          if (!text || text === "-") tone = "expired";
+          return { text: text, tone: tone };
         }
 
         function mqlIsRequiredWeapon(label) {
@@ -7873,10 +7881,13 @@
             return wrap;
           }
           const table = document.createElement("table");
-          table.className = "af-official-table af-official-table--columns";
+          table.className = "af-official-table af-official-table--columns af-official-table--compact";
+          const exportColumns = mqlExportColumnLabels(catalog);
+          const widths = officialColumnWidths(exportColumns);
+          appendOfficialColgroup(table, widths);
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
-          mqlExportColumnLabels(catalog).forEach(function (label) {
+          exportColumns.forEach(function (label) {
             const th = document.createElement("th");
             th.textContent = label;
             trHead.appendChild(th);
@@ -9821,17 +9832,13 @@
                 setSchedulingState("warn", "Load the Personnel Roster first.");
                 return;
               }
-              const header = schedulingMemoLetterheadHeader ? schedulingMemoLetterheadHeader.value : "";
+              const headerImageUrl = schedulingMemoLetterheadImageUrl ? schedulingMemoLetterheadImageUrl.value : "";
               const footer = schedulingMemoLetterheadFooter ? schedulingMemoLetterheadFooter.value : "";
               try {
                 setSchedulingState("loading", "Saving letterhead...");
-                const result = await saveMemoLetterhead(pw, header, footer);
-                setSchedulingState(
-                  "ok",
-                  result.savedToSharePoint
-                    ? "Letterhead saved to HubLetterhead."
-                    : "Letterhead saved in this browser (create HubLetterhead list for squadron-wide sharing).",
-                );
+                await saveMemoLetterhead(pw, headerImageUrl, footer);
+                updateMemoLetterheadPreview(headerImageUrl);
+                setSchedulingState("ok", "Letterhead saved in this browser.");
                 window.setTimeout(function () {
                   setSchedulingState("", "");
                 }, 3200);
@@ -9839,6 +9846,12 @@
                 setSchedulingState("err", "Could not save letterhead: " + (e.message || String(e)).slice(0, 220));
               }
             })();
+          });
+        }
+
+        if (schedulingMemoLetterheadImageUrl) {
+          schedulingMemoLetterheadImageUrl.addEventListener("input", function () {
+            updateMemoLetterheadPreview(schedulingMemoLetterheadImageUrl.value);
           });
         }
 
