@@ -412,84 +412,114 @@
       #sp-pip-ui.scheduling-print-active .scheduling-print-surface {
         display: block;
       }
+      #sp-pip-ui .af-official-doc,
       #sp-pip-ui .scheduling-unit-report {
-        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-        font-size: 11pt;
-        line-height: 1.45;
-        color: #1a1a1a;
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        font-size: 12pt;
+        line-height: 1.35;
+        color: #000;
         background: #fff;
-        padding: 0.5in 0.6in;
+        padding: 0;
         max-width: 8.5in;
         margin: 0 auto;
       }
+      #sp-pip-ui .af-official-doc-header,
       #sp-pip-ui .scheduling-unit-report-header {
-        border-bottom: 3px solid #1f3a5f;
-        padding-bottom: 14px;
-        margin-bottom: 22px;
+        text-align: center;
+        margin: 0 0 16px;
+        padding: 0;
+        border: none;
       }
+      #sp-pip-ui .af-official-doc-header h1,
       #sp-pip-ui .scheduling-unit-report-header h1 {
-        margin: 0 0 6px;
-        font-size: 20pt;
+        margin: 0 0 2px;
+        font-size: 12pt;
         font-weight: 700;
-        letter-spacing: 0.04em;
-        color: #1f3a5f;
-        text-transform: uppercase;
+        letter-spacing: normal;
+        color: #000;
+        text-transform: none;
       }
+      #sp-pip-ui .af-official-doc-dateline,
+      #sp-pip-ui .af-official-doc-timeline,
       #sp-pip-ui .scheduling-unit-report-header p {
-        margin: 2px 0;
-        font-size: 10pt;
-        color: #444;
+        margin: 0;
+        font-size: 12pt;
+        font-weight: 400;
+        color: #000;
+      }
+      #sp-pip-ui .af-official-doc-subtitle,
+      #sp-pip-ui .af-official-doc-sortline {
+        margin: 8px 0 0;
+        font-size: 12pt;
+        font-weight: 400;
+        color: #000;
+      }
+      #sp-pip-ui .af-official-doc-sortline {
+        font-style: italic;
       }
       #sp-pip-ui .scheduling-unit-office-block {
-        margin-bottom: 22px;
+        margin-bottom: 14px;
         break-inside: avoid;
         page-break-inside: avoid;
       }
-      #sp-pip-ui .scheduling-unit-office-block h2 {
-        margin: 0 0 8px;
-        padding: 6px 10px;
-        font-size: 12pt;
-        font-weight: 700;
-        color: #fff;
-        background: #1f3a5f;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-      }
+      #sp-pip-ui table.af-official-table,
       #sp-pip-ui table.scheduling-unit-table {
         width: 100%;
         border-collapse: collapse;
-        margin: 0 0 4px;
-        font-size: 9.5pt;
+        margin: 0 0 10px;
+        font-size: 10pt;
       }
+      #sp-pip-ui table.af-official-table th,
+      #sp-pip-ui table.af-official-table td,
       #sp-pip-ui table.scheduling-unit-table th,
       #sp-pip-ui table.scheduling-unit-table td {
-        border: 1px solid #bbb;
-        padding: 6px 8px;
+        border: 1px solid #000;
+        padding: 3px 5px;
         text-align: left;
         vertical-align: top;
+        color: #000;
+        background: #fff;
       }
+      #sp-pip-ui table.af-official-table th,
       #sp-pip-ui table.scheduling-unit-table th {
-        background: #e8eef4;
-        color: #1f3a5f;
         font-weight: 700;
-        font-size: 8.5pt;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+        font-size: 10pt;
+        text-transform: none;
+        letter-spacing: normal;
       }
-      #sp-pip-ui table.scheduling-unit-table tr:nth-child(even) td {
-        background: #f7f9fb;
+      #sp-pip-ui table.af-official-table tr.af-official-office-row td,
+      #sp-pip-ui table.scheduling-unit-table tr.scheduling-unit-office-row td {
+        font-weight: 700;
+        border-top: 1px solid #000;
+        border-bottom: none;
+        padding-top: 8px;
+        background: #fff;
       }
-      #sp-pip-ui .scheduling-unit-empty {
+      #sp-pip-ui .scheduling-unit-empty,
+      #sp-pip-ui .af-official-doc-empty {
         margin: 0;
         font-style: italic;
-        color: #666;
+        color: #000;
       }
-      #sp-pip-ui .scheduling-unit-footer {
-        margin-top: 28px;
-        padding-top: 12px;
-        border-top: 1px solid #ccc;
-        font-size: 9pt;
-        color: #555;
+      #sp-pip-ui .af-official-doc-footer {
+        margin-top: 24px;
+        font-size: 12pt;
+        line-height: 1.4;
+        color: #000;
+        text-align: left;
+      }
+      #sp-pip-ui .reports-detail-body .af-official-doc {
+        margin-top: 8px;
+        padding: 16px 18px;
+        border: 1px solid rgba(30, 74, 54, 0.55);
+        border-radius: 4px;
+      }
+      #sp-pip-ui .reports-detail-body .af-official-doc .af-official-doc-header h1,
+      #sp-pip-ui .reports-detail-body .af-official-doc .af-official-doc-dateline,
+      #sp-pip-ui .reports-detail-body .af-official-doc .af-official-doc-timeline,
+      #sp-pip-ui .reports-detail-body .af-official-doc .af-official-doc-subtitle,
+      #sp-pip-ui .reports-detail-body .af-official-doc .af-official-doc-sortline {
+        color: #000;
       }
       #sp-pip-ui .scheduling-list-toolbar {
         display: flex;
@@ -785,6 +815,12 @@
         #sp-pip-ui.scheduling-print-active .scheduling-unit-report {
           padding: 0;
           max-width: none;
+        }
+        #sp-pip-ui.scheduling-print-active .scheduling-unit-table th,
+        #sp-pip-ui.scheduling-print-active .scheduling-unit-table td {
+          color: #000 !important;
+          background: #fff !important;
+          border-color: #000 !important;
         }
         #sp-pip-ui.scheduling-print-active .scheduling-unit-office-block {
           break-inside: avoid;
@@ -1300,6 +1336,39 @@
         #sp-pip-ui table.roster td.cert-status--expired {
           color: #000 !important;
           text-shadow: none !important;
+        }
+        #sp-pip-ui #reportsSection .person-detail-panel > .person-detail-toolbar,
+        #sp-pip-ui #reportsSection .person-detail-panel > .hub-subtitle,
+        #sp-pip-ui #reportsSection .person-detail-panel > .reports-hint {
+          display: none !important;
+        }
+        #sp-pip-ui .reports-detail-body .af-official-doc {
+          border: none !important;
+          border-radius: 0 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        #sp-pip-ui .af-official-doc,
+        #sp-pip-ui .reports-detail-body .af-official-doc {
+          background: #fff !important;
+          color: #000 !important;
+        }
+        #sp-pip-ui table.af-official-table,
+        #sp-pip-ui table.af-official-table th,
+        #sp-pip-ui table.af-official-table td {
+          color: #000 !important;
+          background: #fff !important;
+          border-color: #000 !important;
+          text-shadow: none !important;
+          box-shadow: none !important;
+        }
+        #sp-pip-ui table.af-official-table th {
+          position: static !important;
+        }
+        #sp-pip-ui button.reports-name-link {
+          color: #000 !important;
+          text-shadow: none !important;
+          font-weight: 400 !important;
         }
       }
       #sp-pip-ui a.person-detail-back {
@@ -2836,6 +2905,7 @@
         ];
 
         const APPOINTMENTS_SQUADRON_LABEL = "88 SFS";
+        const AF_REPORT_UNIT_LABEL = "88th Security Forces Squadron";
         const APPOINTMENTS_MEMO_DEFAULT_FROM = "88 SFS/S3T";
         const MEMO_SIGNATURE_TITLE_PRESETS = [
           "Training NCOIC",
@@ -6693,6 +6763,7 @@
             ),
             missedFlag: appointmentIsMissed(item),
             missed: appointmentIsMissed(item) ? "Yes" : "No",
+            rank: person ? itemFieldText(person, "Rank") : "",
             archivedAt: formatArchivedAtDisplay(item),
             archiveRetentionTier: appointmentArchiveRetentionInfo(item).tier,
             createdAt: formatAppointmentDateTimeDisplay(valueFromItemByKeys(item, appointmentCreatedAtKeys())),
@@ -8079,6 +8150,64 @@
           }
         }
 
+        function formatAfShortDate(d) {
+          if (!d || isNaN(d.getTime())) return "";
+          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          return (
+            String(d.getDate()).padStart(2, "0") +
+            "-" +
+            months[d.getMonth()] +
+            "-" +
+            String(d.getFullYear()).slice(-2)
+          );
+        }
+
+        function formatAfTime(d) {
+          if (!d || isNaN(d.getTime())) return "";
+          return String(d.getHours()) + ":" + String(d.getMinutes()).padStart(2, "0");
+        }
+
+        function buildAfOfficialDocHeader(title, options) {
+          options = options || {};
+          const header = document.createElement("div");
+          header.className = "af-official-doc-header";
+          const h1 = document.createElement("h1");
+          h1.textContent = title || "Report";
+          header.appendChild(h1);
+          const now = options.generatedAt instanceof Date && !isNaN(options.generatedAt.getTime()) ? options.generatedAt : new Date();
+          const dateLine = document.createElement("p");
+          dateLine.className = "af-official-doc-dateline";
+          dateLine.textContent = now.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          });
+          header.appendChild(dateLine);
+          const timeLine = document.createElement("p");
+          timeLine.className = "af-official-doc-timeline";
+          timeLine.textContent = now.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            second: options.includeSeconds ? "2-digit" : undefined,
+            hour12: true,
+          });
+          header.appendChild(timeLine);
+          if (options.subtitle) {
+            const sub = document.createElement("p");
+            sub.className = "af-official-doc-subtitle";
+            sub.textContent = options.subtitle;
+            header.appendChild(sub);
+          }
+          if (options.sortLine) {
+            const sort = document.createElement("p");
+            sort.className = "af-official-doc-sortline";
+            sort.textContent = options.sortLine;
+            header.appendChild(sort);
+          }
+          return header;
+        }
+
         function groupAppointmentsByOffice(rows) {
           const groups = new Map();
           (Array.isArray(rows) ? rows : []).forEach(function (item) {
@@ -8105,29 +8234,11 @@
 
         function renderSchedulingUnitPrintReport(officeGroups, reportTitle) {
           const wrap = document.createElement("div");
-          wrap.className = "scheduling-unit-report";
+          wrap.className = "scheduling-unit-report af-official-doc";
 
-          const header = document.createElement("div");
-          header.className = "scheduling-unit-report-header";
-          const title = document.createElement("h1");
-          title.textContent = reportTitle || "Unit Appointments Schedule";
-          const squadron = document.createElement("p");
-          squadron.textContent = "Squadron: " + String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS");
-          const generated = document.createElement("p");
-          const today = new Date();
-          generated.textContent =
-            "Report generated: " +
-            today.toLocaleString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            });
-          header.appendChild(title);
-          header.appendChild(squadron);
-          header.appendChild(generated);
-          wrap.appendChild(header);
+          wrap.appendChild(
+            buildAfOfficialDocHeader(reportTitle || "Appointment Roster Report", { includeSeconds: true }),
+          );
 
           if (!officeGroups.length) {
             const empty = document.createElement("p");
@@ -8137,28 +8248,50 @@
             return wrap;
           }
 
+          const columns = ["Name", "Rank", "Date", "Time", "Appointment", "Remarks", "Date Entered"];
+
           officeGroups.forEach(function (group) {
             const block = document.createElement("div");
             block.className = "scheduling-unit-office-block";
-            const officeTitle = document.createElement("h2");
-            officeTitle.textContent = "Office: " + group.office + " (" + group.items.length + ")";
-            block.appendChild(officeTitle);
 
             const table = document.createElement("table");
             table.className = "scheduling-unit-table";
             const thead = document.createElement("thead");
             const headRow = document.createElement("tr");
-            ["Personnel", "Date / time", "Location", "Description", "Instructor", "Missed"].forEach(function (label) {
+            columns.forEach(function (label) {
               const th = document.createElement("th");
               th.textContent = label;
               headRow.appendChild(th);
             });
             thead.appendChild(headRow);
             table.appendChild(thead);
+
             const tbody = document.createElement("tbody");
+            const officeRow = document.createElement("tr");
+            officeRow.className = "scheduling-unit-office-row";
+            const officeCell = document.createElement("td");
+            officeCell.colSpan = columns.length;
+            officeCell.textContent = group.office;
+            officeRow.appendChild(officeCell);
+            tbody.appendChild(officeRow);
+
             group.items.forEach(function (view) {
               const tr = document.createElement("tr");
-              [view.name, view.when, view.location, view.description, view.instructor, view.missed].forEach(function (text) {
+              const whenDate = view.whenSort;
+              const createdDate = parseAppointmentDateTime(
+                valueFromItemByKeys(view.item, appointmentCreatedAtKeys()),
+              );
+              const appointmentText = [view.description, view.location].filter(Boolean).join("; ");
+              const remarks = view.instructor || "";
+              [
+                view.name,
+                view.rank,
+                formatAfShortDate(whenDate) || "-",
+                formatAfTime(whenDate) || "-",
+                appointmentText || "-",
+                remarks || "-",
+                formatAfShortDate(createdDate) || displayCellText(view.createdAt) || "-",
+              ].forEach(function (text) {
                 const td = document.createElement("td");
                 td.textContent = text === "" || text == null ? "-" : String(text);
                 tr.appendChild(td);
@@ -8170,11 +8303,6 @@
             wrap.appendChild(block);
           });
 
-          const footer = document.createElement("p");
-          footer.className = "scheduling-unit-footer";
-          footer.textContent =
-            "Prepared by Training Hub Scheduling | Distribution: internal use only | Save as PDF from your browser print dialog.";
-          wrap.appendChild(footer);
           return wrap;
         }
 
@@ -8206,7 +8334,7 @@
             triggerSchedulingPrint(
               renderSchedulingUnitPrintReport(
                 officeGroups,
-                missedOnly ? "Missed Appointments Report" : "Upcoming Unit Appointments",
+                missedOnly ? "Missed Appointments Report" : "Appointment Roster Report",
               ),
             );
           } catch (e) {
@@ -9396,16 +9524,23 @@
 
         function renderCleoReportTable(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "roster-wrap";
+          wrap.className = "af-official-doc";
+          wrap.appendChild(
+            buildAfOfficialDocHeader("CLEO Report", {
+              includeSeconds: true,
+              subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+              sortLine: "Alphabetical by name",
+            }),
+          );
           if (!rows.length) {
             const p = document.createElement("p");
-            p.className = "reports-office-empty";
+            p.className = "af-official-doc-empty";
             p.textContent = "No Personnel marked CLEO.";
             wrap.appendChild(p);
             return wrap;
           }
           const table = document.createElement("table");
-          table.className = "roster reports-status-table";
+          table.className = "af-official-table";
           table.setAttribute("aria-label", "CLEO Report");
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
@@ -9449,16 +9584,23 @@
 
         function renderPostRCReportTable(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "roster-wrap";
+          wrap.className = "af-official-doc";
+          wrap.appendChild(
+            buildAfOfficialDocHeader("Post RC Report", {
+              includeSeconds: true,
+              subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+              sortLine: "Alphabetical by name",
+            }),
+          );
           if (!rows.length) {
             const p = document.createElement("p");
-            p.className = "reports-office-empty";
+            p.className = "af-official-doc-empty";
             p.textContent = "No Personnel with Post RC dates on file.";
             wrap.appendChild(p);
             return wrap;
           }
           const table = document.createElement("table");
-          table.className = "roster reports-status-table";
+          table.className = "af-official-table";
           table.setAttribute("aria-label", "Post RC Report");
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");

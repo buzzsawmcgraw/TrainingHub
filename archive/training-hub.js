@@ -237,6 +237,7 @@
         ];
 
         const APPOINTMENTS_SQUADRON_LABEL = "88 SFS";
+        const AF_REPORT_UNIT_LABEL = "88th Security Forces Squadron";
         const APPOINTMENTS_MEMO_DEFAULT_FROM = "88 SFS/S3T";
         const MEMO_SIGNATURE_TITLE_PRESETS = [
           "Training NCOIC",
@@ -4094,6 +4095,7 @@
             ),
             missedFlag: appointmentIsMissed(item),
             missed: appointmentIsMissed(item) ? "Yes" : "No",
+            rank: person ? itemFieldText(person, "Rank") : "",
             archivedAt: formatArchivedAtDisplay(item),
             archiveRetentionTier: appointmentArchiveRetentionInfo(item).tier,
             createdAt: formatAppointmentDateTimeDisplay(valueFromItemByKeys(item, appointmentCreatedAtKeys())),
@@ -5480,6 +5482,64 @@
           }
         }
 
+        function formatAfShortDate(d) {
+          if (!d || isNaN(d.getTime())) return "";
+          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          return (
+            String(d.getDate()).padStart(2, "0") +
+            "-" +
+            months[d.getMonth()] +
+            "-" +
+            String(d.getFullYear()).slice(-2)
+          );
+        }
+
+        function formatAfTime(d) {
+          if (!d || isNaN(d.getTime())) return "";
+          return String(d.getHours()) + ":" + String(d.getMinutes()).padStart(2, "0");
+        }
+
+        function buildAfOfficialDocHeader(title, options) {
+          options = options || {};
+          const header = document.createElement("div");
+          header.className = "af-official-doc-header";
+          const h1 = document.createElement("h1");
+          h1.textContent = title || "Report";
+          header.appendChild(h1);
+          const now = options.generatedAt instanceof Date && !isNaN(options.generatedAt.getTime()) ? options.generatedAt : new Date();
+          const dateLine = document.createElement("p");
+          dateLine.className = "af-official-doc-dateline";
+          dateLine.textContent = now.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          });
+          header.appendChild(dateLine);
+          const timeLine = document.createElement("p");
+          timeLine.className = "af-official-doc-timeline";
+          timeLine.textContent = now.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            second: options.includeSeconds ? "2-digit" : undefined,
+            hour12: true,
+          });
+          header.appendChild(timeLine);
+          if (options.subtitle) {
+            const sub = document.createElement("p");
+            sub.className = "af-official-doc-subtitle";
+            sub.textContent = options.subtitle;
+            header.appendChild(sub);
+          }
+          if (options.sortLine) {
+            const sort = document.createElement("p");
+            sort.className = "af-official-doc-sortline";
+            sort.textContent = options.sortLine;
+            header.appendChild(sort);
+          }
+          return header;
+        }
+
         function groupAppointmentsByOffice(rows) {
           const groups = new Map();
           (Array.isArray(rows) ? rows : []).forEach(function (item) {
@@ -5506,29 +5566,11 @@
 
         function renderSchedulingUnitPrintReport(officeGroups, reportTitle) {
           const wrap = document.createElement("div");
-          wrap.className = "scheduling-unit-report";
+          wrap.className = "scheduling-unit-report af-official-doc";
 
-          const header = document.createElement("div");
-          header.className = "scheduling-unit-report-header";
-          const title = document.createElement("h1");
-          title.textContent = reportTitle || "Unit Appointments Schedule";
-          const squadron = document.createElement("p");
-          squadron.textContent = "Squadron: " + String(APPOINTMENTS_SQUADRON_LABEL || "88 SFS");
-          const generated = document.createElement("p");
-          const today = new Date();
-          generated.textContent =
-            "Report generated: " +
-            today.toLocaleString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            });
-          header.appendChild(title);
-          header.appendChild(squadron);
-          header.appendChild(generated);
-          wrap.appendChild(header);
+          wrap.appendChild(
+            buildAfOfficialDocHeader(reportTitle || "Appointment Roster Report", { includeSeconds: true }),
+          );
 
           if (!officeGroups.length) {
             const empty = document.createElement("p");
@@ -5538,28 +5580,50 @@
             return wrap;
           }
 
+          const columns = ["Name", "Rank", "Date", "Time", "Appointment", "Remarks", "Date Entered"];
+
           officeGroups.forEach(function (group) {
             const block = document.createElement("div");
             block.className = "scheduling-unit-office-block";
-            const officeTitle = document.createElement("h2");
-            officeTitle.textContent = "Office: " + group.office + " (" + group.items.length + ")";
-            block.appendChild(officeTitle);
 
             const table = document.createElement("table");
             table.className = "scheduling-unit-table";
             const thead = document.createElement("thead");
             const headRow = document.createElement("tr");
-            ["Personnel", "Date / time", "Location", "Description", "Instructor", "Missed"].forEach(function (label) {
+            columns.forEach(function (label) {
               const th = document.createElement("th");
               th.textContent = label;
               headRow.appendChild(th);
             });
             thead.appendChild(headRow);
             table.appendChild(thead);
+
             const tbody = document.createElement("tbody");
+            const officeRow = document.createElement("tr");
+            officeRow.className = "scheduling-unit-office-row";
+            const officeCell = document.createElement("td");
+            officeCell.colSpan = columns.length;
+            officeCell.textContent = group.office;
+            officeRow.appendChild(officeCell);
+            tbody.appendChild(officeRow);
+
             group.items.forEach(function (view) {
               const tr = document.createElement("tr");
-              [view.name, view.when, view.location, view.description, view.instructor, view.missed].forEach(function (text) {
+              const whenDate = view.whenSort;
+              const createdDate = parseAppointmentDateTime(
+                valueFromItemByKeys(view.item, appointmentCreatedAtKeys()),
+              );
+              const appointmentText = [view.description, view.location].filter(Boolean).join("; ");
+              const remarks = view.instructor || "";
+              [
+                view.name,
+                view.rank,
+                formatAfShortDate(whenDate) || "-",
+                formatAfTime(whenDate) || "-",
+                appointmentText || "-",
+                remarks || "-",
+                formatAfShortDate(createdDate) || displayCellText(view.createdAt) || "-",
+              ].forEach(function (text) {
                 const td = document.createElement("td");
                 td.textContent = text === "" || text == null ? "-" : String(text);
                 tr.appendChild(td);
@@ -5571,11 +5635,6 @@
             wrap.appendChild(block);
           });
 
-          const footer = document.createElement("p");
-          footer.className = "scheduling-unit-footer";
-          footer.textContent =
-            "Prepared by Training Hub Scheduling | Distribution: internal use only | Save as PDF from your browser print dialog.";
-          wrap.appendChild(footer);
           return wrap;
         }
 
@@ -5607,7 +5666,7 @@
             triggerSchedulingPrint(
               renderSchedulingUnitPrintReport(
                 officeGroups,
-                missedOnly ? "Missed Appointments Report" : "Upcoming Unit Appointments",
+                missedOnly ? "Missed Appointments Report" : "Appointment Roster Report",
               ),
             );
           } catch (e) {
@@ -6797,16 +6856,23 @@
 
         function renderCleoReportTable(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "roster-wrap";
+          wrap.className = "af-official-doc";
+          wrap.appendChild(
+            buildAfOfficialDocHeader("CLEO Report", {
+              includeSeconds: true,
+              subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+              sortLine: "Alphabetical by name",
+            }),
+          );
           if (!rows.length) {
             const p = document.createElement("p");
-            p.className = "reports-office-empty";
+            p.className = "af-official-doc-empty";
             p.textContent = "No Personnel marked CLEO.";
             wrap.appendChild(p);
             return wrap;
           }
           const table = document.createElement("table");
-          table.className = "roster reports-status-table";
+          table.className = "af-official-table";
           table.setAttribute("aria-label", "CLEO Report");
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
@@ -6850,16 +6916,23 @@
 
         function renderPostRCReportTable(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "roster-wrap";
+          wrap.className = "af-official-doc";
+          wrap.appendChild(
+            buildAfOfficialDocHeader("Post RC Report", {
+              includeSeconds: true,
+              subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+              sortLine: "Alphabetical by name",
+            }),
+          );
           if (!rows.length) {
             const p = document.createElement("p");
-            p.className = "reports-office-empty";
+            p.className = "af-official-doc-empty";
             p.textContent = "No Personnel with Post RC dates on file.";
             wrap.appendChild(p);
             return wrap;
           }
           const table = document.createElement("table");
-          table.className = "roster reports-status-table";
+          table.className = "af-official-table";
           table.setAttribute("aria-label", "Post RC Report");
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
