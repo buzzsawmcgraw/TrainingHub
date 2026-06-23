@@ -412,8 +412,8 @@
       #sp-pip-ui.scheduling-print-active .scheduling-print-surface {
         display: block;
       }
-      #sp-pip-ui .af-official-doc,
-      #sp-pip-ui .scheduling-unit-report {
+      #sp-pip-ui .scheduling-print-surface .af-official-doc,
+      #sp-pip-ui .scheduling-print-surface .scheduling-unit-report {
         font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
         font-size: 12pt;
         line-height: 1.35;
@@ -423,15 +423,15 @@
         max-width: 8.5in;
         margin: 0 auto;
       }
-      #sp-pip-ui .af-official-doc-header,
-      #sp-pip-ui .scheduling-unit-report-header {
+      #sp-pip-ui .scheduling-print-surface .af-official-doc-header,
+      #sp-pip-ui .scheduling-print-surface .scheduling-unit-report-header {
         text-align: center;
         margin: 0 0 16px;
         padding: 0;
         border: none;
       }
-      #sp-pip-ui .af-official-doc-header h1,
-      #sp-pip-ui .scheduling-unit-report-header h1 {
+      #sp-pip-ui .scheduling-print-surface .af-official-doc-header h1,
+      #sp-pip-ui .scheduling-print-surface .scheduling-unit-report-header h1 {
         margin: 0 0 2px;
         font-size: 12pt;
         font-weight: 700;
@@ -439,40 +439,40 @@
         color: #000;
         text-transform: none;
       }
-      #sp-pip-ui .af-official-doc-dateline,
-      #sp-pip-ui .af-official-doc-timeline,
-      #sp-pip-ui .scheduling-unit-report-header p {
+      #sp-pip-ui .scheduling-print-surface .af-official-doc-dateline,
+      #sp-pip-ui .scheduling-print-surface .af-official-doc-timeline,
+      #sp-pip-ui .scheduling-print-surface .scheduling-unit-report-header p {
         margin: 0;
         font-size: 12pt;
         font-weight: 400;
         color: #000;
       }
-      #sp-pip-ui .af-official-doc-subtitle,
-      #sp-pip-ui .af-official-doc-sortline {
+      #sp-pip-ui .scheduling-print-surface .af-official-doc-subtitle,
+      #sp-pip-ui .scheduling-print-surface .af-official-doc-sortline {
         margin: 8px 0 0;
         font-size: 12pt;
         font-weight: 400;
         color: #000;
       }
-      #sp-pip-ui .af-official-doc-sortline {
+      #sp-pip-ui .scheduling-print-surface .af-official-doc-sortline {
         font-style: italic;
       }
-      #sp-pip-ui .scheduling-unit-office-block {
+      #sp-pip-ui .scheduling-print-surface .scheduling-unit-office-block {
         margin-bottom: 14px;
         break-inside: avoid;
         page-break-inside: avoid;
       }
-      #sp-pip-ui table.af-official-table,
-      #sp-pip-ui table.scheduling-unit-table {
+      #sp-pip-ui .scheduling-print-surface table.af-official-table,
+      #sp-pip-ui .scheduling-print-surface table.scheduling-unit-table {
         width: 100%;
         border-collapse: collapse;
         margin: 0 0 10px;
         font-size: 10pt;
       }
-      #sp-pip-ui table.af-official-table th,
-      #sp-pip-ui table.af-official-table td,
-      #sp-pip-ui table.scheduling-unit-table th,
-      #sp-pip-ui table.scheduling-unit-table td {
+      #sp-pip-ui .scheduling-print-surface table.af-official-table th,
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td,
+      #sp-pip-ui .scheduling-print-surface table.scheduling-unit-table th,
+      #sp-pip-ui .scheduling-print-surface table.scheduling-unit-table td {
         border: 1px solid #000;
         padding: 3px 5px;
         text-align: left;
@@ -480,46 +480,33 @@
         color: #000;
         background: #fff;
       }
-      #sp-pip-ui table.af-official-table th,
-      #sp-pip-ui table.scheduling-unit-table th {
+      #sp-pip-ui .scheduling-print-surface table.af-official-table th,
+      #sp-pip-ui .scheduling-print-surface table.scheduling-unit-table th {
         font-weight: 700;
         font-size: 10pt;
         text-transform: none;
         letter-spacing: normal;
       }
-      #sp-pip-ui table.af-official-table tr.af-official-office-row td,
-      #sp-pip-ui table.scheduling-unit-table tr.scheduling-unit-office-row td {
+      #sp-pip-ui .scheduling-print-surface table.af-official-table tr.af-official-office-row td,
+      #sp-pip-ui .scheduling-print-surface table.scheduling-unit-table tr.scheduling-unit-office-row td {
         font-weight: 700;
         border-top: 1px solid #000;
         border-bottom: none;
         padding-top: 8px;
         background: #fff;
       }
-      #sp-pip-ui .scheduling-unit-empty,
-      #sp-pip-ui .af-official-doc-empty {
+      #sp-pip-ui .scheduling-print-surface .scheduling-unit-empty,
+      #sp-pip-ui .scheduling-print-surface .af-official-doc-empty {
         margin: 0;
         font-style: italic;
         color: #000;
       }
-      #sp-pip-ui .af-official-doc-footer {
+      #sp-pip-ui .scheduling-print-surface .af-official-doc-footer {
         margin-top: 24px;
         font-size: 12pt;
         line-height: 1.4;
         color: #000;
         text-align: left;
-      }
-      #sp-pip-ui .reports-detail-body .af-official-doc {
-        margin-top: 8px;
-        padding: 16px 18px;
-        border: 1px solid rgba(30, 74, 54, 0.55);
-        border-radius: 4px;
-      }
-      #sp-pip-ui .reports-detail-body .af-official-doc .af-official-doc-header h1,
-      #sp-pip-ui .reports-detail-body .af-official-doc .af-official-doc-dateline,
-      #sp-pip-ui .reports-detail-body .af-official-doc .af-official-doc-timeline,
-      #sp-pip-ui .reports-detail-body .af-official-doc .af-official-doc-subtitle,
-      #sp-pip-ui .reports-detail-body .af-official-doc .af-official-doc-sortline {
-        color: #000;
       }
       #sp-pip-ui .scheduling-list-toolbar {
         display: flex;
@@ -1342,33 +1329,26 @@
         #sp-pip-ui #reportsSection .person-detail-panel > .reports-hint {
           display: none !important;
         }
-        #sp-pip-ui .reports-detail-body .af-official-doc {
-          border: none !important;
-          border-radius: 0 !important;
-          padding: 0 !important;
-          margin: 0 !important;
-        }
-        #sp-pip-ui .af-official-doc,
-        #sp-pip-ui .reports-detail-body .af-official-doc {
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface .af-official-doc,
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface .scheduling-unit-report {
           background: #fff !important;
           color: #000 !important;
         }
-        #sp-pip-ui table.af-official-table,
-        #sp-pip-ui table.af-official-table th,
-        #sp-pip-ui table.af-official-table td {
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table,
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table th,
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table td,
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.scheduling-unit-table,
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.scheduling-unit-table th,
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.scheduling-unit-table td {
           color: #000 !important;
           background: #fff !important;
           border-color: #000 !important;
           text-shadow: none !important;
           box-shadow: none !important;
         }
-        #sp-pip-ui table.af-official-table th {
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table th,
+        #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.scheduling-unit-table th {
           position: static !important;
-        }
-        #sp-pip-ui button.reports-name-link {
-          color: #000 !important;
-          text-shadow: none !important;
-          font-weight: 400 !important;
         }
       }
       #sp-pip-ui a.person-detail-back {
@@ -9524,23 +9504,16 @@
 
         function renderCleoReportTable(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc";
-          wrap.appendChild(
-            buildAfOfficialDocHeader("CLEO Report", {
-              includeSeconds: true,
-              subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
-              sortLine: "Alphabetical by name",
-            }),
-          );
+          wrap.className = "roster-wrap";
           if (!rows.length) {
             const p = document.createElement("p");
-            p.className = "af-official-doc-empty";
+            p.className = "reports-office-empty";
             p.textContent = "No Personnel marked CLEO.";
             wrap.appendChild(p);
             return wrap;
           }
           const table = document.createElement("table");
-          table.className = "af-official-table";
+          table.className = "roster reports-status-table";
           table.setAttribute("aria-label", "CLEO Report");
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
@@ -9582,7 +9555,115 @@
           return wrap;
         }
 
+        function renderCleoReportPrintDocument(rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "af-official-doc";
+          wrap.appendChild(
+            buildAfOfficialDocHeader("CLEO Report", {
+              includeSeconds: true,
+              subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+              sortLine: "Alphabetical by name",
+            }),
+          );
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "af-official-doc-empty";
+            p.textContent = "No Personnel marked CLEO.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          const table = document.createElement("table");
+          table.className = "af-official-table";
+          table.setAttribute("aria-label", "CLEO Report");
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          ["Personnel", "Date became CLEO"].forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          const sorted = rows.slice().sort(function (a, b) {
+            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
+              sensitivity: "base",
+            });
+          });
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (entry) {
+            const tr = document.createElement("tr");
+            const tdName = document.createElement("td");
+            tdName.textContent = formatPersonDisplayName(entry.person);
+            tr.appendChild(tdName);
+            const tdCleoDate = document.createElement("td");
+            tdCleoDate.textContent = displayCellText(entry.cleoDate);
+            tr.appendChild(tdCleoDate);
+            frag.appendChild(tr);
+          });
+          tbody.appendChild(frag);
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
         function renderPostRCReportTable(rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "roster-wrap";
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "reports-office-empty";
+            p.textContent = "No Personnel with Post RC dates on file.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          const table = document.createElement("table");
+          table.className = "roster reports-status-table";
+          table.setAttribute("aria-label", "Post RC Report");
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          ["Personnel", "Post RC qual date", "Post RC expiration"].forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          const sorted = rows.slice().sort(function (a, b) {
+            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
+              sensitivity: "base",
+            });
+          });
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (entry) {
+            const tr = document.createElement("tr");
+            const tdName = document.createElement("td");
+            const nameBtn = document.createElement("button");
+            nameBtn.type = "button";
+            nameBtn.className = "reports-name-link";
+            nameBtn.textContent = formatPersonDisplayName(entry.person);
+            nameBtn.title = "Open Personnel Record";
+            nameBtn.addEventListener("click", function () {
+              navigateToPersonDetail(entry.person.Id);
+            });
+            tdName.appendChild(nameBtn);
+            tr.appendChild(tdName);
+            const tdQual = document.createElement("td");
+            tdQual.textContent = displayCellText(entry.postRcQual);
+            tr.appendChild(tdQual);
+            const tdExp = document.createElement("td");
+            tdExp.textContent = displayCellText(entry.postRcExp);
+            tr.appendChild(tdExp);
+            frag.appendChild(tr);
+          });
+          tbody.appendChild(frag);
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        function renderPostRCReportPrintDocument(rows) {
           const wrap = document.createElement("div");
           wrap.className = "af-official-doc";
           wrap.appendChild(
@@ -9621,15 +9702,7 @@
           sorted.forEach(function (entry) {
             const tr = document.createElement("tr");
             const tdName = document.createElement("td");
-            const nameBtn = document.createElement("button");
-            nameBtn.type = "button";
-            nameBtn.className = "reports-name-link";
-            nameBtn.textContent = formatPersonDisplayName(entry.person);
-            nameBtn.title = "Open Personnel Record";
-            nameBtn.addEventListener("click", function () {
-              navigateToPersonDetail(entry.person.Id);
-            });
-            tdName.appendChild(nameBtn);
+            tdName.textContent = formatPersonDisplayName(entry.person);
             tr.appendChild(tdName);
             const tdQual = document.createElement("td");
             tdQual.textContent = displayCellText(entry.postRcQual);
@@ -9792,8 +9865,13 @@
             window.print();
             return;
           }
-          if (def.id === "cleo-report" || def.id === "post-rc-report") {
-            window.print();
+          const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+          if (def.id === "cleo-report") {
+            triggerSchedulingPrint(renderCleoReportPrintDocument(buildCleoReportRows(personRows)));
+            return;
+          }
+          if (def.id === "post-rc-report") {
+            triggerSchedulingPrint(renderPostRCReportPrintDocument(buildPostRCReportRows(personRows)));
             return;
           }
           window.print();

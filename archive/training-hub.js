@@ -6856,23 +6856,16 @@
 
         function renderCleoReportTable(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc";
-          wrap.appendChild(
-            buildAfOfficialDocHeader("CLEO Report", {
-              includeSeconds: true,
-              subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
-              sortLine: "Alphabetical by name",
-            }),
-          );
+          wrap.className = "roster-wrap";
           if (!rows.length) {
             const p = document.createElement("p");
-            p.className = "af-official-doc-empty";
+            p.className = "reports-office-empty";
             p.textContent = "No Personnel marked CLEO.";
             wrap.appendChild(p);
             return wrap;
           }
           const table = document.createElement("table");
-          table.className = "af-official-table";
+          table.className = "roster reports-status-table";
           table.setAttribute("aria-label", "CLEO Report");
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
@@ -6914,7 +6907,115 @@
           return wrap;
         }
 
+        function renderCleoReportPrintDocument(rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "af-official-doc";
+          wrap.appendChild(
+            buildAfOfficialDocHeader("CLEO Report", {
+              includeSeconds: true,
+              subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+              sortLine: "Alphabetical by name",
+            }),
+          );
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "af-official-doc-empty";
+            p.textContent = "No Personnel marked CLEO.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          const table = document.createElement("table");
+          table.className = "af-official-table";
+          table.setAttribute("aria-label", "CLEO Report");
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          ["Personnel", "Date became CLEO"].forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          const sorted = rows.slice().sort(function (a, b) {
+            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
+              sensitivity: "base",
+            });
+          });
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (entry) {
+            const tr = document.createElement("tr");
+            const tdName = document.createElement("td");
+            tdName.textContent = formatPersonDisplayName(entry.person);
+            tr.appendChild(tdName);
+            const tdCleoDate = document.createElement("td");
+            tdCleoDate.textContent = displayCellText(entry.cleoDate);
+            tr.appendChild(tdCleoDate);
+            frag.appendChild(tr);
+          });
+          tbody.appendChild(frag);
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
         function renderPostRCReportTable(rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "roster-wrap";
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "reports-office-empty";
+            p.textContent = "No Personnel with Post RC dates on file.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          const table = document.createElement("table");
+          table.className = "roster reports-status-table";
+          table.setAttribute("aria-label", "Post RC Report");
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          ["Personnel", "Post RC qual date", "Post RC expiration"].forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          const sorted = rows.slice().sort(function (a, b) {
+            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
+              sensitivity: "base",
+            });
+          });
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (entry) {
+            const tr = document.createElement("tr");
+            const tdName = document.createElement("td");
+            const nameBtn = document.createElement("button");
+            nameBtn.type = "button";
+            nameBtn.className = "reports-name-link";
+            nameBtn.textContent = formatPersonDisplayName(entry.person);
+            nameBtn.title = "Open Personnel Record";
+            nameBtn.addEventListener("click", function () {
+              navigateToPersonDetail(entry.person.Id);
+            });
+            tdName.appendChild(nameBtn);
+            tr.appendChild(tdName);
+            const tdQual = document.createElement("td");
+            tdQual.textContent = displayCellText(entry.postRcQual);
+            tr.appendChild(tdQual);
+            const tdExp = document.createElement("td");
+            tdExp.textContent = displayCellText(entry.postRcExp);
+            tr.appendChild(tdExp);
+            frag.appendChild(tr);
+          });
+          tbody.appendChild(frag);
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        function renderPostRCReportPrintDocument(rows) {
           const wrap = document.createElement("div");
           wrap.className = "af-official-doc";
           wrap.appendChild(
@@ -6953,15 +7054,7 @@
           sorted.forEach(function (entry) {
             const tr = document.createElement("tr");
             const tdName = document.createElement("td");
-            const nameBtn = document.createElement("button");
-            nameBtn.type = "button";
-            nameBtn.className = "reports-name-link";
-            nameBtn.textContent = formatPersonDisplayName(entry.person);
-            nameBtn.title = "Open Personnel Record";
-            nameBtn.addEventListener("click", function () {
-              navigateToPersonDetail(entry.person.Id);
-            });
-            tdName.appendChild(nameBtn);
+            tdName.textContent = formatPersonDisplayName(entry.person);
             tr.appendChild(tdName);
             const tdQual = document.createElement("td");
             tdQual.textContent = displayCellText(entry.postRcQual);
@@ -7124,8 +7217,13 @@
             window.print();
             return;
           }
-          if (def.id === "cleo-report" || def.id === "post-rc-report") {
-            window.print();
+          const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+          if (def.id === "cleo-report") {
+            triggerSchedulingPrint(renderCleoReportPrintDocument(buildCleoReportRows(personRows)));
+            return;
+          }
+          if (def.id === "post-rc-report") {
+            triggerSchedulingPrint(renderPostRCReportPrintDocument(buildPostRCReportRows(personRows)));
             return;
           }
           window.print();
