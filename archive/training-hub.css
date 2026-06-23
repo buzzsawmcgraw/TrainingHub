@@ -539,6 +539,40 @@
         margin-top: 0;
         margin-bottom: 0;
       }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--ok {
+        color: #1a6b3a !important;
+        font-weight: 600;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--warn {
+        color: #9a6700 !important;
+        font-weight: 600;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--urgent {
+        color: #b91c1c !important;
+        font-weight: 700;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--expired {
+        color: #7f1d1d !important;
+        font-weight: 700;
+      }
+      #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table {
+        font-size: 8pt;
+      }
+      #sp-pip-ui .hub-external-links {
+        display: none;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        padding: 14px 16px 20px;
+        border-top: 1px solid var(--pip-border);
+        margin-top: 8px;
+      }
+      #sp-pip-ui .hub-external-links.hub-external-links--visible {
+        display: flex;
+      }
+      #sp-pip-ui .hub-external-links a {
+        margin: 0;
+      }
       #sp-pip-ui .reports-mql-wrap {
         overflow-x: auto;
         max-width: 100%;

@@ -552,6 +552,40 @@
         margin-top: 0;
         margin-bottom: 0;
       }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--ok {
+        color: #1a6b3a !important;
+        font-weight: 600;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--warn {
+        color: #9a6700 !important;
+        font-weight: 600;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--urgent {
+        color: #b91c1c !important;
+        font-weight: 700;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.cert-status--expired {
+        color: #7f1d1d !important;
+        font-weight: 700;
+      }
+      #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table {
+        font-size: 8pt;
+      }
+      #sp-pip-ui .hub-external-links {
+        display: none;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        padding: 14px 16px 20px;
+        border-top: 1px solid var(--pip-border);
+        margin-top: 8px;
+      }
+      #sp-pip-ui .hub-external-links.hub-external-links--visible {
+        display: flex;
+      }
+      #sp-pip-ui .hub-external-links a {
+        margin: 0;
+      }
       #sp-pip-ui .reports-mql-wrap {
         overflow-x: auto;
         max-width: 100%;
@@ -2374,7 +2408,8 @@
               <div class="person-detail-toolbar">
                 <a id="reportsDetailBackLink" class="person-detail-back" href="#">Back to reports</a>
                 <div class="person-detail-toolbar-actions">
-                  <button type="button" id="reportsPrintBtn" class="btn-secondary" hidden>Print report</button>
+                  <button type="button" id="reportsPrintBtn" class="btn-secondary" hidden>Print signed report</button>
+                  <button type="button" id="reportsExportBtn" class="btn-secondary" hidden>Export PDF</button>
                 </div>
               </div>
               <h2 id="reportsDetailTitle" class="hub-subtitle person-detail-title">Report</h2>
@@ -2645,6 +2680,7 @@
           </details>
         </section>
       </main>
+      <footer id="hubExternalLinksBar" class="hub-external-links" hidden aria-label="External links"></footer>
       <div id="schedulingPrintSurface" class="scheduling-print-surface" hidden aria-hidden="true"></div>
       <div id="ethosPrintSurface" class="ethos-print-surface" hidden aria-hidden="true"></div>
       <div id="schedulingMemoOverlay" class="scheduling-memo-overlay" hidden aria-label="Memorandum editor">
@@ -3016,8 +3052,14 @@
         const APPOINTMENTS_SQUADRON_LABEL = "88 SFS";
         const AF_REPORT_UNIT_LABEL = "88th Security Forces Squadron";
         const MQL_REPORT_PRINT_TITLE = "Weapons Qual/Auth Report";
-        /** Always shown on MQL report/PDF (qual / exp per column). */
+        /** Always shown on standard MQL report/PDF (qual / exp per column). */
         const MQL_REQUIRED_WEAPON_LABELS = ["M4", "M18"];
+        const MQL_EXPORT_PRINT_TITLE = "MQL Data Export";
+        /**
+         * Future hub footer quick links (render when populated). Example:
+         * { label: "SharePoint", url: "https://..." }
+         */
+        const HUB_EXTERNAL_LINKS = [];
         const APPOINTMENTS_MEMO_DEFAULT_FROM = "88 SFS/S3T";
         const MEMO_SIGNATURE_TITLE_PRESETS = [
           "Training NCOIC",
@@ -3158,35 +3200,26 @@
           {
             id: "mql-report",
             title: "MQL Report",
-            subtitle: "Minimum Qualification Level listing for review and tracking.",
+            subtitle: "Signed commander report — M4, M18, and By-Law qualifications by section.",
             badge: "MQL",
             implemented: true,
+            printable: true,
           },
           {
             id: "mql-pdf",
             title: "MQL PDF",
-            subtitle: "Printable MQL export suitable for signatures and filing.",
+            subtitle: "Export layout with separate qual/expiration columns for Excel and email.",
             badge: "PDF",
             implemented: true,
             printable: true,
           },
           {
             id: "heavy-weapons",
-            title: "Heavy Weapons Report",
-            subtitle: "Heavy weapons qualification status and expirations.",
+            title: "Heavy Weapons MQL",
+            subtitle: "MQL layout for all weapons except M4 and M18, plus By-Law training.",
             badge: "HVY",
-            implemented: false,
-            placeholder:
-              "Heavy Weapons Report will filter Weapons Qualifications to heavy-weapon entries. Define the weapon list in a future hub update.",
-          },
-          {
-            id: "augmentee",
-            title: "Augmentee Report",
-            subtitle: "Augmentee Personnel training and qualification status.",
-            badge: "AUG",
-            implemented: false,
-            placeholder:
-              "Augmentee Report will highlight augmentee Personnel and their training posture. Augmentee identification rules will be added next.",
+            implemented: true,
+            printable: true,
           },
           {
             id: "cleo-report",
@@ -3486,9 +3519,11 @@
         const reportsDetailPanel = document.getElementById("reportsDetailPanel");
         const reportsDetailBackLink = document.getElementById("reportsDetailBackLink");
         const reportsPrintBtn = document.getElementById("reportsPrintBtn");
+        const reportsExportBtn = document.getElementById("reportsExportBtn");
         const reportsDetailTitle = document.getElementById("reportsDetailTitle");
         const reportsDetailSubtitle = document.getElementById("reportsDetailSubtitle");
         const reportsDetailBody = document.getElementById("reportsDetailBody");
+        const hubExternalLinksBar = document.getElementById("hubExternalLinksBar");
         const hubNavScheduling = document.getElementById("hubNavScheduling");
         const hubNavEthos = document.getElementById("hubNavEthos");
         const ethosSection = document.getElementById("ethosSection");
@@ -3687,6 +3722,8 @@
           bylawRows: null,
           mqlRows: null,
           mqlCatalog: null,
+          mqlMode: "standard",
+          bylawItemChoices: null,
           sotView: "active",
           selectedMonth: null,
           sotRows: null,
@@ -3724,7 +3761,10 @@
           bylawTrainingSampleRow: null,
           bylawPersonFilterField: null,
           bylawPersonFilterFields: null,
-          bylawPersonPostKey: null,
+          mqlBylawByMember: null,
+          mqlRows: null,
+          mqlCatalog: null,
+          mqlBylawItemChoices: null,
         };
 
         let ethosDetailSession = {
@@ -8663,7 +8703,29 @@
           if (reportsHubPanel) reportsHubPanel.hidden = false;
           if (reportsDetailPanel) reportsDetailPanel.hidden = true;
           if (reportsPrintBtn) reportsPrintBtn.hidden = true;
+          if (reportsExportBtn) reportsExportBtn.hidden = true;
           renderReportsHubGrid();
+        }
+
+        function updateReportsPrintButtons(reportDef) {
+          if (!reportDef) return;
+          const id = reportDef.id;
+          const signedIds = ["mql-report", "heavy-weapons", "cleo-report", "post-rc-report"];
+          const showSigned = reportDef.printable && signedIds.indexOf(id) >= 0;
+          const showExport = reportDef.printable && id === "mql-pdf";
+          if (reportsPrintBtn) {
+            if (id === "status-of-training") {
+              updateSotPrintButtonLabel();
+            } else {
+              reportsPrintBtn.textContent =
+                id === "heavy-weapons" ? "Print heavy weapons report" : "Print signed report";
+              reportsPrintBtn.hidden = !showSigned;
+            }
+          }
+          if (reportsExportBtn) {
+            reportsExportBtn.textContent = "Export PDF";
+            reportsExportBtn.hidden = !showExport;
+          }
         }
 
         function showReportsDetail(reportDef) {
@@ -8673,14 +8735,7 @@
           if (reportsDetailPanel) reportsDetailPanel.hidden = false;
           if (reportsDetailTitle) reportsDetailTitle.textContent = reportDef.title || "Report";
           if (reportsDetailSubtitle) reportsDetailSubtitle.textContent = reportDef.subtitle || "";
-          if (reportsPrintBtn) {
-            if (reportDef.id === "status-of-training") {
-              updateSotPrintButtonLabel();
-            } else {
-              reportsPrintBtn.textContent = "Print report";
-              reportsPrintBtn.hidden = !reportDef.printable;
-            }
-          }
+          updateReportsPrintButtons(reportDef);
         }
 
         function renderReportsHubGrid() {
@@ -9459,6 +9514,7 @@
             reportsPrintBtn.textContent = "Print report";
             reportsPrintBtn.hidden = true;
           }
+          if (reportsExportBtn) reportsExportBtn.hidden = true;
         }
 
         function setSotView(view) {
@@ -9851,9 +9907,12 @@
             const tbody = document.createElement("tbody");
             group.items.forEach(function (entry) {
               const tr = document.createElement("tr");
-              (buildCells(entry) || []).forEach(function (text) {
+              (buildCells(entry) || []).forEach(function (cell) {
                 const td = document.createElement("td");
+                const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
                 td.textContent = text === "" || text == null ? "-" : String(text);
+                const tone = cell && typeof cell === "object" ? cell.tone : null;
+                if (tone && tone !== "unknown") td.className = "cert-status cert-status--" + tone;
                 tr.appendChild(td);
               });
               tbody.appendChild(tr);
@@ -9873,6 +9932,47 @@
           if (!qual && !exp) return "-";
           if (qual && exp) return qual + " / " + exp;
           return qual || exp;
+        }
+
+        function mqlCertQualText(row) {
+          if (!row) return "-";
+          const qual = formatWeaponsCertDisplayDate(valueFromItemByKeys(row, weaponsQualDateKeys()));
+          return qual || "-";
+        }
+
+        function mqlCertExpText(row) {
+          if (!row) return "-";
+          const exp = formatWeaponsCertDisplayDate(valueFromItemByKeys(row, weaponsCertExpiryDateKeys()));
+          return exp || "-";
+        }
+
+        function mqlCertCell(row, statusFn) {
+          const text = mqlCertPairText(row);
+          if (!row) return { text: text, tone: "unknown" };
+          const status = typeof statusFn === "function" ? statusFn(row) : { tone: "unknown" };
+          return { text: text, tone: status && status.tone ? status.tone : "unknown" };
+        }
+
+        function mqlExportCertCell(row, part, statusFn) {
+          const text = part === "qual" ? mqlCertQualText(row) : mqlCertExpText(row);
+          if (!row) return { text: text, tone: "unknown" };
+          const status = typeof statusFn === "function" ? statusFn(row) : { tone: "unknown" };
+          return { text: text, tone: status && status.tone ? status.tone : "unknown" };
+        }
+
+        function mqlIsRequiredWeapon(label) {
+          return (Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).some(function (req) {
+            return String(req).toLowerCase() === String(label || "").toLowerCase();
+          });
+        }
+
+        function mqlMergeBylawCatalogLabels(bylawMap, labels) {
+          (Array.isArray(labels) ? labels : []).forEach(function (raw) {
+            const label = String(raw || "").trim();
+            if (!label) return;
+            const key = label.toLowerCase();
+            if (!bylawMap.has(key)) bylawMap.set(key, label);
+          });
         }
 
         function mqlNormalizeColumnKey(label) {
@@ -9909,23 +10009,57 @@
           return certMap;
         }
 
-        function buildMqlCertCatalog(weaponsRows, bylawRows) {
-          const weaponMap = new Map();
-          (Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).forEach(function (label) {
-            weaponMap.set(String(label).toLowerCase(), label);
+        async function fetchMqlBylawItemChoices(pw, listApiPathFn, sampleRow, cacheHolder, cacheField) {
+          const field = cacheField || "bylawItemChoices";
+          if (cacheHolder && Array.isArray(cacheHolder[field])) return cacheHolder[field];
+          const seg = typeof listApiPathFn === "function" ? listApiPathFn() : "";
+          if (!seg || !pw) return [];
+          const itemCol = normalizedBylawTrainingColumns().find(function (col) {
+            return col && col.key === "Item";
           });
+          if (!itemCol) return [];
+          try {
+            const r = await fetchChoiceOptionsForColumn(itemCol, seg, pw, sampleRow);
+            const options = (r && Array.isArray(r.options) ? r.options : [])
+              .map(function (opt) {
+                return String(opt || "").trim();
+              })
+              .filter(Boolean);
+            if (cacheHolder) cacheHolder[field] = options;
+            return options;
+          } catch (e) {
+            log("MQL by-law choice fetch failed:\n" + (e.message || String(e)), "warn");
+            if (cacheHolder) cacheHolder[field] = [];
+            return [];
+          }
+        }
+
+        function buildMqlCertCatalog(weaponsRows, bylawRows, opts) {
+          opts = opts || {};
+          const mode = opts.mode === "heavy" ? "heavy" : "standard";
+          const weaponMap = new Map();
+          if (mode === "standard") {
+            (Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).forEach(function (label) {
+              weaponMap.set(String(label).toLowerCase(), label);
+            });
+          }
           (Array.isArray(weaponsRows) ? weaponsRows : []).forEach(function (row) {
             const label = weaponLabelFromRow(row);
             const norm = mqlNormalizeColumnKey(label);
             const key = String(norm || label).toLowerCase();
+            if (!label) return;
+            if (mode === "heavy" && mqlIsRequiredWeapon(norm || label)) return;
             if (!weaponMap.has(key)) weaponMap.set(key, norm || label);
           });
           const weapons = [];
-          (Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).forEach(function (label) {
-            weapons.push(label);
-          });
+          if (mode === "standard") {
+            (Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).forEach(function (label) {
+              weapons.push(label);
+            });
+          }
           Array.from(weaponMap.values())
             .filter(function (label) {
+              if (mode === "heavy") return !mqlIsRequiredWeapon(label);
               return !(Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).some(function (req) {
                 return String(req).toLowerCase() === String(label).toLowerCase();
               });
@@ -9938,15 +10072,17 @@
             });
 
           const bylawMap = new Map();
+          mqlMergeBylawCatalogLabels(bylawMap, opts.bylawItemChoices);
           (Array.isArray(bylawRows) ? bylawRows : []).forEach(function (row) {
             const label = bylawLabelFromRow(row);
+            if (!label) return;
             const key = String(label).toLowerCase();
             if (!bylawMap.has(key)) bylawMap.set(key, label);
           });
           const bylaws = Array.from(bylawMap.values()).sort(function (a, b) {
             return a.localeCompare(b, undefined, { sensitivity: "base" });
           });
-          return { weapons: weapons, bylaws: bylaws };
+          return { weapons: weapons, bylaws: bylaws, mode: mode };
         }
 
         function indexCertRowsByPersonLabel(rows, personIdFn, labelFn) {
@@ -9969,9 +10105,14 @@
           return out;
         }
 
-        function buildMqlReportRows(personRows, weaponsRows, bylawRows) {
-          const weaponsByPerson = indexCertRowsByPersonLabel(weaponsRows, weaponsPersonnelIdFromItem, weaponLabelFromRow);
-          const bylawByPerson = indexCertRowsByPersonLabel(bylawRows, bylawPersonnelIdFromItem, bylawLabelFromRow);
+        function buildMqlReportRows(personRows, weaponsRows, bylawRows, opts) {
+          opts = opts || {};
+          const weaponsPersonIdFn = opts.weaponsPersonIdFn || weaponsPersonnelIdFromItem;
+          const bylawPersonIdFn = opts.bylawPersonIdFn || bylawPersonnelIdFromItem;
+          const weaponLabelFn = opts.weaponLabelFn || weaponLabelFromRow;
+          const bylawLabelFn = opts.bylawLabelFn || bylawLabelFromRow;
+          const weaponsByPerson = indexCertRowsByPersonLabel(weaponsRows, weaponsPersonIdFn, weaponLabelFn);
+          const bylawByPerson = indexCertRowsByPersonLabel(bylawRows, bylawPersonIdFn, bylawLabelFn);
           return (Array.isArray(personRows) ? personRows : [])
             .filter(function (person) {
               return person && person.Id != null;
@@ -9986,6 +10127,18 @@
             });
         }
 
+        function mqlDisplayOpts(opts) {
+          opts = opts || {};
+          return {
+            displayNameFn: opts.displayNameFn || formatPersonDisplayName,
+            statusLabelFn: opts.statusLabelFn || personStatusLabel,
+            rankFn: opts.rankFn || function (person) {
+              return itemFieldText(person, "Rank") || "-";
+            },
+            navigateToPerson: opts.navigateToPerson !== false,
+          };
+        }
+
         function mqlColumnLabels(catalog) {
           const labels = ["Duty Status", "Full Name", "Rank"];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (w) {
@@ -9997,45 +10150,118 @@
           return labels;
         }
 
-        function mqlRowCells(entry, catalog) {
+        function mqlExportColumnLabels(catalog) {
+          const labels = ["Duty Status", "Full Name", "Rank"];
+          (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (w) {
+            labels.push(w + " Qual");
+            labels.push(w + " Exp");
+          });
+          (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (b) {
+            labels.push(b + " Qual");
+            labels.push(b + " Exp");
+          });
+          return labels;
+        }
+
+        function mqlRowCells(entry, catalog, opts) {
+          const display = mqlDisplayOpts(opts);
           const person = entry.person;
           const cells = [
-            personStatusLabel(person),
-            formatPersonDisplayName(person),
-            itemFieldText(person, "Rank") || "-",
+            display.statusLabelFn(person),
+            display.displayNameFn(person),
+            display.rankFn(person),
           ];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
-            cells.push(mqlCertPairText(mqlLookupCertRow(entry.weapons, label)));
+            cells.push(mqlCertCell(mqlLookupCertRow(entry.weapons, label), computeWeaponsCertStatus));
           });
           (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (label) {
-            cells.push(mqlCertPairText(mqlLookupCertRow(entry.bylaws, label)));
+            cells.push(mqlCertCell(mqlLookupCertRow(entry.bylaws, label), computeBylawTrainingStatus));
           });
           return cells;
         }
 
-        function sortMqlReportRows(rows) {
+        function mqlExportRowCells(entry, catalog, opts) {
+          const display = mqlDisplayOpts(opts);
+          const person = entry.person;
+          const cells = [
+            display.statusLabelFn(person),
+            display.displayNameFn(person),
+            display.rankFn(person),
+          ];
+          (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
+            const row = mqlLookupCertRow(entry.weapons, label);
+            cells.push(mqlExportCertCell(row, "qual", computeWeaponsCertStatus));
+            cells.push(mqlExportCertCell(row, "exp", computeWeaponsCertStatus));
+          });
+          (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (label) {
+            const row = mqlLookupCertRow(entry.bylaws, label);
+            cells.push(mqlExportCertCell(row, "qual", computeBylawTrainingStatus));
+            cells.push(mqlExportCertCell(row, "exp", computeBylawTrainingStatus));
+          });
+          return cells;
+        }
+
+        function appendMqlTableCell(tr, cell, idx, entry, display) {
+          const td = document.createElement("td");
+          const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
+          const tone = cell && typeof cell === "object" ? cell.tone : null;
+          if (idx === 1 && display.navigateToPerson && entry.person && entry.person.Id != null) {
+            const nameBtn = document.createElement("button");
+            nameBtn.type = "button";
+            nameBtn.className = "reports-name-link";
+            nameBtn.textContent = text;
+            nameBtn.title = "Open Personnel Record";
+            nameBtn.addEventListener("click", function () {
+              navigateToPersonDetail(entry.person.Id);
+            });
+            td.appendChild(nameBtn);
+          } else {
+            td.textContent = displayCellText(text);
+            td.className = "reports-mql-cert";
+            if (tone && tone !== "unknown") td.classList.add("cert-status", "cert-status--" + tone);
+          }
+          tr.appendChild(td);
+        }
+
+        function sortMqlReportRows(rows, opts) {
+          const display = mqlDisplayOpts(opts);
           return rows.slice().sort(function (a, b) {
-            const statusCmp = personStatusLabel(a.person).localeCompare(personStatusLabel(b.person), undefined, {
+            const statusCmp = display.statusLabelFn(a.person).localeCompare(display.statusLabelFn(b.person), undefined, {
               sensitivity: "base",
             });
             if (statusCmp !== 0) return statusCmp;
-            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
+            return display.displayNameFn(a.person).localeCompare(display.displayNameFn(b.person), undefined, {
               sensitivity: "base",
             });
           });
         }
 
-        async function ensureMqlReportData(pw) {
+        async function ensureMqlReportData(pw, opts) {
+          opts = opts || {};
+          const mode = opts.mode === "heavy" ? "heavy" : "standard";
+          reportsSession.mqlMode = mode;
           const cache = await ensureReportsTrainingCache(pw);
+          const sampleBylaw = cache.bylawRows && cache.bylawRows.length ? cache.bylawRows[0] : null;
+          const bylawItemChoices = await fetchMqlBylawItemChoices(
+            pw,
+            bylawTrainingListApiPath,
+            sampleBylaw,
+            reportsSession,
+            "bylawItemChoices",
+          );
+          const catalog = buildMqlCertCatalog(cache.weaponsRows, cache.bylawRows, {
+            mode: mode,
+            bylawItemChoices: bylawItemChoices,
+          });
           const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
-          const catalog = buildMqlCertCatalog(cache.weaponsRows, cache.bylawRows);
-          const rows = buildMqlReportRows(personRows, cache.weaponsRows, cache.bylawRows);
+          const rows = buildMqlReportRows(personRows, cache.weaponsRows, cache.bylawRows, opts);
           reportsSession.mqlCatalog = catalog;
           reportsSession.mqlRows = rows;
           return { rows: rows, catalog: catalog };
         }
 
-        function renderMqlReportTable(rows, catalog) {
+        function renderMqlReportTable(rows, catalog, opts) {
+          const display = mqlDisplayOpts(opts);
           const wrap = document.createElement("div");
           wrap.className = "roster-wrap reports-mql-wrap";
           const columnLabels = mqlColumnLabels(catalog);
@@ -10048,7 +10274,7 @@
           }
           const table = document.createElement("table");
           table.className = "roster reports-status-table reports-mql-table";
-          table.setAttribute("aria-label", "MQL Report");
+          table.setAttribute("aria-label", (opts && opts.tableLabel) || "MQL Report");
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
           columnLabels.forEach(function (label) {
@@ -10059,28 +10285,13 @@
           thead.appendChild(trHead);
           table.appendChild(thead);
           const tbody = document.createElement("tbody");
-          const sorted = sortMqlReportRows(rows);
+          const sorted = sortMqlReportRows(rows, opts);
           const frag = document.createDocumentFragment();
           sorted.forEach(function (entry) {
             const tr = document.createElement("tr");
-            const cells = mqlRowCells(entry, catalog);
-            cells.forEach(function (text, idx) {
-              const td = document.createElement("td");
-              if (idx === 1) {
-                const nameBtn = document.createElement("button");
-                nameBtn.type = "button";
-                nameBtn.className = "reports-name-link";
-                nameBtn.textContent = text;
-                nameBtn.title = "Open Personnel Record";
-                nameBtn.addEventListener("click", function () {
-                  navigateToPersonDetail(entry.person.Id);
-                });
-                td.appendChild(nameBtn);
-              } else {
-                td.textContent = displayCellText(text);
-                td.className = "reports-mql-cert";
-              }
-              tr.appendChild(td);
+            const cells = mqlRowCells(entry, catalog, opts);
+            cells.forEach(function (cell, idx) {
+              appendMqlTableCell(tr, cell, idx, entry, display);
             });
             frag.appendChild(tr);
           });
@@ -10090,19 +10301,25 @@
           return wrap;
         }
 
-        function renderMqlReportPrintDocument(rows, catalog) {
+        function renderMqlSignedPrintDocument(rows, catalog, opts) {
+          opts = opts || {};
+          const display = mqlDisplayOpts(opts);
+          const title =
+            opts.printTitle ||
+            (catalog && catalog.mode === "heavy" ? "Heavy Weapons Qual/Auth Report" : MQL_REPORT_PRINT_TITLE);
+          const unit = opts.unitLabel || String(AF_REPORT_UNIT_LABEL || SOT_SQUADRON_LABEL || "88 SFS");
           const wrap = document.createElement("div");
           wrap.className = "af-official-doc";
           wrap.appendChild(
-            buildAfOfficialDocHeader(MQL_REPORT_PRINT_TITLE, {
+            buildAfOfficialDocHeader(title, {
               includeSeconds: true,
-              subtitle: String(AF_REPORT_UNIT_LABEL || SOT_SQUADRON_LABEL || "88 SFS"),
+              subtitle: unit,
             }),
           );
           if (!rows.length) {
             const p = document.createElement("p");
             p.className = "af-official-doc-empty";
-            p.textContent = "No Personnel on file.";
+            p.textContent = "No members on file.";
             wrap.appendChild(p);
             return wrap;
           }
@@ -10113,10 +10330,62 @@
             }),
             compact: true,
             buildCells: function (entry) {
-              return mqlRowCells(entry, catalog);
+              return mqlRowCells(entry, catalog, display);
             },
           });
           return wrap;
+        }
+
+        function renderMqlExportPrintDocument(rows, catalog, opts) {
+          opts = opts || {};
+          const display = mqlDisplayOpts(opts);
+          const wrap = document.createElement("div");
+          wrap.className = "af-official-doc mql-export-doc";
+          wrap.appendChild(
+            buildAfOfficialDocHeader(opts.printTitle || MQL_EXPORT_PRINT_TITLE, {
+              includeSeconds: true,
+              subtitle: opts.unitLabel || String(AF_REPORT_UNIT_LABEL || SOT_SQUADRON_LABEL || "88 SFS"),
+            }),
+          );
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "af-official-doc-empty";
+            p.textContent = "No members on file.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          const table = document.createElement("table");
+          table.className = "af-official-table af-official-table--columns";
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          mqlExportColumnLabels(catalog).forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          sortMqlReportRows(rows, display).forEach(function (entry) {
+            const tr = document.createElement("tr");
+            mqlExportRowCells(entry, catalog, display).forEach(function (cell) {
+              const td = document.createElement("td");
+              const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
+              td.textContent = text === "" || text == null ? "-" : String(text);
+              const tone = cell && typeof cell === "object" ? cell.tone : null;
+              if (tone && tone !== "unknown") td.className = "cert-status cert-status--" + tone;
+              tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+          });
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        /** @deprecated use renderMqlSignedPrintDocument */
+        function renderMqlReportPrintDocument(rows, catalog, opts) {
+          return renderMqlSignedPrintDocument(rows, catalog, opts);
         }
 
         function buildCleoReportRows(personRows) {
@@ -10328,7 +10597,7 @@
           reportsDetailBody.innerHTML = "";
           setReportsState("loading", "Building MQL report...");
           try {
-            const data = await ensureMqlReportData(pw);
+            const data = await ensureMqlReportData(pw, { mode: "standard" });
             const summary = document.createElement("p");
             summary.className = "reports-hint";
             summary.textContent =
@@ -10337,7 +10606,7 @@
               data.catalog.weapons.length +
               " weapon column(s) | " +
               data.catalog.bylaws.length +
-              " By-Law column(s).";
+              " By-Law column(s). Use Print signed report for the commander copy.";
             reportsDetailBody.appendChild(summary);
             reportsDetailBody.appendChild(renderMqlReportTable(data.rows, data.catalog));
             setReportsState("ok", "MQL report updated.");
@@ -10358,22 +10627,56 @@
           if (!reportsDetailBody) return;
           showReportsDetail(reportDef);
           reportsDetailBody.innerHTML = "";
-          setReportsState("loading", "Preparing MQL PDF...");
+          setReportsState("loading", "Preparing MQL export...");
           try {
-            const data = await ensureMqlReportData(pw);
+            const data = await ensureMqlReportData(pw, { mode: "standard" });
             const summary = document.createElement("p");
             summary.className = "reports-hint";
             summary.textContent =
               data.rows.length +
-              " Personnel ready for print. Use Print report for the official Weapons Qual/Auth PDF (grouped by section).";
+              " Personnel | separate qual/expiration columns for Excel or email. Use Export PDF to print or save.";
             reportsDetailBody.appendChild(summary);
             reportsDetailBody.appendChild(renderMqlReportTable(data.rows, data.catalog));
-            setReportsState("ok", "MQL PDF ready.");
+            setReportsState("ok", "MQL export ready.");
             window.setTimeout(function () {
               setReportsState("", "");
             }, 2200);
           } catch (e) {
-            setReportsState("err", "Could not prepare MQL PDF: " + (e.message || String(e)).slice(0, 220));
+            setReportsState("err", "Could not prepare MQL export: " + (e.message || String(e)).slice(0, 220));
+          }
+        }
+
+        async function loadHeavyWeaponsMqlReport(reportDef) {
+          const pw = hubSession.pw;
+          if (!pw) {
+            setReportsState("err", "Hub not ready. Refresh the Personnel Roster first.");
+            return;
+          }
+          if (!reportsDetailBody) return;
+          showReportsDetail(reportDef);
+          reportsDetailBody.innerHTML = "";
+          setReportsState("loading", "Building Heavy Weapons MQL...");
+          try {
+            const data = await ensureMqlReportData(pw, { mode: "heavy" });
+            const summary = document.createElement("p");
+            summary.className = "reports-hint";
+            summary.textContent =
+              data.rows.length +
+              " Personnel | " +
+              data.catalog.weapons.length +
+              " heavy weapon column(s) (excluding M4/M18) | " +
+              data.catalog.bylaws.length +
+              " By-Law column(s).";
+            reportsDetailBody.appendChild(summary);
+            reportsDetailBody.appendChild(
+              renderMqlReportTable(data.rows, data.catalog, { tableLabel: "Heavy Weapons MQL" }),
+            );
+            setReportsState("ok", "Heavy Weapons MQL updated.");
+            window.setTimeout(function () {
+              setReportsState("", "");
+            }, 2200);
+          } catch (e) {
+            setReportsState("err", "Could not build Heavy Weapons MQL: " + (e.message || String(e)).slice(0, 220));
           }
         }
 
@@ -10508,6 +10811,10 @@
             await loadMqlPdf(def);
             return;
           }
+          if (def.implemented && def.id === "heavy-weapons") {
+            await loadHeavyWeaponsMqlReport(def);
+            return;
+          }
           if (def.implemented && def.id === "cleo-report") {
             await loadCleoReport(def);
             return;
@@ -10524,6 +10831,8 @@
           reportsSession.bylawRows = null;
           reportsSession.mqlRows = null;
           reportsSession.mqlCatalog = null;
+          reportsSession.bylawItemChoices = null;
+          reportsSession.mqlMode = "standard";
         }
 
         async function printActiveReport() {
@@ -10535,14 +10844,32 @@
             return;
           }
           const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
-          if (def.id === "mql-pdf") {
-            const pw = hubSession.pw;
+          const pw = hubSession.pw;
+          if (def.id === "mql-report") {
             if (!pw) return;
             const data =
-              reportsSession.mqlRows && reportsSession.mqlCatalog
+              reportsSession.mqlRows && reportsSession.mqlCatalog && reportsSession.mqlMode === "standard"
                 ? { rows: reportsSession.mqlRows, catalog: reportsSession.mqlCatalog }
-                : await ensureMqlReportData(pw);
-            triggerSchedulingPrint(renderMqlReportPrintDocument(data.rows, data.catalog));
+                : await ensureMqlReportData(pw, { mode: "standard" });
+            triggerSchedulingPrint(renderMqlSignedPrintDocument(data.rows, data.catalog));
+            return;
+          }
+          if (def.id === "heavy-weapons") {
+            if (!pw) return;
+            const data =
+              reportsSession.mqlRows && reportsSession.mqlCatalog && reportsSession.mqlMode === "heavy"
+                ? { rows: reportsSession.mqlRows, catalog: reportsSession.mqlCatalog }
+                : await ensureMqlReportData(pw, { mode: "heavy" });
+            triggerSchedulingPrint(renderMqlSignedPrintDocument(data.rows, data.catalog));
+            return;
+          }
+          if (def.id === "mql-pdf") {
+            if (!pw) return;
+            const data =
+              reportsSession.mqlRows && reportsSession.mqlCatalog && reportsSession.mqlMode === "standard"
+                ? { rows: reportsSession.mqlRows, catalog: reportsSession.mqlCatalog }
+                : await ensureMqlReportData(pw, { mode: "standard" });
+            triggerSchedulingPrint(renderMqlExportPrintDocument(data.rows, data.catalog));
             return;
           }
           if (def.id === "cleo-report") {
@@ -10554,6 +10881,12 @@
             return;
           }
           window.print();
+        }
+
+        async function exportActiveReport() {
+          const def = reportTypeById(reportsSession.activeReportId);
+          if (!def || def.id !== "mql-pdf" || !def.printable) return;
+          await printActiveReport();
         }
 
         function setInstructorsState(kind, message) {
@@ -11982,6 +12315,12 @@
         if (reportsPrintBtn) {
           reportsPrintBtn.addEventListener("click", function () {
             void printActiveReport();
+          });
+        }
+
+        if (reportsExportBtn) {
+          reportsExportBtn.addEventListener("click", function () {
+            void exportActiveReport();
           });
         }
 
@@ -14502,47 +14841,142 @@
           return table;
         }
 
-        function buildEthosMqlMemberBlock(member, weaponsRows, bylawRows, forPrint) {
-          const block = document.createElement("div");
-          block.className = "ethos-mql-member-block";
-          const h3 = document.createElement("h3");
-          const squadron = ethosItemFieldText(member, "Squadron") || ETHOS_SQUADRON_LABEL;
-          h3.textContent = formatEthosMemberDisplayName(member) + " - " + squadron;
-          block.appendChild(h3);
-          const wTitle = document.createElement("h4");
-          wTitle.textContent = "Weapons Qualifications";
-          block.appendChild(wTitle);
-          block.appendChild(buildEthosMqlCertTable(weaponsRows, normalizedEthosWeaponsCertColumns(), computeEthosWeaponsCertStatus, "Weapon"));
-          const bTitle = document.createElement("h4");
-          bTitle.textContent = "By-Law Training";
-          block.appendChild(bTitle);
-          block.appendChild(buildEthosMqlCertTable(bylawRows, normalizedEthosBylawColumns(), computeEthosBylawTrainingStatus, "Item"));
-          return block;
+        function renderHubExternalLinks() {
+          if (!hubExternalLinksBar) return;
+          const links = Array.isArray(HUB_EXTERNAL_LINKS) ? HUB_EXTERNAL_LINKS : [];
+          hubExternalLinksBar.innerHTML = "";
+          if (!links.length) {
+            hubExternalLinksBar.hidden = true;
+            hubExternalLinksBar.classList.remove("hub-external-links--visible");
+            return;
+          }
+          const frag = document.createDocumentFragment();
+          links.forEach(function (entry) {
+            if (!entry || !entry.url) return;
+            const a = document.createElement("a");
+            a.className = "btn-secondary";
+            a.href = String(entry.url);
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.textContent = String(entry.label || entry.url);
+            frag.appendChild(a);
+          });
+          hubExternalLinksBar.appendChild(frag);
+          hubExternalLinksBar.hidden = false;
+          hubExternalLinksBar.classList.add("hub-external-links--visible");
         }
 
-        function renderEthosMqlReportDocument(members, weaponsByMember, bylawByMember, forPrint) {
-          const wrap = document.createElement("div");
-          wrap.className = forPrint ? "ethos-mql-report-print" : "ethos-mql-report-screen";
-          if (forPrint) {
-            const header = document.createElement("div");
-            header.className = "ethos-mql-report-header";
-            const h1 = document.createElement("h1");
-            h1.textContent = "ETHOS MQL Report";
-            header.appendChild(h1);
-            const sub = document.createElement("p");
-            sub.textContent = ETHOS_SQUADRON_LABEL + " - Generated " + new Date().toLocaleString();
-            header.appendChild(sub);
-            wrap.appendChild(header);
-          }
-          members.forEach(function (member) {
-            if (!member || member.Id == null) return;
-            const wid = String(member.Id);
-            wrap.appendChild(buildEthosMqlMemberBlock(member, weaponsByMember[wid] || [], bylawByMember[wid] || [], forPrint));
+        function ethosLinkedMemberIdFromItem(row, personField, personFieldAlt) {
+          const candidates = linkedMemberFilterCandidates(personField, personFieldAlt);
+          return linkedMemberIdFromItem(row, candidates, "EthosMember");
+        }
+
+        function ethosWeaponsPersonIdFromItem(row) {
+          return ethosLinkedMemberIdFromItem(row, ETHOS_WEAPONS_PERSON_FIELD, ETHOS_WEAPONS_PERSON_FIELD_ALT);
+        }
+
+        function ethosBylawPersonIdFromItem(row) {
+          return ethosLinkedMemberIdFromItem(row, ETHOS_BYLAW_PERSON_FIELD, ETHOS_BYLAW_PERSON_FIELD_ALT);
+        }
+
+        function ethosMqlDisplayOpts() {
+          return {
+            displayNameFn: formatEthosMemberDisplayName,
+            statusLabelFn: function (person) {
+              return ethosItemFieldText(person, "Status") || "Unknown";
+            },
+            rankFn: function (person) {
+              return ethosItemFieldText(person, "Rank") || "-";
+            },
+            navigateToPerson: false,
+            tableLabel: "ETHOS MQL Report",
+            printTitle: "ETHOS MQL Report",
+            unitLabel: String(ETHOS_SQUADRON_LABEL || AF_REPORT_UNIT_LABEL || "88 SFS"),
+          };
+        }
+
+        async function buildEthosMqlReportData(pw, allWeapons, allBylaw) {
+          const sampleBylaw = allBylaw && allBylaw.length ? allBylaw[0] : null;
+          const bylawItemChoices = await fetchMqlBylawItemChoices(
+            pw,
+            ethosBylawTrainingListApiPath,
+            sampleBylaw,
+            ethosSession,
+            "mqlBylawItemChoices",
+          );
+          const catalog = buildMqlCertCatalog(allWeapons, allBylaw, {
+            mode: "standard",
+            bylawItemChoices: bylawItemChoices,
           });
-          return wrap;
+          const members = sortEthosRowsAlphabetical((ethosSession.rows || []).slice());
+          const rows = buildMqlReportRows(members, allWeapons, allBylaw, {
+            weaponsPersonIdFn: ethosWeaponsPersonIdFromItem,
+            bylawPersonIdFn: ethosBylawPersonIdFromItem,
+          });
+          return { rows: rows, catalog: catalog };
+        }
+
+        async function showEthosMqlReport() {
+          const pw = ethosSession.pw || hubSession.pw;
+          if (!pw) {
+            setEthosReadState("warn", "Load ETHOS roster first.");
+            return;
+          }
+          if (!ethosSession.rows || !ethosSession.rows.length) {
+            setEthosReadState("warn", "No ETHOS members loaded.");
+            return;
+          }
+          try {
+            setEthosReadState("loading", "Building ETHOS MQL report...");
+            const weaponsSeg = ethosWeaponsCertListApiPath();
+            const bylawSeg = ethosBylawTrainingListApiPath();
+            const allWeapons = await fetchAllEthosLinkedRows(weaponsSeg, pw, {
+              orderBy: ETHOS_WEAPONS_CERT_ITEMS_ORDERBY,
+            });
+            const allBylaw = await fetchAllEthosLinkedRows(bylawSeg, pw, {
+              orderBy: ETHOS_BYLAW_TRAINING_ITEMS_ORDERBY,
+            });
+            const data = await buildEthosMqlReportData(pw, allWeapons, allBylaw);
+            ethosSession.mqlRows = data.rows;
+            ethosSession.mqlCatalog = data.catalog;
+            if (ethosMqlReportBody) {
+              ethosMqlReportBody.innerHTML = "";
+              const summary = document.createElement("p");
+              summary.className = "reports-hint";
+              summary.textContent =
+                data.rows.length +
+                " ETHOS member(s) | " +
+                data.catalog.weapons.length +
+                " weapon column(s) | " +
+                data.catalog.bylaws.length +
+                " By-Law column(s).";
+              ethosMqlReportBody.appendChild(summary);
+              ethosMqlReportBody.appendChild(renderMqlReportTable(data.rows, data.catalog, ethosMqlDisplayOpts()));
+            }
+            if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = false;
+            if (ethosMqlPrintBtn) {
+              ethosMqlPrintBtn.hidden = false;
+              ethosMqlPrintBtn.textContent = "Print signed report";
+            }
+            if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = false;
+            setEthosReadState("", "");
+          } catch (e) {
+            setEthosReadState("err", "Could not build MQL report: " + (e.message || String(e)).slice(0, 220));
+          }
+        }
+
+        function printEthosMqlReport() {
+          const rows = ethosSession.mqlRows;
+          const catalog = ethosSession.mqlCatalog;
+          if (!rows || !catalog) {
+            setEthosReadState("warn", "Open ETHOS MQL Report first.");
+            return;
+          }
+          triggerSchedulingPrint(renderMqlSignedPrintDocument(rows, catalog, ethosMqlDisplayOpts()));
         }
 
         async function fetchAllEthosLinkedRows(seg, pw, opts) {
+          opts = opts || {};
           const orderByClause = String(opts.orderBy || "").trim();
           const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
           let data = null;
@@ -14567,34 +15001,6 @@
           return map;
         }
 
-        async function showEthosMqlReport() {
-          const pw = ethosSession.pw || hubSession.pw;
-          if (!pw) { setEthosReadState("warn", "Load ETHOS roster first."); return; }
-          if (!ethosSession.rows || !ethosSession.rows.length) { setEthosReadState("warn", "No ETHOS members loaded."); return; }
-          try {
-            setEthosReadState("loading", "Building ETHOS MQL report...");
-            const weaponsSeg = ethosWeaponsCertListApiPath();
-            const bylawSeg = ethosBylawTrainingListApiPath();
-            const allWeapons = await fetchAllEthosLinkedRows(weaponsSeg, pw, { orderBy: ETHOS_WEAPONS_CERT_ITEMS_ORDERBY });
-            const allBylaw = await fetchAllEthosLinkedRows(bylawSeg, pw, { orderBy: ETHOS_BYLAW_TRAINING_ITEMS_ORDERBY });
-            const weaponsByMember = groupLinkedRowsByMember(allWeapons, ETHOS_WEAPONS_PERSON_FIELD, ETHOS_WEAPONS_PERSON_FIELD_ALT, "EthosMember");
-            const bylawByMember = groupLinkedRowsByMember(allBylaw, ETHOS_BYLAW_PERSON_FIELD, ETHOS_BYLAW_PERSON_FIELD_ALT, "EthosMember");
-            const members = sortEthosRowsAlphabetical(ethosSession.rows.slice());
-            if (ethosMqlReportBody) {
-              ethosMqlReportBody.innerHTML = "";
-              ethosMqlReportBody.appendChild(renderEthosMqlReportDocument(members, weaponsByMember, bylawByMember, false));
-            }
-            if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = false;
-            if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = false;
-            if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = false;
-            ethosSession.mqlWeaponsByMember = weaponsByMember;
-            ethosSession.mqlBylawByMember = bylawByMember;
-            setEthosReadState("", "");
-          } catch (e) {
-            setEthosReadState("err", "Could not build MQL report: " + (e.message || String(e)).slice(0, 220));
-          }
-        }
-
         function triggerEthosPrint(node) {
           if (!ethosPrintSurface || !node) return;
           ethosPrintSurface.innerHTML = "";
@@ -14609,13 +15015,6 @@
               ethosPrintSurface.hidden = true;
             }, 500);
           }, 120);
-        }
-
-        function printEthosMqlReport() {
-          const members = sortEthosRowsAlphabetical((ethosSession.rows || []).slice());
-          const weaponsByMember = ethosSession.mqlWeaponsByMember || {};
-          const bylawByMember = ethosSession.mqlBylawByMember || {};
-          triggerEthosPrint(renderEthosMqlReportDocument(members, weaponsByMember, bylawByMember, true));
         }
 
         async function runProbe() {
@@ -14765,6 +15164,7 @@
 
           await renderAddPersonForm(meta, pw, seg2, sampleRow);
           renderRosterTable(rows, meta, pw, seg2);
+          renderHubExternalLinks();
           if (!hubAlternateNavActive()) {
             setHubListViewVisible(true);
           }
