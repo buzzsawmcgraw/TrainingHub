@@ -3148,7 +3148,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260611g";
+        const HUB_BUILD_ID = "20260611h";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -8764,14 +8764,17 @@
           }
         }
 
-        function cloneMqlPrintTableShell(table) {
+        function cloneMqlPrintTableShell(table, includeThead) {
           const shell = document.createElement("table");
           shell.className = table.className;
+          if (!includeThead) shell.classList.add("mql-print-table-continue");
           shell.style.width = table.style.width || "100%";
           const colgroup = table.querySelector("colgroup");
           if (colgroup) shell.appendChild(colgroup.cloneNode(true));
-          const thead = table.querySelector("thead");
-          if (thead) shell.appendChild(thead.cloneNode(true));
+          if (includeThead) {
+            const thead = table.querySelector("thead");
+            if (thead) shell.appendChild(thead.cloneNode(true));
+          }
           const tbody = document.createElement("tbody");
           shell.appendChild(tbody);
           return shell;
@@ -8783,7 +8786,7 @@
           while (i < rowHeights.length) {
             const isFirst = pages.length === 0;
             const overhead =
-              config.footerHeight + config.theadHeight + (isFirst ? config.headerHeight : 0);
+              config.footerHeight + (isFirst ? config.headerHeight + config.theadHeight : 0);
             const budget = Math.max(config.sheetHeight - overhead, 24);
             let used = 0;
             const page = [];
@@ -8822,7 +8825,7 @@
           const container = document.createElement("div");
           container.className = doc.className;
           pageRowIndexLists.forEach(function (indices, pageNum) {
-            const pageTable = cloneMqlPrintTableShell(table);
+            const pageTable = cloneMqlPrintTableShell(table, pageNum === 0);
             const tbody = pageTable.querySelector("tbody");
             indices.forEach(function (ri) {
               tbody.appendChild(rowElements[ri].cloneNode(true));
@@ -8848,8 +8851,8 @@
           const rowElements = Array.prototype.slice.call(table.querySelectorAll("tbody tr"));
           const win = idoc.defaultView;
           const pxPerIn = win && win.innerWidth ? win.innerWidth / 11 : 96;
-          const sheetHeight = 7.55 * pxPerIn;
-          const footerHeight = 1.05 * pxPerIn;
+          const sheetHeight = 7.85 * pxPerIn;
+          const footerHeight = 1.2 * pxPerIn;
           const headerHeight = header ? header.getBoundingClientRect().height : 0;
           const theadEl = table.querySelector("thead");
           const theadHeight = theadEl ? theadEl.getBoundingClientRect().height : 22;
@@ -8896,14 +8899,16 @@
             "#sp-pip-ui .scheduling-print-surface .mql-signed-print-datetime { text-align: right; font-weight: 400; font-size: 10pt; white-space: nowrap; }" +
             "#sp-pip-ui .scheduling-print-surface .mql-signed-print-title { margin: 0; text-align: center; font-size: 13pt; font-weight: 700; color: #000; }" +
             "#sp-pip-ui .scheduling-print-surface .mql-signed-print-sortline { margin: 4px 0 0; text-align: center; font-size: 9pt; font-style: italic; color: #000; }" +
-            ".mql-print-sheet { box-sizing: border-box; width: 100%; height: 7.55in; min-height: 7.55in; max-height: 7.55in; display: flex; flex-direction: column; page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid; overflow: hidden; }" +
+            ".mql-print-sheet { box-sizing: border-box; width: 100%; height: 7.85in; min-height: 7.85in; max-height: 7.85in; display: block; position: relative; page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid; overflow: hidden; }" +
             ".mql-print-sheet:last-child { page-break-after: auto; break-after: auto; }" +
-            ".mql-print-sheet-body { flex: 1 1 auto; min-height: 0; overflow: hidden; }" +
-            ".mql-print-sheet-footer { flex: 0 0 1.05in; height: 1.05in; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 0.1in 0 0; }" +
+            ".mql-print-sheet-body { padding-bottom: 1.2in; }" +
+            ".mql-print-sheet-footer { position: absolute; left: 0; right: 0; bottom: 0; height: 1.15in; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 0.4in 0 0; }" +
             ".mql-print-sheet-footer .mql-print-table-footer-sig { display: block !important; width: 3.15in; margin: 0; padding: 0; text-align: left; color: #000; }" +
-            ".mql-print-sheet-footer .mql-print-sig-signing-space { height: 0.5in; }" +
+            ".mql-print-sheet-footer .mql-print-sig-signing-space { height: 0.55in; }" +
             ".mql-print-sheet-footer .mql-print-sig-line { border-bottom: 1px solid #000; height: 1.15em; margin-bottom: 4px; }" +
             ".mql-print-sheet-footer .mql-print-sig-name, .mql-print-sheet-footer .mql-print-sig-title { margin: 0; font-size: 9pt; line-height: 1.2; white-space: nowrap; }" +
+            "table.mql-print-table-continue { margin-top: 0; border-top: none; }" +
+            "table.mql-print-table-continue tbody tr:first-child td { border-top: 1px solid #000; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table { width: 100%; border-collapse: collapse; margin: 0; font-size: 8pt; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table--compact { font-size: 7pt; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table th, #sp-pip-ui .scheduling-print-surface table.af-official-table td { border: 1px solid #000; padding: 2px 3px; text-align: left; vertical-align: top; color: #000; background: #fff; }" +
@@ -8919,10 +8924,11 @@
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
             ".mql-print-doc-signature, .mql-print-signature-stamp, .mql-print-iframe-footer { display: none !important; }" +
             "@media print {" +
-            "@page { size: landscape; margin: 0.35in 0.4in 0.4in 0.4in; }" +
+            "@page { size: landscape; margin: 0.35in 0.4in 0.25in 0.4in; }" +
             "html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }" +
-            ".mql-print-sheet { height: 7.55in; min-height: 7.55in; max-height: 7.55in; page-break-after: always; break-after: page; }" +
+            ".mql-print-sheet { height: 7.85in; min-height: 7.85in; max-height: 7.85in; page-break-after: always; break-after: page; }" +
             ".mql-print-sheet:last-child { page-break-after: auto; break-after: auto; }" +
+            ".mql-print-sheet-footer { bottom: 0; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired { background: #f5c2c7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--urgent { background: #ffc78a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--warn { background: #fff3a0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
