@@ -7435,6 +7435,16 @@
           renderOfficialSectionedTables(parent, options);
         }
 
+        function mqlStandardColumnWidths() {
+          return ["5.5%", "6%", "19%", "7%"].concat(
+            Array(10)
+              .fill(null)
+              .map(function () {
+                return "6.25%";
+              }),
+          );
+        }
+
         function officialColumnWidths(columnLabels) {
           const n = columnLabels.length;
           if (!n) return [];
@@ -7494,7 +7504,8 @@
           const manyCols = columnLabels.length > 14;
           const tableClass =
             (options.compact ? "af-official-table af-official-table--compact" : "af-official-table") +
-            (manyCols ? " af-official-table--many-cols" : "");
+            (manyCols ? " af-official-table--many-cols" : "") +
+            (options.mqlStandardLayout ? " af-official-table--mql-standard" : "");
           const buildCells = options.buildCells;
           const sectionLabelFn =
             typeof options.sectionLabelFn === "function"
@@ -7504,7 +7515,7 @@
                 };
           if (!parent || !columnLabels.length || !sections.length || typeof buildCells !== "function") return;
 
-          const widths = officialColumnWidths(columnLabels);
+          const widths = options.columnWidths || officialColumnWidths(columnLabels);
           const headerWrap = document.createElement("div");
           headerWrap.className = "af-official-table-header-wrap";
           const headerTable = document.createElement("table");
@@ -8056,9 +8067,11 @@
             : function (entry) {
                 return mqlStandardRowCells(entry, display);
               };
-          const widths = officialColumnWidths(columnLabels);
+          const widths = mqlIsHeavyCatalog(catalog) ? officialColumnWidths(columnLabels) : mqlStandardColumnWidths();
           const table = document.createElement("table");
-          table.className = "af-official-table af-official-table--columns af-official-table--compact";
+          table.className =
+            "af-official-table af-official-table--columns af-official-table--compact" +
+            (mqlIsHeavyCatalog(catalog) ? "" : " af-official-table--mql-standard");
           table.style.width = "100%";
           appendOfficialColgroup(table, widths);
           const thead = document.createElement("thead");
@@ -8137,8 +8150,13 @@
               };
           const appendTable = function (tableRows) {
             const table = document.createElement("table");
-            table.className = "roster reports-status-table reports-mql-table";
+            table.className =
+              "roster reports-status-table reports-mql-table" +
+              (mqlIsHeavyCatalog(catalog) ? "" : " reports-mql-table--standard");
             table.setAttribute("aria-label", (opts && opts.tableLabel) || "MQL Report");
+            if (!mqlIsHeavyCatalog(catalog)) {
+              appendOfficialColgroup(table, mqlStandardColumnWidths());
+            }
             const thead = document.createElement("thead");
             const trHead = document.createElement("tr");
             columnLabels.forEach(function (label) {
@@ -8201,13 +8219,14 @@
           if (!mqlIsHeavyCatalog(catalog)) {
             appendOfficialSectionTable(wrap, {
               columns: mqlStandardColumnLabels(),
+              columnWidths: mqlStandardColumnWidths(),
+              mqlStandardLayout: true,
               sections: groupMqlEntriesByDutyStatus(rows),
               compact: true,
               buildCells: function (entry) {
                 return mqlStandardRowCells(entry, display);
               },
             });
-            wrap.appendChild(buildMqlPrintSignatureBlock(opts.signature || hubSession.mqlSignature, false));
             return wrap;
           }
           appendOfficialSectionTable(wrap, {
@@ -8220,7 +8239,6 @@
               return mqlRowCells(entry, catalog, display);
             },
           });
-          wrap.appendChild(buildMqlPrintSignatureBlock(opts.signature || hubSession.mqlSignature, false));
           return wrap;
         }
 

@@ -528,6 +528,33 @@
         white-space: normal;
         word-break: break-word;
       }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th:nth-child(1),
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(1),
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th:nth-child(2),
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(2) {
+        font-size: 6pt;
+        padding: 1px 2px;
+        line-height: 1.05;
+        white-space: normal;
+        overflow: hidden;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(3) {
+        white-space: normal;
+        word-break: break-word;
+      }
+      #sp-pip-ui table.reports-mql-table--standard th:nth-child(1),
+      #sp-pip-ui table.reports-mql-table--standard td:nth-child(1),
+      #sp-pip-ui table.reports-mql-table--standard th:nth-child(2),
+      #sp-pip-ui table.reports-mql-table--standard td:nth-child(2) {
+        font-size: 11px;
+        padding: 2px 3px;
+        line-height: 1.1;
+        white-space: normal;
+      }
+      #sp-pip-ui table.reports-mql-table--standard td:nth-child(3) {
+        white-space: normal;
+        word-break: break-word;
+      }
       #sp-pip-ui .scheduling-print-surface table.af-official-table--many-cols {
         font-size: 6pt;
       }
@@ -602,7 +629,14 @@
         line-height: 1.1;
       }
       #sp-pip-ui .scheduling-print-surface .mql-print-signature-stamp .mql-print-sig-signing-space {
-        height: 0.6in;
+        height: 0.5in;
+      }
+      #sp-pip-ui .scheduling-print-surface .mql-print-signature-stamp .mql-print-sig-name,
+      #sp-pip-ui .scheduling-print-surface .mql-print-signature-stamp .mql-print-sig-title {
+        margin: 0;
+        font-size: 9pt;
+        line-height: 1.2;
+        white-space: nowrap;
       }
       #sp-pip-ui .scheduling-print-surface .mql-signed-print-header {
         margin: 0 0 12px;
@@ -1071,18 +1105,27 @@
           break-inside: auto;
         }
         #sp-pip-ui.scheduling-print-active .scheduling-print-surface--mql .mql-print-signature-stamp {
-          height: 0;
-          overflow: visible;
           page-break-before: avoid;
         }
         #sp-pip-ui.scheduling-print-active .mql-print-signature-stamp {
           display: block !important;
           position: fixed;
-          bottom: 0.25in;
-          right: 0.4in;
-          width: 2.75in;
+          bottom: 0.28in;
+          right: 0.55in;
+          width: 3.15in;
+          max-width: 3.15in;
           margin: 0;
+          padding: 0;
+          height: auto;
+          overflow: visible;
           z-index: 2;
+          text-align: left;
+        }
+        #sp-pip-ui.scheduling-print-active .mql-print-signature-stamp .mql-print-sig-name,
+        #sp-pip-ui.scheduling-print-active .mql-print-signature-stamp .mql-print-sig-title {
+          font-size: 9pt;
+          line-height: 1.2;
+          white-space: nowrap;
         }
         #sp-pip-ui.scheduling-print-active .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired,
         #sp-pip-ui table.reports-mql-table td.mql-cert-cell--expired {
@@ -10452,6 +10495,16 @@
           renderOfficialSectionedTables(parent, options);
         }
 
+        function mqlStandardColumnWidths() {
+          return ["5.5%", "6%", "19%", "7%"].concat(
+            Array(10)
+              .fill(null)
+              .map(function () {
+                return "6.25%";
+              }),
+          );
+        }
+
         function officialColumnWidths(columnLabels) {
           const n = columnLabels.length;
           if (!n) return [];
@@ -10511,7 +10564,8 @@
           const manyCols = columnLabels.length > 14;
           const tableClass =
             (options.compact ? "af-official-table af-official-table--compact" : "af-official-table") +
-            (manyCols ? " af-official-table--many-cols" : "");
+            (manyCols ? " af-official-table--many-cols" : "") +
+            (options.mqlStandardLayout ? " af-official-table--mql-standard" : "");
           const buildCells = options.buildCells;
           const sectionLabelFn =
             typeof options.sectionLabelFn === "function"
@@ -10521,7 +10575,7 @@
                 };
           if (!parent || !columnLabels.length || !sections.length || typeof buildCells !== "function") return;
 
-          const widths = officialColumnWidths(columnLabels);
+          const widths = options.columnWidths || officialColumnWidths(columnLabels);
           const headerWrap = document.createElement("div");
           headerWrap.className = "af-official-table-header-wrap";
           const headerTable = document.createElement("table");
@@ -11073,9 +11127,11 @@
             : function (entry) {
                 return mqlStandardRowCells(entry, display);
               };
-          const widths = officialColumnWidths(columnLabels);
+          const widths = mqlIsHeavyCatalog(catalog) ? officialColumnWidths(columnLabels) : mqlStandardColumnWidths();
           const table = document.createElement("table");
-          table.className = "af-official-table af-official-table--columns af-official-table--compact";
+          table.className =
+            "af-official-table af-official-table--columns af-official-table--compact" +
+            (mqlIsHeavyCatalog(catalog) ? "" : " af-official-table--mql-standard");
           table.style.width = "100%";
           appendOfficialColgroup(table, widths);
           const thead = document.createElement("thead");
@@ -11154,8 +11210,13 @@
               };
           const appendTable = function (tableRows) {
             const table = document.createElement("table");
-            table.className = "roster reports-status-table reports-mql-table";
+            table.className =
+              "roster reports-status-table reports-mql-table" +
+              (mqlIsHeavyCatalog(catalog) ? "" : " reports-mql-table--standard");
             table.setAttribute("aria-label", (opts && opts.tableLabel) || "MQL Report");
+            if (!mqlIsHeavyCatalog(catalog)) {
+              appendOfficialColgroup(table, mqlStandardColumnWidths());
+            }
             const thead = document.createElement("thead");
             const trHead = document.createElement("tr");
             columnLabels.forEach(function (label) {
@@ -11218,13 +11279,14 @@
           if (!mqlIsHeavyCatalog(catalog)) {
             appendOfficialSectionTable(wrap, {
               columns: mqlStandardColumnLabels(),
+              columnWidths: mqlStandardColumnWidths(),
+              mqlStandardLayout: true,
               sections: groupMqlEntriesByDutyStatus(rows),
               compact: true,
               buildCells: function (entry) {
                 return mqlStandardRowCells(entry, display);
               },
             });
-            wrap.appendChild(buildMqlPrintSignatureBlock(opts.signature || hubSession.mqlSignature, false));
             return wrap;
           }
           appendOfficialSectionTable(wrap, {
@@ -11237,7 +11299,6 @@
               return mqlRowCells(entry, catalog, display);
             },
           });
-          wrap.appendChild(buildMqlPrintSignatureBlock(opts.signature || hubSession.mqlSignature, false));
           return wrap;
         }
 
