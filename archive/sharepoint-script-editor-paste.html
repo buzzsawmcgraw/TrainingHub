@@ -3259,7 +3259,7 @@
         const APPOINTMENTS_SQUADRON_LABEL = "88 SFS";
         const AF_REPORT_UNIT_LABEL = "88th Security Forces Squadron";
         const MQL_REPORT_PRINT_TITLE = "Weapons Qual / Authorization Report";
-        const MQL_SIGNED_SORT_LINE = "by Last Name";
+        const MQL_SIGNED_SORT_LINE = "by Duty Status / Last Name";
         const MQL_EXPORT_SORT_LINE = "Alphabetical by Last Name";
         const MQL_SIGNATURE_STORAGE_KEY = "trainingHub.mqlSignature.v1";
         const DEFAULT_MQL_SIGNATURE_NAME = "Name, Rank, USAF";
@@ -3270,21 +3270,36 @@
         const MQL_EXCLUDED_CATALOG_LABELS = ["airfield driving", "combatives", "cqb"];
         const MQL_EXPORT_PRINT_TITLE = "MQL Data Export";
         const MQL_PRINT_STYLE_ID = "hubMqlLandscapePrintStyle";
-        /** Fixed landscape columns for standard MQL report and data export (13 columns). */
+        /** Fixed landscape columns for standard MQL report and data export. */
         const MQL_STANDARD_COLUMN_DEFS = [
           { label: "Duty Status", kind: "person", field: "status" },
           { label: "Duty Section", kind: "person", field: "section" },
+          { label: "Full Name", kind: "person", field: "fullName" },
           { label: "DoDID", kind: "person", field: "dodid" },
           { label: "M18 Qual", kind: "cert", item: "M18", part: "qual", preferWeapon: true },
           { label: "M18 Exp", kind: "cert", item: "M18", part: "exp", preferWeapon: true },
           { label: "M4 Qual", kind: "cert", item: "M4", part: "qual", preferWeapon: true },
           { label: "M4 Exp", kind: "cert", item: "M4", part: "exp", preferWeapon: true },
-          { label: "Baton Qual", kind: "cert", item: "Baton", part: "qual", preferWeapon: true },
-          { label: "Baton Exp", kind: "cert", item: "Baton", part: "exp", preferWeapon: true },
-          { label: "Taser Qual", kind: "cert", item: "Taser", part: "qual", preferWeapon: true },
-          { label: "Taser Exp", kind: "cert", item: "Taser", part: "exp", preferWeapon: true },
-          { label: "DD2760 Exp", kind: "cert", item: "DD2760", part: "exp", preferWeapon: false },
-          { label: "AUOF Exp", kind: "cert", item: "AUOF", part: "exp", preferWeapon: false },
+          { label: "Baton Qual", kind: "cert", item: "Baton", part: "qual", preferWeapon: true, match: ["Baton"] },
+          { label: "Baton Exp", kind: "cert", item: "Baton", part: "exp", preferWeapon: true, match: ["Baton"] },
+          { label: "Taser Qual", kind: "cert", item: "Taser", part: "qual", preferWeapon: true, match: ["Taser", "TASER"] },
+          { label: "Taser Exp", kind: "cert", item: "Taser", part: "exp", preferWeapon: true, match: ["Taser", "TASER"] },
+          {
+            label: "DD2760 Exp",
+            kind: "cert",
+            item: "DD2760",
+            part: "exp",
+            preferWeapon: false,
+            match: ["DD Form 2760", "DD 2760", "DD2760", "Form 2760", "2760"],
+          },
+          {
+            label: "AUOF Exp",
+            kind: "cert",
+            item: "AUOF",
+            part: "exp",
+            preferWeapon: false,
+            match: ["AUOF", "Annual Use of Force", "Use of Force"],
+          },
         ];
         /**
          * Future hub footer quick links (render when populated). Example:
@@ -8896,9 +8911,13 @@
 
         function triggerMqlPrint(node, options) {
           options = options || {};
+          const signature =
+            options.signed
+              ? options.signature || hubSession.mqlSignature || { nameLine: DEFAULT_MQL_SIGNATURE_NAME, titleLine: DEFAULT_MQL_SIGNATURE_TITLE }
+              : null;
           triggerSchedulingPrint(node, {
             mqlLandscape: true,
-            mqlSignature: options.signed ? options.signature : null,
+            mqlSignature: signature,
           });
         }
 
@@ -10567,8 +10586,31 @@
           return { text: text, tone: tone };
         }
 
-        function mqlExportCertCell(row, part, statusFn) {
-          const text = part === "qual" ? mqlCertQualText(row) : mqlCertExpText(row);
+        function mqlBylawCertQualText(row) {
+          if (!row) return "-";
+          const qual = formatWeaponsCertDisplayDate(valueFromItemByKeys(row, bylawQualDateKeys()));
+          return qual || "-";
+        }
+
+        function mqlBylawCertExpText(row) {
+          if (!row) return "-";
+          const exp = formatWeaponsCertDisplayDate(valueFromItemByKeys(row, bylawTrainingExpiryDateKeys()));
+          if (exp) return exp;
+          const qual = parseWeaponsCertCalendarDate(valueFromItemByKeys(row, bylawQualDateKeys()));
+          if (qual) return formatWeaponsCertDisplayDate(expirationDateFromQualDate(qual));
+          return "-";
+        }
+
+        function mqlExportCertCell(row, part, statusFn, isWeapon) {
+          const useWeapon = isWeapon !== false;
+          const text =
+            part === "qual"
+              ? useWeapon
+                ? mqlCertQualText(row)
+                : mqlBylawCertQualText(row)
+              : useWeapon
+                ? mqlCertExpText(row)
+                : mqlBylawCertExpText(row);
           if (!row) return { text: text, tone: "expired" };
           const status = typeof statusFn === "function" ? statusFn(row) : { tone: "unknown" };
           let tone = status && status.tone ? status.tone : "unknown";
@@ -10825,22 +10867,37 @@
           const a = norm(storedLabel);
           const b = norm(wantedLabel);
           if (!a || !b) return false;
-          return a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0;
+          if (a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0) return true;
+          const digitsA = a.replace(/\D/g, "");
+          const digitsB = b.replace(/\D/g, "");
+          if (digitsB.length >= 3 && digitsA && (digitsA === digitsB || digitsA.indexOf(digitsB) >= 0)) return true;
+          const stripNoise = function (x) {
+            return x.replace(/form/g, "").replace(/dd/g, "").replace(/exp/g, "").replace(/date/g, "");
+          };
+          const sa = stripNoise(a);
+          const sb = stripNoise(b);
+          return !!(sa && sb && (sa === sb || sa.indexOf(sb) >= 0 || sb.indexOf(sa) >= 0));
         }
 
-        function mqlLookupCertRowByItem(certMap, itemLabel) {
+        function mqlLookupCertRowByItem(certMap, itemLabel, matchLabels) {
           if (!certMap || !itemLabel) return null;
+          const wanted = [itemLabel].concat(Array.isArray(matchLabels) ? matchLabels : []);
           if (certMap[itemLabel]) return certMap[itemLabel];
           const keys = Object.keys(certMap);
           for (let i = 0; i < keys.length; i++) {
-            if (mqlMatchCatalogLabel(keys[i], itemLabel)) return certMap[keys[i]];
+            for (let w = 0; w < wanted.length; w++) {
+              if (mqlMatchCatalogLabel(keys[i], wanted[w])) return certMap[keys[i]];
+            }
           }
           return mqlLookupCertRow(certMap, itemLabel);
         }
 
-        function mqlLookupTrainingRow(entry, itemLabel, preferWeapon) {
-          const weaponRow = mqlLookupCertRowByItem(entry.weapons, itemLabel);
-          const bylawRow = mqlLookupCertRowByItem(entry.bylaws, itemLabel);
+        function mqlLookupTrainingRow(entry, colDef) {
+          const itemLabel = colDef && colDef.item ? colDef.item : colDef;
+          const matchLabels = colDef && colDef.match ? colDef.match : null;
+          const preferWeapon = colDef && colDef.preferWeapon;
+          const weaponRow = mqlLookupCertRowByItem(entry.weapons, itemLabel, matchLabels);
+          const bylawRow = mqlLookupCertRowByItem(entry.bylaws, itemLabel, matchLabels);
           if (preferWeapon !== false) {
             if (weaponRow) return { row: weaponRow, isWeapon: true };
             if (bylawRow) return { row: bylawRow, isWeapon: false };
@@ -10859,12 +10916,13 @@
             if (col.kind === "person") {
               if (col.field === "status") cells.push({ text: display.statusLabelFn(person), tone: "ok" });
               else if (col.field === "section") cells.push({ text: personDutySectionLabel(person), tone: "ok" });
+              else if (col.field === "fullName") cells.push({ text: formatPersonFullName(person), tone: "ok" });
               else if (col.field === "dodid") cells.push({ text: itemFieldText(person, "DoDID") || "-", tone: "ok" });
               return;
             }
-            const lookup = mqlLookupTrainingRow(entry, col.item, col.preferWeapon);
+            const lookup = mqlLookupTrainingRow(entry, col);
             const statusFn = lookup.isWeapon ? computeMqlWeaponsCertCellStatus : computeMqlBylawCertCellStatus;
-            cells.push(mqlExportCertCell(lookup.row, col.part, statusFn));
+            cells.push(mqlExportCertCell(lookup.row, col.part, statusFn, lookup.isWeapon));
           });
           return cells;
         }
@@ -10917,17 +10975,16 @@
           const cells = [
             display.statusLabelFn(person),
             display.displayNameFn(person),
-            display.rankFn(person),
           ];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
             const row = mqlLookupCertRow(entry.weapons, label);
-            cells.push(mqlExportCertCell(row, "qual", computeMqlWeaponsCertCellStatus));
-            cells.push(mqlExportCertCell(row, "exp", computeMqlWeaponsCertCellStatus));
+            cells.push(mqlExportCertCell(row, "qual", computeMqlWeaponsCertCellStatus, true));
+            cells.push(mqlExportCertCell(row, "exp", computeMqlWeaponsCertCellStatus, true));
           });
           (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (label) {
             const row = mqlLookupCertRow(entry.bylaws, label);
-            cells.push(mqlExportCertCell(row, "qual", computeMqlBylawCertCellStatus));
-            cells.push(mqlExportCertCell(row, "exp", computeMqlBylawCertCellStatus));
+            cells.push(mqlExportCertCell(row, "qual", computeMqlBylawCertCellStatus, false));
+            cells.push(mqlExportCertCell(row, "exp", computeMqlBylawCertCellStatus, false));
           });
           return cells;
         }
@@ -10935,7 +10992,8 @@
         function appendMqlTableCell(tr, cell, idx, entry, display) {
           const td = document.createElement("td");
           const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
-          if (idx === 1 && display.navigateToPerson && entry.person && entry.person.Id != null && mqlIsHeavyCatalog(display.catalog)) {
+          const nameColIndex = mqlIsHeavyCatalog(display.catalog) ? 1 : 3;
+          if (idx === nameColIndex && display.navigateToPerson && entry.person && entry.person.Id != null) {
             const nameBtn = document.createElement("button");
             nameBtn.type = "button";
             nameBtn.className = "reports-name-link";
@@ -10949,6 +11007,23 @@
             td.textContent = displayCellText(text);
           }
           tr.appendChild(td);
+        }
+
+        function groupMqlEntriesByDutyStatus(entries) {
+          const groups = new Map();
+          (Array.isArray(entries) ? entries : []).forEach(function (entry) {
+            const status = entry && entry.person ? personStatusLabel(entry.person) : "Unknown";
+            if (!groups.has(status)) groups.set(status, []);
+            groups.get(status).push(entry);
+          });
+          const out = [];
+          groups.forEach(function (items, section) {
+            out.push({ section: section, items: sortMqlReportRows(items) });
+          });
+          out.sort(function (a, b) {
+            return String(a.section).localeCompare(String(b.section), undefined, { sensitivity: "base" });
+          });
+          return out;
         }
 
         function sortMqlReportRows(rows, opts) {
@@ -11045,20 +11120,6 @@
             wrap.appendChild(p);
             return wrap;
           }
-          const table = document.createElement("table");
-          table.className = "roster reports-status-table reports-mql-table";
-          table.setAttribute("aria-label", (opts && opts.tableLabel) || "MQL Report");
-          const thead = document.createElement("thead");
-          const trHead = document.createElement("tr");
-          columnLabels.forEach(function (label) {
-            const th = document.createElement("th");
-            th.textContent = label;
-            trHead.appendChild(th);
-          });
-          thead.appendChild(trHead);
-          table.appendChild(thead);
-          const tbody = document.createElement("tbody");
-          const sorted = sortMqlReportRows(rows, opts);
           const buildCells = mqlIsHeavyCatalog(catalog)
             ? function (entry) {
                 return mqlRowCells(entry, catalog, opts);
@@ -11066,17 +11127,43 @@
             : function (entry) {
                 return mqlStandardRowCells(entry, opts);
               };
-          const frag = document.createDocumentFragment();
-          sorted.forEach(function (entry) {
-            const tr = document.createElement("tr");
-            buildCells(entry).forEach(function (cell, idx) {
-              appendMqlTableCell(tr, cell, idx, entry, display);
+          const appendTable = function (tableRows) {
+            const table = document.createElement("table");
+            table.className = "roster reports-status-table reports-mql-table";
+            table.setAttribute("aria-label", (opts && opts.tableLabel) || "MQL Report");
+            const thead = document.createElement("thead");
+            const trHead = document.createElement("tr");
+            columnLabels.forEach(function (label) {
+              const th = document.createElement("th");
+              th.textContent = label;
+              trHead.appendChild(th);
             });
-            frag.appendChild(tr);
-          });
-          tbody.appendChild(frag);
-          table.appendChild(tbody);
-          wrap.appendChild(table);
+            thead.appendChild(trHead);
+            table.appendChild(thead);
+            const tbody = document.createElement("tbody");
+            const frag = document.createDocumentFragment();
+            tableRows.forEach(function (entry) {
+              const tr = document.createElement("tr");
+              buildCells(entry).forEach(function (cell, idx) {
+                appendMqlTableCell(tr, cell, idx, entry, display);
+              });
+              frag.appendChild(tr);
+            });
+            tbody.appendChild(frag);
+            table.appendChild(tbody);
+            wrap.appendChild(table);
+          };
+          if (!mqlIsHeavyCatalog(catalog)) {
+            groupMqlEntriesByDutyStatus(rows).forEach(function (group) {
+              const heading = document.createElement("h3");
+              heading.className = "reports-office-title";
+              heading.textContent = group.section;
+              wrap.appendChild(heading);
+              appendTable(group.items);
+            });
+            return wrap;
+          }
+          appendTable(sortMqlReportRows(rows, opts));
           return wrap;
         }
 
@@ -11104,7 +11191,15 @@
             return wrap;
           }
           if (!mqlIsHeavyCatalog(catalog)) {
-            wrap.appendChild(buildMqlFlatPrintTable(rows, catalog, display, { colorize: true }));
+            appendOfficialSectionTable(wrap, {
+              columns: mqlStandardColumnLabels(),
+              sections: groupMqlEntriesByDutyStatus(rows),
+              compact: true,
+              buildCells: function (entry) {
+                return mqlStandardRowCells(entry, display);
+              },
+            });
+            wrap.appendChild(buildMqlPrintSignatureBlock(opts.signature || hubSession.mqlSignature, false));
             return wrap;
           }
           appendOfficialSectionTable(wrap, {
@@ -11117,6 +11212,7 @@
               return mqlRowCells(entry, catalog, display);
             },
           });
+          wrap.appendChild(buildMqlPrintSignatureBlock(opts.signature || hubSession.mqlSignature, false));
           return wrap;
         }
 
@@ -11620,7 +11716,7 @@
             const sigPanel =
               reportsDetailBody && reportsDetailBody.querySelector(".reports-mql-signature-panel");
             const sig = currentMqlSignatureForPrint(sigPanel || reportsDetailBody);
-            triggerMqlPrint(renderMqlSignedPrintDocument(data.rows, data.catalog), {
+            triggerMqlPrint(renderMqlSignedPrintDocument(data.rows, data.catalog, { signature: sig }), {
               signed: true,
               signature: sig,
             });
@@ -11636,7 +11732,7 @@
             const sigPanel =
               reportsDetailBody && reportsDetailBody.querySelector(".reports-mql-signature-panel");
             const sig = currentMqlSignatureForPrint(sigPanel || reportsDetailBody);
-            triggerMqlPrint(renderMqlSignedPrintDocument(data.rows, data.catalog), {
+            triggerMqlPrint(renderMqlSignedPrintDocument(data.rows, data.catalog, { signature: sig }), {
               signed: true,
               signature: sig,
             });
@@ -12016,6 +12112,10 @@
           const keys = col ? col.tryKeys || [col.key] : sortKeysForPersonnelName(fieldKey);
           const raw = valueFromItemByKeys(item, keys);
           return raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+        }
+
+        function formatPersonLastName(item) {
+          return itemFieldText(item, "LastName") || "-";
         }
 
         function formatPersonDisplayName(item) {
@@ -15759,7 +15859,7 @@
               ethosMqlReportBody && ethosMqlReportBody.querySelector(".reports-mql-signature-panel");
             const sig = currentMqlSignatureForPrint(sigPanel || ethosMqlReportBody);
             triggerMqlPrint(
-              renderMqlSignedPrintDocument(rows, catalog, ethosMqlDisplayOpts()),
+              renderMqlSignedPrintDocument(rows, catalog, Object.assign({}, ethosMqlDisplayOpts(), { signature: sig })),
               { signed: true, signature: sig },
             );
           })();
