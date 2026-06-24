@@ -5570,14 +5570,54 @@
               el.id = MQL_PRINT_STYLE_ID;
               el.textContent =
                 "@media print {" +
-                "@page { size: landscape; margin: 0.35in 0.4in 1.5in 0.4in; }" +
-                "body { margin: 0; }" +
+                "@page { size: landscape; margin: 0.35in 0.4in 1.2in 0.4in; }" +
+                "html, body { margin: 0 !important; padding: 0 !important; }" +
+                "#hubMqlPrintSignatureStamp {" +
+                "display: block !important;" +
+                "position: fixed !important;" +
+                "bottom: 0.12in !important;" +
+                "right: 0.5in !important;" +
+                "left: auto !important;" +
+                "width: 3.15in !important;" +
+                "max-width: 3.15in !important;" +
+                "margin: 0 !important;" +
+                "padding: 0 !important;" +
+                "z-index: 2147483647 !important;" +
+                "text-align: left !important;" +
+                "color: #000 !important;" +
+                "background: transparent !important;" +
+                "}" +
+                "#hubMqlPrintSignatureStamp .mql-print-sig-signing-space { height: 0.55in; }" +
+                "#hubMqlPrintSignatureStamp .mql-print-sig-line {" +
+                "border-bottom: 1px solid #000;" +
+                "height: 1.15em;" +
+                "margin-bottom: 4px;" +
+                "}" +
+                "#hubMqlPrintSignatureStamp .mql-print-sig-name," +
+                "#hubMqlPrintSignatureStamp .mql-print-sig-title {" +
+                "margin: 0;" +
+                "font-size: 9pt;" +
+                "line-height: 1.2;" +
+                "white-space: nowrap;" +
+                "}" +
                 "}";
               document.head.appendChild(el);
             }
           } else if (el) {
             el.remove();
           }
+        }
+
+        function attachMqlPrintSignatureStamp(sig) {
+          removeMqlPrintSignatureStamp();
+          const stamp = buildMqlPrintSignatureBlock(sig, true);
+          stamp.id = "hubMqlPrintSignatureStamp";
+          document.body.appendChild(stamp);
+        }
+
+        function removeMqlPrintSignatureStamp() {
+          const stamp = document.getElementById("hubMqlPrintSignatureStamp");
+          if (stamp) stamp.remove();
         }
 
         function defaultMemoSignatureBlocks() {
@@ -5893,7 +5933,7 @@
           schedulingPrintSurface.innerHTML = "";
           schedulingPrintSurface.appendChild(node);
           if (options.mqlSignature) {
-            schedulingPrintSurface.appendChild(buildMqlPrintSignatureBlock(options.mqlSignature, true));
+            attachMqlPrintSignatureStamp(options.mqlSignature);
           }
           schedulingPrintSurface.hidden = false;
           if (root) root.classList.add("scheduling-print-active");
@@ -5901,6 +5941,7 @@
             window.print();
             window.setTimeout(function () {
               if (root) root.classList.remove("scheduling-print-active");
+              removeMqlPrintSignatureStamp();
               setMqlLandscapePrintMode(false);
               schedulingPrintSurface.className = "scheduling-print-surface";
               schedulingPrintSurface.hidden = true;

@@ -670,6 +670,9 @@
       #sp-pip-ui .scheduling-print-surface .mql-print-signature-stamp {
         display: none;
       }
+      #hubMqlPrintSignatureStamp {
+        display: none;
+      }
       #sp-pip-ui .scheduling-print-surface .af-official-table-header-wrap,
       #sp-pip-ui .scheduling-print-surface .af-official-section-block {
         width: 100%;
@@ -1092,24 +1095,36 @@
           break-inside: auto;
         }
         #sp-pip-ui.scheduling-print-active .scheduling-print-surface--mql .mql-print-signature-stamp {
-          page-break-before: avoid;
+          display: none !important;
         }
-        #sp-pip-ui.scheduling-print-active .mql-print-signature-stamp {
+        #hubMqlPrintSignatureStamp {
           display: block !important;
-          position: fixed;
-          bottom: 0.28in;
-          right: 0.55in;
-          width: 3.15in;
-          max-width: 3.15in;
-          margin: 0;
-          padding: 0;
-          height: auto;
-          overflow: visible;
-          z-index: 2;
-          text-align: left;
+          position: fixed !important;
+          bottom: 0 !important;
+          right: 0.5in !important;
+          left: auto !important;
+          width: 3.15in !important;
+          max-width: 3.15in !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          height: auto !important;
+          overflow: visible !important;
+          z-index: 2147483647 !important;
+          text-align: left !important;
+          color: #000 !important;
+          background: transparent !important;
         }
-        #sp-pip-ui.scheduling-print-active .mql-print-signature-stamp .mql-print-sig-name,
-        #sp-pip-ui.scheduling-print-active .mql-print-signature-stamp .mql-print-sig-title {
+        #hubMqlPrintSignatureStamp .mql-print-sig-signing-space {
+          height: 0.55in;
+        }
+        #hubMqlPrintSignatureStamp .mql-print-sig-line {
+          border-bottom: 1px solid #000;
+          height: 1.15em;
+          margin-bottom: 4px;
+        }
+        #hubMqlPrintSignatureStamp .mql-print-sig-name,
+        #hubMqlPrintSignatureStamp .mql-print-sig-title {
+          margin: 0;
           font-size: 9pt;
           line-height: 1.2;
           white-space: nowrap;
