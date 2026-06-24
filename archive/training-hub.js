@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260611h";
+        const HUB_BUILD_ID = "20260611i";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -259,6 +259,8 @@
         const MQL_REPORT_PRINT_TITLE = "Weapons Qual / Authorization Report";
         const MQL_SIGNED_SORT_LINE = "by Duty Status / Last Name";
         const MQL_EXPORT_SORT_LINE = "Alphabetical by Last Name";
+        /** Duty status section order for MQL reports (on-screen sections and row sort). */
+        const MQL_DUTY_STATUS_ORDER = ["PFD", "IMA", "P1", "TDY", "TDA", "DEP", "Non-SF"];
         const MQL_SIGNATURE_STORAGE_KEY = "trainingHub.mqlSignature.v1";
         const DEFAULT_MQL_SIGNATURE_NAME = "Name, Rank, USAF";
         const DEFAULT_MQL_SIGNATURE_TITLE = "Commander";
@@ -8355,6 +8357,48 @@
           tr.appendChild(td);
         }
 
+        function mqlDutyStatusSortKey(status) {
+          return String(status || "")
+            .trim()
+            .toUpperCase()
+            .replace(/[\s_.-]+/g, "");
+        }
+
+        function mqlDutyStatusSortIndex(status) {
+          const compact = mqlDutyStatusSortKey(status);
+          if (!compact) return MQL_DUTY_STATUS_ORDER.length + 1;
+          for (let i = 0; i < MQL_DUTY_STATUS_ORDER.length; i++) {
+            if (mqlDutyStatusSortKey(MQL_DUTY_STATUS_ORDER[i]) === compact) return i;
+          }
+          if (compact === "NONSF" || compact.indexOf("NONSF") === 0) {
+            return MQL_DUTY_STATUS_ORDER.indexOf("Non-SF");
+          }
+          return MQL_DUTY_STATUS_ORDER.length + 1;
+        }
+
+        function compareMqlRowsByDutyStatusThenName(a, b) {
+          const statusA = a && a.person ? personStatusLabel(a.person) : "Unknown";
+          const statusB = b && b.person ? personStatusLabel(b.person) : "Unknown";
+          const rankA = mqlDutyStatusSortIndex(statusA);
+          const rankB = mqlDutyStatusSortIndex(statusB);
+          if (rankA !== rankB) return rankA - rankB;
+          if (rankA > MQL_DUTY_STATUS_ORDER.length) {
+            const statusCmp = String(statusA).localeCompare(String(statusB), undefined, { sensitivity: "base" });
+            if (statusCmp !== 0) return statusCmp;
+          }
+          const lastCmp = itemFieldText(a.person, "LastName").localeCompare(itemFieldText(b.person, "LastName"), undefined, {
+            sensitivity: "base",
+          });
+          if (lastCmp !== 0) return lastCmp;
+          return itemFieldText(a.person, "FirstName").localeCompare(itemFieldText(b.person, "FirstName"), undefined, {
+            sensitivity: "base",
+          });
+        }
+
+        function sortMqlReportRowsByDutyStatusOrder(rows) {
+          return rows.slice().sort(compareMqlRowsByDutyStatusThenName);
+        }
+
         function groupMqlEntriesByDutyStatus(entries) {
           const groups = new Map();
           (Array.isArray(entries) ? entries : []).forEach(function (entry) {
@@ -8367,6 +8411,9 @@
             out.push({ section: section, items: sortMqlReportRows(items) });
           });
           out.sort(function (a, b) {
+            const rankA = mqlDutyStatusSortIndex(a.section);
+            const rankB = mqlDutyStatusSortIndex(b.section);
+            if (rankA !== rankB) return rankA - rankB;
             return String(a.section).localeCompare(String(b.section), undefined, { sensitivity: "base" });
           });
           return out;
@@ -8411,7 +8458,10 @@
           thead.appendChild(trHead);
           table.appendChild(thead);
           const tbody = document.createElement("tbody");
-          sortMqlReportRows(rows, display).forEach(function (entry) {
+          const sortedRows = mqlIsHeavyCatalog(catalog)
+            ? sortMqlReportRows(rows, display)
+            : sortMqlReportRowsByDutyStatusOrder(rows);
+          sortedRows.forEach(function (entry) {
             const tr = document.createElement("tr");
             buildCells(entry).forEach(function (cell) {
               const td = document.createElement("td");
@@ -8432,7 +8482,6 @@
         function buildMqlSignedPrintUnifiedTable(rows, catalog, display, options) {
           options = options || {};
           const columnLabels = mqlStandardColumnLabels();
-          const colCount = columnLabels.length;
           const table = document.createElement("table");
           table.className =
             "af-official-table af-official-table--compact af-official-table--mql-standard mql-print-unified-table";
@@ -8450,28 +8499,18 @@
           table.appendChild(thead);
 
           const tbody = document.createElement("tbody");
-          groupMqlEntriesByDutyStatus(rows).forEach(function (group) {
-            const sectionRow = document.createElement("tr");
-            sectionRow.className = "mql-print-section-row";
-            const sectionCell = document.createElement("td");
-            sectionCell.colSpan = colCount;
-            sectionCell.className = "mql-print-section-heading-cell";
-            sectionCell.textContent = group.section;
-            sectionRow.appendChild(sectionCell);
-            tbody.appendChild(sectionRow);
-            group.items.forEach(function (entry) {
-              const tr = document.createElement("tr");
-              mqlStandardRowCells(entry, display).forEach(function (cell) {
-                const td = document.createElement("td");
-                const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
-                td.textContent = text === "" || text == null ? "-" : String(text);
-                if (options.colorize) {
-                  applyMqlCertCellStyle(td, cell && cell.tone);
-                }
-                tr.appendChild(td);
-              });
-              tbody.appendChild(tr);
+          sortMqlReportRowsByDutyStatusOrder(rows).forEach(function (entry) {
+            const tr = document.createElement("tr");
+            mqlStandardRowCells(entry, display).forEach(function (cell) {
+              const td = document.createElement("td");
+              const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
+              td.textContent = text === "" || text == null ? "-" : String(text);
+              if (options.colorize) {
+                applyMqlCertCellStyle(td, cell && cell.tone);
+              }
+              tr.appendChild(td);
             });
+            tbody.appendChild(tr);
           });
           table.appendChild(tbody);
 
