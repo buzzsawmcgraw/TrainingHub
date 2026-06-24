@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260624c";
+        const HUB_BUILD_ID = "20260624e";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -1012,6 +1012,7 @@
           bylawItemChoices: null,
           sotView: "active",
           selectedMonth: null,
+          selectedSotSection: "__all__",
           sotRows: null,
           phaseOneTrackingRows: null,
           phaseOneArchiveRows: null,
@@ -7027,6 +7028,39 @@
           return out;
         }
 
+        function categorizePersonForSotAccounting(status) {
+          const s = String(status || "").trim();
+          if (!s) return null;
+          const rules = sotStatusCategoryRules();
+          for (let i = 0; i < rules.length; i++) {
+            if (rules[i].match.test(s)) return rules[i].label;
+          }
+          return null;
+        }
+
+        function buildSquadronPersonnelAccounting(personRows) {
+          const rules = sotStatusCategoryRules();
+          const counts = {};
+          rules.forEach(function (rule) {
+            counts[rule.label] = 0;
+          });
+          let total = 0;
+          let remaining = 0;
+          (Array.isArray(personRows) ? personRows : []).forEach(function (person) {
+            if (!person || person.Id == null) return;
+            total += 1;
+            const category = categorizePersonForSotAccounting(personStatusLabel(person));
+            if (category && counts[category] != null) counts[category] += 1;
+            else remaining += 1;
+          });
+          const rows = rules.map(function (rule) {
+            return { category: rule.label, count: counts[rule.label] || 0 };
+          });
+          rows.push({ category: "Remaining", count: remaining });
+          rows.push({ category: "Total assigned", count: total });
+          return { total: total, remaining: remaining, counts: counts, rows: rows };
+        }
+
         function renderSotDataTable(columns, rows, emptyText) {
           const wrap = document.createElement("div");
           wrap.className = "roster-wrap";
@@ -7432,6 +7466,7 @@
         function renderMonthlyOfficeBlock(group, yyyyMm) {
           const block = document.createElement("section");
           block.className = "reports-office-block";
+          block.dataset.officeKey = String(group.office || "");
 
           const title = document.createElement("h3");
           title.className = "reports-office-title";
@@ -7546,70 +7581,117 @@
         function renderSquadronMonthlySummary(rollup, yyyyMm, phaseOneStats, officeGroups) {
           const box = document.createElement("div");
           box.className = "reports-sot-squadron-summary";
-          const monthRange = formatSotMonthDayRange(yyyyMm);
 
-          if (phaseOneStats) {
-            const phaseSection = document.createElement("div");
-            phaseSection.className = "reports-sot-section-block";
-            const phaseTitle = document.createElement("h4");
-            phaseTitle.className = "reports-sot-section-title";
-            phaseTitle.textContent = "Phase 1 training";
-            phaseSection.appendChild(phaseTitle);
-            phaseSection.appendChild(
-              renderSotDataTable(
-                [
-                  { key: "item", label: "Training" },
-                  { key: "monthRange", label: "Training dates" },
-                  { key: "required", label: "Required", numeric: true },
-                  { key: "qualified", label: "Qualified", numeric: true },
-                  { key: "dueSoon", label: "Due 31-60d", numeric: true },
-                  { key: "overdue", label: "Overdue", numeric: true },
-                  { key: "notCompleted", label: "No records", numeric: true },
-                ],
-                [
-                  {
-                    item: phaseOneStats.item || "Phase 1 Training",
-                    monthRange: monthRange,
-                    required: phaseOneStats.required || 0,
-                    qualified: phaseOneStats.qualified || 0,
-                    dueSoon: phaseOneStats.dueSoon || 0,
-                    overdue: phaseOneStats.overdue || 0,
-                    notCompleted: phaseOneStats.notCompleted || 0,
-                  },
-                ],
-                "",
-              ),
-            );
-            box.appendChild(phaseSection);
-          }
+          const title = document.createElement("h4");
+          title.className = "reports-office-subtitle";
+          title.textContent = "Squadron totals";
+          box.appendChild(title);
+
+          const meta = document.createElement("p");
+          meta.className = "reports-office-meta";
+          meta.textContent =
+            "Personnel: " +
+            rollup.headcount +
+            " | Training posture: " +
+            rollup.postureIncluded +
+            " | Weapons overdue: " +
+            rollup.totalWeaponsOverdue +
+            " | By-Law overdue: " +
+            rollup.totalBylawOverdue;
+          box.appendChild(meta);
 
           const scheduledSection = document.createElement("div");
           scheduledSection.className = "reports-sot-section-block";
           const scheduledTitle = document.createElement("h4");
-          scheduledTitle.className = "reports-sot-section-title";
-          scheduledTitle.textContent = "Scheduled annual AUoF / By-Law training statistics";
+          scheduledTitle.className = "reports-office-subtitle";
+          scheduledTitle.textContent = "Scheduled annual AUoF / By-Law training (squadron)";
           scheduledSection.appendChild(scheduledTitle);
           scheduledSection.appendChild(
             renderSotDataTable(
               [
                 { key: "item", label: "Training" },
-                { key: "monthRange", label: "Training dates" },
                 { key: "required", label: "Required", numeric: true },
-                { key: "completedMonth", label: "Completed trng", numeric: true },
+                { key: "qualified", label: "Qualified", numeric: true },
+                { key: "dueSoon", label: "Due 31-60d", numeric: true },
+                { key: "overdue", label: "Overdue", numeric: true },
+                { key: "notCompleted", label: "No records", numeric: true },
               ],
-              buildSquadronMonthlyTrainingRows(officeGroups || [], yyyyMm),
+              buildSquadronScheduledTrainingRows(officeGroups || [], phaseOneStats),
               "No scheduled training statistics for this month.",
             ),
           );
           box.appendChild(scheduledSection);
 
+          const postureSection = document.createElement("div");
+          postureSection.className = "reports-sot-section-block";
+          const postureTitle = document.createElement("h4");
+          postureTitle.className = "reports-office-subtitle";
+          postureTitle.textContent = "Training posture (all offices)";
+          postureSection.appendChild(postureTitle);
+          postureSection.appendChild(
+            renderSotDataTable(
+              [
+                { key: "area", label: "Area" },
+                { key: "qualified", label: "Qualified", numeric: true },
+                { key: "dueSoon", label: "Due 31-60d", numeric: true },
+                { key: "urgent", label: "Due <=30d", numeric: true },
+                { key: "expired", label: "Expired", numeric: true },
+                { key: "unknown", label: "No records", numeric: true },
+              ],
+              [
+                {
+                  area: "Weapons",
+                  qualified: rollup.weaponsPosture.ok || 0,
+                  dueSoon: rollup.weaponsPosture.warn || 0,
+                  urgent: rollup.weaponsPosture.urgent || 0,
+                  expired: rollup.weaponsPosture.expired || 0,
+                  unknown: rollup.weaponsPosture.unknown || 0,
+                },
+                {
+                  area: "By-Law",
+                  qualified: rollup.bylawPosture.ok || 0,
+                  dueSoon: rollup.bylawPosture.warn || 0,
+                  urgent: rollup.bylawPosture.urgent || 0,
+                  expired: rollup.bylawPosture.expired || 0,
+                  unknown: rollup.bylawPosture.unknown || 0,
+                },
+              ].concat(
+                phaseOneStats && phaseOneStats.posture
+                  ? [
+                      {
+                        area: "Phase 1",
+                        qualified: phaseOneStats.posture.ok || 0,
+                        dueSoon: phaseOneStats.posture.warn || 0,
+                        urgent: phaseOneStats.posture.urgent || 0,
+                        expired: phaseOneStats.posture.expired || 0,
+                        unknown: phaseOneStats.posture.unknown || 0,
+                      },
+                    ]
+                  : [],
+              ),
+              "",
+            ),
+          );
+          box.appendChild(postureSection);
+
+          const monthSection = document.createElement("div");
+          monthSection.className = "reports-sot-section-block";
+          const monthTitle = document.createElement("h4");
+          monthTitle.className = "reports-office-subtitle";
+          monthTitle.textContent = "Total completed in " + formatYearMonthLabel(yyyyMm);
+          monthSection.appendChild(monthTitle);
+          monthSection.appendChild(
+            renderActivityList(rollup.monthWeaponsTally, "No squadron weapons qualifications this month."),
+          );
+          monthSection.appendChild(
+            renderActivityList(rollup.monthBylawTally, "No squadron By-Law training this month."),
+          );
+          box.appendChild(monthSection);
+
           return box;
         }
 
-        function renderMonthlySotReport(officeGroups, yyyyMm, phaseOneStats) {
-          const wrap = document.createElement("div");
-          wrap.className = "reports-sot-monthly-print";
-
+        function buildMonthlySotPrintHeader(yyyyMm) {
           const header = document.createElement("div");
           header.className = "reports-month-print-header";
           const docTitle = document.createElement("h3");
@@ -7627,9 +7709,74 @@
           header.appendChild(squadron);
           header.appendChild(dataMonth);
           header.appendChild(generated);
-          wrap.appendChild(header);
+          return header;
+        }
 
-          wrap.appendChild(renderSquadronMonthlySummary(null, yyyyMm, phaseOneStats, officeGroups));
+        function buildSquadronPrintTrainingRows(rollup, phaseOneStats, yyyyMm) {
+          const monthRange = formatSotMonthDayRange(yyyyMm);
+          const rows = [];
+          if (phaseOneStats) {
+            rows.push({
+              item: phaseOneStats.item || "Phase 1 Training",
+              monthRange: monthRange,
+              required: phaseOneStats.required || 0,
+              completedMonth: phaseOneStats.qualified || 0,
+            });
+          }
+          rows.push({
+            item: "Weapons qualifications",
+            monthRange: monthRange,
+            required: rollup.postureIncluded || 0,
+            completedMonth: rollup.weaponsPosture.ok || 0,
+          });
+          return rows;
+        }
+
+        function renderMonthlySotPrintReport(personRows, officeGroups, yyyyMm, phaseOneStats) {
+          const wrap = document.createElement("div");
+          wrap.className = "reports-sot-monthly-print";
+          wrap.appendChild(buildMonthlySotPrintHeader(yyyyMm));
+
+          const rollup = buildSquadronMonthlyRollup(officeGroups || []);
+          const personnel = buildSquadronPersonnelAccounting(personRows);
+
+          const personnelSection = document.createElement("div");
+          personnelSection.className = "reports-sot-section-block";
+          const personnelTitle = document.createElement("h4");
+          personnelTitle.className = "reports-sot-section-title";
+          personnelTitle.textContent = "Personnel strength";
+          personnelSection.appendChild(personnelTitle);
+          personnelSection.appendChild(
+            renderSotDataTable(
+              [
+                { key: "category", label: "Category" },
+                { key: "count", label: "Count", numeric: true },
+              ],
+              personnel.rows,
+              "No personnel data.",
+            ),
+          );
+          wrap.appendChild(personnelSection);
+
+          const scheduledSection = document.createElement("div");
+          scheduledSection.className = "reports-sot-section-block";
+          const scheduledTitle = document.createElement("h4");
+          scheduledTitle.className = "reports-sot-section-title";
+          scheduledTitle.textContent = "Scheduled annual AUoF / By-Law training statistics";
+          scheduledSection.appendChild(scheduledTitle);
+          scheduledSection.appendChild(
+            renderSotDataTable(
+              [
+                { key: "item", label: "Training" },
+                { key: "monthRange", label: "Training dates" },
+                { key: "required", label: "Required", numeric: true },
+                { key: "completedMonth", label: "Completed trng", numeric: true },
+              ],
+              buildSquadronPrintTrainingRows(rollup, phaseOneStats, yyyyMm),
+              "No training statistics.",
+            ),
+          );
+          wrap.appendChild(scheduledSection);
 
           const sig = document.createElement("p");
           sig.className = "reports-sot-signature";
@@ -7637,6 +7784,116 @@
           wrap.appendChild(sig);
 
           return wrap;
+        }
+
+        function renderMonthlySotScreenReport(officeGroups, yyyyMm, phaseOneStats) {
+          const wrap = document.createElement("div");
+          wrap.className = "reports-sot-monthly-screen";
+
+          if (!officeGroups.length) {
+            const empty = document.createElement("p");
+            empty.className = "reports-office-empty";
+            empty.textContent = "No office groups to display.";
+            wrap.appendChild(empty);
+            return wrap;
+          }
+
+          const rollup = buildSquadronMonthlyRollup(officeGroups);
+          wrap.appendChild(renderSquadronMonthlySummary(rollup, yyyyMm, phaseOneStats, officeGroups));
+
+          const officesTitle = document.createElement("h4");
+          officesTitle.className = "reports-office-subtitle reports-sot-offices-title";
+          officesTitle.textContent = "By duty section";
+          wrap.appendChild(officesTitle);
+
+          const officesWrap = document.createElement("div");
+          officesWrap.className = "reports-sot-office-sections";
+          officesWrap.id = "reportsSotOfficeSections";
+          officeGroups.forEach(function (group) {
+            officesWrap.appendChild(renderMonthlyOfficeBlock(group, yyyyMm));
+          });
+          wrap.appendChild(officesWrap);
+
+          return wrap;
+        }
+
+        function populateSotSectionDropdown(officeGroups) {
+          const select = document.getElementById("reportsSotSectionSelect");
+          if (!select) return;
+          const prior = reportsSession.selectedSotSection || "__all__";
+          select.innerHTML = "";
+          const allOpt = document.createElement("option");
+          allOpt.value = "__all__";
+          allOpt.textContent = "All duty sections";
+          select.appendChild(allOpt);
+          const squadOpt = document.createElement("option");
+          squadOpt.value = "__squadron__";
+          squadOpt.textContent = "Squadron totals only";
+          select.appendChild(squadOpt);
+          (Array.isArray(officeGroups) ? officeGroups : []).forEach(function (group) {
+            const opt = document.createElement("option");
+            opt.value = String(group.office || "");
+            opt.textContent = String(group.office || "Unassigned");
+            select.appendChild(opt);
+          });
+          let matched = false;
+          for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === prior) {
+              select.value = prior;
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) select.value = "__all__";
+          applySotSectionFilter();
+        }
+
+        function applySotSectionFilter() {
+          const select = document.getElementById("reportsSotSectionSelect");
+          const selected = select ? String(select.value || "__all__") : "__all__";
+          reportsSession.selectedSotSection = selected;
+          const screen = document.querySelector(".reports-sot-monthly-screen");
+          if (!screen) return;
+          const squadron = screen.querySelector(".reports-sot-squadron-summary");
+          const officesTitle = screen.querySelector(".reports-sot-offices-title");
+          const blocks = screen.querySelectorAll(".reports-office-block");
+
+          if (selected === "__squadron__") {
+            if (squadron) squadron.hidden = false;
+            if (officesTitle) officesTitle.hidden = true;
+            blocks.forEach(function (block) {
+              block.hidden = true;
+            });
+            return;
+          }
+
+          if (selected === "__all__") {
+            if (squadron) squadron.hidden = false;
+            if (officesTitle) officesTitle.hidden = false;
+            blocks.forEach(function (block) {
+              block.hidden = false;
+            });
+            return;
+          }
+
+          if (squadron) squadron.hidden = true;
+          if (officesTitle) officesTitle.hidden = false;
+          blocks.forEach(function (block) {
+            block.hidden = block.dataset.officeKey !== selected;
+          });
+        }
+
+        function mountMonthlySotViews(monthlyBody, personRows, officeGroups, yyyyMm, phaseOneStats) {
+          monthlyBody.innerHTML = "";
+          const screenWrap = document.createElement("div");
+          screenWrap.className = "reports-sot-monthly-screen-wrap";
+          screenWrap.appendChild(renderMonthlySotScreenReport(officeGroups, yyyyMm, phaseOneStats));
+          const printWrap = document.createElement("div");
+          printWrap.className = "reports-sot-monthly-print-wrap";
+          printWrap.appendChild(renderMonthlySotPrintReport(personRows, officeGroups, yyyyMm, phaseOneStats));
+          monthlyBody.appendChild(screenWrap);
+          monthlyBody.appendChild(printWrap);
+          populateSotSectionDropdown(officeGroups);
         }
 
         function updateSotPrintButtonLabel() {
@@ -7658,12 +7915,10 @@
           const monthlyView = document.getElementById("reportsSotMonthlyView");
           const tabActive = document.getElementById("reportsSotTabActive");
           const tabMonthly = document.getElementById("reportsSotTabMonthly");
-          const root = document.getElementById("sp-pip-ui");
           if (activeView) activeView.hidden = reportsSession.sotView !== "active";
           if (monthlyView) monthlyView.hidden = reportsSession.sotView !== "monthly";
           if (tabActive) tabActive.classList.toggle("reports-sot-tab--active", reportsSession.sotView === "active");
           if (tabMonthly) tabMonthly.classList.toggle("reports-sot-tab--active", reportsSession.sotView === "monthly");
-          if (root) root.classList.toggle("sot-monthly-active", reportsSession.sotView === "monthly");
           updateSotPrintButtonLabel();
         }
 
@@ -7677,9 +7932,12 @@
           const weaponsRows = Array.isArray(reportsSession.weaponsRows) ? reportsSession.weaponsRows : [];
           const bylawRows = Array.isArray(reportsSession.bylawRows) ? reportsSession.bylawRows : [];
           const officeGroups = buildMonthlyOfficeGroups(personRows, weaponsRows, bylawRows, reportsSession.selectedMonth);
-          monthlyBody.innerHTML = "";
-          monthlyBody.appendChild(
-            renderMonthlySotReport(officeGroups, reportsSession.selectedMonth, reportsSession.phaseOnePostureStats),
+          mountMonthlySotViews(
+            monthlyBody,
+            personRows,
+            officeGroups,
+            reportsSession.selectedMonth,
+            reportsSession.phaseOnePostureStats,
           );
 
           const pw = hubSession.pw;
@@ -7693,13 +7951,12 @@
                 bylawRows,
               );
               if (!monthlyBody.isConnected) return;
-              monthlyBody.innerHTML = "";
-              monthlyBody.appendChild(
-                renderMonthlySotReport(
-                  officeGroups,
-                  reportsSession.selectedMonth,
-                  reportsSession.phaseOnePostureStats,
-                ),
+              mountMonthlySotViews(
+                monthlyBody,
+                personRows,
+                officeGroups,
+                reportsSession.selectedMonth,
+                reportsSession.phaseOnePostureStats,
               );
             })
             .catch(function (e) {
@@ -7721,6 +7978,7 @@
           const tabMonthly = document.getElementById("reportsSotTabMonthly");
           const monthCombo = document.getElementById("reportsSotMonthCombo");
           const monthApply = document.getElementById("reportsSotMonthApply");
+          const sectionSelect = document.getElementById("reportsSotSectionSelect");
 
           if (tabActive && !tabActive.dataset.wired) {
             tabActive.dataset.wired = "1";
@@ -7743,6 +8001,12 @@
               window.setTimeout(function () {
                 setReportsState("", "");
               }, 2200);
+            });
+          }
+          if (sectionSelect && !sectionSelect.dataset.wired) {
+            sectionSelect.dataset.wired = "1";
+            sectionSelect.addEventListener("change", function () {
+              applySotSectionFilter();
             });
           }
           if (monthCombo && !monthCombo.dataset.wired) {
@@ -7815,6 +8079,22 @@
           field.appendChild(combo);
           field.appendChild(datalist);
           controls.appendChild(field);
+
+          const sectionField = document.createElement("div");
+          sectionField.className = "reports-month-field";
+          const sectionLab = document.createElement("label");
+          sectionLab.setAttribute("for", "reportsSotSectionSelect");
+          sectionLab.textContent = "Duty section";
+          const sectionSelect = document.createElement("select");
+          sectionSelect.id = "reportsSotSectionSelect";
+          const sectionDefault = document.createElement("option");
+          sectionDefault.value = "__all__";
+          sectionDefault.textContent = "All duty sections";
+          sectionSelect.appendChild(sectionDefault);
+          sectionField.appendChild(sectionLab);
+          sectionField.appendChild(sectionSelect);
+          controls.appendChild(sectionField);
+
           const applyBtn = document.createElement("button");
           applyBtn.type = "button";
           applyBtn.id = "reportsSotMonthApply";

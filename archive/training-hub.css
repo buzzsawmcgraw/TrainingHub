@@ -1626,6 +1626,9 @@
         background: #f5f5f5;
         border-color: #888;
       }
+      #sp-pip-ui .reports-sot-monthly-print-wrap {
+        display: none;
+      }
       #sp-pip-ui .reports-sot-monthly-print {
         max-width: 920px;
         margin: 0 auto;
@@ -1855,7 +1858,8 @@
         #sp-pip-ui .reports-no-print,
         #sp-pip-ui #reportsSotActiveView,
         #sp-pip-ui #reportsDetailTitle,
-        #sp-pip-ui #reportsDetailSubtitle {
+        #sp-pip-ui #reportsDetailSubtitle,
+        #sp-pip-ui .reports-sot-monthly-screen-wrap {
           display: none !important;
         }
         #sp-pip-ui.sot-monthly-active .hub-header,
@@ -1870,6 +1874,7 @@
           display: block !important;
           color: #000;
         }
+        #sp-pip-ui .reports-sot-monthly-print-wrap,
         #sp-pip-ui .reports-sot-monthly-print,
         #sp-pip-ui #reportsSotMonthlyView {
           display: block !important;
