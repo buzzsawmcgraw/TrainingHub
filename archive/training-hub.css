@@ -1689,9 +1689,14 @@
       #sp-pip-ui table.reports-sot-table td {
         color: rgba(210, 255, 224, 0.9);
       }
-      #sp-pip-ui table.reports-sot-table td.reports-sot-num {
+        #sp-pip-ui table.reports-sot-table td.reports-sot-num {
         text-align: center;
         font-variant-numeric: tabular-nums;
+      }
+      #sp-pip-ui table.reports-sot-table--wide th,
+      #sp-pip-ui table.reports-sot-table--wide td {
+        font-size: 11px;
+        padding: 6px 7px;
       }
       @media print {
         #sp-pip-ui .hub-header,
@@ -1745,6 +1750,14 @@
         }
         #sp-pip-ui table.reports-sot-table th {
           background: #eee !important;
+        }
+        #sp-pip-ui table.reports-sot-table--wide th,
+        #sp-pip-ui table.reports-sot-table--wide td {
+          font-size: 8px !important;
+          padding: 3px 4px !important;
+        }
+        #sp-pip-ui .roster-wrap {
+          overflow-x: visible !important;
         }
         #sp-pip-ui table.roster td.cert-status--ok,
         #sp-pip-ui table.roster td.cert-status--warn,

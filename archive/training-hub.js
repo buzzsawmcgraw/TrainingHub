@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260611j";
+        const HUB_BUILD_ID = "20260624b";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -250,6 +250,20 @@
           { key: "DutySection", label: "Duty section", inputType: "text" },
           { key: "PhaseOneStartDate", label: "Phase 1 start date", inputType: "date" },
           { key: "ProjectedOfficeFlight", label: "Projected Office/Flight", inputType: "select" },
+          {
+            key: "NeedsFiring",
+            label: "Needs firing",
+            inputType: "select",
+            altKeys: ["NeedFiring", "FiringRequired", "Needs_x0020_Firing"],
+            options: ["", "Yes", "No"],
+          },
+          {
+            key: "NeedsTraining",
+            label: "Needs training",
+            inputType: "select",
+            altKeys: ["NeedTraining", "TrainingRequired", "Needs_x0020_Training"],
+            options: ["", "Yes", "No"],
+          },
           { key: "DateReleased", label: "Date released", inputType: "date" },
           { key: "Notes", label: "Notes", inputType: "textarea" },
         ];
@@ -999,6 +1013,9 @@
           sotView: "active",
           selectedMonth: null,
           sotRows: null,
+          phaseOneTrackingRows: null,
+          phaseOneArchiveRows: null,
+          phaseOnePostureStats: null,
         };
 
         let weaponsCertEditSession = {
@@ -1487,6 +1504,20 @@
         }
 
         const WEAPONS_CERT_MONTH_ABBR = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+        const SOT_MONTH_NAMES_FULL = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
 
         function parseWeaponsCertCalendarDate(val) {
           if (val === null || val === undefined || val === "") return null;
@@ -4765,11 +4796,25 @@
               input = document.createElement("textarea");
             } else if (field.inputType === "select") {
               input = document.createElement("select");
-              input.className = "add-field-select--autosize";
-              const opt0 = document.createElement("option");
-              opt0.value = "";
-              opt0.textContent = "(select)";
-              input.appendChild(opt0);
+              if (Array.isArray(field.options)) {
+                field.options.forEach(function (opt) {
+                  const o = document.createElement("option");
+                  o.value = opt;
+                  o.textContent = opt === "" ? "(select)" : opt;
+                  input.appendChild(o);
+                });
+                if (item) {
+                  const raw = valueFromItemByKeys(item, [field.key].concat(field.altKeys || []));
+                  const display = formatCellValue(raw);
+                  if (display) input.value = display;
+                }
+              } else {
+                input.className = "add-field-select--autosize";
+                const opt0 = document.createElement("option");
+                opt0.value = "";
+                opt0.textContent = "(select)";
+                input.appendChild(opt0);
+              }
             } else if (field.inputType === "date") {
               input = document.createElement("input");
               input.type = "date";
@@ -4795,7 +4840,7 @@
           const fields = Array.isArray(PHASE_ONE_EDIT_FIELDS) ? PHASE_ONE_EDIT_FIELDS : [];
           for (let i = 0; i < fields.length; i++) {
             const field = fields[i];
-            if (!field || field.inputType !== "select") continue;
+            if (!field || field.inputType !== "select" || Array.isArray(field.options)) continue;
             const sel = document.getElementById("p1e_" + field.key);
             if (!sel || sel.tagName !== "SELECT") continue;
             const col = { key: field.key, tryKeys: [field.key] };
@@ -4842,6 +4887,7 @@
             await spFetch(`/_api/web/${seg}/items(${item.Id})`, { method: "MERGE", body: payload }, pw);
             setPhase1EditPanelVisible(false);
             phase1Session.editItem = null;
+            invalidatePhaseOneReportsCache();
             await loadPhase1TrackerData();
             setPhase1State("ok", "Phase 1 record saved.");
             window.setTimeout(function () {
@@ -4869,6 +4915,13 @@
             PhaseOneStartDate: phaseOneDatePayloadValue(valueFromItemByKeys(item, ["PhaseOneStartDate"])),
             ProjectedOfficeFlight: formatCellValue(valueFromItemByKeys(item, ["ProjectedOfficeFlight"]) || ""),
             DateReleased: phaseOneDatePayloadValue(valueFromItemByKeys(item, ["DateReleased"])),
+            NeedsFiring: formatCellValue(
+              valueFromItemByKeys(item, ["NeedsFiring", "NeedFiring", "FiringRequired", "Needs_x0020_Firing"]) || "",
+            ),
+            NeedsTraining: formatCellValue(
+              valueFromItemByKeys(item, ["NeedsTraining", "NeedTraining", "TrainingRequired", "Needs_x0020_Training"]) ||
+                "",
+            ),
             Notes: formatCellValue(valueFromItemByKeys(item, ["Notes"]) || ""),
             ArchivedAt: spDateTimeNowIso(),
             Title: formatCellValue(valueFromItemByKeys(item, ["PersonnelName", "Title"]) || "Phase 1 archive"),
@@ -4906,6 +4959,7 @@
             );
             setPhase1EditPanelVisible(false);
             phase1Session.editItem = null;
+            invalidatePhaseOneReportsCache();
             await loadPhase1TrackerData();
             setPhase1State("ok", "Record archived.");
             window.setTimeout(function () {
@@ -6951,7 +7005,7 @@
             return wrap;
           }
           const table = document.createElement("table");
-          table.className = "reports-sot-table";
+          table.className = "reports-sot-table" + (columns.length >= 7 ? " reports-sot-table--wide" : "");
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
           columns.forEach(function (col) {
@@ -7134,6 +7188,99 @@
               return { label: label, count: bylawMonth[label] };
             });
           return rollup;
+        }
+
+        function formatSotMonthDayRange(yyyyMm) {
+          const parts = String(yyyyMm || "").split("-");
+          if (parts.length !== 2) return "";
+          const y = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10);
+          if (!y || !m || m < 1 || m > 12) return "";
+          const lastDay = new Date(y, m, 0).getDate();
+          const mon = SOT_MONTH_NAMES_FULL[m - 1] || WEAPONS_CERT_MONTH_ABBR[m - 1] || "";
+          return "1 - " + lastDay + " " + mon;
+        }
+
+        function phaseOneRecordIsOpen(record) {
+          if (!phaseOneIsActive(record)) return false;
+          const released = parseWeaponsCertCalendarDate(valueFromItemByKeys(record, ["DateReleased"]));
+          return !(released && !isNaN(released.getTime()));
+        }
+
+        function buildPhaseOnePostureStats(trackingRows, weaponsRows, bylawRows) {
+          const seen = new Set();
+          const posture = { ok: 0, warn: 0, urgent: 0, expired: 0, unknown: 0 };
+          let required = 0;
+
+          (Array.isArray(trackingRows) ? trackingRows : []).forEach(function (record) {
+            if (!phaseOneRecordIsOpen(record)) return;
+            const pid = String(phaseOnePersonnelIdFromItem(record) || "").trim();
+            const dedupe =
+              pid ||
+              phaseOneFieldText(record, { key: "PersonnelName", tryKeys: ["PersonnelName", "Title"] }) ||
+              String(record.Id || "");
+            if (seen.has(dedupe)) return;
+            seen.add(dedupe);
+            required += 1;
+
+            const personWeapons = (Array.isArray(weaponsRows) ? weaponsRows : []).filter(function (row) {
+              return pid && weaponsPersonnelIdFromItem(row) === pid;
+            });
+            const personBylaw = (Array.isArray(bylawRows) ? bylawRows : []).filter(function (row) {
+              return pid && bylawPersonnelIdFromItem(row) === pid;
+            });
+            const weaponsStatus = summarizeTrainingRows(personWeapons, computeWeaponsCertStatus);
+            const bylawStatus = summarizeTrainingRows(personBylaw, computeBylawTrainingStatus);
+            const overallTone = worstTrainingStatusTone([weaponsStatus.tone, bylawStatus.tone]);
+            incrementToneBucket(posture, overallTone);
+          });
+
+          return {
+            item: "Phase 1 Training",
+            required: required,
+            qualified: posture.ok || 0,
+            dueSoon: posture.warn || 0,
+            overdue: (posture.urgent || 0) + (posture.expired || 0),
+            notCompleted: posture.unknown || 0,
+            posture: posture,
+          };
+        }
+
+        function buildSquadronScheduledTrainingRows(officeGroups, phaseOneStats) {
+          const merged = {};
+          (Array.isArray(officeGroups) ? officeGroups : []).forEach(function (group) {
+            (group.bylawItemStats || []).forEach(function (row) {
+              const key = String(row.item || "");
+              if (!key) return;
+              if (!merged[key]) {
+                merged[key] = {
+                  item: key,
+                  required: 0,
+                  qualified: 0,
+                  dueSoon: 0,
+                  overdue: 0,
+                  notCompleted: 0,
+                };
+              }
+              merged[key].required += row.required || 0;
+              merged[key].qualified += row.qualified || 0;
+              merged[key].overdue += row.overdue || 0;
+              merged[key].dueSoon += row.dueSoon || 0;
+              merged[key].notCompleted += Math.max(
+                0,
+                (row.required || 0) - (row.qualified || 0) - (row.dueSoon || 0) - (row.overdue || 0),
+              );
+            });
+          });
+          const rows = Object.keys(merged)
+            .sort(function (a, b) {
+              return a.localeCompare(b, undefined, { sensitivity: "base" });
+            })
+            .map(function (key) {
+              return merged[key];
+            });
+          if (phaseOneStats) rows.unshift(phaseOneStats);
+          return rows;
         }
 
         function buildMonthlyOfficeGroups(personRows, weaponsRows, bylawRows, yyyyMm) {
@@ -7335,7 +7482,7 @@
           return block;
         }
 
-        function renderSquadronMonthlySummary(rollup, yyyyMm) {
+        function renderSquadronMonthlySummary(rollup, yyyyMm, phaseOneStats, officeGroups) {
           const box = document.createElement("div");
           box.className = "reports-sot-squadron-summary";
 
@@ -7356,6 +7503,28 @@
             " | By-Law overdue: " +
             rollup.totalBylawOverdue;
           box.appendChild(meta);
+
+          const scheduledSection = document.createElement("div");
+          scheduledSection.className = "reports-sot-section-block";
+          const scheduledTitle = document.createElement("h4");
+          scheduledTitle.className = "reports-office-subtitle";
+          scheduledTitle.textContent = "Scheduled annual AUoF / By-Law training (squadron)";
+          scheduledSection.appendChild(scheduledTitle);
+          scheduledSection.appendChild(
+            renderSotDataTable(
+              [
+                { key: "item", label: "Training" },
+                { key: "required", label: "Required", numeric: true },
+                { key: "qualified", label: "Qualified", numeric: true },
+                { key: "dueSoon", label: "Due 31-60d", numeric: true },
+                { key: "overdue", label: "Overdue", numeric: true },
+                { key: "notCompleted", label: "No records", numeric: true },
+              ],
+              buildSquadronScheduledTrainingRows(officeGroups || [], phaseOneStats),
+              "No scheduled training statistics for this month.",
+            ),
+          );
+          box.appendChild(scheduledSection);
 
           const postureSection = document.createElement("div");
           postureSection.className = "reports-sot-section-block";
@@ -7390,7 +7559,20 @@
                   expired: rollup.bylawPosture.expired || 0,
                   unknown: rollup.bylawPosture.unknown || 0,
                 },
-              ],
+              ].concat(
+                phaseOneStats && phaseOneStats.posture
+                  ? [
+                      {
+                        area: "Phase 1",
+                        qualified: phaseOneStats.posture.ok || 0,
+                        dueSoon: phaseOneStats.posture.warn || 0,
+                        urgent: phaseOneStats.posture.urgent || 0,
+                        expired: phaseOneStats.posture.expired || 0,
+                        unknown: phaseOneStats.posture.unknown || 0,
+                      },
+                    ]
+                  : [],
+              ),
               "",
             ),
           );
@@ -7413,7 +7595,7 @@
           return box;
         }
 
-        function renderMonthlySotReport(officeGroups, yyyyMm) {
+        function renderMonthlySotReport(officeGroups, yyyyMm, phaseOneStats) {
           const wrap = document.createElement("div");
           wrap.className = "reports-sot-monthly-print";
 
@@ -7447,7 +7629,7 @@
           }
 
           const rollup = buildSquadronMonthlyRollup(officeGroups);
-          wrap.appendChild(renderSquadronMonthlySummary(rollup, yyyyMm));
+          wrap.appendChild(renderSquadronMonthlySummary(rollup, yyyyMm, phaseOneStats, officeGroups));
 
           const officesTitle = document.createElement("h4");
           officesTitle.className = "reports-office-subtitle";
@@ -7506,7 +7688,42 @@
           const bylawRows = Array.isArray(reportsSession.bylawRows) ? reportsSession.bylawRows : [];
           const officeGroups = buildMonthlyOfficeGroups(personRows, weaponsRows, bylawRows, reportsSession.selectedMonth);
           monthlyBody.innerHTML = "";
-          monthlyBody.appendChild(renderMonthlySotReport(officeGroups, reportsSession.selectedMonth));
+          monthlyBody.appendChild(
+            renderMonthlySotReport(officeGroups, reportsSession.selectedMonth, reportsSession.phaseOnePostureStats),
+          );
+
+          const pw = hubSession.pw;
+          if (!pw) return;
+          reportsSession.phaseOnePostureStats = null;
+          void ensurePhaseOneDataForSot(pw)
+            .then(function (phaseOneData) {
+              reportsSession.phaseOnePostureStats = buildPhaseOnePostureStats(
+                phaseOneData.tracking,
+                weaponsRows,
+                bylawRows,
+              );
+              if (!monthlyBody.isConnected) return;
+              monthlyBody.innerHTML = "";
+              monthlyBody.appendChild(
+                renderMonthlySotReport(
+                  officeGroups,
+                  reportsSession.selectedMonth,
+                  reportsSession.phaseOnePostureStats,
+                ),
+              );
+            })
+            .catch(function (e) {
+              log("Phase 1 posture SOT load failed:\n" + (e.message || String(e)), "warn");
+              if (reportsSession.sotView === "monthly") {
+                setReportsState(
+                  "err",
+                  "Phase 1 posture stats unavailable: " + (e.message || String(e)).slice(0, 120),
+                );
+                window.setTimeout(function () {
+                  setReportsState("", "");
+                }, 3500);
+              }
+            });
         }
 
         function wireStatusOfTrainingControls() {
@@ -7631,6 +7848,48 @@
           } catch (e) {
             log("Reports by-law fetch failed:\n" + (e.message || String(e)), "warn");
             return [];
+          }
+        }
+
+        function invalidatePhaseOneReportsCache() {
+          reportsSession.phaseOneTrackingRows = null;
+          reportsSession.phaseOneArchiveRows = null;
+          reportsSession.phaseOnePostureStats = null;
+        }
+
+        async function ensurePhaseOneDataForSot(pw) {
+          if (!pw) return { tracking: [], archive: [] };
+          if (!phaseOneTrackingListTitle() && !phaseOneTrackingListUsesGuid()) {
+            return { tracking: [], archive: [] };
+          }
+          try {
+            if (!Array.isArray(reportsSession.phaseOneTrackingRows)) {
+              const seg = phaseOneTrackingListApiPath();
+              reportsSession.phaseOneTrackingRows = await fetchPhaseOneListRows(
+                seg,
+                pw,
+                PHASE_ONE_TRACKING_ITEMS_ORDERBY,
+              );
+            }
+            if (!Array.isArray(reportsSession.phaseOneArchiveRows)) {
+              if (phaseOneArchiveListTitle() || phaseOneArchiveListUsesGuid()) {
+                const archSeg = phaseOneArchiveListApiPath();
+                reportsSession.phaseOneArchiveRows = await fetchPhaseOneListRows(
+                  archSeg,
+                  pw,
+                  PHASE_ONE_ARCHIVE_ITEMS_ORDERBY,
+                );
+              } else {
+                reportsSession.phaseOneArchiveRows = [];
+              }
+            }
+            return {
+              tracking: reportsSession.phaseOneTrackingRows || [],
+              archive: reportsSession.phaseOneArchiveRows || [],
+            };
+          } catch (e) {
+            log("Phase 1 SOT fetch failed:\n" + (e.message || String(e)), "warn");
+            throw e;
           }
         }
 
@@ -9173,6 +9432,7 @@
           reportsSession.mqlCatalog = null;
           reportsSession.bylawItemChoices = null;
           reportsSession.mqlMode = "standard";
+          invalidatePhaseOneReportsCache();
         }
 
         async function printActiveReport() {
