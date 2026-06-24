@@ -1158,6 +1158,9 @@
         function sortKeysForPersonnelName(fieldKey) {
           if (fieldKey === "LastName") return ["LastName", "Last_x0020_Name", "LastName0"];
           if (fieldKey === "FirstName") return ["FirstName", "First_x0020_Name", "FirstName0"];
+          if (fieldKey === "MiddleInitial") {
+            return ["MiddleInitial", "Middle_x0020_Initial", "MiddleInitial0", "MI"];
+          }
           return [fieldKey];
         }
 
@@ -7831,6 +7834,15 @@
             });
         }
 
+        function formatPersonFullName(item) {
+          const last = itemFieldText(item, "LastName");
+          const first = itemFieldText(item, "FirstName");
+          const mi = itemFieldText(item, "MiddleInitial");
+          let name = [last, first].filter(Boolean).join(", ");
+          if (mi) name = name ? name + " " + mi + "." : mi + ".";
+          return name || "-";
+        }
+
         function mqlDisplayOpts(opts) {
           opts = opts || {};
           return {
@@ -7988,7 +8000,7 @@
         function appendMqlTableCell(tr, cell, idx, entry, display) {
           const td = document.createElement("td");
           const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
-          const nameColIndex = mqlIsHeavyCatalog(display.catalog) ? 1 : 3;
+          const nameColIndex = mqlIsHeavyCatalog(display.catalog) ? 1 : 2;
           if (idx === nameColIndex && display.navigateToPerson && entry.person && entry.person.Id != null) {
             const nameBtn = document.createElement("button");
             nameBtn.type = "button";

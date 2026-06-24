@@ -4175,6 +4175,9 @@
         function sortKeysForPersonnelName(fieldKey) {
           if (fieldKey === "LastName") return ["LastName", "Last_x0020_Name", "LastName0"];
           if (fieldKey === "FirstName") return ["FirstName", "First_x0020_Name", "FirstName0"];
+          if (fieldKey === "MiddleInitial") {
+            return ["MiddleInitial", "Middle_x0020_Initial", "MiddleInitial0", "MI"];
+          }
           return [fieldKey];
         }
 
@@ -10848,6 +10851,15 @@
             });
         }
 
+        function formatPersonFullName(item) {
+          const last = itemFieldText(item, "LastName");
+          const first = itemFieldText(item, "FirstName");
+          const mi = itemFieldText(item, "MiddleInitial");
+          let name = [last, first].filter(Boolean).join(", ");
+          if (mi) name = name ? name + " " + mi + "." : mi + ".";
+          return name || "-";
+        }
+
         function mqlDisplayOpts(opts) {
           opts = opts || {};
           return {
@@ -12125,15 +12137,6 @@
           const keys = col ? col.tryKeys || [col.key] : sortKeysForPersonnelName(fieldKey);
           const raw = valueFromItemByKeys(item, keys);
           return raw !== undefined && raw !== null ? formatCellValue(raw) : "";
-        }
-
-        function formatPersonFullName(item) {
-          const last = itemFieldText(item, "LastName");
-          const first = itemFieldText(item, "FirstName");
-          const mi = itemFieldText(item, "MiddleInitial");
-          let name = [last, first].filter(Boolean).join(", ");
-          if (mi) name = name ? name + " " + mi + "." : mi + ".";
-          return name || "Personnel Record";
         }
 
         function formatPersonLastName(item) {
