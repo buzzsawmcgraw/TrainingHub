@@ -38,6 +38,9 @@ $close = $scriptBlock.LastIndexOf('})();')
 if (-not $open.Success -or $close -lt 0) { throw "Could not parse script wrapper" }
 $js = ConvertTo-SharePointAscii($scriptBlock.Substring($open.Index, $close - $open.Index + '})();'.Length))
 
+$buildIdMatch = [regex]::Match($js, 'const HUB_BUILD_ID = "([^"]*)"')
+$hubBuildId = if ($buildIdMatch.Success) { $buildIdMatch.Groups[1].Value } else { "dev" }
+
 $archive = Join-Path $root "archive"
 if (-not (Test-Path $archive)) {
   New-Item -ItemType Directory -Path $archive | Out-Null
@@ -93,15 +96,53 @@ $loaderCss = @'
         font-size: 12px;
         line-height: 1.5;
       }
+      #sp-pip-ui .hub-build-badge {
+        margin: 8px 0 0;
+        padding: 4px 8px;
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #0a140c;
+        background: #c9a227;
+        border: 1px solid #e8c547;
+        border-radius: 4px;
+      }
+      #sp-pip-ui .hub-build-badge #hubBuildIdLabel {
+        color: #0a140c;
+      }
 '@
 
 $loaderJs = @'
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
+  var LOADER_BUILD_ID = "LOADER_BUILD_PLACEHOLDER";
   var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt";
   var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
+
+  function ensureBuildBadge(buildId) {
+    var label = document.getElementById("hubBuildIdLabel");
+    if (!label) {
+      var titles = document.querySelector("#sp-pip-ui .hub-header-titles");
+      if (titles) {
+        var badge = document.createElement("p");
+        badge.className = "hub-build-badge";
+        badge.title = "Hub script version - verify after Site Assets upload";
+        badge.innerHTML = 'Build <span id="hubBuildIdLabel"></span>';
+        titles.appendChild(badge);
+        label = document.getElementById("hubBuildIdLabel");
+      }
+    }
+    if (label) label.textContent = String(buildId || LOADER_BUILD_ID || "unknown");
+  }
+
+  ensureBuildBadge(LOADER_BUILD_ID);
+  if (statusEl) {
+    statusEl.textContent = "Loading Training Hub (build " + LOADER_BUILD_ID + ")...";
+  }
 
   function fail(msg) {
     if (statusEl) statusEl.hidden = true;
@@ -224,6 +265,12 @@ $loaderJs = @'
     })
     .then(function (code) {
       hubScriptCode = code;
+      var scriptBuild = parseScriptConst(code, "HUB_BUILD_ID", "");
+      if (scriptBuild) {
+        ensureBuildBadge(scriptBuild);
+      } else {
+        ensureBuildBadge(LOADER_BUILD_ID);
+      }
       if (statusEl) statusEl.hidden = true;
       var password = parseScriptConst(code, "HUB_ACCESS_PASSWORD", "Training2026");
       var storageKey = parseScriptConst(code, "HUB_ACCESS_STORAGE_KEY", "trainingHubAccessGranted");
@@ -236,6 +283,18 @@ $loaderJs = @'
     });
 })();
 '@
+
+$loaderJs = $loaderJs.Replace(
+  'var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt";',
+  "var cssUrl = SITE_ASSETS_BASE + ""/training-hub-styles.txt?v=$hubBuildId"";"
+)
+$loaderJs = $loaderJs.Replace(
+  'var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt";',
+  "var jsUrl = SITE_ASSETS_BASE + ""/training-hub-script.txt?v=$hubBuildId"";"
+)
+$loaderJs = $loaderJs.Replace("LOADER_BUILD_PLACEHOLDER", $hubBuildId)
+
+$hubHtml = $hubHtml -replace 'id="hubBuildIdLabel">pending', ('id="hubBuildIdLabel">' + $hubBuildId)
 
 $hubHtmlLoader = [regex]::Replace(
   $hubHtml,
@@ -277,5 +336,6 @@ $scriptBytes = (Get-Item (Join-Path $root "training-hub-script.txt")).Length
 $pasteBytes = (Get-Item (Join-Path $archive "sharepoint-script-editor-paste.html")).Length
 Write-Host "Wrote sharepoint-script-editor-loader.html ($loaderBytes bytes, paste this + Site Assets)"
 Write-Host "Wrote training-hub-styles.txt ($stylesBytes bytes) and training-hub-script.txt ($scriptBytes bytes)"
+Write-Host "Hub build id: $hubBuildId (shown in Diagnostics after deploy)"
 Write-Host "Wrote archive/sharepoint-script-editor-paste.html ($pasteBytes bytes, all-in-one fallback)"
 Write-Host "Wrote archive/training-hub.css and archive/training-hub.js (local preview helpers)"

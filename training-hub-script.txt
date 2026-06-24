@@ -23,6 +23,8 @@
          */
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
+        /** Bumped on each deploy build - shown in header as Build xxxxx. */
+        const HUB_BUILD_ID = "20260611f";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -680,6 +682,27 @@
         })();
 
         const out = document.getElementById("probeOut");
+
+        function showHubBuildId() {
+          const build = String(HUB_BUILD_ID || "");
+          let label = document.getElementById("hubBuildIdLabel");
+          if (!label) {
+            const headerTitles = document.querySelector("#sp-pip-ui .hub-header-titles");
+            if (headerTitles) {
+              const badge = document.createElement("p");
+              badge.className = "hub-build-badge";
+              badge.title = "Hub script version - verify after Site Assets upload";
+              badge.innerHTML = 'Build <span id="hubBuildIdLabel"></span>';
+              headerTitles.appendChild(badge);
+              label = document.getElementById("hubBuildIdLabel");
+            }
+          }
+          if (label) label.textContent = build;
+          if (typeof console !== "undefined" && console.info) {
+            console.info("Training Hub build:", build);
+          }
+        }
+        showHubBuildId();
         const btn = document.getElementById("probeRun");
         const rosterReadState = document.getElementById("rosterReadState");
         const rosterTableBody = document.getElementById("rosterTableBody");
@@ -5507,10 +5530,12 @@
             block.className = "mql-print-signature-stamp";
           } else if (footerMode === "footer") {
             block.className = "mql-print-table-footer-sig";
+          } else if (footerMode === "iframe-footer") {
+            block.className = "mql-print-iframe-footer";
           } else {
             block.className = "mql-print-doc-signature";
           }
-          if (footerMode === "stamp" || footerMode === "footer") {
+          if (footerMode === "stamp" || footerMode === "footer" || footerMode === "iframe-footer") {
             const signSpace = document.createElement("div");
             signSpace.className = "mql-print-sig-signing-space";
             signSpace.setAttribute("aria-hidden", "true");
@@ -5615,24 +5640,47 @@
           }
         }
 
-        function mqlIframePrintFooterCss() {
+        function mqlIframePrintDocumentCss() {
           return (
             "html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; color: #000 !important; }" +
-            "#sp-pip-ui.scheduling-print-active { border: none !important; background: #fff !important; text-shadow: none !important; box-shadow: none !important; color: #000 !important; }" +
-            "#sp-pip-ui.scheduling-print-active .scheduling-print-surface { display: block !important; position: static !important; width: 100% !important; }" +
+            "body.mql-iframe-print-doc { width: 11in; min-height: 8.5in; }" +
+            "#sp-pip-ui { border: none !important; background: #fff !important; color: #000 !important; box-shadow: none !important; text-shadow: none !important; }" +
+            "#sp-pip-ui .scheduling-print-surface { display: block !important; position: static !important; width: 100% !important; }" +
+            "#sp-pip-ui .scheduling-print-surface .af-official-doc { font-family: Arial, Helvetica, sans-serif; font-size: 12pt; line-height: 1.35; color: #000; background: #fff; padding: 0; max-width: none; width: 100%; margin: 0; }" +
+            "#sp-pip-ui .scheduling-print-surface .af-official-doc--mql-landscape { max-width: none; width: 100%; margin: 0; }" +
+            "#sp-pip-ui .scheduling-print-surface .mql-signed-print-header { margin: 0 0 12px; color: #000; font-family: Arial, Helvetica, sans-serif; }" +
+            "#sp-pip-ui .scheduling-print-surface .mql-signed-print-header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; font-size: 11pt; font-weight: 700; margin-bottom: 10px; }" +
+            "#sp-pip-ui .scheduling-print-surface .mql-signed-print-datetime { text-align: right; font-weight: 400; font-size: 10pt; white-space: nowrap; }" +
+            "#sp-pip-ui .scheduling-print-surface .mql-signed-print-title { margin: 0; text-align: center; font-size: 13pt; font-weight: 700; color: #000; }" +
+            "#sp-pip-ui .scheduling-print-surface .mql-signed-print-sortline { margin: 4px 0 0; text-align: center; font-size: 9pt; font-style: italic; color: #000; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table { width: 100%; border-collapse: collapse; margin: 0 0 10px; font-size: 8pt; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table--compact { font-size: 7pt; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table th, #sp-pip-ui .scheduling-print-surface table.af-official-table td { border: 1px solid #000; padding: 2px 3px; text-align: left; vertical-align: top; color: #000; background: #fff; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table th { font-weight: 700; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th:nth-child(1), #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(1), #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th:nth-child(2), #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(2) { white-space: nowrap; padding-left: 2px; padding-right: 2px; font-size: 7pt; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(3) { white-space: normal; word-break: break-word; }" +
             "table.mql-print-unified-table { border-collapse: collapse; width: 100%; page-break-inside: auto; }" +
             "table.mql-print-unified-table thead { display: table-header-group; }" +
             "table.mql-print-unified-table tbody { display: table-row-group; }" +
             "table.mql-print-unified-table tr.mql-print-section-row td.mql-print-section-heading-cell { font-weight: 700; font-size: 8pt; border: 1px solid #000; padding: 3px 5px; background: #fff; color: #000; }" +
-            ".mql-print-doc-signature { display: none !important; }" +
-            "#mqlPrintIframeSignature { display: none; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired { background: #f5c2c7 !important; color: #000 !important; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--urgent { background: #ffc78a !important; color: #000 !important; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--warn { background: #fff3a0 !important; color: #000 !important; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--recert { background: #b8e6b8 !important; color: #000 !important; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
+            ".mql-print-doc-signature, .mql-print-signature-stamp, .mql-print-table-footer-sig { display: none !important; }" +
+            ".mql-print-iframe-footer { display: none; }" +
             "@media print {" +
-            "@page { size: landscape; margin: 0.35in 0.4in 1.2in 0.4in; }" +
-            ".mql-print-doc-signature { display: none !important; }" +
-            "#mqlPrintIframeSignature {" +
+            "@page { size: landscape; margin: 0.35in 0.4in 1.3in 0.4in; }" +
+            "html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired { background: #f5c2c7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--urgent { background: #ffc78a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--warn { background: #fff3a0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--recert { background: #b8e6b8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
+            "#mqlPrintIframeSignature, .mql-print-iframe-footer {" +
             "display: block !important;" +
             "position: fixed !important;" +
-            "bottom: 0.12in !important;" +
+            "bottom: 0 !important;" +
             "right: 0.5in !important;" +
             "left: auto !important;" +
             "width: 3.15in !important;" +
@@ -5644,9 +5692,9 @@
             "color: #000 !important;" +
             "background: transparent !important;" +
             "}" +
-            "#mqlPrintIframeSignature .mql-print-sig-signing-space { height: 0.55in; }" +
-            "#mqlPrintIframeSignature .mql-print-sig-line { border-bottom: 1px solid #000; height: 1.15em; margin-bottom: 4px; }" +
-            "#mqlPrintIframeSignature .mql-print-sig-name, #mqlPrintIframeSignature .mql-print-sig-title { margin: 0; font-size: 9pt; line-height: 1.2; white-space: nowrap; }" +
+            "#mqlPrintIframeSignature .mql-print-sig-signing-space, .mql-print-iframe-footer .mql-print-sig-signing-space { height: 0.55in; }" +
+            "#mqlPrintIframeSignature .mql-print-sig-line, .mql-print-iframe-footer .mql-print-sig-line { border-bottom: 1px solid #000; height: 1.15em; margin-bottom: 4px; }" +
+            "#mqlPrintIframeSignature .mql-print-sig-name, #mqlPrintIframeSignature .mql-print-sig-title, .mql-print-iframe-footer .mql-print-sig-name, .mql-print-iframe-footer .mql-print-sig-title { margin: 0; font-size: 9pt; line-height: 1.2; white-space: nowrap; }" +
             "}"
           );
         }
@@ -5659,7 +5707,7 @@
           iframe.setAttribute("title", "MQL print");
           iframe.setAttribute("aria-hidden", "true");
           iframe.style.cssText =
-            "position:fixed;left:0;top:0;width:0;height:0;border:0;opacity:0;pointer-events:none";
+            "position:fixed;left:-10000px;top:0;width:11in;height:8.5in;border:0;margin:0;padding:0;opacity:0;pointer-events:none";
           document.body.appendChild(iframe);
 
           const win = iframe.contentWindow;
@@ -5671,18 +5719,14 @@
 
           idoc.open();
           idoc.write(
-            '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>MQL Print</title></head><body></body></html>',
+            '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>MQL Print</title></head><body class="mql-iframe-print-doc"></body></html>',
           );
           idoc.close();
 
           const head = idoc.head;
-          const parentStyles = document.querySelectorAll("style");
-          for (let i = 0; i < parentStyles.length; i++) {
-            head.appendChild(parentStyles[i].cloneNode(true));
-          }
-          const footerStyle = idoc.createElement("style");
-          footerStyle.textContent = mqlIframePrintFooterCss();
-          head.appendChild(footerStyle);
+          const printStyle = idoc.createElement("style");
+          printStyle.textContent = mqlIframePrintDocumentCss();
+          head.appendChild(printStyle);
 
           const hubRoot = idoc.createElement("div");
           hubRoot.id = "sp-pip-ui";
@@ -5694,7 +5738,7 @@
           idoc.body.appendChild(hubRoot);
 
           if (options.signature) {
-            const stamp = buildMqlPrintSignatureBlock(options.signature, "stamp");
+            const stamp = buildMqlPrintSignatureBlock(options.signature, "iframe-footer");
             stamp.id = "mqlPrintIframeSignature";
             idoc.body.appendChild(stamp);
           }
@@ -5718,7 +5762,7 @@
               cleanup();
             }
             window.setTimeout(cleanup, 3000);
-          }, 200);
+          }, 350);
         }
 
         function attachMqlPrintSignatureStamp(sig) {

@@ -31,6 +31,22 @@
         font-size: 12px;
         line-height: 1.5;
       }
+      #sp-pip-ui .hub-build-badge {
+        margin: 8px 0 0;
+        padding: 4px 8px;
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #0a140c;
+        background: #c9a227;
+        border: 1px solid #e8c547;
+        border-radius: 4px;
+      }
+      #sp-pip-ui .hub-build-badge #hubBuildIdLabel {
+        color: #0a140c;
+      }
 </style>
 <div id="sp-pip-ui">
       <p id="hubLoaderStatus" class="hub-loader-status">Loading Training Hub...</p>
@@ -55,6 +71,9 @@
           <div class="hub-header-titles">
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
+            <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
+              Build <span id="hubBuildIdLabel">20260611f</span>
+            </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavInstructors">Instructors</button>
@@ -655,10 +674,32 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt";
+  var LOADER_BUILD_ID = "20260611f";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260611f";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260611f";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
+
+  function ensureBuildBadge(buildId) {
+    var label = document.getElementById("hubBuildIdLabel");
+    if (!label) {
+      var titles = document.querySelector("#sp-pip-ui .hub-header-titles");
+      if (titles) {
+        var badge = document.createElement("p");
+        badge.className = "hub-build-badge";
+        badge.title = "Hub script version - verify after Site Assets upload";
+        badge.innerHTML = 'Build <span id="hubBuildIdLabel"></span>';
+        titles.appendChild(badge);
+        label = document.getElementById("hubBuildIdLabel");
+      }
+    }
+    if (label) label.textContent = String(buildId || LOADER_BUILD_ID || "unknown");
+  }
+
+  ensureBuildBadge(LOADER_BUILD_ID);
+  if (statusEl) {
+    statusEl.textContent = "Loading Training Hub (build " + LOADER_BUILD_ID + ")...";
+  }
 
   function fail(msg) {
     if (statusEl) statusEl.hidden = true;
@@ -781,6 +822,12 @@
     })
     .then(function (code) {
       hubScriptCode = code;
+      var scriptBuild = parseScriptConst(code, "HUB_BUILD_ID", "");
+      if (scriptBuild) {
+        ensureBuildBadge(scriptBuild);
+      } else {
+        ensureBuildBadge(LOADER_BUILD_ID);
+      }
       if (statusEl) statusEl.hidden = true;
       var password = parseScriptConst(code, "HUB_ACCESS_PASSWORD", "Training2026");
       var storageKey = parseScriptConst(code, "HUB_ACCESS_STORAGE_KEY", "trainingHubAccessGranted");
