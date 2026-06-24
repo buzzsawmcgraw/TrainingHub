@@ -680,6 +680,35 @@
         width: 100%;
         margin: 0;
       }
+      #sp-pip-ui .scheduling-print-surface table.mql-print-unified-table {
+        border-collapse: collapse;
+        width: 100%;
+        page-break-inside: auto;
+      }
+      #sp-pip-ui .scheduling-print-surface table.mql-print-unified-table thead {
+        display: table-header-group;
+      }
+      #sp-pip-ui .scheduling-print-surface table.mql-print-unified-table tfoot {
+        display: table-footer-group;
+      }
+      #sp-pip-ui .scheduling-print-surface table.mql-print-unified-table tbody {
+        display: table-row-group;
+      }
+      #sp-pip-ui .scheduling-print-surface table.mql-print-unified-table tr.mql-print-section-row td.mql-print-section-heading-cell {
+        font-weight: 700;
+        font-size: 8pt;
+        border: 1px solid #000;
+        padding: 3px 5px;
+        background: #fff;
+        color: #000;
+      }
+      #sp-pip-ui .scheduling-print-surface table.mql-print-unified-table tfoot .mql-print-table-footer-sig {
+        margin-left: auto;
+        margin-right: 0.5in;
+        width: 3.15in;
+        text-align: left;
+        color: #000;
+      }
       #sp-pip-ui .scheduling-print-surface .mql-print-signature-stamp {
         display: none;
       }
@@ -8574,11 +8603,18 @@
           return header;
         }
 
-        function buildMqlPrintSignatureBlock(sig, asPageStamp) {
+        function buildMqlPrintSignatureBlock(sig, mode) {
           sig = sig || hubSession.mqlSignature || {};
+          const footerMode = mode === true ? "stamp" : mode === false || mode == null ? "doc" : String(mode || "doc");
           const block = document.createElement("div");
-          block.className = asPageStamp ? "mql-print-signature-stamp" : "mql-print-doc-signature";
-          if (asPageStamp) {
+          if (footerMode === "stamp") {
+            block.className = "mql-print-signature-stamp";
+          } else if (footerMode === "footer") {
+            block.className = "mql-print-table-footer-sig";
+          } else {
+            block.className = "mql-print-doc-signature";
+          }
+          if (footerMode === "stamp" || footerMode === "footer") {
             const signSpace = document.createElement("div");
             signSpace.className = "mql-print-sig-signing-space";
             signSpace.setAttribute("aria-hidden", "true");
@@ -8688,13 +8724,19 @@
             "html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; color: #000 !important; }" +
             "#sp-pip-ui.scheduling-print-active { border: none !important; background: #fff !important; text-shadow: none !important; box-shadow: none !important; color: #000 !important; }" +
             "#sp-pip-ui.scheduling-print-active .scheduling-print-surface { display: block !important; position: static !important; width: 100% !important; }" +
-            "#hubMqlPrintSignatureStamp { display: none; }" +
+            "table.mql-print-unified-table { border-collapse: collapse; width: 100%; page-break-inside: auto; }" +
+            "table.mql-print-unified-table thead { display: table-header-group; }" +
+            "table.mql-print-unified-table tbody { display: table-row-group; }" +
+            "table.mql-print-unified-table tr.mql-print-section-row td.mql-print-section-heading-cell { font-weight: 700; font-size: 8pt; border: 1px solid #000; padding: 3px 5px; background: #fff; color: #000; }" +
+            ".mql-print-doc-signature { display: none !important; }" +
+            "#mqlPrintIframeSignature { display: none; }" +
             "@media print {" +
-            "@page { size: landscape; margin: 0.35in 0.4in 1.35in 0.4in; }" +
-            "#hubMqlPrintSignatureStamp, .mql-print-page-footer {" +
+            "@page { size: landscape; margin: 0.35in 0.4in 1.2in 0.4in; }" +
+            ".mql-print-doc-signature { display: none !important; }" +
+            "#mqlPrintIframeSignature {" +
             "display: block !important;" +
             "position: fixed !important;" +
-            "bottom: 0 !important;" +
+            "bottom: 0.12in !important;" +
             "right: 0.5in !important;" +
             "left: auto !important;" +
             "width: 3.15in !important;" +
@@ -8706,9 +8748,9 @@
             "color: #000 !important;" +
             "background: transparent !important;" +
             "}" +
-            "#hubMqlPrintSignatureStamp .mql-print-sig-signing-space { height: 0.5in; }" +
-            "#hubMqlPrintSignatureStamp .mql-print-sig-line { border-bottom: 1px solid #000; height: 1.15em; margin-bottom: 4px; }" +
-            "#hubMqlPrintSignatureStamp .mql-print-sig-name, #hubMqlPrintSignatureStamp .mql-print-sig-title { margin: 0; font-size: 9pt; line-height: 1.2; white-space: nowrap; }" +
+            "#mqlPrintIframeSignature .mql-print-sig-signing-space { height: 0.55in; }" +
+            "#mqlPrintIframeSignature .mql-print-sig-line { border-bottom: 1px solid #000; height: 1.15em; margin-bottom: 4px; }" +
+            "#mqlPrintIframeSignature .mql-print-sig-name, #mqlPrintIframeSignature .mql-print-sig-title { margin: 0; font-size: 9pt; line-height: 1.2; white-space: nowrap; }" +
             "}"
           );
         }
@@ -8755,10 +8797,9 @@
           hubRoot.appendChild(surface);
           idoc.body.appendChild(hubRoot);
 
-          if (options.mqlSignature) {
-            const stamp = buildMqlPrintSignatureBlock(options.mqlSignature, true);
-            stamp.id = "hubMqlPrintSignatureStamp";
-            stamp.classList.add("mql-print-page-footer");
+          if (options.signature) {
+            const stamp = buildMqlPrintSignatureBlock(options.signature, "stamp");
+            stamp.id = "mqlPrintIframeSignature";
             idoc.body.appendChild(stamp);
           }
 
@@ -9135,7 +9176,7 @@
                     titleLine: DEFAULT_MQL_SIGNATURE_TITLE,
                   }
               : null;
-          triggerMqlIframePrint(node, { mqlSignature: signature });
+          triggerMqlIframePrint(node, { signature: signature });
         }
 
         function printSchedulingMemo() {
@@ -11320,6 +11361,55 @@
           return table;
         }
 
+        function buildMqlSignedPrintUnifiedTable(rows, catalog, display, options) {
+          options = options || {};
+          const columnLabels = mqlStandardColumnLabels();
+          const colCount = columnLabels.length;
+          const table = document.createElement("table");
+          table.className =
+            "af-official-table af-official-table--compact af-official-table--mql-standard mql-print-unified-table";
+          table.style.width = "100%";
+          appendOfficialColgroup(table, mqlStandardColumnWidths());
+
+          const thead = document.createElement("thead");
+          const headRow = document.createElement("tr");
+          columnLabels.forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            headRow.appendChild(th);
+          });
+          thead.appendChild(headRow);
+          table.appendChild(thead);
+
+          const tbody = document.createElement("tbody");
+          groupMqlEntriesByDutyStatus(rows).forEach(function (group) {
+            const sectionRow = document.createElement("tr");
+            sectionRow.className = "mql-print-section-row";
+            const sectionCell = document.createElement("td");
+            sectionCell.colSpan = colCount;
+            sectionCell.className = "mql-print-section-heading-cell";
+            sectionCell.textContent = group.section;
+            sectionRow.appendChild(sectionCell);
+            tbody.appendChild(sectionRow);
+            group.items.forEach(function (entry) {
+              const tr = document.createElement("tr");
+              mqlStandardRowCells(entry, display).forEach(function (cell) {
+                const td = document.createElement("td");
+                const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
+                td.textContent = text === "" || text == null ? "-" : String(text);
+                if (options.colorize) {
+                  applyMqlCertCellStyle(td, cell && cell.tone);
+                }
+                tr.appendChild(td);
+              });
+              tbody.appendChild(tr);
+            });
+          });
+          table.appendChild(tbody);
+
+          return table;
+        }
+
         async function ensureMqlReportData(pw, opts) {
           opts = opts || {};
           const mode = opts.mode === "heavy" ? "heavy" : "standard";
@@ -11435,16 +11525,11 @@
             return wrap;
           }
           if (!mqlIsHeavyCatalog(catalog)) {
-            appendOfficialSectionTable(wrap, {
-              columns: mqlStandardColumnLabels(),
-              columnWidths: mqlStandardColumnWidths(),
-              mqlStandardLayout: true,
-              sections: groupMqlEntriesByDutyStatus(rows),
-              compact: true,
-              buildCells: function (entry) {
-                return mqlStandardRowCells(entry, display);
-              },
-            });
+            wrap.appendChild(
+              buildMqlSignedPrintUnifiedTable(rows, catalog, display, {
+                colorize: true,
+              }),
+            );
             return wrap;
           }
           appendOfficialSectionTable(wrap, {
