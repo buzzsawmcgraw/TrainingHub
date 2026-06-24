@@ -3148,7 +3148,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260611f";
+        const HUB_BUILD_ID = "20260611g";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -8764,61 +8764,169 @@
           }
         }
 
+        function cloneMqlPrintTableShell(table) {
+          const shell = document.createElement("table");
+          shell.className = table.className;
+          shell.style.width = table.style.width || "100%";
+          const colgroup = table.querySelector("colgroup");
+          if (colgroup) shell.appendChild(colgroup.cloneNode(true));
+          const thead = table.querySelector("thead");
+          if (thead) shell.appendChild(thead.cloneNode(true));
+          const tbody = document.createElement("tbody");
+          shell.appendChild(tbody);
+          return shell;
+        }
+
+        function packMqlPrintPageRowIndices(rowHeights, config) {
+          const pages = [];
+          let i = 0;
+          while (i < rowHeights.length) {
+            const isFirst = pages.length === 0;
+            const overhead =
+              config.footerHeight + config.theadHeight + (isFirst ? config.headerHeight : 0);
+            const budget = Math.max(config.sheetHeight - overhead, 24);
+            let used = 0;
+            const page = [];
+            while (i < rowHeights.length) {
+              const rh = rowHeights[i] || config.defaultRowHeight;
+              if (page.length && used + rh > budget) break;
+              if (!page.length && rh > budget) {
+                page.push(i++);
+                break;
+              }
+              used += rh;
+              page.push(i++);
+            }
+            if (page.length) pages.push(page);
+            else break;
+          }
+          return pages;
+        }
+
+        function buildMqlPrintSheet(options) {
+          const sheet = document.createElement("div");
+          sheet.className = "mql-print-sheet";
+          const body = document.createElement("div");
+          body.className = "mql-print-sheet-body";
+          if (options.header) body.appendChild(options.header);
+          if (options.table) body.appendChild(options.table);
+          sheet.appendChild(body);
+          const foot = document.createElement("div");
+          foot.className = "mql-print-sheet-footer";
+          foot.appendChild(buildMqlPrintSignatureBlock(options.signature, "footer"));
+          sheet.appendChild(foot);
+          return sheet;
+        }
+
+        function buildPaginatedMqlSignedPrintDoc(doc, table, header, rowElements, pageRowIndexLists, signature) {
+          const container = document.createElement("div");
+          container.className = doc.className;
+          pageRowIndexLists.forEach(function (indices, pageNum) {
+            const pageTable = cloneMqlPrintTableShell(table);
+            const tbody = pageTable.querySelector("tbody");
+            indices.forEach(function (ri) {
+              tbody.appendChild(rowElements[ri].cloneNode(true));
+            });
+            container.appendChild(
+              buildMqlPrintSheet({
+                header: pageNum === 0 && header ? header.cloneNode(true) : null,
+                table: pageTable,
+                signature: signature,
+              }),
+            );
+          });
+          return container;
+        }
+
+        function repaginateSignedMqlPrintInSurface(surface, signature, idoc) {
+          if (!surface || !signature) return false;
+          const doc = surface.querySelector(".af-official-doc--mql-signed");
+          const table = doc && doc.querySelector("table.mql-print-unified-table");
+          if (!doc || !table) return false;
+
+          const header = doc.querySelector(".mql-signed-print-header");
+          const rowElements = Array.prototype.slice.call(table.querySelectorAll("tbody tr"));
+          const win = idoc.defaultView;
+          const pxPerIn = win && win.innerWidth ? win.innerWidth / 11 : 96;
+          const sheetHeight = 7.55 * pxPerIn;
+          const footerHeight = 1.05 * pxPerIn;
+          const headerHeight = header ? header.getBoundingClientRect().height : 0;
+          const theadEl = table.querySelector("thead");
+          const theadHeight = theadEl ? theadEl.getBoundingClientRect().height : 22;
+          const rowHeights = rowElements.map(function (row) {
+            const h = row.getBoundingClientRect().height;
+            return h > 0 ? h : 18;
+          });
+
+          let pageRowIndexLists;
+          if (!rowElements.length) {
+            pageRowIndexLists = [[]];
+          } else {
+            pageRowIndexLists = packMqlPrintPageRowIndices(rowHeights, {
+              sheetHeight: sheetHeight,
+              footerHeight: footerHeight,
+              headerHeight: headerHeight,
+              theadHeight: theadHeight,
+              defaultRowHeight: 18,
+            });
+          }
+
+          const paginated = buildPaginatedMqlSignedPrintDoc(
+            doc,
+            table,
+            header,
+            rowElements,
+            pageRowIndexLists,
+            signature,
+          );
+          doc.replaceWith(paginated);
+          return true;
+        }
+
         function mqlIframePrintDocumentCss() {
           return (
             "html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; color: #000 !important; }" +
             "body.mql-iframe-print-doc { width: 11in; min-height: 8.5in; }" +
             "#sp-pip-ui { border: none !important; background: #fff !important; color: #000 !important; box-shadow: none !important; text-shadow: none !important; }" +
             "#sp-pip-ui .scheduling-print-surface { display: block !important; position: static !important; width: 100% !important; }" +
-            "#sp-pip-ui .scheduling-print-surface .af-official-doc { font-family: Arial, Helvetica, sans-serif; font-size: 12pt; line-height: 1.35; color: #000; background: #fff; padding: 0; max-width: none; width: 100%; margin: 0; }" +
+            "#sp-pip-ui .scheduling-print-surface .af-official-doc, #sp-pip-ui .scheduling-print-surface .mql-print-paginated-doc { font-family: Arial, Helvetica, sans-serif; font-size: 12pt; line-height: 1.35; color: #000; background: #fff; padding: 0; max-width: none; width: 100%; margin: 0; }" +
             "#sp-pip-ui .scheduling-print-surface .af-official-doc--mql-landscape { max-width: none; width: 100%; margin: 0; }" +
             "#sp-pip-ui .scheduling-print-surface .mql-signed-print-header { margin: 0 0 12px; color: #000; font-family: Arial, Helvetica, sans-serif; }" +
             "#sp-pip-ui .scheduling-print-surface .mql-signed-print-header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; font-size: 11pt; font-weight: 700; margin-bottom: 10px; }" +
             "#sp-pip-ui .scheduling-print-surface .mql-signed-print-datetime { text-align: right; font-weight: 400; font-size: 10pt; white-space: nowrap; }" +
             "#sp-pip-ui .scheduling-print-surface .mql-signed-print-title { margin: 0; text-align: center; font-size: 13pt; font-weight: 700; color: #000; }" +
             "#sp-pip-ui .scheduling-print-surface .mql-signed-print-sortline { margin: 4px 0 0; text-align: center; font-size: 9pt; font-style: italic; color: #000; }" +
-            "#sp-pip-ui .scheduling-print-surface table.af-official-table { width: 100%; border-collapse: collapse; margin: 0 0 10px; font-size: 8pt; }" +
+            ".mql-print-sheet { box-sizing: border-box; width: 100%; height: 7.55in; min-height: 7.55in; max-height: 7.55in; display: flex; flex-direction: column; page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid; overflow: hidden; }" +
+            ".mql-print-sheet:last-child { page-break-after: auto; break-after: auto; }" +
+            ".mql-print-sheet-body { flex: 1 1 auto; min-height: 0; overflow: hidden; }" +
+            ".mql-print-sheet-footer { flex: 0 0 1.05in; height: 1.05in; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 0.1in 0 0; }" +
+            ".mql-print-sheet-footer .mql-print-table-footer-sig { display: block !important; width: 3.15in; margin: 0; padding: 0; text-align: left; color: #000; }" +
+            ".mql-print-sheet-footer .mql-print-sig-signing-space { height: 0.5in; }" +
+            ".mql-print-sheet-footer .mql-print-sig-line { border-bottom: 1px solid #000; height: 1.15em; margin-bottom: 4px; }" +
+            ".mql-print-sheet-footer .mql-print-sig-name, .mql-print-sheet-footer .mql-print-sig-title { margin: 0; font-size: 9pt; line-height: 1.2; white-space: nowrap; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table { width: 100%; border-collapse: collapse; margin: 0; font-size: 8pt; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table--compact { font-size: 7pt; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table th, #sp-pip-ui .scheduling-print-surface table.af-official-table td { border: 1px solid #000; padding: 2px 3px; text-align: left; vertical-align: top; color: #000; background: #fff; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table th { font-weight: 700; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th:nth-child(1), #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(1), #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th:nth-child(2), #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(2) { white-space: nowrap; padding-left: 2px; padding-right: 2px; font-size: 7pt; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(3) { white-space: normal; word-break: break-word; }" +
-            "table.mql-print-unified-table { border-collapse: collapse; width: 100%; page-break-inside: auto; }" +
-            "table.mql-print-unified-table thead { display: table-header-group; }" +
-            "table.mql-print-unified-table tbody { display: table-row-group; }" +
+            "table.mql-print-unified-table { border-collapse: collapse; width: 100%; }" +
             "table.mql-print-unified-table tr.mql-print-section-row td.mql-print-section-heading-cell { font-weight: 700; font-size: 8pt; border: 1px solid #000; padding: 3px 5px; background: #fff; color: #000; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired { background: #f5c2c7 !important; color: #000 !important; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--urgent { background: #ffc78a !important; color: #000 !important; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--warn { background: #fff3a0 !important; color: #000 !important; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--recert { background: #b8e6b8 !important; color: #000 !important; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
-            ".mql-print-doc-signature, .mql-print-signature-stamp, .mql-print-table-footer-sig { display: none !important; }" +
-            ".mql-print-iframe-footer { display: none; }" +
+            ".mql-print-doc-signature, .mql-print-signature-stamp, .mql-print-iframe-footer { display: none !important; }" +
             "@media print {" +
-            "@page { size: landscape; margin: 0.35in 0.4in 1.3in 0.4in; }" +
+            "@page { size: landscape; margin: 0.35in 0.4in 0.4in 0.4in; }" +
             "html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }" +
+            ".mql-print-sheet { height: 7.55in; min-height: 7.55in; max-height: 7.55in; page-break-after: always; break-after: page; }" +
+            ".mql-print-sheet:last-child { page-break-after: auto; break-after: auto; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired { background: #f5c2c7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--urgent { background: #ffc78a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--warn { background: #fff3a0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--recert { background: #b8e6b8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
-            "#mqlPrintIframeSignature, .mql-print-iframe-footer {" +
-            "display: block !important;" +
-            "position: fixed !important;" +
-            "bottom: 0 !important;" +
-            "right: 0.5in !important;" +
-            "left: auto !important;" +
-            "width: 3.15in !important;" +
-            "max-width: 3.15in !important;" +
-            "margin: 0 !important;" +
-            "padding: 0 !important;" +
-            "z-index: 2147483647 !important;" +
-            "text-align: left !important;" +
-            "color: #000 !important;" +
-            "background: transparent !important;" +
-            "}" +
-            "#mqlPrintIframeSignature .mql-print-sig-signing-space, .mql-print-iframe-footer .mql-print-sig-signing-space { height: 0.55in; }" +
-            "#mqlPrintIframeSignature .mql-print-sig-line, .mql-print-iframe-footer .mql-print-sig-line { border-bottom: 1px solid #000; height: 1.15em; margin-bottom: 4px; }" +
-            "#mqlPrintIframeSignature .mql-print-sig-name, #mqlPrintIframeSignature .mql-print-sig-title, .mql-print-iframe-footer .mql-print-sig-name, .mql-print-iframe-footer .mql-print-sig-title { margin: 0; font-size: 9pt; line-height: 1.2; white-space: nowrap; }" +
             "}"
           );
         }
@@ -8861,12 +8969,6 @@
           hubRoot.appendChild(surface);
           idoc.body.appendChild(hubRoot);
 
-          if (options.signature) {
-            const stamp = buildMqlPrintSignatureBlock(options.signature, "iframe-footer");
-            stamp.id = "mqlPrintIframeSignature";
-            idoc.body.appendChild(stamp);
-          }
-
           let cleaned = false;
           const cleanup = function () {
             if (cleaned) return;
@@ -8878,7 +8980,25 @@
 
           win.onafterprint = cleanup;
 
-          window.setTimeout(function () {
+          const runPrint = function () {
+            let paginated = false;
+            if (options.signature) {
+              paginated = repaginateSignedMqlPrintInSurface(surface, options.signature, idoc);
+            }
+            if (!paginated && options.signature) {
+              const stamp = buildMqlPrintSignatureBlock(options.signature, "footer");
+              const sheet = document.createElement("div");
+              sheet.className = "mql-print-sheet";
+              const body = document.createElement("div");
+              body.className = "mql-print-sheet-body";
+              while (surface.firstChild) body.appendChild(surface.firstChild);
+              sheet.appendChild(body);
+              const foot = document.createElement("div");
+              foot.className = "mql-print-sheet-footer";
+              foot.appendChild(stamp);
+              sheet.appendChild(foot);
+              surface.appendChild(sheet);
+            }
             try {
               win.focus();
               win.print();
@@ -8886,7 +9006,9 @@
               cleanup();
             }
             window.setTimeout(cleanup, 3000);
-          }, 350);
+          };
+
+          window.setTimeout(runPrint, 450);
         }
 
         function attachMqlPrintSignatureStamp(sig) {
