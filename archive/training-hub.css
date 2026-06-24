@@ -1542,6 +1542,35 @@
         border-color: var(--pip-green);
         box-shadow: 0 0 10px var(--pip-green-glow), inset 0 0 12px rgba(60, 255, 122, 0.08);
       }
+      #sp-pip-ui.sot-monthly-active .reports-sot-toolbar {
+        border-bottom-color: #ccc;
+      }
+      #sp-pip-ui.sot-monthly-active .reports-sot-toolbar button {
+        color: #222;
+        background: #fff;
+        border-color: #999;
+      }
+      #sp-pip-ui.sot-monthly-active .reports-sot-toolbar button.reports-sot-tab--active {
+        background: #e8e8e8;
+        color: #111;
+        border-color: #555;
+        box-shadow: none;
+      }
+      #sp-pip-ui.sot-monthly-active .hub-header,
+      #sp-pip-ui.sot-monthly-active .hub-top-banner-wrap,
+      #sp-pip-ui.sot-monthly-active #reportsHubPanel,
+      #sp-pip-ui.sot-monthly-active .reports-hint,
+      #sp-pip-ui.sot-monthly-active #reportsDetailTitle,
+      #sp-pip-ui.sot-monthly-active #reportsDetailSubtitle,
+      #sp-pip-ui.sot-monthly-active #reportsSection > .person-detail-panel > .person-detail-toolbar,
+      #sp-pip-ui.sot-monthly-active #reportsDetailPanel > .person-detail-toolbar {
+        display: none !important;
+      }
+      #sp-pip-ui.sot-monthly-active #reportsSotMonthlyView {
+        background: #ececec;
+        padding: 12px 0 24px;
+        margin: 0 -4px;
+      }
       #sp-pip-ui .reports-month-controls {
         display: flex;
         flex-wrap: wrap;
@@ -1553,6 +1582,13 @@
         border-radius: 6px;
         background: rgba(5, 14, 10, 0.45);
       }
+      #sp-pip-ui.sot-monthly-active .reports-month-controls {
+        max-width: 920px;
+        margin-left: auto;
+        margin-right: auto;
+        border-color: #bbb;
+        background: #fff;
+      }
       #sp-pip-ui .reports-month-controls label {
         display: block;
         margin-bottom: 6px;
@@ -1562,8 +1598,12 @@
         text-transform: uppercase;
         color: var(--pip-amber);
       }
-      #sp-pip-ui .reports-month-field select {
-        min-width: 180px;
+      #sp-pip-ui.sot-monthly-active .reports-month-controls label {
+        color: #444;
+      }
+      #sp-pip-ui .reports-month-field select,
+      #sp-pip-ui .reports-month-combo-input {
+        min-width: 200px;
         height: var(--pip-control-h);
         padding: 8px 12px;
         font-family: var(--pip-font);
@@ -1573,11 +1613,99 @@
         border: 1px solid var(--pip-green-dim);
         border-radius: var(--pip-control-radius);
       }
+      #sp-pip-ui.sot-monthly-active .reports-month-combo-input {
+        color: #111;
+        background: #fff;
+        border-color: #888;
+      }
       #sp-pip-ui .reports-month-controls button {
         margin: 0;
       }
+      #sp-pip-ui.sot-monthly-active .reports-month-controls button {
+        color: #222;
+        background: #f5f5f5;
+        border-color: #888;
+      }
       #sp-pip-ui .reports-sot-monthly-print {
-        margin-top: 4px;
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 28px 32px 32px;
+        background: #fff;
+        color: #111;
+        border: 1px solid #bbb;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 12px;
+        line-height: 1.45;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+      #sp-pip-ui .reports-sot-monthly-print .reports-month-print-header {
+        display: block;
+        margin: 0 0 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #222;
+        color: #111;
+      }
+      #sp-pip-ui .reports-sot-monthly-print .reports-month-print-header h3,
+      #sp-pip-ui .reports-sot-monthly-print .reports-sot-doc-title {
+        margin: 0 0 8px;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #111;
+      }
+      #sp-pip-ui .reports-sot-monthly-print .reports-month-print-header p {
+        margin: 0 0 4px;
+        font-size: 12px;
+        color: #222;
+      }
+      #sp-pip-ui .reports-sot-monthly-print .reports-sot-squadron-summary {
+        margin: 0;
+        padding: 0;
+        border: none;
+        background: transparent;
+      }
+      #sp-pip-ui .reports-sot-monthly-print h4.reports-sot-section-title {
+        margin: 18px 0 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #111;
+      }
+      #sp-pip-ui .reports-sot-monthly-print h4.reports-sot-section-title:first-child {
+        margin-top: 0;
+      }
+      #sp-pip-ui .reports-sot-monthly-print table.reports-sot-table {
+        margin: 0 0 16px;
+        font-size: 12px;
+      }
+      #sp-pip-ui .reports-sot-monthly-print table.reports-sot-table th,
+      #sp-pip-ui .reports-sot-monthly-print table.reports-sot-table td {
+        padding: 7px 10px;
+        border: 1px solid #333;
+        color: #111;
+        text-shadow: none;
+      }
+      #sp-pip-ui .reports-sot-monthly-print table.reports-sot-table th {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #111;
+        background: #eee;
+      }
+      #sp-pip-ui .reports-sot-monthly-print .reports-office-meta,
+      #sp-pip-ui .reports-sot-monthly-print .reports-office-empty {
+        color: #333;
+        font-style: normal;
+      }
+      #sp-pip-ui .reports-sot-monthly-print .reports-sot-signature {
+        margin-top: 28px;
+        padding-top: 12px;
+        border-top: 1px solid #ccc;
+        font-size: 12px;
+        color: #111;
       }
       #sp-pip-ui .reports-office-block {
         margin-bottom: 22px;
@@ -1635,6 +1763,11 @@
         margin: 0 0 16px;
         padding-bottom: 10px;
         border-bottom: 2px solid #333;
+      }
+      #sp-pip-ui.sot-monthly-active .reports-sot-toolbar {
+        max-width: 920px;
+        margin-left: auto;
+        margin-right: auto;
       }
       #sp-pip-ui .reports-month-print-header h3 {
         margin: 0 0 6px;
@@ -1699,6 +1832,17 @@
         padding: 6px 7px;
       }
       @media print {
+        #sp-pip-ui.sot-monthly-active,
+        #sp-pip-ui.sot-monthly-active .reports-sot-monthly-print,
+        #sp-pip-ui.sot-monthly-active #reportsSotMonthlyView {
+          background: #fff !important;
+          color: #000 !important;
+          box-shadow: none !important;
+          border: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          max-width: none !important;
+        }
         #sp-pip-ui .hub-header,
         #sp-pip-ui .hub-top-banner-wrap,
         #sp-pip-ui .person-detail-toolbar,
@@ -1714,6 +1858,14 @@
         #sp-pip-ui #reportsDetailSubtitle {
           display: none !important;
         }
+        #sp-pip-ui.sot-monthly-active .hub-header,
+        #sp-pip-ui.sot-monthly-active .hub-top-banner-wrap,
+        #sp-pip-ui.sot-monthly-active .hub-access-gate,
+        #sp-pip-ui.sot-monthly-active main > section:not(#reportsSection),
+        #sp-pip-ui.sot-monthly-active #reportsSection > .person-detail-panel > .person-detail-toolbar,
+        #sp-pip-ui.sot-monthly-active #reportsDetailPanel > .person-detail-toolbar {
+          display: none !important;
+        }
         #sp-pip-ui .reports-month-print-header {
           display: block !important;
           color: #000;
@@ -1721,6 +1873,11 @@
         #sp-pip-ui .reports-sot-monthly-print,
         #sp-pip-ui #reportsSotMonthlyView {
           display: block !important;
+        }
+        #sp-pip-ui .reports-sot-monthly-print {
+          border: none !important;
+          box-shadow: none !important;
+          padding: 0 !important;
         }
         #sp-pip-ui .reports-office-block {
           break-inside: avoid;
