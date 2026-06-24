@@ -1100,7 +1100,7 @@
         #hubMqlPrintSignatureStamp {
           display: block !important;
           position: fixed !important;
-          bottom: 0 !important;
+          bottom: 0.12in !important;
           right: 0.5in !important;
           left: auto !important;
           width: 3.15in !important;
