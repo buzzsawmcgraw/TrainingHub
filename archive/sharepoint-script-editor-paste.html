@@ -3135,7 +3135,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260611i";
+        const HUB_BUILD_ID = "20260611j";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -8798,11 +8798,7 @@
         function buildMqlPrintSheet(options) {
           const sheet = document.createElement("div");
           sheet.className = "mql-print-sheet";
-          const body = document.createElement("div");
-          body.className = "mql-print-sheet-body";
-          if (options.header) body.appendChild(options.header);
-          if (options.table) body.appendChild(options.table);
-          sheet.appendChild(body);
+          sheet.appendChild(options.body);
           const foot = document.createElement("div");
           foot.className = "mql-print-sheet-footer";
           foot.appendChild(buildMqlPrintSignatureBlock(options.signature, "footer"));
@@ -8810,22 +8806,54 @@
           return sheet;
         }
 
-        function buildPaginatedMqlSignedPrintDoc(doc, table, header, rowElements, pageRowIndexLists, signature) {
+        function collectMqlSignedPrintLayoutFromDoc(doc) {
+          const sections = doc.querySelector(".mql-print-signed-sections");
+          if (!sections) return null;
+          const tableShell = sections.querySelector("table.mql-print-unified-table");
+          if (!tableShell) return null;
+          const items = [];
+          sections.querySelectorAll(".mql-print-duty-block").forEach(function (block) {
+            const heading = block.querySelector(".mql-print-duty-heading");
+            if (heading) items.push({ kind: "heading", node: heading });
+            block.querySelectorAll("tbody tr").forEach(function (row) {
+              items.push({ kind: "row", node: row });
+            });
+          });
+          return {
+            items: items,
+            tableShell: tableShell,
+            header: doc.querySelector(".mql-signed-print-header"),
+          };
+        }
+
+        function buildPaginatedMqlSignedPrintFromItems(doc, layout, pageItemIndexLists, signature) {
           const container = document.createElement("div");
           container.className = doc.className;
-          pageRowIndexLists.forEach(function (indices, pageNum) {
-            const pageTable = cloneMqlPrintTableShell(table, pageNum === 0);
-            const tbody = pageTable.querySelector("tbody");
-            indices.forEach(function (ri) {
-              tbody.appendChild(rowElements[ri].cloneNode(true));
+          let firstTableOnDoc = true;
+
+          pageItemIndexLists.forEach(function (indices, pageNum) {
+            const body = document.createElement("div");
+            body.className = "mql-print-sheet-body";
+            if (pageNum === 0 && layout.header) body.appendChild(layout.header.cloneNode(true));
+
+            let currentTable = null;
+            indices.forEach(function (ii) {
+              const item = layout.items[ii];
+              if (!item) return;
+              if (item.kind === "heading") {
+                currentTable = null;
+                body.appendChild(item.node.cloneNode(true));
+              } else {
+                if (!currentTable) {
+                  currentTable = cloneMqlPrintTableShell(layout.tableShell, firstTableOnDoc);
+                  firstTableOnDoc = false;
+                  body.appendChild(currentTable);
+                }
+                currentTable.querySelector("tbody").appendChild(item.node.cloneNode(true));
+              }
             });
-            container.appendChild(
-              buildMqlPrintSheet({
-                header: pageNum === 0 && header ? header.cloneNode(true) : null,
-                table: pageTable,
-                signature: signature,
-              }),
-            );
+
+            container.appendChild(buildMqlPrintSheet({ body: body, signature: signature }));
           });
           return container;
         }
@@ -8833,28 +8861,29 @@
         function repaginateSignedMqlPrintInSurface(surface, signature, idoc) {
           if (!surface || !signature) return false;
           const doc = surface.querySelector(".af-official-doc--mql-signed");
-          const table = doc && doc.querySelector("table.mql-print-unified-table");
-          if (!doc || !table) return false;
+          if (!doc) return false;
 
-          const header = doc.querySelector(".mql-signed-print-header");
-          const rowElements = Array.prototype.slice.call(table.querySelectorAll("tbody tr"));
+          const layout = collectMqlSignedPrintLayoutFromDoc(doc);
+          if (!layout || !layout.items.length) return false;
+
           const win = idoc.defaultView;
           const pxPerIn = win && win.innerWidth ? win.innerWidth / 11 : 96;
           const sheetHeight = 7.85 * pxPerIn;
           const footerHeight = 1.2 * pxPerIn;
-          const headerHeight = header ? header.getBoundingClientRect().height : 0;
-          const theadEl = table.querySelector("thead");
+          const headerHeight = layout.header ? layout.header.getBoundingClientRect().height : 0;
+          const theadEl = layout.tableShell.querySelector("thead");
           const theadHeight = theadEl ? theadEl.getBoundingClientRect().height : 22;
-          const rowHeights = rowElements.map(function (row) {
-            const h = row.getBoundingClientRect().height;
-            return h > 0 ? h : 18;
+          const itemHeights = layout.items.map(function (item) {
+            const h = item.node.getBoundingClientRect().height;
+            if (h > 0) return h;
+            return item.kind === "heading" ? 22 : 18;
           });
 
-          let pageRowIndexLists;
-          if (!rowElements.length) {
-            pageRowIndexLists = [[]];
+          let pageItemIndexLists;
+          if (!layout.items.length) {
+            pageItemIndexLists = [[]];
           } else {
-            pageRowIndexLists = packMqlPrintPageRowIndices(rowHeights, {
+            pageItemIndexLists = packMqlPrintPageRowIndices(itemHeights, {
               sheetHeight: sheetHeight,
               footerHeight: footerHeight,
               headerHeight: headerHeight,
@@ -8863,14 +8892,7 @@
             });
           }
 
-          const paginated = buildPaginatedMqlSignedPrintDoc(
-            doc,
-            table,
-            header,
-            rowElements,
-            pageRowIndexLists,
-            signature,
-          );
+          const paginated = buildPaginatedMqlSignedPrintFromItems(doc, layout, pageItemIndexLists, signature);
           doc.replaceWith(paginated);
           return true;
         }
@@ -8896,6 +8918,9 @@
             ".mql-print-sheet-footer .mql-print-sig-signing-space { height: 0.55in; }" +
             ".mql-print-sheet-footer .mql-print-sig-line { border-bottom: 1px solid #000; height: 1.15em; margin-bottom: 4px; }" +
             ".mql-print-sheet-footer .mql-print-sig-name, .mql-print-sheet-footer .mql-print-sig-title { margin: 0; font-size: 9pt; line-height: 1.2; white-space: nowrap; }" +
+            ".mql-print-duty-block { margin: 0; }" +
+            ".mql-print-duty-block + .mql-print-duty-block { margin-top: 12px; padding-top: 8px; border-top: 1px solid #000; }" +
+            ".mql-print-duty-heading { margin: 0 0 5px; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 10pt; font-weight: 700; color: #000; }" +
             "table.mql-print-table-continue { margin-top: 0; border-top: none; }" +
             "table.mql-print-table-continue tbody tr:first-child td { border-top: 1px solid #000; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table { width: 100%; border-collapse: collapse; margin: 0; font-size: 8pt; }" +
@@ -11590,27 +11615,28 @@
           return table;
         }
 
-        function buildMqlSignedPrintUnifiedTable(rows, catalog, display, options) {
+        function buildMqlSignedPrintDutyGroupTable(items, display, options, includeThead) {
           options = options || {};
           const columnLabels = mqlStandardColumnLabels();
           const table = document.createElement("table");
           table.className =
-            "af-official-table af-official-table--compact af-official-table--mql-standard mql-print-unified-table";
+            "af-official-table af-official-table--compact af-official-table--mql-standard mql-print-unified-table mql-print-duty-table";
+          if (!includeThead) table.classList.add("mql-print-table-continue");
           table.style.width = "100%";
           appendOfficialColgroup(table, mqlStandardColumnWidths());
-
-          const thead = document.createElement("thead");
-          const headRow = document.createElement("tr");
-          columnLabels.forEach(function (label) {
-            const th = document.createElement("th");
-            th.textContent = label;
-            headRow.appendChild(th);
-          });
-          thead.appendChild(headRow);
-          table.appendChild(thead);
-
+          if (includeThead) {
+            const thead = document.createElement("thead");
+            const headRow = document.createElement("tr");
+            columnLabels.forEach(function (label) {
+              const th = document.createElement("th");
+              th.textContent = label;
+              headRow.appendChild(th);
+            });
+            thead.appendChild(headRow);
+            table.appendChild(thead);
+          }
           const tbody = document.createElement("tbody");
-          sortMqlReportRowsByDutyStatusOrder(rows).forEach(function (entry) {
+          items.forEach(function (entry) {
             const tr = document.createElement("tr");
             mqlStandardRowCells(entry, display).forEach(function (cell) {
               const td = document.createElement("td");
@@ -11624,8 +11650,25 @@
             tbody.appendChild(tr);
           });
           table.appendChild(tbody);
-
           return table;
+        }
+
+        function buildMqlSignedPrintSectionedBody(rows, catalog, display, options) {
+          const wrap = document.createElement("div");
+          wrap.className = "mql-print-signed-sections";
+          let firstGroup = true;
+          groupMqlEntriesByDutyStatus(rows).forEach(function (group) {
+            const block = document.createElement("div");
+            block.className = "mql-print-duty-block";
+            const heading = document.createElement("div");
+            heading.className = "mql-print-duty-heading";
+            heading.textContent = group.section;
+            block.appendChild(heading);
+            block.appendChild(buildMqlSignedPrintDutyGroupTable(group.items, display, options, firstGroup));
+            firstGroup = false;
+            wrap.appendChild(block);
+          });
+          return wrap;
         }
 
         async function ensureMqlReportData(pw, opts) {
@@ -11744,7 +11787,7 @@
           }
           if (!mqlIsHeavyCatalog(catalog)) {
             wrap.appendChild(
-              buildMqlSignedPrintUnifiedTable(rows, catalog, display, {
+              buildMqlSignedPrintSectionedBody(rows, catalog, display, {
                 colorize: true,
               }),
             );
