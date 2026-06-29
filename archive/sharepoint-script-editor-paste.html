@@ -2814,6 +2814,49 @@
                 </form>
               </div>
             </div>
+            <div id="personTcccBlsWrap" class="person-bylaw-wrap" hidden>
+              <h3 class="person-bylaw-title">TCCC / BLS Training</h3>
+              <div id="personTcccBlsState" class="read-state" hidden></div>
+              <div class="roster-wrap bylaw-roster-wrap">
+                <table class="roster bylaw-table" aria-label="TCCC and BLS Training Records">
+                  <thead id="personTcccBlsThead"></thead>
+                  <tbody id="personTcccBlsBody"></tbody>
+                </table>
+              </div>
+              <p id="personTcccBlsEmpty" class="bylaw-empty" hidden>No TCCC or BLS training records on file for this person.</p>
+              <div class="bylaw-add-toolbar">
+                <button type="button" id="personTcccBlsAddBtn" class="btn-secondary">Add Training</button>
+                <button type="button" id="personTcccBlsBulkAddBtn" class="btn-secondary">Add Multiple (same day)</button>
+              </div>
+              <div id="personTcccBlsBulkPanel" class="bylaw-add-panel bylaw-bulk-panel" hidden>
+                <h4 class="bylaw-add-title">Add Multiple Trainings (same day)</h4>
+                <p class="bylaw-bulk-hint">Enter the certification date and certifier once, then check TCCC and/or BLS completed that day.</p>
+                <form id="personTcccBlsBulkForm" class="bylaw-add-form add-form-stack" aria-label="Add multiple TCCC / BLS records">
+                  <div id="personTcccBlsBulkSharedFields" class="add-form-grid"></div>
+                  <div class="bylaw-bulk-items-wrap">
+                    <div class="bylaw-bulk-items-toolbar">
+                      <button type="button" id="personTcccBlsBulkSelectAll" class="btn-secondary">Select all</button>
+                      <button type="button" id="personTcccBlsBulkClearAll" class="btn-secondary">Clear all</button>
+                    </div>
+                    <div id="personTcccBlsBulkItems" class="bylaw-bulk-items" role="group" aria-label="TCCC / BLS items to add"></div>
+                  </div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="personTcccBlsBulkSaveBtn">Save all selected</button>
+                    <button type="button" id="personTcccBlsBulkCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              </div>
+              <div id="personTcccBlsAddPanel" class="bylaw-add-panel" hidden>
+                <h4 id="personTcccBlsFormTitle" class="bylaw-add-title">New TCCC / BLS Training Record</h4>
+                <form id="personTcccBlsAddForm" class="bylaw-add-form add-form-stack" aria-label="Add TCCC / BLS Training Record">
+                  <div id="personTcccBlsAddFields" class="add-form-grid"></div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="personTcccBlsSaveBtn">Save Training</button>
+                    <button type="button" id="personTcccBlsAddCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
             <div id="personAppointmentsWrap" class="person-appointments-wrap" hidden>
               <h3 class="person-appointments-title">Appointments</h3>
               <div id="personAppointmentsState" class="read-state" hidden></div>
@@ -3310,7 +3353,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260624f";
+        const HUB_BUILD_ID = "20260624g";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -3416,6 +3459,46 @@
         /** Set SharePoint Title on new rows from the Item value when the list still requires Title. */
         const BYLAW_TRAINING_SET_TITLE = true;
         const BYLAW_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "ByLaw", "TrainingName", "Training_x0020_Name"];
+
+        const LIST_TCCC_BLS_TRAINING = "TcccBlsTraining";
+        const LIST_TCCC_BLS_TRAINING_GUID = "";
+        const TCCC_BLS_TRAINING_PERSON_FIELD = "PersonnelId";
+        const TCCC_BLS_TRAINING_PERSON_FIELD_ALT = [
+          "PersonnelID",
+          "PersonnelIdId",
+          "Personnel_x0020_Id",
+          "Personnel_x0020_ID",
+          "Personnel/Id",
+        ];
+        const TCCC_BLS_TRAINING_ITEMS_ORDERBY = "QualDate desc";
+        /** TcccBlsTraining list: same shape as ByLawTraining; Item is TCCC or BLS. */
+        const TCCC_BLS_TRAINING_COLUMNS = [
+          {
+            key: "Item",
+            label: "Item",
+            altKeys: ["Item0", "Title", "Training", "TrainingName", "Training_x0020_Name"],
+          },
+          {
+            key: "QualDate",
+            label: "Certification Date",
+            altKeys: ["QualificationDate", "Qualification_x0020_Date", "CertificationDate", "Certification_x0020_Date", "CertDate"],
+          },
+          {
+            key: "ExpirationDate",
+            label: "Expiration Date",
+            altKeys: ["ExpiryDate", "Expiry_x0020_Date", "ExpiresOn", "Expiration_x0020_Date", "ExpDate"],
+          },
+          {
+            key: "Certifier",
+            label: "Certifier",
+            altKeys: ["CertifierId", "Certifier0", "CertifierName", "Certifier_x0020_Name", "Instructor", "Trainer"],
+          },
+          { key: "Status", label: "Status", computed: true },
+        ];
+        const TCCC_BLS_TRAINING_DROPDOWN_KEYS = ["Item", "Certifier"];
+        const TCCC_BLS_TRAINING_SET_TITLE = true;
+        const TCCC_BLS_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "TrainingName", "Training_x0020_Name"];
+        const TCCC_BLS_TRAINING_ITEM_CHOICES = ["TCCC", "BLS"];
 
         /**
          * Appointments list (SharePoint title **Appointments**). Rows are filtered by PeronnelId = personnel list item Id.
@@ -4250,6 +4333,11 @@
           weaponsCertRows: null,
           bylawTrainingSampleRow: null,
           bylawTrainingRows: null,
+          tcccBlsTrainingSampleRow: null,
+          tcccBlsTrainingRows: null,
+          tcccBlsPersonPostKey: null,
+          tcccBlsPersonFilterField: null,
+          tcccBlsPersonFilterFields: null,
           bylawPersonFilterField: null,
           bylawPersonFilterFields: null,
           bylawPersonPostKey: null,
@@ -4633,6 +4721,7 @@
           ethosDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           clearPersonWeaponsCertSection();
           clearPersonBylawTrainingSection();
+          if (PERSON_TCCC_BLS_CERT_TRAINING) PERSON_TCCC_BLS_CERT_TRAINING.clear();
           clearPersonAppointmentsSection();
           setPersonDetailEditMode(false);
           setHubListViewVisible(true);
@@ -4968,7 +5057,11 @@
         }
 
         function normalizedBylawTrainingColumns() {
-          const arr = Array.isArray(BYLAW_TRAINING_COLUMNS) ? BYLAW_TRAINING_COLUMNS : [];
+          return normalizedCertTrainingColumns(BYLAW_TRAINING_COLUMNS);
+        }
+
+        function normalizedCertTrainingColumns(columnsConst) {
+          const arr = Array.isArray(columnsConst) ? columnsConst : [];
           return arr
             .map(function (entry) {
               if (!entry || !entry.key) return null;
@@ -4982,6 +5075,28 @@
               return { key: key, label: label, tryKeys: tryKeys, computed: !!entry.computed };
             })
             .filter(Boolean);
+        }
+
+        function certTrainingFormColumns(columnsConst) {
+          return normalizedCertTrainingColumns(columnsConst).filter(function (col) {
+            return !col.computed;
+          });
+        }
+
+        function certTrainingExpiryDateKeys(columnsConst) {
+          const expiryCol = normalizedCertTrainingColumns(columnsConst).find(function (col) {
+            return col.key === "ExpirationDate" || col.key === "ExpiryDate";
+          });
+          return expiryCol && expiryCol.tryKeys ? expiryCol.tryKeys.slice() : ["ExpirationDate", "ExpiryDate"];
+        }
+
+        function computeCertTrainingListStatus(item, columnsConst) {
+          const columns = normalizedCertTrainingColumns(columnsConst);
+          return computeCertStatusFromExpiryKeys(
+            item,
+            certTrainingExpiryDateKeys(columnsConst),
+            certQualDateKeysFromColumns(columns),
+          );
         }
 
         function bylawTrainingFormColumns() {
@@ -6778,6 +6893,957 @@
           }
         }
 
+        function certTrainingListApiPath(listTitle, listGuid) {
+          const guid = String(listGuid || "").trim();
+          if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(guid)) {
+            return "lists(guid'" + guid + "')";
+          }
+          const title = String(listTitle || "").trim();
+          return "lists/getbytitle('" + escListTitle(title) + "')";
+        }
+
+        function certTrainingListConfigured(listTitle, listGuid) {
+          const guid = String(listGuid || "").trim();
+          if (/^[0-9a-fA-F-]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(guid)) return true;
+          return !!String(listTitle || "").trim();
+        }
+
+        function certTrainingPersonFilterFieldCandidates(personField, personFieldAlt) {
+          const primary = String(personField || "PersonnelId").trim();
+          const out = [];
+          if (primary) out.push(primary);
+          (Array.isArray(personFieldAlt) ? personFieldAlt : []).forEach(function (name) {
+            const n = String(name || "").trim();
+            if (n && out.indexOf(n) === -1) out.push(n);
+          });
+          return out;
+        }
+
+        function certTrainingPersonnelIdFromItem(item, personField, personFieldAlt) {
+          if (!item || typeof item !== "object") return null;
+          const keys = certTrainingPersonFilterFieldCandidates(personField, personFieldAlt).concat([
+            "PersonnelId",
+            "PersonnelID",
+            "PersonnelIdId",
+            "Personnel_x0020_Id",
+          ]);
+          for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            if (!k || k.indexOf("/") !== -1) continue;
+            if (Object.prototype.hasOwnProperty.call(item, k) && item[k] !== null && item[k] !== "") {
+              return String(item[k]);
+            }
+          }
+          if (item.Personnel && typeof item.Personnel === "object" && item.Personnel.Id != null) {
+            return String(item.Personnel.Id);
+          }
+          return null;
+        }
+
+        function certTrainingRowsMatchPersonnel(rows, personnelId, personField, personFieldAlt) {
+          const want = String(personnelId);
+          return (Array.isArray(rows) ? rows : []).filter(function (item) {
+            return certTrainingPersonnelIdFromItem(item, personField, personFieldAlt) === want;
+          });
+        }
+
+        async function discoverCertTrainingPersonFilterFields(seg, pw, personField, hubFieldsKey) {
+          if (hubSession[hubFieldsKey] && hubSession[hubFieldsKey].length) {
+            return hubSession[hubFieldsKey].slice();
+          }
+          const out = [];
+          try {
+            const data = await spFetch(
+              `/_api/web/${seg}/fields?$select=InternalName,Title,EntityPropertyName,StaticName,TypeAsString&$filter=Hidden eq false&$top=200`,
+              {},
+              pw,
+            );
+            const fields = (data && data.value) || [];
+            const want = String(personField || "PersonnelId").trim().toLowerCase();
+            let hit = fields.find(function (f) {
+              const title = String(f.Title || "").trim().toLowerCase();
+              const internal = String(f.InternalName || f.StaticName || f.EntityPropertyName || "").trim();
+              const internalLower = internal.toLowerCase();
+              return (
+                internalLower === want ||
+                title === want ||
+                title === "personnel id" ||
+                internalLower === "personnelid" ||
+                internalLower === "personnelidid"
+              );
+            });
+            if (!hit) {
+              hit = fields.find(function (f) {
+                const internal = String(f.InternalName || f.StaticName || "").toLowerCase();
+                return internal.indexOf("personnel") !== -1 && internal.indexOf("id") !== -1;
+              });
+            }
+            if (hit) {
+              const internal = String(hit.InternalName || hit.StaticName || hit.EntityPropertyName || "").trim();
+              const type = String(hit.TypeAsString || "");
+              if (internal) out.push(internal);
+              if (/lookup/i.test(type) && internal) {
+                const lookupIdField = internal.endsWith("Id") ? internal + "Id" : internal + "Id";
+                if (out.indexOf(lookupIdField) === -1) out.push(lookupIdField);
+                const slashField = internal + "/Id";
+                if (out.indexOf(slashField) === -1) out.push(slashField);
+              }
+            }
+          } catch (_) {}
+          hubSession[hubFieldsKey] = out.slice();
+          return out;
+        }
+
+        async function fetchCertTrainingForPersonnel(opts) {
+          const seg = opts.seg;
+          const pw = opts.pw;
+          const personnelId = opts.personnelId;
+          const personField = opts.personField;
+          const personFieldAlt = opts.personFieldAlt;
+          const orderBy = opts.orderBy;
+          const hubFilterFieldKey = opts.hubFilterFieldKey;
+          const hubFilterFieldsKey = opts.hubFilterFieldsKey;
+          const id = parseInt(String(personnelId), 10);
+          if (!id || isNaN(id)) return [];
+          const orderByClause = String(orderBy || "").trim();
+          const orderByQs = orderByClause ? "&$orderby=" + encodeURIComponent(orderByClause) : "";
+          const tried = [];
+          const candidates = certTrainingPersonFilterFieldCandidates(personField, personFieldAlt).slice();
+          const discovered = await discoverCertTrainingPersonFilterFields(seg, pw, personField, hubFilterFieldsKey);
+          discovered.forEach(function (name) {
+            if (name && candidates.indexOf(name) === -1) candidates.unshift(name);
+          });
+          if (discovered.length) {
+            discovered.slice().reverse().forEach(function (name) {
+              if (name && candidates.indexOf(name) !== -1) {
+                candidates.splice(candidates.indexOf(name), 1);
+                candidates.unshift(name);
+              }
+            });
+          }
+          for (let i = 0; i < candidates.length; i++) {
+            const fieldName = candidates[i];
+            if (!fieldName || tried.indexOf(fieldName) !== -1) continue;
+            tried.push(fieldName);
+            const filterRaw = fieldName + " eq " + id;
+            const filter = encodeURIComponent(filterRaw);
+            try {
+              let data = null;
+              try {
+                data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}` + orderByQs, {}, pw);
+              } catch (e0) {
+                if (/\b400\b/.test(String(e0.message || "")) && orderByQs) {
+                  data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}`, {}, pw);
+                } else {
+                  throw e0;
+                }
+              }
+              hubSession[hubFilterFieldKey] = fieldName;
+              return (data && data.value) || [];
+            } catch (e1) {
+              if (!/\b400\b/.test(String(e1.message || "")) && !/does not exist/i.test(String(e1.message || ""))) {
+                throw e1;
+              }
+            }
+          }
+          let data = null;
+          try {
+            data = await spFetch(`/_api/web/${seg}/items?$top=500` + orderByQs, {}, pw);
+          } catch (e2) {
+            if (/\b400\b/.test(String(e2.message || "")) && orderByQs) {
+              data = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
+            } else {
+              throw e2;
+            }
+          }
+          return certTrainingRowsMatchPersonnel((data && data.value) || [], id, personField, personFieldAlt);
+        }
+
+        function createPersonCertTrainingModule(cfg) {
+          const editSession = { item: null };
+          function dom(key) {
+            return document.getElementById(cfg.dom[key]);
+          }
+          function listSeg() {
+            return certTrainingListApiPath(cfg.listTitle, cfg.listGuid);
+          }
+          function listReady() {
+            return certTrainingListConfigured(cfg.listTitle, cfg.listGuid);
+          }
+          function setState(kind, message) {
+            const node = dom("state");
+            if (!node) return;
+            if (!message) {
+              node.hidden = true;
+              node.textContent = "";
+              return;
+            }
+            node.hidden = false;
+            node.className = "read-state " + kind;
+            node.textContent = message;
+          }
+          function clearTable() {
+            const thead = dom("thead");
+            const tbody = dom("tbody");
+            if (thead) thead.innerHTML = "";
+            if (tbody) tbody.innerHTML = "";
+          }
+          function resolveWriteKey(col, sampleRow) {
+            if (col.saveKey) return String(col.saveKey).trim();
+            if (sampleRow) {
+              const tryKeys = col.tryKeys || [col.key];
+              const hit = tryKeys.find(function (k) {
+                return sampleRow && Object.prototype.hasOwnProperty.call(sampleRow, k);
+              });
+              if (hit) return hit;
+            }
+            return col.key;
+          }
+          function buildFieldWrap(col, sampleRow, options) {
+            options = options || {};
+            const idPrefix = options.idPrefix || cfg.formPrefix;
+            const readOnlyKeys = Array.isArray(options.readOnlyKeys) ? options.readOnlyKeys : [];
+            const readOnly = readOnlyKeys.indexOf(col.key) !== -1;
+            const writeKey = resolveWriteKey(col, sampleRow);
+            const fwrap = document.createElement("div");
+            fwrap.className = "add-field";
+            const lab = document.createElement("label");
+            lab.setAttribute("for", idPrefix + col.key);
+            lab.textContent = col.label;
+            fwrap.appendChild(lab);
+            const isDrop = (cfg.dropdownKeys || []).indexOf(col.key) !== -1;
+            let input;
+            if (isDrop) {
+              input = document.createElement("select");
+              input.className = "add-field-select--autosize";
+              const opt0 = document.createElement("option");
+              opt0.value = "";
+              opt0.textContent = "(select)";
+              input.appendChild(opt0);
+            } else if (isWeaponsCertDateColumn(col)) {
+              input = document.createElement("input");
+              input.type = "date";
+            } else {
+              input = document.createElement("input");
+              input.type = "text";
+            }
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+            if (readOnly) input.disabled = true;
+            fwrap.appendChild(input);
+            return fwrap;
+          }
+          function setFormFieldValue(col, item, el) {
+            if (!el || !item) return;
+            const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+            if (isWeaponsCertDateColumn(col)) {
+              el.value = isoDateForDateInput(raw);
+              return;
+            }
+            if (el.tagName === "SELECT") {
+              const writeKey = String(el.dataset.writeKey || "").trim();
+              if (/Id$/.test(writeKey) && item[writeKey] != null && item[writeKey] !== "") {
+                el.value = String(item[writeKey]);
+                return;
+              }
+              const lookupBase = writeKey.replace(/Id$/, "");
+              if (lookupBase && item[lookupBase] && typeof item[lookupBase] === "object" && item[lookupBase].Id != null) {
+                el.value = String(item[lookupBase].Id);
+                return;
+              }
+              const display = formatSharePointLookupDisplay(raw);
+              ensureSelectIncludesValue(el, display);
+              el.value = display;
+              return;
+            }
+            el.value = formatSharePointLookupDisplay(raw);
+          }
+          function fillFormFromItem(item) {
+            if (!item) return;
+            certTrainingFormColumns(cfg.columns).forEach(function (col) {
+              const el = document.getElementById(cfg.formPrefix + col.key);
+              if (el) setFormFieldValue(col, item, el);
+            });
+          }
+          async function populateItemSelect(sel, sampleRow) {
+            if (!sel || sel.tagName !== "SELECT") return;
+            while (sel.options.length > 1) sel.remove(1);
+            const fixed = Array.isArray(cfg.fixedItemChoices) ? cfg.fixedItemChoices : [];
+            if (fixed.length) {
+              fixed.forEach(function (choice) {
+                const o = document.createElement("option");
+                o.value = choice;
+                o.textContent = choice;
+                sel.appendChild(o);
+              });
+              return;
+            }
+            const itemCol = normalizedCertTrainingColumns(cfg.columns).find(function (c) {
+              return c.key === "Item";
+            });
+            if (!itemCol) return;
+            await fillDropdownSelect(sel, itemCol, listSeg(), personDetailSession.pw, sampleRow, null);
+          }
+          async function populateAddDropdowns() {
+            const form = dom("addForm");
+            if (!form || !personDetailSession.pw) return;
+            const seg = listSeg();
+            const pw = personDetailSession.pw;
+            const sampleRow = hubSession[cfg.hub.sampleRow];
+            const columns = certTrainingFormColumns(cfg.columns);
+            for (let i = 0; i < columns.length; i++) {
+              const col = columns[i];
+              if ((cfg.dropdownKeys || []).indexOf(col.key) === -1) continue;
+              const sel = document.getElementById(cfg.formPrefix + col.key);
+              if (!sel || sel.tagName !== "SELECT") continue;
+              if (col.key === "Certifier") await fillBylawCertifierDropdown(sel, seg, pw, sampleRow);
+              else if (col.key === "Item") await populateItemSelect(sel, sampleRow);
+              else await fillDropdownSelect(sel, col, seg, pw, sampleRow, null);
+            }
+            applyAllSelectAutosizes(form);
+          }
+          async function populateBulkItemChecklist(container) {
+            if (!container) return [];
+            container.innerHTML = "";
+            const itemCol = normalizedCertTrainingColumns(cfg.columns).find(function (c) {
+              return c.key === "Item";
+            });
+            if (!itemCol) {
+              container.textContent = "(Training Item field not configured.)";
+              return [];
+            }
+            const itemWriteKey = resolveWriteKey(itemCol, hubSession[cfg.hub.sampleRow]);
+            let choices = Array.isArray(cfg.fixedItemChoices) ? cfg.fixedItemChoices.slice() : [];
+            if (!choices.length) {
+              try {
+                const r = await fetchChoiceOptionsForColumn(itemCol, listSeg(), personDetailSession.pw, hubSession[cfg.hub.sampleRow]);
+                choices = (r.choices || []).map(function (c) {
+                  return String(c).trim();
+                }).filter(Boolean);
+              } catch (e) {
+                container.textContent = "(Could not load training items: " + (e.message || String(e)).slice(0, 120) + ")";
+                return [];
+              }
+            }
+            if (!choices.length) {
+              container.textContent = "(No training items found.)";
+              return [];
+            }
+            choices.forEach(function (choice) {
+              const label = document.createElement("label");
+              label.className = "bylaw-bulk-item-check";
+              const cb = document.createElement("input");
+              cb.type = "checkbox";
+              cb.value = choice;
+              cb.dataset.writeKey = itemWriteKey;
+              label.appendChild(cb);
+              label.appendChild(document.createTextNode(choice));
+              container.appendChild(label);
+            });
+            return choices;
+          }
+          async function resolvePersonPostKey(seg, pw) {
+            if (hubSession[cfg.hub.personPostKey]) return hubSession[cfg.hub.personPostKey];
+            const filterField = String(cfg.personField || "PersonnelId").trim();
+            let postKey = filterField;
+            try {
+              const esc = filterField.replace(/'/g, "''");
+              const data = await spFetch(
+                `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=InternalName,TypeAsString`,
+                {},
+                pw,
+              );
+              const internal = String(data.InternalName || filterField).trim();
+              const type = String(data.TypeAsString || "");
+              if (/lookup/i.test(type)) {
+                postKey = internal.endsWith("Id") ? internal : internal + "Id";
+              } else {
+                postKey = internal;
+              }
+            } catch (_) {
+              if (filterField === "PersonnelId" || filterField === "PersonnelID") postKey = "PersonnelIdId";
+              else if (!/Id$/.test(filterField)) postKey = filterField + "Id";
+            }
+            hubSession[cfg.hub.personPostKey] = postKey;
+            return postKey;
+          }
+          function setAddPanelVisible(visible) {
+            const panel = dom("addPanel");
+            if (panel) panel.hidden = !visible;
+            if (visible && dom("bulkPanel")) dom("bulkPanel").hidden = true;
+            if (!visible) {
+              editSession.item = null;
+              setFormMode("add");
+            } else {
+              updateAddBtnLabel();
+            }
+          }
+          function setBulkPanelVisible(visible) {
+            const panel = dom("bulkPanel");
+            if (panel) panel.hidden = !visible;
+            if (visible) {
+              setAddPanelVisible(false);
+              editSession.item = null;
+              setFormMode("add");
+            }
+          }
+          function setFormMode(mode) {
+            const isEdit = mode === "edit";
+            const title = dom("formTitle");
+            const saveBtn = dom("saveBtn");
+            if (title) title.textContent = isEdit ? cfg.labels.requalifyTitle : cfg.labels.newRecordTitle;
+            if (saveBtn) saveBtn.textContent = isEdit ? "Save Requalification" : "Save Training";
+            updateAddBtnLabel();
+          }
+          function updateAddBtnLabel() {
+            const btn = dom("addBtn");
+            const panel = dom("addPanel");
+            if (!btn) return;
+            if (panel && !panel.hidden) {
+              btn.textContent = editSession.item ? "Cancel requalify" : "Cancel add";
+            } else {
+              btn.textContent = "Add Training";
+            }
+          }
+          function buildAddFormFields(options) {
+            const fields = dom("addFields");
+            if (!fields) return;
+            fields.innerHTML = "";
+            const sampleRow = hubSession[cfg.hub.sampleRow];
+            certTrainingFormColumns(cfg.columns).forEach(function (col) {
+              const f = buildFieldWrap(col, sampleRow, options);
+              if (f) fields.appendChild(f);
+            });
+          }
+          function buildBulkSharedFields(container) {
+            if (!container) return;
+            container.innerHTML = "";
+            const sampleRow = hubSession[cfg.hub.sampleRow];
+            const columns = certTrainingFormColumns(cfg.columns);
+            ["QualDate", "Certifier", "ExpirationDate"].forEach(function (key) {
+              const col = columns.find(function (c) {
+                return c.key === key;
+              });
+              if (!col) return;
+              const f = buildFieldWrap(col, sampleRow, {
+                idPrefix: cfg.bulkPrefix,
+                readOnlyKeys: key === "ExpirationDate" ? ["ExpirationDate"] : [],
+              });
+              if (f) container.appendChild(f);
+            });
+          }
+          function wireQualAutoExpiry(form, prefix, datasetKey) {
+            if (!form) return;
+            wireCertQualDateAutoExpiry(form, prefix, datasetKey);
+          }
+          function applyExpirationFromQual(prefix) {
+            applyCertExpirationFromQual(prefix);
+          }
+          function renderTable(rows) {
+            clearTable();
+            const columns = normalizedCertTrainingColumns(cfg.columns);
+            const thead = dom("thead");
+            const tbody = dom("tbody");
+            const wrap = dom("wrap");
+            if (!thead || !tbody || !columns.length) return;
+            const showActions = !!(personDetailSession.pw && wrap && !wrap.hidden);
+            const trHead = document.createElement("tr");
+            columns.forEach(function (col) {
+              const th = document.createElement("th");
+              th.textContent = col.label;
+              trHead.appendChild(th);
+            });
+            if (showActions) {
+              const thAct = document.createElement("th");
+              thAct.className = "roster-actions";
+              thAct.textContent = " ";
+              trHead.appendChild(thAct);
+            }
+            thead.appendChild(trHead);
+            const frag = document.createDocumentFragment();
+            rows.forEach(function (item) {
+              const tr = document.createElement("tr");
+              columns.forEach(function (col) {
+                const td = document.createElement("td");
+                if (col.computed && col.key === "Status") {
+                  const status = computeCertTrainingListStatus(item, cfg.columns);
+                  td.textContent = displayCellText(status.text);
+                  if (status.tone && status.tone !== "unknown") td.className = "cert-status cert-status--" + status.tone;
+                } else if (isWeaponsCertDateColumn(col)) {
+                  const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+                  td.textContent = displayCellText(formatWeaponsCertDisplayDate(raw));
+                } else if (col.key === "Certifier") {
+                  const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+                  td.textContent = displayCellText(formatSharePointLookupDisplay(raw));
+                } else {
+                  const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
+                  td.textContent = displayCellText(raw !== undefined && raw !== null ? formatCellValue(raw) : "");
+                }
+                tr.appendChild(td);
+              });
+              if (showActions && item.Id != null) {
+                const tdAct = document.createElement("td");
+                tdAct.className = "roster-actions";
+                const inner = document.createElement("div");
+                inner.className = "roster-actions-inner";
+                const requalBtn = document.createElement("button");
+                requalBtn.type = "button";
+                requalBtn.className = "btn-record";
+                requalBtn.textContent = "Requalify";
+                const trainingLabel = formatCellValue(valueFromItemByKeys(item, cfg.itemSortKeys) || "");
+                requalBtn.addEventListener("click", function () {
+                  void openEditPanel(item);
+                });
+                inner.appendChild(requalBtn);
+                const delBtn = document.createElement("button");
+                delBtn.type = "button";
+                delBtn.className = "btn-danger";
+                delBtn.textContent = "Delete";
+                delBtn.addEventListener("click", function () {
+                  const personId = personDetailSession.item && personDetailSession.item.Id;
+                  void deleteRow(item.Id, personDetailSession.pw, personId);
+                });
+                inner.appendChild(delBtn);
+                tdAct.appendChild(inner);
+                tr.appendChild(tdAct);
+              }
+              frag.appendChild(tr);
+            });
+            tbody.appendChild(frag);
+            const empty = dom("empty");
+            if (empty) empty.hidden = rows.length > 0;
+          }
+          async function load(personId, pw) {
+            if (!personId) return;
+            const wrap = dom("wrap");
+            if (wrap) wrap.hidden = false;
+            setState("loading", "Loading " + cfg.labels.trainingName + " records...");
+            clearTable();
+            const empty = dom("empty");
+            if (empty) empty.hidden = true;
+            if (!listReady()) {
+              renderTable([]);
+              setState("", "");
+              if (empty) {
+                empty.hidden = false;
+                empty.textContent = cfg.labels.listNotConfigured;
+              }
+              return;
+            }
+            const seg = listSeg();
+            try {
+              const rows = await fetchCertTrainingForPersonnel({
+                seg: seg,
+                pw: pw,
+                personnelId: personId,
+                personField: cfg.personField,
+                personFieldAlt: cfg.personFieldAlt,
+                orderBy: cfg.orderBy,
+                hubFilterFieldKey: cfg.hub.personFilterField,
+                hubFilterFieldsKey: cfg.hub.personFilterFields,
+              });
+              const dateKeys = [
+                "QualDate",
+                "QualificationDate",
+                "Qualification_x0020_Date",
+                "CertificationDate",
+                "Certification_x0020_Date",
+                "CertDate",
+              ];
+              rows.sort(function (a, b) {
+                const da = formatCellValue(valueFromItemByKeys(a, dateKeys) || "");
+                const db = formatCellValue(valueFromItemByKeys(b, dateKeys) || "");
+                if (da !== db) return String(db).localeCompare(String(da));
+                const wa = formatCellValue(valueFromItemByKeys(a, cfg.itemSortKeys) || "");
+                const wb = formatCellValue(valueFromItemByKeys(b, cfg.itemSortKeys) || "");
+                return String(wa).localeCompare(String(wb));
+              });
+              hubSession[cfg.hub.sampleRow] = rows.length ? rows[0] : hubSession[cfg.hub.sampleRow] || null;
+              hubSession[cfg.hub.rows] = rows.slice();
+              renderTable(rows);
+              setState("", "");
+            } catch (e) {
+              renderTable([]);
+              setState("warn", "Could not load " + cfg.labels.trainingName + " records: " + (e.message || String(e)).slice(0, 220));
+              if (empty) {
+                empty.hidden = false;
+                empty.textContent = cfg.labels.loadFailed;
+              }
+            }
+          }
+          function clearSection() {
+            clearTable();
+            setState("", "");
+            editSession.item = null;
+            hubSession[cfg.hub.rows] = null;
+            setAddPanelVisible(false);
+            setBulkPanelVisible(false);
+            const addForm = dom("addForm");
+            const bulkForm = dom("bulkForm");
+            if (addForm) addForm.reset();
+            if (bulkForm) bulkForm.reset();
+            const empty = dom("empty");
+            if (empty) {
+              empty.hidden = true;
+              empty.textContent = cfg.labels.emptyDefault;
+            }
+            const wrap = dom("wrap");
+            if (wrap) wrap.hidden = true;
+          }
+          async function openAddPanel() {
+            if (!personDetailSession.item || personDetailSession.item.Id == null) {
+              setState("warn", "Open a Personnel Record before adding training.");
+              return;
+            }
+            editSession.item = null;
+            setFormMode("add");
+            buildAddFormFields();
+            setAddPanelVisible(true);
+            setState("", "");
+            await populateAddDropdowns();
+            wireQualAutoExpiry(dom("addForm"), cfg.formPrefix, cfg.autoExpiryWireKey);
+            const itemEl = document.getElementById(cfg.formPrefix + "Item");
+            if (itemEl) itemEl.focus();
+          }
+          async function openBulkPanel() {
+            if (!personDetailSession.item || personDetailSession.item.Id == null) {
+              setState("warn", "Open a Personnel Record before adding training.");
+              return;
+            }
+            if (!personDetailSession.pw) {
+              setState("warn", "Personnel record is still loading. Try again in a moment.");
+              return;
+            }
+            editSession.item = null;
+            setBulkPanelVisible(true);
+            setState("", "");
+            buildBulkSharedFields(dom("bulkSharedFields"));
+            const seg = listSeg();
+            const pw = personDetailSession.pw;
+            const sampleRow = hubSession[cfg.hub.sampleRow];
+            const certSel = document.getElementById(cfg.bulkPrefix + "Certifier");
+            if (certSel) await fillBylawCertifierDropdown(certSel, seg, pw, sampleRow);
+            await populateBulkItemChecklist(dom("bulkItems"));
+            const bulkForm = dom("bulkForm");
+            if (bulkForm) {
+              delete bulkForm.dataset[cfg.bulkAutoExpiryWireKey];
+              wireQualAutoExpiry(bulkForm, cfg.bulkPrefix, cfg.bulkAutoExpiryWireKey);
+            }
+            const qualEl = document.getElementById(cfg.bulkPrefix + "QualDate");
+            if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+            applyExpirationFromQual(cfg.bulkPrefix);
+            if (bulkForm) applyAllSelectAutosizes(bulkForm);
+            if (qualEl) qualEl.focus();
+          }
+          async function openEditPanel(item) {
+            if (!personDetailSession.item || personDetailSession.item.Id == null || !item || item.Id == null) return;
+            editSession.item = item;
+            setFormMode("edit");
+            buildAddFormFields({ readOnlyKeys: ["Item"] });
+            setAddPanelVisible(true);
+            setState("", "");
+            await populateAddDropdowns();
+            fillFormFromItem(item);
+            const qualEl = document.getElementById(cfg.formPrefix + "QualDate");
+            if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+            applyExpirationFromQual(cfg.formPrefix);
+            wireQualAutoExpiry(dom("addForm"), cfg.formPrefix, cfg.autoExpiryWireKey);
+            if (qualEl) qualEl.focus();
+          }
+          async function deleteRow(id, pw, personId) {
+            const sid = parseInt(String(id), 10);
+            if (!sid || isNaN(sid)) {
+              setState("err", "Invalid training record Id for delete.");
+              return;
+            }
+            if (!confirm("Delete " + cfg.labels.trainingName + " record Id " + sid + "? This cannot be undone.")) return;
+            try {
+              setState("loading", "Deleting training record...");
+              await spFetch(`/_api/web/${listSeg()}/items(${sid})`, { method: "DELETE" }, pw);
+              if (editSession.item && parseInt(String(editSession.item.Id), 10) === sid) {
+                editSession.item = null;
+                setAddPanelVisible(false);
+                const addForm = dom("addForm");
+                if (addForm) addForm.reset();
+              }
+              if (personId) await load(personId, pw);
+              setState("ok", "Training record deleted.");
+              window.setTimeout(function () {
+                setState("", "");
+              }, 2500);
+            } catch (e) {
+              setState("err", "Delete failed: " + (e.message || String(e)).slice(0, 280));
+            }
+          }
+          async function submitSave() {
+            const personItem = personDetailSession.item;
+            const pw = personDetailSession.pw;
+            if (!personItem || personItem.Id == null || !pw) return;
+            const isEdit = editSession.item && editSession.item.Id != null;
+            const sampleRow = hubSession[cfg.hub.sampleRow];
+            const itemEl = document.getElementById(cfg.formPrefix + "Item");
+            const itemVal = itemEl ? String(itemEl.value || "").trim() : "";
+            if (!isEdit && !itemVal) {
+              setState("err", "Item is required.");
+              return;
+            }
+            const qualEl = document.getElementById(cfg.formPrefix + "QualDate");
+            if (!qualEl || !String(qualEl.value || "").trim()) {
+              setState("err", "Certification date is required.");
+              return;
+            }
+            const payload = {};
+            certTrainingFormColumns(cfg.columns).forEach(function (col) {
+              if (isEdit && col.key === "Item") return;
+              const el = document.getElementById(cfg.formPrefix + col.key);
+              if (!el) return;
+              const writeKey = el.dataset.writeKey || resolveWriteKey(col, sampleRow);
+              const v = formFieldPayloadValue(el, writeKey);
+              if (v === null) return;
+              payload[writeKey] = v;
+            });
+            const seg = listSeg();
+            if (!isEdit) {
+              const personId = parseInt(String(personItem.Id), 10);
+              const personKey = await resolvePersonPostKey(seg, pw);
+              payload[personKey] = personId;
+              if (cfg.setTitle) payload.Title = itemVal;
+            }
+            try {
+              setState("loading", isEdit ? "Saving requalification..." : "Saving training record...");
+              const saveBtn = dom("saveBtn");
+              if (saveBtn) saveBtn.disabled = true;
+              if (isEdit) {
+                await spFetch(`/_api/web/${seg}/items(${editSession.item.Id})`, { method: "MERGE", body: payload }, pw);
+              } else {
+                await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+              }
+              editSession.item = null;
+              const addForm = dom("addForm");
+              if (addForm) addForm.reset();
+              setAddPanelVisible(false);
+              await load(personItem.Id, pw);
+              setState("ok", isEdit ? "Requalification saved." : "Training record saved.");
+              window.setTimeout(function () {
+                setState("", "");
+              }, 2500);
+            } catch (e) {
+              setState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+            } finally {
+              const saveBtn = dom("saveBtn");
+              if (saveBtn) saveBtn.disabled = false;
+            }
+          }
+          function getSelectedBulkItems(container) {
+            if (!container) return [];
+            return Array.prototype.slice
+              .call(container.querySelectorAll('input[type="checkbox"]:checked'))
+              .map(function (cb) {
+                return {
+                  value: String(cb.value || "").trim(),
+                  writeKey: String(cb.dataset.writeKey || "Item").trim() || "Item",
+                };
+              })
+              .filter(function (row) {
+                return !!row.value;
+              });
+          }
+          function collectBulkSharedPayload() {
+            const payload = {};
+            const sampleRow = hubSession[cfg.hub.sampleRow];
+            certTrainingFormColumns(cfg.columns).forEach(function (col) {
+              if (col.key === "Item") return;
+              const el = document.getElementById(cfg.bulkPrefix + col.key);
+              if (!el) return;
+              const writeKey = el.dataset.writeKey || resolveWriteKey(col, sampleRow);
+              const v = formFieldPayloadValue(el, writeKey);
+              if (v === null) return;
+              payload[writeKey] = v;
+            });
+            return payload;
+          }
+          async function submitBulkSave() {
+            const personItem = personDetailSession.item;
+            const pw = personDetailSession.pw;
+            if (!personItem || personItem.Id == null || !pw) return;
+            const selected = getSelectedBulkItems(dom("bulkItems"));
+            if (!selected.length) {
+              setState("err", "Select at least one training item.");
+              return;
+            }
+            const qualEl = document.getElementById(cfg.bulkPrefix + "QualDate");
+            if (!qualEl || !String(qualEl.value || "").trim()) {
+              setState("err", "Certification date is required.");
+              return;
+            }
+            const seg = listSeg();
+            const sharedPayload = collectBulkSharedPayload();
+            const personKey = await resolvePersonPostKey(seg, pw);
+            sharedPayload[personKey] = parseInt(String(personItem.Id), 10);
+            try {
+              const bulkSaveBtn = dom("bulkSaveBtn");
+              if (bulkSaveBtn) bulkSaveBtn.disabled = true;
+              for (let i = 0; i < selected.length; i++) {
+                setState("loading", "Saving " + (i + 1) + " of " + selected.length + "...");
+                const payload = Object.assign({}, sharedPayload);
+                payload[selected[i].writeKey] = selected[i].value;
+                if (cfg.setTitle) payload.Title = selected[i].value;
+                await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+              }
+              setBulkPanelVisible(false);
+              const bulkForm = dom("bulkForm");
+              if (bulkForm) bulkForm.reset();
+              await load(personItem.Id, pw);
+              setState("ok", "Saved " + selected.length + " training record(s).");
+              window.setTimeout(function () {
+                setState("", "");
+              }, 2500);
+            } catch (e) {
+              setState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+            } finally {
+              const bulkSaveBtn = dom("bulkSaveBtn");
+              if (bulkSaveBtn) bulkSaveBtn.disabled = false;
+            }
+          }
+          function wireEvents() {
+            if (cfg.wired) return;
+            cfg.wired = true;
+            const addBtn = dom("addBtn");
+            const bulkAddBtn = dom("bulkAddBtn");
+            const addForm = dom("addForm");
+            const bulkForm = dom("bulkForm");
+            const addCancelBtn = dom("addCancelBtn");
+            const bulkCancelBtn = dom("bulkCancelBtn");
+            const bulkSelectAll = dom("bulkSelectAll");
+            const bulkClearAll = dom("bulkClearAll");
+            if (addBtn) {
+              addBtn.addEventListener("click", function () {
+                const panel = dom("addPanel");
+                if (panel && !panel.hidden) {
+                  setAddPanelVisible(false);
+                  const form = dom("addForm");
+                  if (form) form.reset();
+                  return;
+                }
+                setBulkPanelVisible(false);
+                void openAddPanel();
+              });
+            }
+            if (bulkAddBtn) {
+              bulkAddBtn.addEventListener("click", function () {
+                const panel = dom("bulkPanel");
+                if (panel && !panel.hidden) {
+                  setBulkPanelVisible(false);
+                  const form = dom("bulkForm");
+                  if (form) form.reset();
+                  return;
+                }
+                void openBulkPanel();
+              });
+            }
+            if (addForm) {
+              addForm.addEventListener("submit", function (ev) {
+                ev.preventDefault();
+                void submitSave();
+              });
+            }
+            if (bulkForm) {
+              bulkForm.addEventListener("submit", function (ev) {
+                ev.preventDefault();
+                void submitBulkSave();
+              });
+            }
+            if (bulkSelectAll) {
+              bulkSelectAll.addEventListener("click", function () {
+                const container = dom("bulkItems");
+                if (!container) return;
+                Array.prototype.slice.call(container.querySelectorAll('input[type="checkbox"]')).forEach(function (cb) {
+                  cb.checked = true;
+                });
+              });
+            }
+            if (bulkClearAll) {
+              bulkClearAll.addEventListener("click", function () {
+                const container = dom("bulkItems");
+                if (!container) return;
+                Array.prototype.slice.call(container.querySelectorAll('input[type="checkbox"]')).forEach(function (cb) {
+                  cb.checked = false;
+                });
+              });
+            }
+            if (addCancelBtn) {
+              addCancelBtn.addEventListener("click", function () {
+                setAddPanelVisible(false);
+                const form = dom("addForm");
+                if (form) form.reset();
+              });
+            }
+            if (bulkCancelBtn) {
+              bulkCancelBtn.addEventListener("click", function () {
+                setBulkPanelVisible(false);
+                const form = dom("bulkForm");
+                if (form) form.reset();
+              });
+            }
+          }
+          return { load: load, clear: clearSection, wireEvents: wireEvents };
+        }
+
+        const PERSON_TCCC_BLS_CERT_TRAINING = createPersonCertTrainingModule({
+          listTitle: LIST_TCCC_BLS_TRAINING,
+          listGuid: LIST_TCCC_BLS_TRAINING_GUID,
+          personField: TCCC_BLS_TRAINING_PERSON_FIELD,
+          personFieldAlt: TCCC_BLS_TRAINING_PERSON_FIELD_ALT,
+          orderBy: TCCC_BLS_TRAINING_ITEMS_ORDERBY,
+          columns: TCCC_BLS_TRAINING_COLUMNS,
+          dropdownKeys: TCCC_BLS_TRAINING_DROPDOWN_KEYS,
+          itemSortKeys: TCCC_BLS_TRAINING_ITEM_SORT_KEYS,
+          fixedItemChoices: TCCC_BLS_TRAINING_ITEM_CHOICES,
+          setTitle: TCCC_BLS_TRAINING_SET_TITLE,
+          formPrefix: "tf_",
+          bulkPrefix: "tb_",
+          autoExpiryWireKey: "tcccBlsAutoExpiryWired",
+          bulkAutoExpiryWireKey: "tcccBlsBulkAutoExpiryWired",
+          hub: {
+            rows: "tcccBlsTrainingRows",
+            sampleRow: "tcccBlsTrainingSampleRow",
+            personPostKey: "tcccBlsPersonPostKey",
+            personFilterField: "tcccBlsPersonFilterField",
+            personFilterFields: "tcccBlsPersonFilterFields",
+          },
+          dom: {
+            wrap: "personTcccBlsWrap",
+            state: "personTcccBlsState",
+            thead: "personTcccBlsThead",
+            tbody: "personTcccBlsBody",
+            empty: "personTcccBlsEmpty",
+            addBtn: "personTcccBlsAddBtn",
+            bulkAddBtn: "personTcccBlsBulkAddBtn",
+            bulkPanel: "personTcccBlsBulkPanel",
+            bulkForm: "personTcccBlsBulkForm",
+            bulkSharedFields: "personTcccBlsBulkSharedFields",
+            bulkItems: "personTcccBlsBulkItems",
+            bulkSelectAll: "personTcccBlsBulkSelectAll",
+            bulkClearAll: "personTcccBlsBulkClearAll",
+            bulkSaveBtn: "personTcccBlsBulkSaveBtn",
+            bulkCancelBtn: "personTcccBlsBulkCancelBtn",
+            addPanel: "personTcccBlsAddPanel",
+            addForm: "personTcccBlsAddForm",
+            addFields: "personTcccBlsAddFields",
+            addCancelBtn: "personTcccBlsAddCancelBtn",
+            saveBtn: "personTcccBlsSaveBtn",
+            formTitle: "personTcccBlsFormTitle",
+          },
+          labels: {
+            trainingName: "TCCC / BLS",
+            emptyDefault: "No TCCC or BLS training records on file for this person.",
+            listNotConfigured: "TCCC / BLS Training list is not configured.",
+            loadFailed:
+              "No TCCC / BLS records loaded. If PersonnelId exists on the list, check that values match the Personnel Record Id.",
+            newRecordTitle: "New TCCC / BLS Training Record",
+            requalifyTitle: "Requalify Training",
+          },
+        });
         function normalizedAppointmentsColumns() {
           const arr = Array.isArray(APPOINTMENTS_COLUMNS) ? APPOINTMENTS_COLUMNS : [];
           return arr
@@ -14082,6 +15148,7 @@
           await renderPersonDetailView(item, false);
           await loadPersonWeaponsCertifications(item.Id, personDetailSession.pw);
           await loadPersonBylawTraining(item.Id, personDetailSession.pw);
+          if (PERSON_TCCC_BLS_CERT_TRAINING) await PERSON_TCCC_BLS_CERT_TRAINING.load(item.Id, personDetailSession.pw);
           await loadPersonAppointments(item.Id, personDetailSession.pw);
         }
 
@@ -14707,6 +15774,8 @@
             if (personBylawBulkForm) personBylawBulkForm.reset();
           });
         }
+
+        if (PERSON_TCCC_BLS_CERT_TRAINING) PERSON_TCCC_BLS_CERT_TRAINING.wireEvents();
 
         function renderRosterTable(rows, meta, pw, seg) {
           clearRosterTable();
