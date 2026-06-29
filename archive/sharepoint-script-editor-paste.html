@@ -3310,7 +3310,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260624e";
+        const HUB_BUILD_ID = "20260624f";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -3510,6 +3510,8 @@
         const PHASE_ONE_HOUSE_HUNTING_DAYS = 10;
         const PHASE_ONE_DUTY_STATUS_HOUSE_HUNTING = "House Hunting";
         const PHASE_ONE_DUTY_STATUS_ACTIVE = "Phase 1";
+        /** Personnel roster Status values that trigger automatic Phase 1 tracker enrollment. */
+        const PERSONNEL_STATUS_PHASE_ONE_MATCH = /^p\s*1$|^phase\s*one$|^phase\s*1$/i;
         const PHASE_ONE_TRACKING_COLUMNS = [
           { key: "PersonnelName", label: "Personnel" },
           { key: "DutyStatus", label: "Duty status" },
@@ -7978,12 +7980,73 @@
               : "No active Phase 1 records on file.";
           }
         }
-        function personnelAlreadyInActivePhase1(personId) {
-          const rows = phase1Session.trackingRows || [];
+        function personnelStatusIsPhaseOne(status) {
+          const text = String(status || "").trim();
+          if (!text) return false;
+          return PERSONNEL_STATUS_PHASE_ONE_MATCH.test(text);
+        }
+        function personHasActivePhaseOneInRows(personId, rows) {
           const want = String(personId);
-          return rows.some(function (item) {
+          return (Array.isArray(rows) ? rows : []).some(function (item) {
             return phaseOneIsActive(item) && String(phaseOnePersonnelIdFromItem(item) || "") === want;
           });
+        }
+        async function ensurePhaseOneTrackingRowsCached(pw) {
+          if (!pw) return [];
+          if (Array.isArray(phase1Session.trackingRows)) return phase1Session.trackingRows;
+          if (!phaseOneTrackingListTitle() && !phaseOneTrackingListUsesGuid()) return [];
+          const seg = phaseOneTrackingListApiPath();
+          const rows = await fetchPhaseOneListRows(seg, pw, PHASE_ONE_TRACKING_ITEMS_ORDERBY);
+          phase1Session.trackingRows = rows.slice();
+          return phase1Session.trackingRows;
+        }
+        async function createPhaseOneTrackingRecord(person, pw, houseHunting) {
+          if (!person || person.Id == null || !pw) {
+            throw new Error("Personnel record is required for Phase 1 enrollment.");
+          }
+          if (!phaseOneTrackingListTitle() && !phaseOneTrackingListUsesGuid()) {
+            throw new Error("PhaseOneTracking list is not configured.");
+          }
+          const rows = await ensurePhaseOneTrackingRowsCached(pw);
+          if (personHasActivePhaseOneInRows(person.Id, rows)) {
+            throw new Error("Already in active Phase 1.");
+          }
+          const seg = phaseOneTrackingListApiPath();
+          const dateArrived = personnelRecordDate(person);
+          const phaseOneStart = houseHunting ? phaseOneStartDateAfterHouseHunting(dateArrived) : dateArrived;
+          const dutyStatus = houseHunting ? PHASE_ONE_DUTY_STATUS_HOUSE_HUNTING : PHASE_ONE_DUTY_STATUS_ACTIVE;
+          const dutySection = itemFieldText(person, "OfficeSymbol") || itemFieldText(person, "Squadron") || "";
+          const personKey = await resolvePhaseOnePersonPostKey(seg, pw);
+          const payload = {
+            PersonnelName: formatPersonDisplayName(person),
+            DutyStatus: dutyStatus,
+            DutySection: dutySection,
+            DateArrived: spDateTimeFromCalendarDate(dateArrived),
+            PhaseOneStartDate: spDateTimeFromCalendarDate(phaseOneStart),
+            IsActive: true,
+            Notes: "",
+          };
+          payload[personKey] = person.Id;
+          payload.Title = formatPersonDisplayName(person);
+          await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+          invalidatePhaseOneReportsCache();
+          phase1Session.trackingRows = await fetchPhaseOneListRows(seg, pw, PHASE_ONE_TRACKING_ITEMS_ORDERBY);
+        }
+        async function autoEnrollPersonInPhase1IfNeeded(person, pw, options) {
+          const opts = options || {};
+          if (!person || person.Id == null || !pw) return { enrolled: false, skipped: "missing" };
+          if (!personnelStatusIsPhaseOne(personStatusLabel(person))) return { enrolled: false, skipped: "not_p1" };
+          if (!phaseOneTrackingListTitle() && !phaseOneTrackingListUsesGuid()) {
+            return { enrolled: false, skipped: "no_list" };
+          }
+          const rows = await ensurePhaseOneTrackingRowsCached(pw);
+          if (personHasActivePhaseOneInRows(person.Id, rows)) return { enrolled: false, skipped: "already" };
+          await createPhaseOneTrackingRecord(person, pw, !!opts.houseHunting);
+          return { enrolled: true, skipped: "" };
+        }
+        function personnelAlreadyInActivePhase1(personId) {
+          const rows = phase1Session.trackingRows || [];
+          return personHasActivePhaseOneInRows(personId, rows);
         }
         function populatePhase1PersonSelect() {
           if (!phase1PersonSelect) return;
@@ -8030,26 +8093,9 @@
             setPhase1State("warn", formatPersonDisplayName(person) + " is already in active Phase 1.");
             return;
           }
-          const seg = phaseOneTrackingListApiPath();
-          const dateArrived = personnelRecordDate(person);
-          const phaseOneStart = houseHunting ? phaseOneStartDateAfterHouseHunting(dateArrived) : dateArrived;
-          const dutyStatus = houseHunting ? PHASE_ONE_DUTY_STATUS_HOUSE_HUNTING : PHASE_ONE_DUTY_STATUS_ACTIVE;
-          const dutySection = itemFieldText(person, "OfficeSymbol") || itemFieldText(person, "Squadron") || "";
-          const personKey = await resolvePhaseOnePersonPostKey(seg, pw);
-          const payload = {
-            PersonnelName: formatPersonDisplayName(person),
-            DutyStatus: dutyStatus,
-            DutySection: dutySection,
-            DateArrived: spDateTimeFromCalendarDate(dateArrived),
-            PhaseOneStartDate: spDateTimeFromCalendarDate(phaseOneStart),
-            IsActive: true,
-            Notes: "",
-          };
-          payload[personKey] = personId;
-          payload.Title = formatPersonDisplayName(person);
           try {
             setPhase1State("loading", "Entering Phase 1...");
-            await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            await createPhaseOneTrackingRecord(person, pw, houseHunting);
             setPhase1AddPanelVisible(false);
             if (phase1PersonSelect) phase1PersonSelect.value = "";
             await loadPhase1TrackerData();
@@ -13979,7 +14025,15 @@
             if (personDetailTitle) personDetailTitle.textContent = formatPersonDisplayName(updated);
             await renderPersonDetailView(updated, false);
             await loadPersonAppointments(updated.Id, s.pw);
-            setPersonDetailState("ok", "Record saved.");
+            let saveMsg = "Record saved.";
+            try {
+              const enrollResult = await autoEnrollPersonInPhase1IfNeeded(updated, s.pw);
+              if (enrollResult.enrolled) saveMsg = "Record saved. Added to Phase 1 tracker.";
+            } catch (phaseErr) {
+              log("Auto Phase 1 enroll failed:\n" + (phaseErr.message || String(phaseErr)), "warn");
+              saveMsg = "Record saved, but Phase 1 tracker enrollment failed.";
+            }
+            setPersonDetailState("ok", saveMsg);
             window.setTimeout(function () {
               setPersonDetailState("", "");
             }, 2500);
@@ -15669,12 +15723,31 @@
             setReadState("loading", "Submitting...");
             const created = await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
             const newId = parseCreatedItemId(created);
+            const statusEl = document.getElementById("nf_Status");
+            const statusVal = statusEl ? String(statusEl.value || "").trim() : "";
             log("POST created item Id: " + (newId || "?"), "ok");
             const form = document.getElementById("newPersonForm");
             if (form) form.reset();
             primeRecordDateDefault();
             await runProbe();
-            setReadState("ok", newId ? "Submitted (Id " + newId + "). Table refreshed." : "Submitted. Table refreshed.");
+            let submitMsg = newId ? "Submitted (Id " + newId + "). Table refreshed." : "Submitted. Table refreshed.";
+            if (newId && personnelStatusIsPhaseOne(statusVal)) {
+              try {
+                const newPerson = mergePayloadIntoItem({ Id: newId }, payload);
+                const enrollResult = await autoEnrollPersonInPhase1IfNeeded(newPerson, pw);
+                if (enrollResult.enrolled) {
+                  submitMsg = newId
+                    ? "Submitted (Id " + newId + "). Added to Phase 1 tracker."
+                    : "Submitted. Added to Phase 1 tracker.";
+                }
+              } catch (phaseErr) {
+                log("Auto Phase 1 enroll on create failed:\n" + (phaseErr.message || String(phaseErr)), "warn");
+                submitMsg = newId
+                  ? "Submitted (Id " + newId + "), but Phase 1 tracker enrollment failed."
+                  : "Submitted, but Phase 1 tracker enrollment failed.";
+              }
+            }
+            setReadState("ok", submitMsg);
           } catch (e) {
             setReadState("err", "Submit failed: " + (e.message || String(e)).slice(0, 420));
             log("POST failed:\n" + (e.message || String(e)), "err");
