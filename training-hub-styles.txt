@@ -2514,9 +2514,19 @@
         text-shadow: 0 0 1px rgba(60, 255, 122, 0.12);
       }
       #sp-pip-ui .add-field input[type="text"],
-      #sp-pip-ui .add-field input[type="date"] {
+      #sp-pip-ui .add-field input[type="date"],
+      #sp-pip-ui .add-field input[type="tel"] {
         min-height: var(--pip-control-h);
         height: var(--pip-control-h);
+      }
+      #sp-pip-ui .add-field input.add-field-input--error {
+        border-color: rgba(255, 90, 90, 0.85);
+        box-shadow: 0 0 0 1px rgba(255, 90, 90, 0.35);
+      }
+      #sp-pip-ui .add-field-inline-error {
+        margin-top: 4px;
+        font: 12px var(--pip-font);
+        color: rgba(255, 140, 140, 0.95);
       }
       #sp-pip-ui .add-field select {
         min-height: var(--pip-control-h);

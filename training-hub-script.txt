@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260630a";
+        const HUB_BUILD_ID = "20260630c";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -131,45 +131,16 @@
         const BYLAW_TRAINING_SET_TITLE = true;
         const BYLAW_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "ByLaw", "TrainingName", "Training_x0020_Name"];
 
-        const LIST_TCCC_BLS_TRAINING = "TcccBlsTraining";
-        const LIST_TCCC_BLS_TRAINING_GUID = "";
-        const TCCC_BLS_TRAINING_PERSON_FIELD = "PersonnelId";
-        const TCCC_BLS_TRAINING_PERSON_FIELD_ALT = [
-          "PersonnelID",
+        const LIST_BLS_TCCC = "BlsTccc";
+        const LIST_BLS_TCCC_GUID = "";
+        const BLS_TCCC_PERSON_FIELD = "PersonnelID";
+        const BLS_TCCC_PERSON_FIELD_ALT = [
+          "PersonnelId",
           "PersonnelIdId",
           "Personnel_x0020_Id",
           "Personnel_x0020_ID",
           "Personnel/Id",
         ];
-        const TCCC_BLS_TRAINING_ITEMS_ORDERBY = "QualDate desc";
-        /** TcccBlsTraining list: same shape as ByLawTraining; Item is TCCC or BLS. */
-        const TCCC_BLS_TRAINING_COLUMNS = [
-          {
-            key: "Item",
-            label: "Item",
-            altKeys: ["Item0", "Title", "Training", "TrainingName", "Training_x0020_Name"],
-          },
-          {
-            key: "QualDate",
-            label: "Certification Date",
-            altKeys: ["QualificationDate", "Qualification_x0020_Date", "CertificationDate", "Certification_x0020_Date", "CertDate"],
-          },
-          {
-            key: "ExpirationDate",
-            label: "Expiration Date",
-            altKeys: ["ExpiryDate", "Expiry_x0020_Date", "ExpiresOn", "Expiration_x0020_Date", "ExpDate"],
-          },
-          {
-            key: "Certifier",
-            label: "Certifier",
-            altKeys: ["CertifierId", "Certifier0", "CertifierName", "Certifier_x0020_Name", "Instructor", "Trainer"],
-          },
-          { key: "Status", label: "Status", computed: true },
-        ];
-        const TCCC_BLS_TRAINING_DROPDOWN_KEYS = ["Item", "Certifier"];
-        const TCCC_BLS_TRAINING_SET_TITLE = true;
-        const TCCC_BLS_TRAINING_ITEM_SORT_KEYS = ["Item", "Item0", "Title", "Training", "TrainingName", "Training_x0020_Name"];
-        const TCCC_BLS_TRAINING_ITEM_CHOICES = ["TCCC", "BLS"];
 
         /**
          * Appointments list (SharePoint title **Appointments**). Rows are filtered by PeronnelId = personnel list item Id.
@@ -324,6 +295,8 @@
         const MQL_REQUIRED_WEAPON_LABELS = ["M4", "M18"];
         /** By-law columns omitted from all MQL reports (case-insensitive partial match). */
         const MQL_EXCLUDED_CATALOG_LABELS = ["airfield driving", "combatives", "cqb"];
+        /** Weapons/by-law labels omitted from Status of Training (case-insensitive partial match). */
+        const SOT_EXCLUDED_CATALOG_LABELS = ["airfield driving", "combatives"];
         const MQL_EXPORT_PRINT_TITLE = "MQL Data Export";
         const MQL_PRINT_STYLE_ID = "hubMqlLandscapePrintStyle";
         /** Fixed landscape columns for standard MQL report and data export. */
@@ -1020,11 +993,10 @@
           weaponsCertRows: null,
           bylawTrainingSampleRow: null,
           bylawTrainingRows: null,
-          tcccBlsTrainingSampleRow: null,
-          tcccBlsTrainingRows: null,
-          tcccBlsPersonPostKey: null,
-          tcccBlsPersonFilterField: null,
-          tcccBlsPersonFilterFields: null,
+          blsTcccSampleRow: null,
+          blsTcccPersonPostKey: null,
+          blsTcccPersonFilterField: null,
+          blsTcccPersonFilterFields: null,
           bylawPersonFilterField: null,
           bylawPersonFilterFields: null,
           bylawPersonPostKey: null,
@@ -1080,7 +1052,7 @@
           phaseOneTrackingRows: null,
           phaseOneArchiveRows: null,
           phaseOnePostureStats: null,
-          tcccBlsRows: null,
+          blsTcccRows: null,
         };
 
         function invalidateReportsSessionCacheKey(key) {
@@ -1253,6 +1225,161 @@
           return s === "" ? "-" : s;
         }
 
+        const PERSON_NAME_FIELD_KEYS = ["LastName", "FirstName", "MiddleInitial"];
+        const PERSON_PHONE_FIELD_KEYS = ["CellPhone", "WorkPhone"];
+
+        function isPersonNameFieldKey(key) {
+          return PERSON_NAME_FIELD_KEYS.indexOf(String(key || "")) !== -1;
+        }
+
+        function isPersonPhoneFieldKey(key) {
+          return PERSON_PHONE_FIELD_KEYS.indexOf(String(key || "")) !== -1;
+        }
+
+        function digitsOnly(value) {
+          return String(value == null ? "" : value).replace(/\D/g, "");
+        }
+
+        function normalizePersonNameText(value) {
+          return String(value == null ? "" : value).trim().toUpperCase();
+        }
+
+        function formatUsPhoneNumber(value) {
+          const digits = digitsOnly(value);
+          if (!digits) return "";
+          let d = digits;
+          if (d.length > 10 && d.charAt(0) === "1") d = d.slice(1);
+          if (d.length > 10) d = d.slice(0, 10);
+          if (d.length <= 3) return d.length ? "(" + d : "";
+          if (d.length <= 6) return "(" + d.slice(0, 3) + ") " + d.slice(3);
+          return "(" + d.slice(0, 3) + ") " + d.slice(3, 6) + "-" + d.slice(6, 10);
+        }
+
+        function validateDodidDigits(digits) {
+          if (digits.length > 10) {
+            return { ok: false, message: "DoD ID cannot be more than 10 digits." };
+          }
+          return { ok: true };
+        }
+
+        function formatPersonnelFieldDisplay(colKey, text) {
+          const key = String(colKey || "");
+          const s = text == null ? "" : String(text);
+          if (isPersonNameFieldKey(key)) return normalizePersonNameText(s);
+          if (isPersonPhoneFieldKey(key)) {
+            const formatted = formatUsPhoneNumber(s);
+            return formatted || s.trim();
+          }
+          if (key === "DoDID") return digitsOnly(s) || s.trim();
+          return s;
+        }
+
+        function normalizePersonnelFieldForSave(colKey, value) {
+          const key = String(colKey || "");
+          const s = String(value == null ? "" : value).trim();
+          if (!s) return null;
+          if (isPersonNameFieldKey(key)) return normalizePersonNameText(s);
+          if (isPersonPhoneFieldKey(key)) return formatUsPhoneNumber(s) || s;
+          if (key === "DoDID") return digitsOnly(s);
+          return s;
+        }
+
+        function setDodidFieldError(input, message) {
+          if (!input) return;
+          const wrap = input.closest(".add-field");
+          let err = wrap && wrap.querySelector(".add-field-inline-error");
+          if (message) {
+            input.classList.add("add-field-input--error");
+            input.setAttribute("aria-invalid", "true");
+            if (wrap) {
+              if (!err) {
+                err = document.createElement("div");
+                err.className = "add-field-inline-error";
+                err.setAttribute("role", "alert");
+                wrap.appendChild(err);
+              }
+              err.textContent = message;
+            }
+          } else {
+            input.classList.remove("add-field-input--error");
+            input.removeAttribute("aria-invalid");
+            if (err) err.remove();
+          }
+        }
+
+        function wirePersonnelFieldInputBehaviors(root, idPrefix) {
+          if (!root) return;
+          const prefix = String(idPrefix || "nf_");
+          PERSON_NAME_FIELD_KEYS.forEach(function (key) {
+            const el = root.querySelector("#" + prefix + key);
+            if (!el || el.dataset.personnelNameWired === "1") return;
+            el.dataset.personnelNameWired = "1";
+            el.addEventListener("input", function () {
+              const start = el.selectionStart;
+              const end = el.selectionEnd;
+              const upper = normalizePersonNameText(el.value);
+              if (el.value !== upper) {
+                el.value = upper;
+                if (start != null && end != null) {
+                  try {
+                    el.setSelectionRange(start, end);
+                  } catch (_) {}
+                }
+              }
+            });
+            el.addEventListener("blur", function () {
+              el.value = normalizePersonNameText(el.value);
+            });
+          });
+          PERSON_PHONE_FIELD_KEYS.forEach(function (key) {
+            const el = root.querySelector("#" + prefix + key);
+            if (!el || el.dataset.personnelPhoneWired === "1") return;
+            el.dataset.personnelPhoneWired = "1";
+            el.addEventListener("input", function () {
+              el.value = formatUsPhoneNumber(el.value);
+            });
+            el.addEventListener("blur", function () {
+              el.value = formatUsPhoneNumber(el.value);
+            });
+          });
+          const dodEl = root.querySelector("#" + prefix + "DoDID");
+          if (dodEl && dodEl.dataset.personnelDodidWired !== "1") {
+            dodEl.dataset.personnelDodidWired = "1";
+            dodEl.inputMode = "numeric";
+            dodEl.autocomplete = "off";
+            dodEl.maxLength = 10;
+            dodEl.addEventListener("input", function () {
+              const digits = digitsOnly(dodEl.value);
+              if (digits.length > 10) {
+                dodEl.value = digits.slice(0, 10);
+                setDodidFieldError(dodEl, "DoD ID cannot be more than 10 digits.");
+                return;
+              }
+              dodEl.value = digits;
+              setDodidFieldError(dodEl, "");
+            });
+            dodEl.addEventListener("blur", function () {
+              const digits = digitsOnly(dodEl.value);
+              const check = validateDodidDigits(digits);
+              setDodidFieldError(dodEl, check.ok ? "" : check.message);
+            });
+          }
+        }
+
+        function validatePersonnelFormFields(idPrefix) {
+          const prefix = String(idPrefix || "nf_");
+          const dodEl = document.getElementById(prefix + "DoDID");
+          if (!dodEl) return "";
+          const digits = digitsOnly(dodEl.value);
+          const check = validateDodidDigits(digits);
+          if (!check.ok) {
+            setDodidFieldError(dodEl, check.message);
+            return check.message;
+          }
+          setDodidFieldError(dodEl, "");
+          return "";
+        }
+
         function valueFromItemByKeys(item, tryKeys) {
           if (!item || !tryKeys || !tryKeys.length) return undefined;
           for (let i = 0; i < tryKeys.length; i++) {
@@ -1415,7 +1542,7 @@
           ethosDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           clearPersonWeaponsCertSection();
           clearPersonBylawTrainingSection();
-          if (PERSON_TCCC_BLS_CERT_TRAINING) PERSON_TCCC_BLS_CERT_TRAINING.clear();
+          if (PERSON_BLS_TCCC) PERSON_BLS_TCCC.clear();
           clearPersonAppointmentsSection();
           setPersonDetailEditMode(false);
           setHubListViewVisible(true);
@@ -4523,63 +4650,470 @@
           return { load: load, clear: clearSection, wireEvents: wireEvents };
         }
 
-        const PERSON_TCCC_BLS_CERT_TRAINING = createPersonCertTrainingModule({
-          listTitle: LIST_TCCC_BLS_TRAINING,
-          listGuid: LIST_TCCC_BLS_TRAINING_GUID,
-          personField: TCCC_BLS_TRAINING_PERSON_FIELD,
-          personFieldAlt: TCCC_BLS_TRAINING_PERSON_FIELD_ALT,
-          orderBy: TCCC_BLS_TRAINING_ITEMS_ORDERBY,
-          columns: TCCC_BLS_TRAINING_COLUMNS,
-          dropdownKeys: TCCC_BLS_TRAINING_DROPDOWN_KEYS,
-          itemSortKeys: TCCC_BLS_TRAINING_ITEM_SORT_KEYS,
-          fixedItemChoices: TCCC_BLS_TRAINING_ITEM_CHOICES,
-          setTitle: TCCC_BLS_TRAINING_SET_TITLE,
-          expirationFromQualDate: tcccBlsExpirationDateFromQualDate,
-          reportsSessionCacheKey: "tcccBlsRows",
-          formPrefix: "tf_",
-          bulkPrefix: "tb_",
-          autoExpiryWireKey: "tcccBlsAutoExpiryWired",
-          bulkAutoExpiryWireKey: "tcccBlsBulkAutoExpiryWired",
-          hub: {
-            rows: "tcccBlsTrainingRows",
-            sampleRow: "tcccBlsTrainingSampleRow",
-            personPostKey: "tcccBlsPersonPostKey",
-            personFilterField: "tcccBlsPersonFilterField",
-            personFilterFields: "tcccBlsPersonFilterFields",
-          },
-          dom: {
-            wrap: "personTcccBlsWrap",
-            state: "personTcccBlsState",
-            thead: "personTcccBlsThead",
-            tbody: "personTcccBlsBody",
-            empty: "personTcccBlsEmpty",
-            addBtn: "personTcccBlsAddBtn",
-            bulkAddBtn: "personTcccBlsBulkAddBtn",
-            bulkPanel: "personTcccBlsBulkPanel",
-            bulkForm: "personTcccBlsBulkForm",
-            bulkSharedFields: "personTcccBlsBulkSharedFields",
-            bulkItems: "personTcccBlsBulkItems",
-            bulkSelectAll: "personTcccBlsBulkSelectAll",
-            bulkClearAll: "personTcccBlsBulkClearAll",
-            bulkSaveBtn: "personTcccBlsBulkSaveBtn",
-            bulkCancelBtn: "personTcccBlsBulkCancelBtn",
-            addPanel: "personTcccBlsAddPanel",
-            addForm: "personTcccBlsAddForm",
-            addFields: "personTcccBlsAddFields",
-            addCancelBtn: "personTcccBlsAddCancelBtn",
-            saveBtn: "personTcccBlsSaveBtn",
-            formTitle: "personTcccBlsFormTitle",
-          },
-          labels: {
-            trainingName: "TCCC / BLS",
-            emptyDefault: "No TCCC or BLS training records on file for this person.",
-            listNotConfigured: "TCCC / BLS Training list is not configured.",
-            loadFailed:
-              "No TCCC / BLS records loaded. If PersonnelId exists on the list, check that values match the Personnel Record Id.",
-            newRecordTitle: "New TCCC / BLS Training Record",
-            requalifyTitle: "Requalify Training",
-          },
-        });
+        function createPersonBlsTcccModule() {
+          const editSession = { kind: null };
+          const listSession = { item: null };
+          const FORM_PREFIX = "bt_";
+          const AUTO_EXPIRY_KEY = "blsTcccAutoExpiryWired";
+          const KIND_DEFS = [
+            {
+              key: "BLS",
+              label: "BLS",
+              qualKeys: ["BlsQualDate"],
+              expKeys: ["BlsExpirationDate"],
+              certKeys: ["BlsCertifier", "BlsCertifierId"],
+            },
+            {
+              key: "TCCC",
+              label: "TCCC",
+              qualKeys: ["TcccQualDate"],
+              expKeys: ["TcccExpirationDate"],
+              certKeys: ["TcccCertifier", "TcccCertifierId"],
+            },
+          ];
+          const NOTES_KEYS = ["Notes", "Note", "Comments"];
+
+          function dom(id) {
+            return document.getElementById(id);
+          }
+          function listSeg() {
+            return certTrainingListApiPath(LIST_BLS_TCCC, LIST_BLS_TCCC_GUID);
+          }
+          function listReady() {
+            return certTrainingListConfigured(LIST_BLS_TCCC, LIST_BLS_TCCC_GUID);
+          }
+          function kindByKey(key) {
+            return KIND_DEFS.find(function (k) {
+              return k.key === key;
+            });
+          }
+          function setState(kind, message) {
+            const node = dom("personTcccBlsState");
+            if (!node) return;
+            if (!message) {
+              node.hidden = true;
+              node.textContent = "";
+              return;
+            }
+            node.hidden = false;
+            node.className = "read-state " + kind;
+            node.textContent = message;
+          }
+          function resolveWriteKey(tryKeys, sampleRow) {
+            const keys = Array.isArray(tryKeys) ? tryKeys : [];
+            if (sampleRow) {
+              const hit = keys.find(function (k) {
+                return sampleRow && Object.prototype.hasOwnProperty.call(sampleRow, k);
+              });
+              if (hit) return hit;
+            }
+            return keys.length ? keys[0] : "";
+          }
+          function kindQualValue(item, kind) {
+            if (!item || !kind) return null;
+            return valueFromItemByKeys(item, kind.qualKeys);
+          }
+          function kindExpRawValue(item, kind) {
+            if (!item || !kind) return null;
+            return valueFromItemByKeys(item, kind.expKeys);
+          }
+          function kindExpValue(item, kind) {
+            const stored = kindExpRawValue(item, kind);
+            if (stored) return stored;
+            const qual = parseWeaponsCertCalendarDate(kindQualValue(item, kind));
+            if (qual) return isoDateFromCalendarDate(tcccBlsExpirationDateFromQualDate(qual));
+            return null;
+          }
+          function kindCertValue(item, kind) {
+            if (!item || !kind) return null;
+            return valueFromItemByKeys(item, kind.certKeys);
+          }
+          function certStatusForKind(item, kind) {
+            const qual = parseWeaponsCertCalendarDate(kindQualValue(item, kind));
+            let expiry = parseWeaponsCertCalendarDate(kindExpRawValue(item, kind));
+            if (!expiry && qual) expiry = tcccBlsExpirationDateFromQualDate(qual);
+            if (!qual && !expiry) return { text: "-", tone: "unknown" };
+            if (!expiry) return { text: "-", tone: "unknown" };
+            const today = new Date();
+            const daysLeft = calendarDaysBetween(today, expiry);
+            if (daysLeft < 0) return { text: "Expired", tone: "expired" };
+            if (daysLeft <= 30) return { text: "Qualified", tone: "urgent" };
+            if (daysLeft <= 60) return { text: "Qualified", tone: "warn" };
+            return { text: "Qualified", tone: "ok" };
+          }
+          function touchReportsCache() {
+            invalidateReportsSessionCacheKey("blsTcccRows");
+          }
+          function setEditPanelVisible(visible) {
+            const panel = dom("personTcccBlsEditPanel");
+            if (panel) panel.hidden = !visible;
+            if (!visible) editSession.kind = null;
+          }
+          function applyExpirationFromQual() {
+            applyCertExpirationFromQualWithFn(FORM_PREFIX, tcccBlsExpirationDateFromQualDate);
+          }
+          function renderTable(item) {
+            const thead = dom("personTcccBlsThead");
+            const tbody = dom("personTcccBlsBody");
+            if (!thead || !tbody) return;
+            thead.innerHTML = "";
+            tbody.innerHTML = "";
+            const showActions = !!(personDetailSession.pw && dom("personTcccBlsWrap") && !dom("personTcccBlsWrap").hidden);
+            const trHead = document.createElement("tr");
+            ["Training", "Qual", "Expiration", "Certifier", "Status"].forEach(function (label) {
+              const th = document.createElement("th");
+              th.textContent = label;
+              trHead.appendChild(th);
+            });
+            if (showActions) {
+              const thAct = document.createElement("th");
+              thAct.className = "roster-actions";
+              thAct.textContent = " ";
+              trHead.appendChild(thAct);
+            }
+            thead.appendChild(trHead);
+            const frag = document.createDocumentFragment();
+            KIND_DEFS.forEach(function (kind) {
+              const tr = document.createElement("tr");
+              const tdKind = document.createElement("td");
+              tdKind.textContent = kind.label;
+              tr.appendChild(tdKind);
+              const hasQual = item && parseWeaponsCertCalendarDate(kindQualValue(item, kind));
+              const tdQual = document.createElement("td");
+              tdQual.textContent = displayCellText(hasQual ? formatWeaponsCertDisplayDate(kindQualValue(item, kind)) : "-");
+              tr.appendChild(tdQual);
+              const tdExp = document.createElement("td");
+              tdExp.textContent = displayCellText(hasQual ? formatWeaponsCertDisplayDate(kindExpValue(item, kind)) : "-");
+              tr.appendChild(tdExp);
+              const tdCert = document.createElement("td");
+              tdCert.textContent = displayCellText(hasQual ? formatSharePointLookupDisplay(kindCertValue(item, kind)) : "-");
+              tr.appendChild(tdCert);
+              const tdStatus = document.createElement("td");
+              const status = hasQual ? certStatusForKind(item, kind) : { text: "-", tone: "unknown" };
+              tdStatus.textContent = displayCellText(status.text);
+              if (status.tone && status.tone !== "unknown") tdStatus.className = "cert-status cert-status--" + status.tone;
+              tr.appendChild(tdStatus);
+              if (showActions) {
+                const tdAct = document.createElement("td");
+                tdAct.className = "roster-actions";
+                const inner = document.createElement("div");
+                inner.className = "roster-actions-inner";
+                const reqBtn = document.createElement("button");
+                reqBtn.type = "button";
+                reqBtn.className = "btn-record";
+                reqBtn.textContent = hasQual ? "Requalify" : "Add";
+                reqBtn.addEventListener("click", function () {
+                  void openEditPanel(kind.key);
+                });
+                inner.appendChild(reqBtn);
+                tdAct.appendChild(inner);
+                tr.appendChild(tdAct);
+              }
+              frag.appendChild(tr);
+            });
+            tbody.appendChild(frag);
+          }
+          async function ensureSampleRow(pw) {
+            if (hubSession.blsTcccSampleRow) return hubSession.blsTcccSampleRow;
+            if (!listReady() || !pw) return null;
+            try {
+              const data = await spFetch(`/_api/web/${listSeg()}/items?$top=1`, {}, pw);
+              hubSession.blsTcccSampleRow = (data && data.value && data.value[0]) || null;
+            } catch (_) {
+              hubSession.blsTcccSampleRow = null;
+            }
+            return hubSession.blsTcccSampleRow;
+          }
+          async function resolvePersonPostKey(seg, pw) {
+            if (hubSession.blsTcccPersonPostKey) return hubSession.blsTcccPersonPostKey;
+            const filterField = String(BLS_TCCC_PERSON_FIELD || "PersonnelID").trim();
+            let postKey = filterField;
+            try {
+              const esc = filterField.replace(/'/g, "''");
+              const data = await spFetch(
+                `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=InternalName,TypeAsString`,
+                {},
+                pw,
+              );
+              const internal = String(data.InternalName || filterField).trim();
+              const type = String(data.TypeAsString || "");
+              if (/lookup/i.test(type)) {
+                postKey = internal.endsWith("Id") ? internal : internal + "Id";
+              } else {
+                postKey = internal;
+              }
+            } catch (_) {
+              if (filterField === "PersonnelId" || filterField === "PersonnelID") postKey = "PersonnelIdId";
+              else if (!/Id$/.test(filterField)) postKey = filterField + "Id";
+            }
+            hubSession.blsTcccPersonPostKey = postKey;
+            return postKey;
+          }
+          async function fetchListItemForPerson(personId, pw) {
+            const rows = await fetchCertTrainingForPersonnel({
+              seg: listSeg(),
+              pw: pw,
+              personnelId: personId,
+              personField: BLS_TCCC_PERSON_FIELD,
+              personFieldAlt: BLS_TCCC_PERSON_FIELD_ALT,
+              orderBy: "Id asc",
+              hubFilterFieldKey: "blsTcccPersonFilterField",
+              hubFilterFieldsKey: "blsTcccPersonFilterFields",
+            });
+            return rows.length ? rows[0] : null;
+          }
+          function buildEditFormFields() {
+            const fields = dom("personTcccBlsEditFields");
+            if (!fields) return;
+            fields.innerHTML = "";
+            [
+              { key: "QualDate", label: "Certification Date", type: "date" },
+              { key: "ExpirationDate", label: "Expiration Date", type: "date", readOnly: true },
+              { key: "Certifier", label: "Certifier", type: "select" },
+              { key: "Notes", label: "Notes", type: "textarea" },
+            ].forEach(function (def) {
+              const fwrap = document.createElement("div");
+              fwrap.className = "add-field";
+              const lab = document.createElement("label");
+              lab.setAttribute("for", FORM_PREFIX + def.key);
+              lab.textContent = def.label;
+              fwrap.appendChild(lab);
+              let input;
+              if (def.type === "select") {
+                input = document.createElement("select");
+                input.className = "add-field-select--autosize";
+                const opt0 = document.createElement("option");
+                opt0.value = "";
+                opt0.textContent = "(select)";
+                input.appendChild(opt0);
+              } else if (def.type === "textarea") {
+                input = document.createElement("textarea");
+                input.rows = 2;
+              } else {
+                input = document.createElement("input");
+                input.type = def.type || "text";
+              }
+              input.id = FORM_PREFIX + def.key;
+              if (def.readOnly) input.disabled = true;
+              fwrap.appendChild(input);
+              fields.appendChild(fwrap);
+            });
+          }
+          function fillEditFormFromItem(item, kind) {
+            if (!kind) return;
+            const qualEl = document.getElementById(FORM_PREFIX + "QualDate");
+            const expEl = document.getElementById(FORM_PREFIX + "ExpirationDate");
+            const certEl = document.getElementById(FORM_PREFIX + "Certifier");
+            const notesEl = document.getElementById(FORM_PREFIX + "Notes");
+            if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+            if (expEl) applyExpirationFromQual();
+            if (certEl && item) {
+              const raw = kindCertValue(item, kind);
+              const writeKey = String(certEl.dataset.writeKey || "").trim();
+              if (/Id$/.test(writeKey) && item[writeKey] != null && item[writeKey] !== "") {
+                certEl.value = String(item[writeKey]);
+              } else {
+                const display = formatSharePointLookupDisplay(raw);
+                ensureSelectIncludesValue(certEl, display);
+                certEl.value = display;
+              }
+            } else if (certEl) certEl.value = "";
+            if (notesEl && item) notesEl.value = formatCellValue(valueFromItemByKeys(item, NOTES_KEYS) || "");
+            else if (notesEl) notesEl.value = "";
+          }
+          async function populateEditDropdowns(pw) {
+            const certSel = document.getElementById(FORM_PREFIX + "Certifier");
+            if (!certSel || certSel.tagName !== "SELECT") return;
+            await fillBylawCertifierDropdown(certSel, listSeg(), pw, hubSession.blsTcccSampleRow);
+          }
+          async function openEditPanel(kindKey) {
+            if (!personDetailSession.item || personDetailSession.item.Id == null) {
+              setState("warn", "Open a Personnel Record before editing TCCC / BLS.");
+              return;
+            }
+            const kind = kindByKey(kindKey);
+            if (!kind) return;
+            editSession.kind = kindKey;
+            const title = dom("personTcccBlsFormTitle");
+            if (title) title.textContent = (listSession.item && parseWeaponsCertCalendarDate(kindQualValue(listSession.item, kind)) ? "Requalify " : "Add ") + kind.label;
+            buildEditFormFields();
+            setEditPanelVisible(true);
+            setState("", "");
+            await ensureSampleRow(personDetailSession.pw);
+            await populateEditDropdowns(personDetailSession.pw);
+            fillEditFormFromItem(listSession.item, kind);
+            const editForm = dom("personTcccBlsEditForm");
+            if (editForm) {
+              delete editForm.dataset[AUTO_EXPIRY_KEY];
+              wireCertQualDateAutoExpiry(editForm, FORM_PREFIX, AUTO_EXPIRY_KEY, tcccBlsExpirationDateFromQualDate);
+            }
+            applyAllSelectAutosizes(editForm);
+            const qualEl = document.getElementById(FORM_PREFIX + "QualDate");
+            if (qualEl) qualEl.focus();
+          }
+          function collectKindPayload(kind, sampleRow) {
+            const payload = {};
+            const qualEl = document.getElementById(FORM_PREFIX + "QualDate");
+            const expEl = document.getElementById(FORM_PREFIX + "ExpirationDate");
+            const certEl = document.getElementById(FORM_PREFIX + "Certifier");
+            const notesEl = document.getElementById(FORM_PREFIX + "Notes");
+            if (qualEl) {
+              const qualWriteKey = resolveWriteKey(kind.qualKeys, sampleRow);
+              const v = formFieldPayloadValue(qualEl, qualWriteKey);
+              if (v !== null) payload[qualWriteKey] = v;
+            }
+            if (expEl) {
+              const expWriteKey = resolveWriteKey(kind.expKeys, sampleRow);
+              const v = formFieldPayloadValue(expEl, expWriteKey);
+              if (v !== null) payload[expWriteKey] = v;
+            }
+            if (certEl) {
+              const certWriteKey = String(certEl.dataset.writeKey || resolveWriteKey(kind.certKeys, sampleRow)).trim();
+              const v = formFieldPayloadValue(certEl, certWriteKey);
+              if (v !== null) payload[certWriteKey] = v;
+            }
+            if (notesEl) {
+              const notesWriteKey = resolveWriteKey(NOTES_KEYS, sampleRow);
+              const v = formFieldPayloadValue(notesEl, notesWriteKey);
+              if (v !== null) payload[notesWriteKey] = v;
+            }
+            return payload;
+          }
+          async function submitSave() {
+            const personItem = personDetailSession.item;
+            const pw = personDetailSession.pw;
+            const kind = kindByKey(editSession.kind);
+            if (!personItem || personItem.Id == null || !pw || !kind) return;
+            const qualEl = document.getElementById(FORM_PREFIX + "QualDate");
+            if (!qualEl || !String(qualEl.value || "").trim()) {
+              setState("err", "Certification date is required.");
+              return;
+            }
+            const seg = listSeg();
+            const sampleRow = await ensureSampleRow(pw);
+            const payload = collectKindPayload(kind, sampleRow);
+            const existing = listSession.item;
+            try {
+              setState("loading", "Saving " + kind.label + " certification...");
+              const saveBtn = dom("personTcccBlsSaveBtn");
+              if (saveBtn) saveBtn.disabled = true;
+              if (existing && existing.Id != null) {
+                await spFetch(`/_api/web/${seg}/items(${existing.Id})`, { method: "MERGE", body: payload }, pw);
+              } else {
+                const personKey = await resolvePersonPostKey(seg, pw);
+                payload[personKey] = parseInt(String(personItem.Id), 10);
+                await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+              }
+              touchReportsCache();
+              setEditPanelVisible(false);
+              const editForm = dom("personTcccBlsEditForm");
+              if (editForm) editForm.reset();
+              await load(personItem.Id, pw);
+              setState("ok", kind.label + " certification saved.");
+              window.setTimeout(function () {
+                setState("", "");
+              }, 2500);
+            } catch (e) {
+              setState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+            } finally {
+              const saveBtn = dom("personTcccBlsSaveBtn");
+              if (saveBtn) saveBtn.disabled = false;
+            }
+          }
+          async function clearCertification() {
+            const personItem = personDetailSession.item;
+            const pw = personDetailSession.pw;
+            const kind = kindByKey(editSession.kind);
+            const existing = listSession.item;
+            if (!personItem || !pw || !kind || !existing || existing.Id == null) return;
+            if (!confirm("Clear " + kind.label + " certification for this person?")) return;
+            const sampleRow = await ensureSampleRow(pw);
+            const payload = {};
+            payload[resolveWriteKey(kind.qualKeys, sampleRow)] = null;
+            payload[resolveWriteKey(kind.expKeys, sampleRow)] = null;
+            payload[resolveWriteKey(kind.certKeys, sampleRow)] = null;
+            try {
+              setState("loading", "Clearing " + kind.label + " certification...");
+              await spFetch(`/_api/web/${listSeg()}/items(${existing.Id})`, { method: "MERGE", body: payload }, pw);
+              touchReportsCache();
+              setEditPanelVisible(false);
+              const editForm = dom("personTcccBlsEditForm");
+              if (editForm) editForm.reset();
+              await load(personItem.Id, pw);
+              setState("ok", kind.label + " certification cleared.");
+              window.setTimeout(function () {
+                setState("", "");
+              }, 2500);
+            } catch (e) {
+              setState("err", "Clear failed: " + (e.message || String(e)).slice(0, 280));
+            }
+          }
+          async function load(personId, pw) {
+            if (!personId) return;
+            const wrap = dom("personTcccBlsWrap");
+            if (wrap) wrap.hidden = false;
+            setState("loading", "Loading TCCC / BLS records...");
+            if (!listReady()) {
+              listSession.item = null;
+              renderTable(null);
+              setState("", "");
+              return;
+            }
+            try {
+              const item = await fetchListItemForPerson(personId, pw);
+              listSession.item = item;
+              if (item) hubSession.blsTcccSampleRow = item;
+              else await ensureSampleRow(pw);
+              renderTable(item);
+              setState("", "");
+            } catch (e) {
+              listSession.item = null;
+              renderTable(null);
+              setState("warn", "Could not load TCCC / BLS records: " + (e.message || String(e)).slice(0, 220));
+            }
+          }
+          function clearSection() {
+            listSession.item = null;
+            editSession.kind = null;
+            setState("", "");
+            setEditPanelVisible(false);
+            const editForm = dom("personTcccBlsEditForm");
+            if (editForm) editForm.reset();
+            const thead = dom("personTcccBlsThead");
+            const tbody = dom("personTcccBlsBody");
+            if (thead) thead.innerHTML = "";
+            if (tbody) tbody.innerHTML = "";
+            const wrap = dom("personTcccBlsWrap");
+            if (wrap) wrap.hidden = true;
+          }
+          function wireEvents() {
+            if (createPersonBlsTcccModule.wired) return;
+            createPersonBlsTcccModule.wired = true;
+            const editForm = dom("personTcccBlsEditForm");
+            const cancelBtn = dom("personTcccBlsEditCancelBtn");
+            const clearBtn = dom("personTcccBlsClearBtn");
+            if (editForm) {
+              editForm.addEventListener("submit", function (ev) {
+                ev.preventDefault();
+                void submitSave();
+              });
+            }
+            if (cancelBtn) {
+              cancelBtn.addEventListener("click", function () {
+                setEditPanelVisible(false);
+                if (editForm) editForm.reset();
+              });
+            }
+            if (clearBtn) {
+              clearBtn.addEventListener("click", function () {
+                void clearCertification();
+              });
+            }
+          }
+          return { load: load, clear: clearSection, wireEvents: wireEvents };
+        }
+
+        const PERSON_BLS_TCCC = createPersonBlsTcccModule();
         function normalizedAppointmentsColumns() {
           const arr = Array.isArray(APPOINTMENTS_COLUMNS) ? APPOINTMENTS_COLUMNS : [];
           return arr
@@ -8087,6 +8621,24 @@
           return formatCellValue(raw) || "Training";
         }
 
+        function sotIsExcludedCatalogLabel(label) {
+          const norm = String(label || "").trim().toLowerCase();
+          if (!norm) return true;
+          return (Array.isArray(SOT_EXCLUDED_CATALOG_LABELS) ? SOT_EXCLUDED_CATALOG_LABELS : []).some(function (ex) {
+            const x = String(ex || "").trim().toLowerCase();
+            if (!x) return false;
+            return norm === x || norm.indexOf(x) >= 0;
+          });
+        }
+
+        function sotWeaponRowIncluded(row) {
+          return !sotIsExcludedCatalogLabel(weaponLabelFromRow(row));
+        }
+
+        function sotBylawRowIncluded(row) {
+          return !sotIsExcludedCatalogLabel(bylawLabelFromRow(row));
+        }
+
         function tallyActivityLabels(rows, labelFn) {
           const counts = {};
           (Array.isArray(rows) ? rows : []).forEach(function (row) {
@@ -8249,6 +8801,7 @@
             const byWeapon = {};
             rows.forEach(function (row) {
               const label = weaponLabelFromRow(row);
+              if (sotIsExcludedCatalogLabel(label)) return;
               const tone = computeWeaponsCertStatus(row).tone;
               if (!byWeapon[label] || trainingStatusToneRank(tone) > trainingStatusToneRank(byWeapon[label])) {
                 byWeapon[label] = tone;
@@ -8298,6 +8851,7 @@
             const byItem = {};
             rows.forEach(function (row) {
               const label = bylawLabelFromRow(row);
+              if (sotIsExcludedCatalogLabel(label)) return;
               const tone = computeBylawTrainingStatus(row).tone;
               if (!byItem[label]) {
                 byItem[label] = { tone: tone, completedMonth: 0 };
@@ -8425,10 +8979,10 @@
             required += 1;
 
             const personWeapons = (Array.isArray(weaponsRows) ? weaponsRows : []).filter(function (row) {
-              return pid && weaponsPersonnelIdFromItem(row) === pid;
+              return pid && weaponsPersonnelIdFromItem(row) === pid && sotWeaponRowIncluded(row);
             });
             const personBylaw = (Array.isArray(bylawRows) ? bylawRows : []).filter(function (row) {
-              return pid && bylawPersonnelIdFromItem(row) === pid;
+              return pid && bylawPersonnelIdFromItem(row) === pid && sotBylawRowIncluded(row);
             });
             const weaponsStatus = summarizeTrainingRows(personWeapons, computeWeaponsCertStatus);
             const bylawStatus = summarizeTrainingRows(personBylaw, computeBylawTrainingStatus);
@@ -8546,10 +9100,10 @@
 
             const pid = String(person.Id);
             const personWeapons = weaponsRows.filter(function (row) {
-              return weaponsPersonnelIdFromItem(row) === pid;
+              return weaponsPersonnelIdFromItem(row) === pid && sotWeaponRowIncluded(row);
             });
             const personBylaw = bylawRows.filter(function (row) {
-              return bylawPersonnelIdFromItem(row) === pid;
+              return bylawPersonnelIdFromItem(row) === pid && sotBylawRowIncluded(row);
             });
 
             const weaponsStatus = summarizeTrainingRows(personWeapons, computeWeaponsCertStatus);
@@ -9269,14 +9823,14 @@
           }
         }
 
-        async function fetchAllTcccBlsTrainingRows(pw) {
-          if (!certTrainingListConfigured(LIST_TCCC_BLS_TRAINING, LIST_TCCC_BLS_TRAINING_GUID) || !pw) return [];
-          const seg = certTrainingListApiPath(LIST_TCCC_BLS_TRAINING, LIST_TCCC_BLS_TRAINING_GUID);
+        async function fetchAllBlsTcccRows(pw) {
+          if (!certTrainingListConfigured(LIST_BLS_TCCC, LIST_BLS_TCCC_GUID) || !pw) return [];
+          const seg = certTrainingListApiPath(LIST_BLS_TCCC, LIST_BLS_TCCC_GUID);
           try {
             const data = await spFetch(`/_api/web/${seg}/items?$top=5000`, {}, pw);
             return (data && data.value) || [];
           } catch (e) {
-            log("Reports TCCC/BLS fetch failed:\n" + (e.message || String(e)), "warn");
+            log("Reports BLS/TCCC fetch failed:\n" + (e.message || String(e)), "warn");
             return [];
           }
         }
@@ -9324,20 +9878,20 @@
         }
 
         async function ensureReportsTrainingCache(pw) {
-          if (!pw) return { weaponsRows: [], bylawRows: [], tcccBlsRows: [] };
+          if (!pw) return { weaponsRows: [], bylawRows: [], blsTcccRows: [] };
           if (!Array.isArray(reportsSession.weaponsRows)) {
             reportsSession.weaponsRows = await fetchAllWeaponsCertRows(pw);
           }
           if (!Array.isArray(reportsSession.bylawRows)) {
             reportsSession.bylawRows = await fetchAllBylawTrainingRows(pw);
           }
-          if (!Array.isArray(reportsSession.tcccBlsRows)) {
-            reportsSession.tcccBlsRows = await fetchAllTcccBlsTrainingRows(pw);
+          if (!Array.isArray(reportsSession.blsTcccRows)) {
+            reportsSession.blsTcccRows = await fetchAllBlsTcccRows(pw);
           }
           return {
             weaponsRows: reportsSession.weaponsRows || [],
             bylawRows: reportsSession.bylawRows || [],
-            tcccBlsRows: reportsSession.tcccBlsRows || [],
+            blsTcccRows: reportsSession.blsTcccRows || [],
           };
         }
 
@@ -9346,10 +9900,10 @@
             if (!person || person.Id == null) return null;
             const pid = String(person.Id);
             const personWeapons = weaponsRows.filter(function (row) {
-              return weaponsPersonnelIdFromItem(row) === pid;
+              return weaponsPersonnelIdFromItem(row) === pid && sotWeaponRowIncluded(row);
             });
             const personBylaw = bylawRows.filter(function (row) {
-              return bylawPersonnelIdFromItem(row) === pid;
+              return bylawPersonnelIdFromItem(row) === pid && sotBylawRowIncluded(row);
             });
             const weaponsStatus = summarizeTrainingRows(personWeapons, computeWeaponsCertStatus);
             const bylawStatus = summarizeTrainingRows(personBylaw, computeBylawTrainingStatus);
@@ -10428,42 +10982,32 @@
             });
         }
 
-        function tcccBlsQualDateKeys() {
-          return certQualDateKeysFromColumns(normalizedCertTrainingColumns(TCCC_BLS_TRAINING_COLUMNS));
+        function blsTcccKindFieldKeys(kindLabel) {
+          const label = String(kindLabel || "").trim().toUpperCase();
+          if (label === "BLS") {
+            return {
+              qualKeys: ["BlsQualDate"],
+              expKeys: ["BlsExpirationDate"],
+            };
+          }
+          return {
+            qualKeys: ["TcccQualDate"],
+            expKeys: ["TcccExpirationDate"],
+          };
         }
 
-        function trainingItemLabelFromRow(row) {
-          return String(formatCellValue(valueFromItemByKeys(row, TCCC_BLS_TRAINING_ITEM_SORT_KEYS) || "")).trim();
-        }
-
-        function trainingItemMatches(row, wantLabel) {
-          return trainingItemLabelFromRow(row).toUpperCase() === String(wantLabel || "").trim().toUpperCase();
-        }
-
-        function buildTcccBlsCertReportRows(trainingRows, itemLabel) {
-          const qualKeys = tcccBlsQualDateKeys();
-          const byPerson = {};
-          (Array.isArray(trainingRows) ? trainingRows : []).forEach(function (row) {
-            if (!trainingItemMatches(row, itemLabel)) return;
-            const pid = certTrainingPersonnelIdFromItem(
-              row,
-              TCCC_BLS_TRAINING_PERSON_FIELD,
-              TCCC_BLS_TRAINING_PERSON_FIELD_ALT,
-            );
-            if (!pid) return;
-            const qual = parseWeaponsCertCalendarDate(valueFromItemByKeys(row, qualKeys));
-            if (!qual || isNaN(qual.getTime())) return;
-            const existing = byPerson[pid];
-            if (!existing || qual.getTime() > existing.qual.getTime()) {
-              byPerson[pid] = { qual: qual, row: row };
-            }
-          });
-          return Object.keys(byPerson)
-            .map(function (pid) {
+        function buildTcccBlsCertReportRows(blsTcccRows, itemLabel) {
+          const fields = blsTcccKindFieldKeys(itemLabel);
+          return (Array.isArray(blsTcccRows) ? blsTcccRows : [])
+            .map(function (row) {
+              const pid = certTrainingPersonnelIdFromItem(row, BLS_TCCC_PERSON_FIELD, BLS_TCCC_PERSON_FIELD_ALT);
+              if (!pid) return null;
               const person = personnelById(pid);
               if (!person) return null;
-              const qual = byPerson[pid].qual;
-              const exp = tcccBlsExpirationDateFromQualDate(qual);
+              const qual = parseWeaponsCertCalendarDate(valueFromItemByKeys(row, fields.qualKeys));
+              if (!qual || isNaN(qual.getTime())) return null;
+              let exp = parseWeaponsCertCalendarDate(valueFromItemByKeys(row, fields.expKeys));
+              if (!exp || isNaN(exp.getTime())) exp = tcccBlsExpirationDateFromQualDate(qual);
               return {
                 person: person,
                 qualDate: formatWeaponsCertDisplayDate(isoDateFromCalendarDate(qual)),
@@ -10577,7 +11121,7 @@
           setReportsState("loading", "Building " + reportTitle + "...");
           try {
             const cache = await ensureReportsTrainingCache(pw);
-            const rows = buildTcccBlsCertReportRows(cache.tcccBlsRows || [], label);
+            const rows = buildTcccBlsCertReportRows(cache.blsTcccRows || [], label);
             const summary = document.createElement("p");
             summary.className = "reports-hint";
             summary.textContent = rows.length + " " + label + " certification(s) on file.";
@@ -11034,7 +11578,7 @@
         function invalidateReportsTrainingCache() {
           reportsSession.weaponsRows = null;
           reportsSession.bylawRows = null;
-          reportsSession.tcccBlsRows = null;
+          reportsSession.blsTcccRows = null;
           reportsSession.mqlRows = null;
           reportsSession.mqlCatalog = null;
           reportsSession.bylawItemChoices = null;
@@ -11104,7 +11648,7 @@
           if (def.id === "bls-report") {
             if (!pw) return;
             void ensureReportsTrainingCache(pw).then(function (cache) {
-              const rows = buildTcccBlsCertReportRows(cache.tcccBlsRows || [], "BLS");
+              const rows = buildTcccBlsCertReportRows(cache.blsTcccRows || [], "BLS");
               triggerSchedulingPrint(
                 renderTcccBlsCertReportPrintDocument(rows, "BLS Report", "No Personnel with BLS certification on file."),
               );
@@ -11114,7 +11658,7 @@
           if (def.id === "tccc-report") {
             if (!pw) return;
             void ensureReportsTrainingCache(pw).then(function (cache) {
-              const rows = buildTcccBlsCertReportRows(cache.tcccBlsRows || [], "TCCC");
+              const rows = buildTcccBlsCertReportRows(cache.blsTcccRows || [], "TCCC");
               triggerSchedulingPrint(
                 renderTcccBlsCertReportPrintDocument(rows, "TCCC Report", "No Personnel with TCCC certification on file."),
               );
@@ -11477,7 +12021,8 @@
           });
           const keys = col ? col.tryKeys || [col.key] : sortKeysForPersonnelName(fieldKey);
           const raw = valueFromItemByKeys(item, keys);
-          return raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+          const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+          return formatPersonnelFieldDisplay(fieldKey, text);
         }
 
         function formatPersonLastName(item) {
@@ -11613,6 +12158,8 @@
           let text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
           if (col.inputType === "checkbox" || col.key === "IsCLEO") {
             text = parsePersonnelCleoFlag(raw) ? "Yes" : "No";
+          } else {
+            text = formatPersonnelFieldDisplay(col.key, text);
           }
           const fwrap = document.createElement("div");
           fwrap.className = "add-field person-detail-field";
@@ -11721,7 +12268,10 @@
             return;
           }
           if (raw === undefined || raw === null || raw === "") return;
-          const text = formatCellValue(raw);
+          let text = formatCellValue(raw);
+          if (isPersonNameFieldKey(col.key)) text = normalizePersonNameText(text);
+          else if (isPersonPhoneFieldKey(col.key)) text = formatUsPhoneNumber(text) || text;
+          else if (col.key === "DoDID") text = digitsOnly(text);
           if (el.type === "date") {
             const m = text.match(/^(\d{4}-\d{2}-\d{2})/);
             if (m) el.value = m[1];
@@ -11913,6 +12463,7 @@
             );
             wirePersonPostRCQualAutoExpiry(form, "pf_");
             applyPersonPostRCExpirationFromQual("pf_");
+            wirePersonnelFieldInputBehaviors(form, "pf_");
             requestAnimationFrame(function () {
               requestAnimationFrame(function () {
                 balanceContactNotesToIdentityColumn(form);
@@ -11976,12 +12527,17 @@
             const el = document.getElementById("pf_" + col.key);
             if (!el) return;
             const v = String(el.value || "").trim();
-            if (col.key === "LastName") lastName = v;
-            if (col.key === "FirstName") firstName = v;
-            if (col.key === "DoDID") dod = v;
+            if (col.key === "LastName") lastName = normalizePersonNameText(v);
+            if (col.key === "FirstName") firstName = normalizePersonNameText(v);
+            if (col.key === "DoDID") dod = digitsOnly(v);
           });
           if (!lastName || !firstName) {
             setPersonDetailState("err", "Last name and First name are required.");
+            return;
+          }
+          const dodidErr = validatePersonnelFormFields("pf_");
+          if (dodidErr) {
+            setPersonDetailState("err", dodidErr);
             return;
           }
 
@@ -11991,8 +12547,11 @@
             const el = document.getElementById("pf_" + col.key);
             if (!el) return;
             const writeKey = el.dataset.writeKey || resolveWriteKey(col, s.sampleRow);
-            const v = formFieldPayloadValue(el, writeKey);
-            if (v === null) return;
+            let v = formFieldPayloadValue(el, writeKey);
+            if (v !== null && typeof v === "string") {
+              v = normalizePersonnelFieldForSave(col.key, v);
+              if (v === null) return;
+            }
             payload[writeKey] = v;
           });
 
@@ -12093,7 +12652,7 @@
           await renderPersonDetailView(item, false);
           await loadPersonWeaponsCertifications(item.Id, personDetailSession.pw);
           await loadPersonBylawTraining(item.Id, personDetailSession.pw);
-          if (PERSON_TCCC_BLS_CERT_TRAINING) await PERSON_TCCC_BLS_CERT_TRAINING.load(item.Id, personDetailSession.pw);
+          if (PERSON_BLS_TCCC) await PERSON_BLS_TCCC.load(item.Id, personDetailSession.pw);
           await loadPersonAppointments(item.Id, personDetailSession.pw);
         }
 
@@ -12720,7 +13279,7 @@
           });
         }
 
-        if (PERSON_TCCC_BLS_CERT_TRAINING) PERSON_TCCC_BLS_CERT_TRAINING.wireEvents();
+        if (PERSON_BLS_TCCC) PERSON_BLS_TCCC.wireEvents();
 
         function renderRosterTable(rows, meta, pw, seg) {
           clearRosterTable();
@@ -12753,7 +13312,10 @@
               const td = document.createElement("td");
               const tryKeys = col.tryKeys || [col.key];
               const raw = valueFromItemByKeys(item, tryKeys);
-              const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+              const text =
+                raw !== undefined && raw !== null
+                  ? formatPersonnelFieldDisplay(col.key, formatCellValue(raw))
+                  : "";
               td.textContent = displayCellText(text);
               tr.appendChild(td);
             });
@@ -13489,6 +14051,19 @@
             input.type = "date";
             input.id = idPrefix + col.key;
             input.dataset.writeKey = writeKey;
+          } else if (col.key === "DoDID") {
+            input = document.createElement("input");
+            input.type = "text";
+            input.inputMode = "numeric";
+            input.maxLength = 10;
+            input.autocomplete = "off";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
+          } else if (isPersonPhoneFieldKey(col.key)) {
+            input = document.createElement("input");
+            input.type = "tel";
+            input.id = idPrefix + col.key;
+            input.dataset.writeKey = writeKey;
           } else {
             input = document.createElement("input");
             input.type = "text";
@@ -13708,12 +14283,17 @@
             const el = document.getElementById("nf_" + col.key);
             if (!el) return;
             const v = String(el.value || "").trim();
-            if (col.key === "LastName") lastName = v;
-            if (col.key === "FirstName") firstName = v;
-            if (col.key === "DoDID") dod = v;
+            if (col.key === "LastName") lastName = normalizePersonNameText(v);
+            if (col.key === "FirstName") firstName = normalizePersonNameText(v);
+            if (col.key === "DoDID") dod = digitsOnly(v);
           });
           if (!lastName || !firstName) {
             setReadState("err", "Last name and First name are required before saving.");
+            return;
+          }
+          const dodidErr = validatePersonnelFormFields("nf_");
+          if (dodidErr) {
+            setReadState("err", dodidErr);
             return;
           }
 
@@ -13723,8 +14303,11 @@
             const el = document.getElementById("nf_" + col.key);
             if (!el) return;
             const writeKey = el.dataset.writeKey || resolveWriteKey(col, sampleRow);
-            const v = formFieldPayloadValue(el, writeKey);
-            if (v === null) return;
+            let v = formFieldPayloadValue(el, writeKey);
+            if (v !== null && typeof v === "string") {
+              v = normalizePersonnelFieldForSave(col.key, v);
+              if (v === null) return;
+            }
             payload[writeKey] = v;
           });
 

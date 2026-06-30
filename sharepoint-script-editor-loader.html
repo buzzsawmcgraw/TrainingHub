@@ -72,7 +72,7 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260630a</span>
+              Build <span id="hubBuildIdLabel">20260630c</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
@@ -211,36 +211,14 @@
                   <tbody id="personTcccBlsBody"></tbody>
                 </table>
               </div>
-              <p id="personTcccBlsEmpty" class="bylaw-empty" hidden>No TCCC or BLS training records on file for this person.</p>
-              <div class="bylaw-add-toolbar">
-                <button type="button" id="personTcccBlsAddBtn" class="btn-secondary">Add Training</button>
-                <button type="button" id="personTcccBlsBulkAddBtn" class="btn-secondary">Add Multiple (same day)</button>
-              </div>
-              <div id="personTcccBlsBulkPanel" class="bylaw-add-panel bylaw-bulk-panel" hidden>
-                <h4 class="bylaw-add-title">Add Multiple Trainings (same day)</h4>
-                <p class="bylaw-bulk-hint">Enter the certification date and certifier once, then check TCCC and/or BLS completed that day.</p>
-                <form id="personTcccBlsBulkForm" class="bylaw-add-form add-form-stack" aria-label="Add multiple TCCC / BLS records">
-                  <div id="personTcccBlsBulkSharedFields" class="add-form-grid"></div>
-                  <div class="bylaw-bulk-items-wrap">
-                    <div class="bylaw-bulk-items-toolbar">
-                      <button type="button" id="personTcccBlsBulkSelectAll" class="btn-secondary">Select all</button>
-                      <button type="button" id="personTcccBlsBulkClearAll" class="btn-secondary">Clear all</button>
-                    </div>
-                    <div id="personTcccBlsBulkItems" class="bylaw-bulk-items" role="group" aria-label="TCCC / BLS items to add"></div>
-                  </div>
+              <div id="personTcccBlsEditPanel" class="bylaw-add-panel" hidden>
+                <h4 id="personTcccBlsFormTitle" class="bylaw-add-title">Requalify</h4>
+                <form id="personTcccBlsEditForm" class="bylaw-add-form add-form-stack" aria-label="Edit TCCC / BLS certification">
+                  <div id="personTcccBlsEditFields" class="add-form-grid"></div>
                   <div class="add-form-actions">
-                    <button type="submit" id="personTcccBlsBulkSaveBtn">Save all selected</button>
-                    <button type="button" id="personTcccBlsBulkCancelBtn" class="btn-secondary">Cancel</button>
-                  </div>
-                </form>
-              </div>
-              <div id="personTcccBlsAddPanel" class="bylaw-add-panel" hidden>
-                <h4 id="personTcccBlsFormTitle" class="bylaw-add-title">New TCCC / BLS Training Record</h4>
-                <form id="personTcccBlsAddForm" class="bylaw-add-form add-form-stack" aria-label="Add TCCC / BLS Training Record">
-                  <div id="personTcccBlsAddFields" class="add-form-grid"></div>
-                  <div class="add-form-actions">
-                    <button type="submit" id="personTcccBlsSaveBtn">Save Training</button>
-                    <button type="button" id="personTcccBlsAddCancelBtn" class="btn-secondary">Cancel</button>
+                    <button type="submit" id="personTcccBlsSaveBtn">Save</button>
+                    <button type="button" id="personTcccBlsClearBtn" class="btn-secondary">Clear certification</button>
+                    <button type="button" id="personTcccBlsEditCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
                 </form>
               </div>
@@ -717,9 +695,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260630a";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260630a";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260630a";
+  var LOADER_BUILD_ID = "20260630c";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260630c";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260630c";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 
