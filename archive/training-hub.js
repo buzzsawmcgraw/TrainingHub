@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260630c";
+        const HUB_BUILD_ID = "20260630d";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -753,6 +753,10 @@
         const btn = document.getElementById("probeRun");
         const rosterReadState = document.getElementById("rosterReadState");
         const rosterTableBody = document.getElementById("rosterTableBody");
+        const rosterSearchInput = document.getElementById("rosterSearchInput");
+        const rosterSearchClear = document.getElementById("rosterSearchClear");
+        const rosterSearchMeta = document.getElementById("rosterSearchMeta");
+        const rosterPersonnelWrap = document.getElementById("rosterPersonnelWrap");
         const personDetailSection = document.getElementById("personDetailSection");
         const personDetailTitle = document.getElementById("personDetailTitle");
         const personDetailContent = document.getElementById("personDetailContent");
@@ -1485,6 +1489,90 @@
 
         function rosterTableIsRendered() {
           return !!(rosterTableBody && rosterTableBody.querySelector("tr"));
+        }
+
+        function getRosterSearchQuery() {
+          return rosterSearchInput ? String(rosterSearchInput.value || "").trim() : "";
+        }
+
+        function personRosterSearchHaystack(item) {
+          if (!item) return "";
+          const parts = [
+            formatPersonDisplayName(item),
+            itemFieldText(item, "LastName"),
+            itemFieldText(item, "FirstName"),
+            itemFieldText(item, "MiddleInitial"),
+            itemFieldText(item, "Rank"),
+            itemFieldText(item, "DoDID"),
+            itemFieldText(item, "OfficeSymbol"),
+            itemFieldText(item, "Squadron"),
+            itemFieldText(item, "Status"),
+            digitsOnly(itemFieldText(item, "CellPhone")),
+            digitsOnly(itemFieldText(item, "WorkPhone")),
+          ];
+          return parts
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+        }
+
+        function filterPersonnelRowsBySearch(rows, query) {
+          const list = Array.isArray(rows) ? rows : [];
+          const q = String(query || "").trim().toLowerCase();
+          if (!q) return list.slice();
+          const tokens = q.split(/\s+/).filter(Boolean);
+          return list.filter(function (item) {
+            const hay = personRosterSearchHaystack(item);
+            for (let i = 0; i < tokens.length; i++) {
+              if (hay.indexOf(tokens[i]) === -1) return false;
+            }
+            return true;
+          });
+        }
+
+        function updateRosterSearchMeta(totalCount, visibleCount, query) {
+          const q = String(query || "").trim();
+          if (rosterSearchClear) rosterSearchClear.hidden = !q;
+          if (!rosterSearchMeta) return;
+          if (!q) {
+            rosterSearchMeta.hidden = true;
+            rosterSearchMeta.textContent = "";
+            return;
+          }
+          rosterSearchMeta.hidden = false;
+          rosterSearchMeta.textContent =
+            "Showing " + visibleCount + " of " + totalCount + " personnel";
+        }
+
+        function refreshRosterTableView() {
+          if (!hubSession.rows || !hubSession.meta || !hubSession.pw || !hubSession.seg) return;
+          renderRosterTable(hubSession.rows, hubSession.meta, hubSession.pw, hubSession.seg);
+        }
+
+        function wireRosterSearchControls() {
+          if (!rosterSearchInput || rosterSearchInput.dataset.wired === "1") return;
+          rosterSearchInput.dataset.wired = "1";
+          let timer = null;
+          rosterSearchInput.addEventListener("input", function () {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(function () {
+              refreshRosterTableView();
+            }, 120);
+          });
+          rosterSearchInput.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape") {
+              rosterSearchInput.value = "";
+              refreshRosterTableView();
+              rosterSearchInput.blur();
+            }
+          });
+          if (rosterSearchClear) {
+            rosterSearchClear.addEventListener("click", function () {
+              rosterSearchInput.value = "";
+              refreshRosterTableView();
+              rosterSearchInput.focus();
+            });
+          }
         }
 
         async function ensureRosterViewRendered() {
@@ -13284,9 +13372,13 @@
         function renderRosterTable(rows, meta, pw, seg) {
           clearRosterTable();
           const thead = document.getElementById("rosterThead");
-          const rosterWrap = document.querySelector("#sp-pip-ui .roster-wrap");
+          const rosterWrap = rosterPersonnelWrap || document.querySelector("#sp-pip-ui .hub-section--roster .roster-wrap");
           if (!rosterTableBody || !thead) return;
-          const plan = resolveRosterColumnPlan(rows);
+          const allRows = Array.isArray(rows) ? rows : [];
+          const searchQuery = getRosterSearchQuery();
+          const visibleRows = filterPersonnelRowsBySearch(allRows, searchQuery);
+          updateRosterSearchMeta(allRows.length, visibleRows.length, searchQuery);
+          const plan = resolveRosterColumnPlan(allRows);
           const columns = rosterColumnsForDisplay(plan);
           const showRowActions = pw && seg;
           const trHead = document.createElement("tr");
@@ -13306,57 +13398,67 @@
           thead.appendChild(trHead);
 
           const frag = document.createDocumentFragment();
-          rows.forEach((item) => {
+          if (!visibleRows.length && allRows.length && searchQuery) {
             const tr = document.createElement("tr");
-            columns.forEach((col) => {
-              const td = document.createElement("td");
-              const tryKeys = col.tryKeys || [col.key];
-              const raw = valueFromItemByKeys(item, tryKeys);
-              const text =
-                raw !== undefined && raw !== null
-                  ? formatPersonnelFieldDisplay(col.key, formatCellValue(raw))
-                  : "";
-              td.textContent = displayCellText(text);
-              tr.appendChild(td);
-            });
-            if (showRowActions && item.Id != null) {
-              const tdAct = document.createElement("td");
-              tdAct.className = "roster-actions";
-              const inner = document.createElement("div");
-              inner.className = "roster-actions-inner";
-              const recordBtn = document.createElement("button");
-              recordBtn.type = "button";
-              recordBtn.className = "btn-record";
-              recordBtn.textContent = "Record";
-              recordBtn.title = "View full record for " + formatPersonDisplayName(item);
-              recordBtn.addEventListener("click", () => {
-                navigateToPersonDetail(item.Id);
-              });
-              inner.appendChild(recordBtn);
-              const delBtn = document.createElement("button");
-              delBtn.type = "button";
-              delBtn.className = "btn-danger";
-              delBtn.textContent = "Delete";
-              delBtn.title = "Delete list item Id " + item.Id;
-              delBtn.addEventListener("click", () => {
-                void deletePersonnelRow(item.Id, pw, seg);
-              });
-              inner.appendChild(delBtn);
-              tdAct.appendChild(inner);
-              tr.appendChild(tdAct);
-            } else if (showRowActions) {
-              const tdAct = document.createElement("td");
-              tdAct.className = "roster-actions";
-              tdAct.textContent = "-";
-              tr.appendChild(tdAct);
-            }
+            tr.className = "roster-search-empty";
+            const td = document.createElement("td");
+            td.colSpan = columns.length + (showRowActions ? 1 : 0);
+            td.textContent = 'No personnel match "' + searchQuery + '".';
+            tr.appendChild(td);
             frag.appendChild(tr);
-          });
+          } else {
+            visibleRows.forEach((item) => {
+              const tr = document.createElement("tr");
+              columns.forEach((col) => {
+                const td = document.createElement("td");
+                const tryKeys = col.tryKeys || [col.key];
+                const raw = valueFromItemByKeys(item, tryKeys);
+                const text =
+                  raw !== undefined && raw !== null
+                    ? formatPersonnelFieldDisplay(col.key, formatCellValue(raw))
+                    : "";
+                td.textContent = displayCellText(text);
+                tr.appendChild(td);
+              });
+              if (showRowActions && item.Id != null) {
+                const tdAct = document.createElement("td");
+                tdAct.className = "roster-actions";
+                const inner = document.createElement("div");
+                inner.className = "roster-actions-inner";
+                const recordBtn = document.createElement("button");
+                recordBtn.type = "button";
+                recordBtn.className = "btn-record";
+                recordBtn.textContent = "Record";
+                recordBtn.title = "View full record for " + formatPersonDisplayName(item);
+                recordBtn.addEventListener("click", () => {
+                  navigateToPersonDetail(item.Id);
+                });
+                inner.appendChild(recordBtn);
+                const delBtn = document.createElement("button");
+                delBtn.type = "button";
+                delBtn.className = "btn-danger";
+                delBtn.textContent = "Delete";
+                delBtn.title = "Delete list item Id " + item.Id;
+                delBtn.addEventListener("click", () => {
+                  void deletePersonnelRow(item.Id, pw, seg);
+                });
+                inner.appendChild(delBtn);
+                tdAct.appendChild(inner);
+                tr.appendChild(tdAct);
+              } else if (showRowActions) {
+                const tdAct = document.createElement("td");
+                tdAct.className = "roster-actions";
+                tdAct.textContent = "-";
+                tr.appendChild(tdAct);
+              }
+              frag.appendChild(tr);
+            });
+          }
           rosterTableBody.appendChild(frag);
 
           if (rosterWrap) {
             const scrollAfter = Number(ROSTER_SCROLL_AFTER_ROWS) > 0 ? Number(ROSTER_SCROLL_AFTER_ROWS) : 10;
-            if (rows.length > scrollAfter) {
+            if (visibleRows.length > scrollAfter) {
               rosterWrap.classList.add("roster-wrap--scroll");
               const headerRow = thead.querySelector("tr");
               const sampleRow = rosterTableBody.querySelector("tr");
@@ -13371,21 +13473,23 @@
 
           const listTitle = meta && meta.Title ? String(meta.Title) : personnelListTitle();
           const ic = meta && meta.ItemCount != null ? meta.ItemCount : "?";
-          if (rows.length > 0) {
-            setReadState(
-              "ok",
+          if (allRows.length > 0) {
+            let statusMsg =
               "Loaded " +
-                rows.length +
-                " row(s), " +
-                columns.length +
-                " column(s) (" +
-                (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
-                "). List \"" +
-                listTitle +
-                "\" - ItemCount " +
-                ic +
-                ".",
-            );
+              allRows.length +
+              " row(s), " +
+              columns.length +
+              " column(s) (" +
+              (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
+              "). List \"" +
+              listTitle +
+              "\" - ItemCount " +
+              ic +
+              ".";
+            if (searchQuery) {
+              statusMsg += " Search: showing " + visibleRows.length + " of " + allRows.length + ".";
+            }
+            setReadState("ok", statusMsg);
           }
         }
 
@@ -14264,6 +14368,7 @@
             await fillDropdownSelect(sel, col, seg, pw, sampleRow, sampleRow);
           }
           applyAllSelectAutosizes(form);
+          wirePersonnelFieldInputBehaviors(form, "nf_");
           requestAnimationFrame(function () {
             requestAnimationFrame(function () {
               balanceContactNotesToIdentityColumn(form);
@@ -16038,6 +16143,8 @@
             setHubListViewVisible(true);
           }
         }
+
+        wireRosterSearchControls();
 
         btn.addEventListener("click", () => {
           runProbe().catch((e) => {

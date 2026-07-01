@@ -179,6 +179,59 @@
         color: var(--pip-amber);
         text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
       }
+      #sp-pip-ui .roster-search-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 10px 14px;
+        margin: 0 0 12px;
+      }
+      #sp-pip-ui .roster-search-field {
+        flex: 1 1 220px;
+        min-width: 200px;
+        max-width: 420px;
+      }
+      #sp-pip-ui .roster-search-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .roster-search-input {
+        width: 100%;
+        box-sizing: border-box;
+        min-height: var(--pip-control-h);
+        height: var(--pip-control-h);
+        font: 13px var(--pip-font);
+        padding: 8px 12px;
+        border: 1px solid rgba(30, 74, 54, 0.5);
+        border-radius: var(--pip-control-radius);
+        background: rgba(5, 14, 10, 0.72);
+        color: rgba(210, 255, 224, 0.92);
+      }
+      #sp-pip-ui .roster-search-input::placeholder {
+        color: rgba(160, 200, 175, 0.55);
+      }
+      #sp-pip-ui .roster-search-input:focus {
+        outline: none;
+        border-color: var(--pip-green-dim);
+        box-shadow: 0 0 0 1px rgba(60, 255, 122, 0.25);
+      }
+      #sp-pip-ui .roster-search-meta {
+        flex: 1 1 160px;
+        font: 12px var(--pip-font);
+        color: rgba(180, 220, 195, 0.85);
+        padding-bottom: 8px;
+      }
+      #sp-pip-ui .roster-search-empty td {
+        text-align: center;
+        padding: 18px 12px;
+        color: rgba(180, 220, 195, 0.8);
+        font-style: italic;
+      }
       #sp-pip-ui pre span.ok {
         color: var(--pip-green);
       }

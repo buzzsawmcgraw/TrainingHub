@@ -183,6 +183,59 @@
         color: var(--pip-amber);
         text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
       }
+      #sp-pip-ui .roster-search-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 10px 14px;
+        margin: 0 0 12px;
+      }
+      #sp-pip-ui .roster-search-field {
+        flex: 1 1 220px;
+        min-width: 200px;
+        max-width: 420px;
+      }
+      #sp-pip-ui .roster-search-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+      }
+      #sp-pip-ui .roster-search-input {
+        width: 100%;
+        box-sizing: border-box;
+        min-height: var(--pip-control-h);
+        height: var(--pip-control-h);
+        font: 13px var(--pip-font);
+        padding: 8px 12px;
+        border: 1px solid rgba(30, 74, 54, 0.5);
+        border-radius: var(--pip-control-radius);
+        background: rgba(5, 14, 10, 0.72);
+        color: rgba(210, 255, 224, 0.92);
+      }
+      #sp-pip-ui .roster-search-input::placeholder {
+        color: rgba(160, 200, 175, 0.55);
+      }
+      #sp-pip-ui .roster-search-input:focus {
+        outline: none;
+        border-color: var(--pip-green-dim);
+        box-shadow: 0 0 0 1px rgba(60, 255, 122, 0.25);
+      }
+      #sp-pip-ui .roster-search-meta {
+        flex: 1 1 160px;
+        font: 12px var(--pip-font);
+        color: rgba(180, 220, 195, 0.85);
+        padding-bottom: 8px;
+      }
+      #sp-pip-ui .roster-search-empty td {
+        text-align: center;
+        padding: 18px 12px;
+        color: rgba(180, 220, 195, 0.8);
+        font-style: italic;
+      }
       #sp-pip-ui pre span.ok {
         color: var(--pip-green);
       }
@@ -2718,7 +2771,22 @@
         </section>
         <section class="hub-section hub-section--roster" aria-label="Personnel Roster">
           <h2 class="hub-subtitle">Personnel Roster</h2>
-          <div class="roster-wrap">
+          <div class="roster-search-bar">
+            <div class="roster-search-field">
+              <label for="rosterSearchInput" class="roster-search-label">Search personnel</label>
+              <input
+                type="search"
+                id="rosterSearchInput"
+                class="roster-search-input"
+                placeholder="Name, DoD ID, office, status, phone..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <button type="button" id="rosterSearchClear" class="btn-secondary" hidden>Clear</button>
+            <span id="rosterSearchMeta" class="roster-search-meta" hidden></span>
+          </div>
+          <div id="rosterPersonnelWrap" class="roster-wrap">
             <table class="roster" aria-label="Personnel rows from SharePoint">
               <thead id="rosterThead"></thead>
               <tbody id="rosterTableBody"></tbody>
@@ -3341,7 +3409,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260630c";
+        const HUB_BUILD_ID = "20260630d";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -4070,6 +4138,10 @@
         const btn = document.getElementById("probeRun");
         const rosterReadState = document.getElementById("rosterReadState");
         const rosterTableBody = document.getElementById("rosterTableBody");
+        const rosterSearchInput = document.getElementById("rosterSearchInput");
+        const rosterSearchClear = document.getElementById("rosterSearchClear");
+        const rosterSearchMeta = document.getElementById("rosterSearchMeta");
+        const rosterPersonnelWrap = document.getElementById("rosterPersonnelWrap");
         const personDetailSection = document.getElementById("personDetailSection");
         const personDetailTitle = document.getElementById("personDetailTitle");
         const personDetailContent = document.getElementById("personDetailContent");
@@ -4802,6 +4874,90 @@
 
         function rosterTableIsRendered() {
           return !!(rosterTableBody && rosterTableBody.querySelector("tr"));
+        }
+
+        function getRosterSearchQuery() {
+          return rosterSearchInput ? String(rosterSearchInput.value || "").trim() : "";
+        }
+
+        function personRosterSearchHaystack(item) {
+          if (!item) return "";
+          const parts = [
+            formatPersonDisplayName(item),
+            itemFieldText(item, "LastName"),
+            itemFieldText(item, "FirstName"),
+            itemFieldText(item, "MiddleInitial"),
+            itemFieldText(item, "Rank"),
+            itemFieldText(item, "DoDID"),
+            itemFieldText(item, "OfficeSymbol"),
+            itemFieldText(item, "Squadron"),
+            itemFieldText(item, "Status"),
+            digitsOnly(itemFieldText(item, "CellPhone")),
+            digitsOnly(itemFieldText(item, "WorkPhone")),
+          ];
+          return parts
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+        }
+
+        function filterPersonnelRowsBySearch(rows, query) {
+          const list = Array.isArray(rows) ? rows : [];
+          const q = String(query || "").trim().toLowerCase();
+          if (!q) return list.slice();
+          const tokens = q.split(/\s+/).filter(Boolean);
+          return list.filter(function (item) {
+            const hay = personRosterSearchHaystack(item);
+            for (let i = 0; i < tokens.length; i++) {
+              if (hay.indexOf(tokens[i]) === -1) return false;
+            }
+            return true;
+          });
+        }
+
+        function updateRosterSearchMeta(totalCount, visibleCount, query) {
+          const q = String(query || "").trim();
+          if (rosterSearchClear) rosterSearchClear.hidden = !q;
+          if (!rosterSearchMeta) return;
+          if (!q) {
+            rosterSearchMeta.hidden = true;
+            rosterSearchMeta.textContent = "";
+            return;
+          }
+          rosterSearchMeta.hidden = false;
+          rosterSearchMeta.textContent =
+            "Showing " + visibleCount + " of " + totalCount + " personnel";
+        }
+
+        function refreshRosterTableView() {
+          if (!hubSession.rows || !hubSession.meta || !hubSession.pw || !hubSession.seg) return;
+          renderRosterTable(hubSession.rows, hubSession.meta, hubSession.pw, hubSession.seg);
+        }
+
+        function wireRosterSearchControls() {
+          if (!rosterSearchInput || rosterSearchInput.dataset.wired === "1") return;
+          rosterSearchInput.dataset.wired = "1";
+          let timer = null;
+          rosterSearchInput.addEventListener("input", function () {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(function () {
+              refreshRosterTableView();
+            }, 120);
+          });
+          rosterSearchInput.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape") {
+              rosterSearchInput.value = "";
+              refreshRosterTableView();
+              rosterSearchInput.blur();
+            }
+          });
+          if (rosterSearchClear) {
+            rosterSearchClear.addEventListener("click", function () {
+              rosterSearchInput.value = "";
+              refreshRosterTableView();
+              rosterSearchInput.focus();
+            });
+          }
         }
 
         async function ensureRosterViewRendered() {
@@ -16601,9 +16757,13 @@
         function renderRosterTable(rows, meta, pw, seg) {
           clearRosterTable();
           const thead = document.getElementById("rosterThead");
-          const rosterWrap = document.querySelector("#sp-pip-ui .roster-wrap");
+          const rosterWrap = rosterPersonnelWrap || document.querySelector("#sp-pip-ui .hub-section--roster .roster-wrap");
           if (!rosterTableBody || !thead) return;
-          const plan = resolveRosterColumnPlan(rows);
+          const allRows = Array.isArray(rows) ? rows : [];
+          const searchQuery = getRosterSearchQuery();
+          const visibleRows = filterPersonnelRowsBySearch(allRows, searchQuery);
+          updateRosterSearchMeta(allRows.length, visibleRows.length, searchQuery);
+          const plan = resolveRosterColumnPlan(allRows);
           const columns = rosterColumnsForDisplay(plan);
           const showRowActions = pw && seg;
           const trHead = document.createElement("tr");
@@ -16623,57 +16783,67 @@
           thead.appendChild(trHead);
 
           const frag = document.createDocumentFragment();
-          rows.forEach((item) => {
+          if (!visibleRows.length && allRows.length && searchQuery) {
             const tr = document.createElement("tr");
-            columns.forEach((col) => {
-              const td = document.createElement("td");
-              const tryKeys = col.tryKeys || [col.key];
-              const raw = valueFromItemByKeys(item, tryKeys);
-              const text =
-                raw !== undefined && raw !== null
-                  ? formatPersonnelFieldDisplay(col.key, formatCellValue(raw))
-                  : "";
-              td.textContent = displayCellText(text);
-              tr.appendChild(td);
-            });
-            if (showRowActions && item.Id != null) {
-              const tdAct = document.createElement("td");
-              tdAct.className = "roster-actions";
-              const inner = document.createElement("div");
-              inner.className = "roster-actions-inner";
-              const recordBtn = document.createElement("button");
-              recordBtn.type = "button";
-              recordBtn.className = "btn-record";
-              recordBtn.textContent = "Record";
-              recordBtn.title = "View full record for " + formatPersonDisplayName(item);
-              recordBtn.addEventListener("click", () => {
-                navigateToPersonDetail(item.Id);
-              });
-              inner.appendChild(recordBtn);
-              const delBtn = document.createElement("button");
-              delBtn.type = "button";
-              delBtn.className = "btn-danger";
-              delBtn.textContent = "Delete";
-              delBtn.title = "Delete list item Id " + item.Id;
-              delBtn.addEventListener("click", () => {
-                void deletePersonnelRow(item.Id, pw, seg);
-              });
-              inner.appendChild(delBtn);
-              tdAct.appendChild(inner);
-              tr.appendChild(tdAct);
-            } else if (showRowActions) {
-              const tdAct = document.createElement("td");
-              tdAct.className = "roster-actions";
-              tdAct.textContent = "-";
-              tr.appendChild(tdAct);
-            }
+            tr.className = "roster-search-empty";
+            const td = document.createElement("td");
+            td.colSpan = columns.length + (showRowActions ? 1 : 0);
+            td.textContent = 'No personnel match "' + searchQuery + '".';
+            tr.appendChild(td);
             frag.appendChild(tr);
-          });
+          } else {
+            visibleRows.forEach((item) => {
+              const tr = document.createElement("tr");
+              columns.forEach((col) => {
+                const td = document.createElement("td");
+                const tryKeys = col.tryKeys || [col.key];
+                const raw = valueFromItemByKeys(item, tryKeys);
+                const text =
+                  raw !== undefined && raw !== null
+                    ? formatPersonnelFieldDisplay(col.key, formatCellValue(raw))
+                    : "";
+                td.textContent = displayCellText(text);
+                tr.appendChild(td);
+              });
+              if (showRowActions && item.Id != null) {
+                const tdAct = document.createElement("td");
+                tdAct.className = "roster-actions";
+                const inner = document.createElement("div");
+                inner.className = "roster-actions-inner";
+                const recordBtn = document.createElement("button");
+                recordBtn.type = "button";
+                recordBtn.className = "btn-record";
+                recordBtn.textContent = "Record";
+                recordBtn.title = "View full record for " + formatPersonDisplayName(item);
+                recordBtn.addEventListener("click", () => {
+                  navigateToPersonDetail(item.Id);
+                });
+                inner.appendChild(recordBtn);
+                const delBtn = document.createElement("button");
+                delBtn.type = "button";
+                delBtn.className = "btn-danger";
+                delBtn.textContent = "Delete";
+                delBtn.title = "Delete list item Id " + item.Id;
+                delBtn.addEventListener("click", () => {
+                  void deletePersonnelRow(item.Id, pw, seg);
+                });
+                inner.appendChild(delBtn);
+                tdAct.appendChild(inner);
+                tr.appendChild(tdAct);
+              } else if (showRowActions) {
+                const tdAct = document.createElement("td");
+                tdAct.className = "roster-actions";
+                tdAct.textContent = "-";
+                tr.appendChild(tdAct);
+              }
+              frag.appendChild(tr);
+            });
+          }
           rosterTableBody.appendChild(frag);
 
           if (rosterWrap) {
             const scrollAfter = Number(ROSTER_SCROLL_AFTER_ROWS) > 0 ? Number(ROSTER_SCROLL_AFTER_ROWS) : 10;
-            if (rows.length > scrollAfter) {
+            if (visibleRows.length > scrollAfter) {
               rosterWrap.classList.add("roster-wrap--scroll");
               const headerRow = thead.querySelector("tr");
               const sampleRow = rosterTableBody.querySelector("tr");
@@ -16688,21 +16858,23 @@
 
           const listTitle = meta && meta.Title ? String(meta.Title) : personnelListTitle();
           const ic = meta && meta.ItemCount != null ? meta.ItemCount : "?";
-          if (rows.length > 0) {
-            setReadState(
-              "ok",
+          if (allRows.length > 0) {
+            let statusMsg =
               "Loaded " +
-                rows.length +
-                " row(s), " +
-                columns.length +
-                " column(s) (" +
-                (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
-                "). List \"" +
-                listTitle +
-                "\" - ItemCount " +
-                ic +
-                ".",
-            );
+              allRows.length +
+              " row(s), " +
+              columns.length +
+              " column(s) (" +
+              (plan.mode === "explicit" ? "explicit ROSTER_COLUMNS" : "auto field union") +
+              "). List \"" +
+              listTitle +
+              "\" - ItemCount " +
+              ic +
+              ".";
+            if (searchQuery) {
+              statusMsg += " Search: showing " + visibleRows.length + " of " + allRows.length + ".";
+            }
+            setReadState("ok", statusMsg);
           }
         }
 
@@ -17581,6 +17753,7 @@
             await fillDropdownSelect(sel, col, seg, pw, sampleRow, sampleRow);
           }
           applyAllSelectAutosizes(form);
+          wirePersonnelFieldInputBehaviors(form, "nf_");
           requestAnimationFrame(function () {
             requestAnimationFrame(function () {
               balanceContactNotesToIdentityColumn(form);
@@ -19355,6 +19528,8 @@
             setHubListViewVisible(true);
           }
         }
+
+        wireRosterSearchControls();
 
         btn.addEventListener("click", () => {
           runProbe().catch((e) => {

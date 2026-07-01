@@ -72,7 +72,7 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260630c</span>
+              Build <span id="hubBuildIdLabel">20260630d</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
@@ -96,7 +96,22 @@
         </section>
         <section class="hub-section hub-section--roster" aria-label="Personnel Roster">
           <h2 class="hub-subtitle">Personnel Roster</h2>
-          <div class="roster-wrap">
+          <div class="roster-search-bar">
+            <div class="roster-search-field">
+              <label for="rosterSearchInput" class="roster-search-label">Search personnel</label>
+              <input
+                type="search"
+                id="rosterSearchInput"
+                class="roster-search-input"
+                placeholder="Name, DoD ID, office, status, phone..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <button type="button" id="rosterSearchClear" class="btn-secondary" hidden>Clear</button>
+            <span id="rosterSearchMeta" class="roster-search-meta" hidden></span>
+          </div>
+          <div id="rosterPersonnelWrap" class="roster-wrap">
             <table class="roster" aria-label="Personnel rows from SharePoint">
               <thead id="rosterThead"></thead>
               <tbody id="rosterTableBody"></tbody>
@@ -695,9 +710,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260630c";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260630c";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260630c";
+  var LOADER_BUILD_ID = "20260630d";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260630d";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260630d";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 
