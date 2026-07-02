@@ -1745,6 +1745,23 @@
       #sp-pip-ui .reports-sot-monthly-print h4.reports-sot-section-title:first-child {
         margin-top: 0;
       }
+      #sp-pip-ui h4.reports-sot-weapons-overdue-title {
+        margin: 20px 0 10px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
+      }
+      #sp-pip-ui .reports-sot-monthly-print h4.reports-sot-weapons-overdue-title {
+        margin: 18px 0 8px;
+        color: #111;
+        text-shadow: none;
+      }
+      #sp-pip-ui .reports-sot-weapons-qual-section .reports-office-meta {
+        margin: 0 0 10px;
+      }
       #sp-pip-ui .reports-sot-monthly-print table.reports-sot-table {
         margin: 0 0 16px;
         font-size: 12px;
@@ -3422,7 +3439,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260630d";
+        const HUB_BUILD_ID = "20260630e";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -3858,6 +3875,17 @@
         const SOT_PERSONNEL_STATUS_FOR_COUNTS = [];
         /** Printed monthly report header (matches legacy SOT PDF). */
         const SOT_SQUADRON_LABEL = "88 SFS";
+        /** Fixed weapon rows for Status of Training monthly weapons qualification tables. */
+        const SOT_WEAPONS_MONTHLY_QUAL_DEFS = [
+          { label: "M4", match: ["M4"] },
+          { label: "M18", match: ["M18"] },
+          { label: "M320", match: ["M320"] },
+          { label: "M249", match: ["M249"] },
+          { label: "M240", match: ["M240"] },
+          { label: "M2", match: ["M2"] },
+          { label: "M870", match: ["M870"] },
+          { label: "BAT COURSE", match: ["BAT COURSE", "BAT", "BATON"] },
+        ];
 
         /** Hub Reports menu (Reports nav). Set implemented:true when the report renderer is wired. */
         const HUB_REPORT_TYPES = [
@@ -12320,6 +12348,154 @@
             });
         }
 
+        function sotWeaponRowMatchesCatalog(row, def) {
+          const label = String(weaponLabelFromRow(row) || "").trim().toUpperCase();
+          if (!label || !def) return false;
+          const tokens = Array.isArray(def.match) ? def.match : [def.label];
+          return tokens.some(function (token) {
+            const t = String(token || "").trim().toUpperCase();
+            if (!t) return false;
+            if (t === "M2") {
+              return (
+                label === "M2" ||
+                label === "M-2" ||
+                (/\bM2\b/.test(label) &&
+                  label.indexOf("M240") === -1 &&
+                  label.indexOf("M249") === -1 &&
+                  label.indexOf("M27") === -1)
+              );
+            }
+            if (t === "M4") return label === "M4" || /\bM4\b/.test(label);
+            if (t === "M18") return label === "M18" || /\bM18\b/.test(label);
+            if (t === "BAT" || t === "BATON" || t === "BAT COURSE") {
+              return label.indexOf("BAT") !== -1 || label.indexOf("BATON") !== -1;
+            }
+            return label === t || label.indexOf(t) !== -1;
+          });
+        }
+
+        function buildSotWeaponsQualTableData(personRows, weaponsRows, yyyyMm) {
+          const posturePeople = (Array.isArray(personRows) ? personRows : []).filter(personCountsForSotPosture);
+          const required = posturePeople.length;
+          const weaponsQualKeys = weaponsQualDateKeys();
+          const defs = Array.isArray(SOT_WEAPONS_MONTHLY_QUAL_DEFS) ? SOT_WEAPONS_MONTHLY_QUAL_DEFS : [];
+
+          return defs.map(function (def) {
+            let qualified = 0;
+            const overduePeople = [];
+            posturePeople.forEach(function (person) {
+              const pid = String(person.Id);
+              const personWeaponRows = (Array.isArray(weaponsRows) ? weaponsRows : []).filter(function (row) {
+                return (
+                  weaponsPersonnelIdFromItem(row) === pid &&
+                  sotWeaponRowIncluded(row) &&
+                  sotWeaponRowMatchesCatalog(row, def)
+                );
+              });
+              const qualInMonth = personWeaponRows.some(function (row) {
+                return trainingRowQualInMonth(row, yyyyMm, weaponsQualKeys);
+              });
+              if (qualInMonth) qualified += 1;
+              else overduePeople.push(person);
+            });
+            return {
+              weapon: def.label,
+              required: required,
+              qualified: qualified,
+              overdue: Math.max(0, required - qualified),
+              overduePeople: overduePeople,
+            };
+          });
+        }
+
+        function buildSotOverdueWeaponsBreakdownRows(weaponTableData) {
+          return (Array.isArray(weaponTableData) ? weaponTableData : [])
+            .filter(function (row) {
+              return (row.overdue || 0) > 0;
+            })
+            .map(function (row) {
+              const counts = { deployed: 0, taw: 0, ima: 0, profile: 0, remaining: 0 };
+              (row.overduePeople || []).forEach(function (person) {
+                const category = categorizePersonForSotAccounting(personStatusLabel(person));
+                if (category === "Deployed / TDY / Leave") counts.deployed += 1;
+                else if (category === "TAW Personnel") counts.taw += 1;
+                else if (category === "IMA") counts.ima += 1;
+                else if (category === "Profile") counts.profile += 1;
+                else counts.remaining += 1;
+              });
+              return {
+                weapon: row.weapon,
+                deployed: counts.deployed,
+                taw: counts.taw,
+                ima: counts.ima,
+                profile: counts.profile,
+                remaining: counts.remaining,
+              };
+            });
+        }
+
+        function renderSotWeaponsQualSection(personRows, weaponsRows, yyyyMm, opts) {
+          opts = opts || {};
+          const data = buildSotWeaponsQualTableData(personRows, weaponsRows, yyyyMm);
+          const wrap = document.createElement("div");
+          wrap.className =
+            "reports-sot-weapons-qual-section" + (opts.print ? " reports-sot-weapons-qual-section--print" : "");
+          if (opts.id) wrap.id = opts.id;
+
+          const intro = document.createElement("p");
+          intro.className = "reports-office-meta";
+          intro.textContent = "Monthly weapons qualification summary for " + formatYearMonthLabel(yyyyMm) + ".";
+          wrap.appendChild(intro);
+
+          const table1Section = document.createElement("div");
+          table1Section.className = "reports-sot-section-block";
+          table1Section.appendChild(
+            renderSotDataTable(
+              [
+                { key: "weapon", label: "Weapon" },
+                { key: "required", label: "Required", numeric: true },
+                { key: "qualified", label: "Qualified", numeric: true },
+                { key: "overdue", label: "Overdue", numeric: true },
+              ],
+              data.map(function (row) {
+                return {
+                  weapon: row.weapon,
+                  required: row.required,
+                  qualified: row.qualified,
+                  overdue: row.overdue,
+                };
+              }),
+              "No weapons qualification data.",
+            ),
+          );
+          wrap.appendChild(table1Section);
+
+          const overdueTitle = document.createElement("h4");
+          overdueTitle.className = "reports-sot-weapons-overdue-title";
+          overdueTitle.textContent = "OVER DUE WEAPONS QUALS";
+          wrap.appendChild(overdueTitle);
+
+          const table2Section = document.createElement("div");
+          table2Section.className = "reports-sot-section-block";
+          table2Section.appendChild(
+            renderSotDataTable(
+              [
+                { key: "weapon", label: "Overdue Weapon" },
+                { key: "deployed", label: "Deployed/TDY/Leave", numeric: true },
+                { key: "taw", label: "TAW Personnel", numeric: true },
+                { key: "ima", label: "IMA", numeric: true },
+                { key: "profile", label: "Profile", numeric: true },
+                { key: "remaining", label: "Remaining", numeric: true },
+              ],
+              buildSotOverdueWeaponsBreakdownRows(data),
+              "No overdue weapons qualifications this month.",
+            ),
+          );
+          wrap.appendChild(table2Section);
+
+          return wrap;
+        }
+
         function buildOfficeBylawItemStats(personRows, bylawRows, officeKey, yyyyMm) {
           const people = (Array.isArray(personRows) ? personRows : []).filter(function (person) {
             return person && personOfficeKey(person) === officeKey;
@@ -12906,10 +13082,18 @@
           return rows;
         }
 
-        function renderMonthlySotPrintReport(personRows, officeGroups, yyyyMm, phaseOneStats) {
+        function renderMonthlySotPrintReport(personRows, officeGroups, yyyyMm, phaseOneStats, weaponsRows) {
           const wrap = document.createElement("div");
           wrap.className = "reports-sot-monthly-print";
           wrap.appendChild(buildMonthlySotPrintHeader(yyyyMm));
+          wrap.appendChild(
+            renderSotWeaponsQualSection(
+              personRows,
+              Array.isArray(weaponsRows) ? weaponsRows : [],
+              yyyyMm,
+              { print: true },
+            ),
+          );
 
           const rollup = buildSquadronMonthlyRollup(officeGroups || []);
           const personnel = buildSquadronPersonnelAccounting(personRows);
@@ -13059,12 +13243,14 @@
 
         function mountMonthlySotViews(monthlyBody, personRows, officeGroups, yyyyMm, phaseOneStats) {
           monthlyBody.innerHTML = "";
+          const weaponsRows = Array.isArray(reportsSession.weaponsRows) ? reportsSession.weaponsRows : [];
           const screenWrap = document.createElement("div");
           screenWrap.className = "reports-sot-monthly-screen-wrap";
+          screenWrap.appendChild(renderSotWeaponsQualSection(personRows, weaponsRows, yyyyMm));
           screenWrap.appendChild(renderMonthlySotScreenReport(officeGroups, yyyyMm, phaseOneStats));
           const printWrap = document.createElement("div");
           printWrap.className = "reports-sot-monthly-print-wrap";
-          printWrap.appendChild(renderMonthlySotPrintReport(personRows, officeGroups, yyyyMm, phaseOneStats));
+          printWrap.appendChild(renderMonthlySotPrintReport(personRows, officeGroups, yyyyMm, phaseOneStats, weaponsRows));
           monthlyBody.appendChild(screenWrap);
           monthlyBody.appendChild(printWrap);
           populateSotSectionDropdown(officeGroups);
@@ -14989,8 +15175,14 @@
             const rows = buildStatusOfTrainingRows(personRows, cache.weaponsRows, cache.bylawRows);
             reportsSession.sotRows = rows;
             const monthOptions = buildSotMonthOptions();
+            const weaponsSection = renderSotWeaponsQualSection(
+              personRows,
+              cache.weaponsRows,
+              currentYearMonthKey(),
+              { id: "reportsSotActiveWeaponsQual" },
+            );
             const shell = buildStatusOfTrainingShell(
-              [renderStatusOfTrainingSummary(rows), renderStatusOfTrainingTable(rows)],
+              [weaponsSection, renderStatusOfTrainingSummary(rows), renderStatusOfTrainingTable(rows)],
               monthOptions,
             );
             reportsDetailBody.appendChild(shell);

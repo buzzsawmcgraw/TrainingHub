@@ -1732,6 +1732,23 @@
       #sp-pip-ui .reports-sot-monthly-print h4.reports-sot-section-title:first-child {
         margin-top: 0;
       }
+      #sp-pip-ui h4.reports-sot-weapons-overdue-title {
+        margin: 20px 0 10px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-amber);
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22);
+      }
+      #sp-pip-ui .reports-sot-monthly-print h4.reports-sot-weapons-overdue-title {
+        margin: 18px 0 8px;
+        color: #111;
+        text-shadow: none;
+      }
+      #sp-pip-ui .reports-sot-weapons-qual-section .reports-office-meta {
+        margin: 0 0 10px;
+      }
       #sp-pip-ui .reports-sot-monthly-print table.reports-sot-table {
         margin: 0 0 16px;
         font-size: 12px;
