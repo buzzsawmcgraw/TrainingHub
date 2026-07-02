@@ -1939,21 +1939,37 @@
       #sp-pip-ui table.reports-sot-manual-table td {
         color: rgba(210, 255, 224, 0.92);
       }
-      #sp-pip-ui table.reports-sot-manual-table td[contenteditable="true"] {
-        min-width: 90px;
-        min-height: 22px;
-        cursor: text;
+      #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-input {
+        width: 100%;
+        box-sizing: border-box;
+        background: rgba(8, 22, 16, 0.45);
+        border: 1px solid rgba(30, 74, 54, 0.55);
+        color: rgba(210, 255, 224, 0.92);
+        padding: 6px 8px;
+        font: inherit;
+        border-radius: 4px;
+      }
+      #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-input:focus {
         outline: none;
+        border-color: rgba(60, 255, 122, 0.55);
+        box-shadow: 0 0 0 1px rgba(60, 255, 122, 0.25);
+      }
+      #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-input--number {
+        max-width: 120px;
+      }
+      #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-textarea {
+        min-height: 4.5em;
+        resize: vertical;
         white-space: pre-wrap;
-        word-break: break-word;
+        line-height: 1.35;
       }
-      #sp-pip-ui table.reports-sot-manual-table td[contenteditable="true"]:focus {
-        background: rgba(60, 255, 122, 0.08);
-        box-shadow: inset 0 0 0 1px rgba(60, 255, 122, 0.35);
+      #sp-pip-ui .reports-sot-manual-status {
+        margin: 0 0 10px;
+        font-size: 12px;
+        color: rgba(180, 220, 195, 0.85);
       }
-      #sp-pip-ui table.reports-sot-manual-table td[contenteditable="true"]:empty::before {
-        content: attr(data-placeholder);
-        color: rgba(160, 200, 175, 0.4);
+      #sp-pip-ui .reports-sot-manual-status--err {
+        color: #ff9a9a;
       }
       #sp-pip-ui .reports-sot-manual-row-actions {
         width: 34px;
@@ -2066,8 +2082,19 @@
         #sp-pip-ui table.reports-sot-manual-table th {
           background: #eee !important;
         }
-        #sp-pip-ui table.reports-sot-manual-table td[contenteditable="true"]:empty::before {
-          content: "" !important;
+        #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-input,
+        #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-textarea {
+          border: none !important;
+          background: transparent !important;
+          color: #000 !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+          resize: none !important;
+          -webkit-appearance: none;
+          appearance: none;
+        }
+        #sp-pip-ui .reports-sot-manual-status {
+          display: none !important;
         }
         #sp-pip-ui .roster-wrap {
           overflow-x: visible !important;
@@ -3503,7 +3530,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260702a";
+        const HUB_BUILD_ID = "20260702c";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -3620,6 +3647,19 @@
           "Personnel_x0020_ID",
           "Personnel/Id",
         ];
+
+        /** Monthly Status of Training manual rows (TrainingDates, TotalTrained, DailyEagls per report month). */
+        const LIST_SOT_MONTHLY_MANUAL = "SotMonthlyManual";
+        const LIST_SOT_MONTHLY_MANUAL_GUID = "";
+        const SOT_MANUAL_REPORT_MONTH_KEYS = ["ReportMonth", "Report_x0020_Month"];
+        const SOT_MANUAL_TRAINING_DATE_KEYS = ["TrainingDates", "Training_x0020_Dates"];
+        const SOT_MANUAL_TOTAL_TRAINED_KEYS = [
+          "TotalTrained",
+          "Total_x0020_Number_x0020_Trained",
+          "TotalNumberTrained",
+        ];
+        const SOT_MANUAL_DAILY_EAGLS_KEYS = ["DailyEagls", "DailyEAGLs", "Daily_x0020_EAGLs_x0020_Requested"];
+        const SOT_MANUAL_ROW_ORDER_KEYS = ["RowOrder", "Row_x0020_Order"];
 
         /**
          * Appointments list (SharePoint title **Appointments**). Rows are filtered by PeronnelId = personnel list item Id.
@@ -13629,6 +13669,7 @@
                 }, 3500);
               }
             });
+          void loadSotManualTrainingForMonth(reportsSession.selectedMonth);
         }
 
         function wireStatusOfTrainingControls() {
@@ -13770,22 +13811,142 @@
           return frag;
         }
 
-        const SOT_MANUAL_TRAINING_COLUMNS = [
-          { key: "dates", label: "Training Dates", placeholder: "e.g. 3 - 5 Jan" },
-          { key: "trained", label: "Total Number Trained", placeholder: "0" },
-          { key: "eagls", label: "Daily EAGLs Requested", placeholder: "" },
-        ];
-        const SOT_MANUAL_TRAINING_DEFAULT_ROWS = 6;
+        const SOT_MANUAL_TRAINING_DEFAULT_ROWS = 2;
 
-        function buildSotManualTrainingRow() {
+        function sotManualListApiPath() {
+          return certTrainingListApiPath(LIST_SOT_MONTHLY_MANUAL, LIST_SOT_MONTHLY_MANUAL_GUID);
+        }
+
+        function sotManualListConfigured() {
+          return certTrainingListConfigured(LIST_SOT_MONTHLY_MANUAL, LIST_SOT_MONTHLY_MANUAL_GUID);
+        }
+
+        function sotManualFieldFromItem(item, keys) {
+          return valueFromItemByKeys(item, keys);
+        }
+
+        function sotManualReportMonthFieldName() {
+          return String(SOT_MANUAL_REPORT_MONTH_KEYS[0] || "ReportMonth");
+        }
+
+        function sotManualTrainingDateFieldName() {
+          return String(SOT_MANUAL_TRAINING_DATE_KEYS[0] || "TrainingDates");
+        }
+
+        function sotManualTotalTrainedFieldName() {
+          return String(SOT_MANUAL_TOTAL_TRAINED_KEYS[0] || "TotalTrained");
+        }
+
+        function sotManualDailyEaglsFieldName() {
+          return String(SOT_MANUAL_DAILY_EAGLS_KEYS[0] || "DailyEagls");
+        }
+
+        function sotManualRowOrderFieldName() {
+          return String(SOT_MANUAL_ROW_ORDER_KEYS[0] || "RowOrder");
+        }
+
+        function sotManualRowFromListItem(item) {
+          if (!item) return null;
+          const trainingDateRaw = sotManualFieldFromItem(item, SOT_MANUAL_TRAINING_DATE_KEYS);
+          const totalTrainedRaw = sotManualFieldFromItem(item, SOT_MANUAL_TOTAL_TRAINED_KEYS);
+          const dailyEaglsRaw = sotManualFieldFromItem(item, SOT_MANUAL_DAILY_EAGLS_KEYS);
+          const rowOrderRaw = sotManualFieldFromItem(item, SOT_MANUAL_ROW_ORDER_KEYS);
+          let totalTrained = "";
+          if (totalTrainedRaw !== null && totalTrainedRaw !== undefined && totalTrainedRaw !== "") {
+            const n = Number(totalTrainedRaw);
+            totalTrained = isNaN(n) ? "" : n;
+          }
+          return {
+            id: item.Id != null ? item.Id : null,
+            trainingDate: isoDateForDateInput(trainingDateRaw),
+            totalTrained: totalTrained,
+            dailyEagls: dailyEaglsRaw != null ? String(dailyEaglsRaw) : "",
+            rowOrder: rowOrderRaw != null && rowOrderRaw !== "" ? Number(rowOrderRaw) : 0,
+          };
+        }
+
+        function sotManualRowIsEmpty(row) {
+          if (!row) return true;
+          return !row.trainingDate && (row.totalTrained === "" || row.totalTrained == null) && !String(row.dailyEagls || "").trim();
+        }
+
+        async function fetchSotManualTrainingRows(pw, reportMonth) {
+          if (!pw || !sotManualListConfigured()) return [];
+          const seg = sotManualListApiPath();
+          const month = String(reportMonth || "").trim();
+          if (!month) return [];
+          const filterField = sotManualReportMonthFieldName();
+          const filter = encodeURIComponent(filterField + " eq '" + month.replace(/'/g, "''") + "'");
+          const orderField = sotManualRowOrderFieldName();
+          let data;
+          try {
+            data = await spFetch(
+              `/_api/web/${seg}/items?$top=200&$filter=${filter}&$orderby=${encodeURIComponent(orderField + " asc")}`,
+              {},
+              pw,
+            );
+          } catch (e) {
+            try {
+              data = await spFetch(`/_api/web/${seg}/items?$top=200&$filter=${filter}`, {}, pw);
+            } catch (e2) {
+              log("SOT manual training fetch failed:\n" + (e2.message || String(e2)), "warn");
+              throw e2;
+            }
+          }
+          const rows = ((data && data.value) || [])
+            .map(sotManualRowFromListItem)
+            .filter(Boolean)
+            .sort(function (a, b) {
+              return (a.rowOrder || 0) - (b.rowOrder || 0);
+            });
+          return rows;
+        }
+
+        function getSotManualTrainingTbody() {
+          const section = document.getElementById("reportsSotManualSection");
+          if (!section) return null;
+          const table = section.querySelector("table.reports-sot-manual-table");
+          return table ? table.querySelector("tbody") : null;
+        }
+
+        function setSotManualTrainingStatus(message, tone) {
+          const el = document.getElementById("reportsSotManualStatus");
+          if (!el) return;
+          el.textContent = message || "";
+          el.classList.toggle("reports-sot-manual-status--err", tone === "err");
+        }
+
+        function buildSotManualTrainingRow(rowData) {
+          rowData = rowData || {};
           const tr = document.createElement("tr");
-          SOT_MANUAL_TRAINING_COLUMNS.forEach(function (col) {
-            const td = document.createElement("td");
-            td.contentEditable = "true";
-            td.setAttribute("data-placeholder", col.placeholder || "");
-            td.dataset.manualKey = col.key;
-            tr.appendChild(td);
-          });
+          if (rowData.id != null) tr.dataset.itemId = String(rowData.id);
+
+          const tdDates = document.createElement("td");
+          const dateInput = document.createElement("input");
+          dateInput.type = "date";
+          dateInput.className = "reports-sot-manual-input reports-sot-manual-input--date";
+          dateInput.value = rowData.trainingDate || "";
+          tdDates.appendChild(dateInput);
+          tr.appendChild(tdDates);
+
+          const tdTrained = document.createElement("td");
+          const numInput = document.createElement("input");
+          numInput.type = "number";
+          numInput.min = "0";
+          numInput.step = "1";
+          numInput.className = "reports-sot-manual-input reports-sot-manual-input--number";
+          if (rowData.totalTrained !== "" && rowData.totalTrained != null) numInput.value = String(rowData.totalTrained);
+          tdTrained.appendChild(numInput);
+          tr.appendChild(tdTrained);
+
+          const tdEagls = document.createElement("td");
+          const ta = document.createElement("textarea");
+          ta.className = "reports-sot-manual-input reports-sot-manual-textarea";
+          ta.rows = 3;
+          ta.value = rowData.dailyEagls || "";
+          tdEagls.appendChild(ta);
+          tr.appendChild(tdEagls);
+
           const tdActions = document.createElement("td");
           tdActions.className = "reports-sot-manual-row-actions reports-no-print";
           const del = document.createElement("button");
@@ -13803,6 +13964,141 @@
           return tr;
         }
 
+        function populateSotManualTrainingTable(rows) {
+          const tbody = getSotManualTrainingTbody();
+          if (!tbody) return;
+          tbody.innerHTML = "";
+          const list = Array.isArray(rows) ? rows.slice() : [];
+          if (!list.length) {
+            for (let i = 0; i < SOT_MANUAL_TRAINING_DEFAULT_ROWS; i++) {
+              tbody.appendChild(buildSotManualTrainingRow());
+            }
+            return;
+          }
+          list.forEach(function (row) {
+            tbody.appendChild(buildSotManualTrainingRow(row));
+          });
+        }
+
+        function collectSotManualRowsFromUi() {
+          const tbody = getSotManualTrainingTbody();
+          if (!tbody) return [];
+          const out = [];
+          tbody.querySelectorAll("tr").forEach(function (tr, index) {
+            const dateInput = tr.querySelector("input.reports-sot-manual-input--date");
+            const numInput = tr.querySelector("input.reports-sot-manual-input--number");
+            const ta = tr.querySelector("textarea.reports-sot-manual-textarea");
+            const row = {
+              id: tr.dataset.itemId ? Number(tr.dataset.itemId) : null,
+              trainingDate: dateInput ? String(dateInput.value || "").trim() : "",
+              totalTrained: "",
+              dailyEagls: ta ? String(ta.value || "").trim() : "",
+              rowOrder: index + 1,
+            };
+            if (numInput && numInput.value !== "") {
+              const n = Number(numInput.value);
+              row.totalTrained = isNaN(n) ? "" : n;
+            }
+            out.push(row);
+          });
+          return out;
+        }
+
+        async function loadSotManualTrainingForMonth(reportMonth) {
+          const pw = hubSession.pw;
+          if (!sotManualListConfigured()) {
+            populateSotManualTrainingTable([]);
+            setSotManualTrainingStatus(
+              "Configure the " + LIST_SOT_MONTHLY_MANUAL + " SharePoint list to save these rows.",
+              "warn",
+            );
+            return;
+          }
+          if (!pw) {
+            populateSotManualTrainingTable([]);
+            setSotManualTrainingStatus("Hub not ready. Refresh the Personnel Roster first.", "warn");
+            return;
+          }
+          setSotManualTrainingStatus("Loading saved rows...", "");
+          try {
+            const rows = await fetchSotManualTrainingRows(pw, reportMonth);
+            populateSotManualTrainingTable(rows);
+            setSotManualTrainingStatus(
+              rows.length
+                ? "Loaded " + rows.length + " saved row" + (rows.length === 1 ? "" : "s") + " for " + formatYearMonthLabel(reportMonth) + "."
+                : "No saved rows for " + formatYearMonthLabel(reportMonth) + ". Enter values and click Save.",
+              "",
+            );
+          } catch (e) {
+            populateSotManualTrainingTable([]);
+            setSotManualTrainingStatus(
+              "Could not load saved rows: " + (e.message || String(e)).slice(0, 160),
+              "err",
+            );
+          }
+        }
+
+        async function saveSotManualTrainingForMonth(reportMonth) {
+          const pw = hubSession.pw;
+          if (!pw) {
+            setSotManualTrainingStatus("Hub not ready. Refresh the Personnel Roster first.", "err");
+            return false;
+          }
+          if (!sotManualListConfigured()) {
+            setSotManualTrainingStatus(LIST_SOT_MONTHLY_MANUAL + " list is not configured.", "err");
+            return false;
+          }
+          const month = String(reportMonth || "").trim();
+          if (!month) {
+            setSotManualTrainingStatus("Select a report month first.", "err");
+            return false;
+          }
+          const seg = sotManualListApiPath();
+          const uiRows = collectSotManualRowsFromUi().filter(function (row) {
+            return !sotManualRowIsEmpty(row);
+          });
+          const saveBtn = document.getElementById("reportsSotManualSave");
+          if (saveBtn) saveBtn.disabled = true;
+          setSotManualTrainingStatus("Saving...", "");
+          try {
+            const existing = await fetchSotManualTrainingRows(pw, month);
+            for (let i = 0; i < existing.length; i++) {
+              const item = existing[i];
+              if (item && item.id != null) {
+                await spFetch(`/_api/web/${seg}/items(${item.id})`, { method: "DELETE" }, pw);
+              }
+            }
+            for (let i = 0; i < uiRows.length; i++) {
+              const row = uiRows[i];
+              const payload = {};
+              payload[sotManualReportMonthFieldName()] = month;
+              payload[sotManualRowOrderFieldName()] = i + 1;
+              if (row.trainingDate) {
+                const d = parseWeaponsCertCalendarDate(row.trainingDate);
+                payload[sotManualTrainingDateFieldName()] = d ? spDateTimeFromCalendarDate(d) : null;
+              } else {
+                payload[sotManualTrainingDateFieldName()] = null;
+              }
+              payload[sotManualTotalTrainedFieldName()] =
+                row.totalTrained === "" || row.totalTrained == null ? null : Number(row.totalTrained);
+              payload[sotManualDailyEaglsFieldName()] = row.dailyEagls || "";
+              await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            }
+            await loadSotManualTrainingForMonth(month);
+            setSotManualTrainingStatus(
+              "Saved " + uiRows.length + " row" + (uiRows.length === 1 ? "" : "s") + " for " + formatYearMonthLabel(month) + ".",
+              "",
+            );
+            return true;
+          } catch (e) {
+            setSotManualTrainingStatus("Save failed: " + (e.message || String(e)).slice(0, 180), "err");
+            log("SOT manual training save failed:\n" + (e.message || String(e)), "err");
+            return false;
+          } finally {
+            if (saveBtn) saveBtn.disabled = false;
+          }
+        }
+
         function buildSotManualTrainingSection() {
           const wrap = document.createElement("div");
           wrap.className = "reports-sot-manual-section";
@@ -13813,20 +14109,35 @@
           title.textContent = "MONTHLY TRAINING CONDUCTED";
           wrap.appendChild(title);
 
+          const status = document.createElement("p");
+          status.className = "reports-sot-manual-status reports-no-print";
+          status.id = "reportsSotManualStatus";
+          wrap.appendChild(status);
+
           const toolbar = document.createElement("div");
           toolbar.className = "reports-sot-manual-toolbar reports-no-print";
           const addBtn = document.createElement("button");
           addBtn.type = "button";
           addBtn.className = "btn-secondary";
           addBtn.textContent = "Add line";
+          const saveBtn = document.createElement("button");
+          saveBtn.type = "button";
+          saveBtn.className = "btn-primary";
+          saveBtn.id = "reportsSotManualSave";
+          saveBtn.textContent = "Save rows";
           toolbar.appendChild(addBtn);
+          toolbar.appendChild(saveBtn);
           wrap.appendChild(toolbar);
 
           const table = document.createElement("table");
           table.className = "reports-sot-manual-table";
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
-          SOT_MANUAL_TRAINING_COLUMNS.forEach(function (col) {
+          [
+            { label: "Training Dates" },
+            { label: "Total Number Trained" },
+            { label: "Daily EAGLs Requested" },
+          ].forEach(function (col) {
             const th = document.createElement("th");
             th.textContent = col.label;
             trHead.appendChild(th);
@@ -13847,6 +14158,9 @@
 
           addBtn.addEventListener("click", function () {
             tbody.appendChild(buildSotManualTrainingRow());
+          });
+          saveBtn.addEventListener("click", function () {
+            void saveSotManualTrainingForMonth(reportsSession.selectedMonth || selectedSotMonthKey());
           });
 
           return wrap;

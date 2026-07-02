@@ -1935,21 +1935,37 @@
       #sp-pip-ui table.reports-sot-manual-table td {
         color: rgba(210, 255, 224, 0.92);
       }
-      #sp-pip-ui table.reports-sot-manual-table td[contenteditable="true"] {
-        min-width: 90px;
-        min-height: 22px;
-        cursor: text;
+      #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-input {
+        width: 100%;
+        box-sizing: border-box;
+        background: rgba(8, 22, 16, 0.45);
+        border: 1px solid rgba(30, 74, 54, 0.55);
+        color: rgba(210, 255, 224, 0.92);
+        padding: 6px 8px;
+        font: inherit;
+        border-radius: 4px;
+      }
+      #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-input:focus {
         outline: none;
+        border-color: rgba(60, 255, 122, 0.55);
+        box-shadow: 0 0 0 1px rgba(60, 255, 122, 0.25);
+      }
+      #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-input--number {
+        max-width: 120px;
+      }
+      #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-textarea {
+        min-height: 4.5em;
+        resize: vertical;
         white-space: pre-wrap;
-        word-break: break-word;
+        line-height: 1.35;
       }
-      #sp-pip-ui table.reports-sot-manual-table td[contenteditable="true"]:focus {
-        background: rgba(60, 255, 122, 0.08);
-        box-shadow: inset 0 0 0 1px rgba(60, 255, 122, 0.35);
+      #sp-pip-ui .reports-sot-manual-status {
+        margin: 0 0 10px;
+        font-size: 12px;
+        color: rgba(180, 220, 195, 0.85);
       }
-      #sp-pip-ui table.reports-sot-manual-table td[contenteditable="true"]:empty::before {
-        content: attr(data-placeholder);
-        color: rgba(160, 200, 175, 0.4);
+      #sp-pip-ui .reports-sot-manual-status--err {
+        color: #ff9a9a;
       }
       #sp-pip-ui .reports-sot-manual-row-actions {
         width: 34px;
@@ -2062,8 +2078,19 @@
         #sp-pip-ui table.reports-sot-manual-table th {
           background: #eee !important;
         }
-        #sp-pip-ui table.reports-sot-manual-table td[contenteditable="true"]:empty::before {
-          content: "" !important;
+        #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-input,
+        #sp-pip-ui table.reports-sot-manual-table .reports-sot-manual-textarea {
+          border: none !important;
+          background: transparent !important;
+          color: #000 !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+          resize: none !important;
+          -webkit-appearance: none;
+          appearance: none;
+        }
+        #sp-pip-ui .reports-sot-manual-status {
+          display: none !important;
         }
         #sp-pip-ui .roster-wrap {
           overflow-x: visible !important;
