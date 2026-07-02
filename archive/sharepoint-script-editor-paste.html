@@ -3530,7 +3530,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260702g";
+        const HUB_BUILD_ID = "20260702h";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -13459,8 +13459,14 @@
             '.reports-sot-pdf-doc table td { color: #000000; }' +
             '.reports-sot-pdf-doc td.reports-sot-num { text-align: center; }' +
             '.reports-sot-pdf-doc .reports-sot-pdf-multiline { white-space: pre-wrap; word-break: break-word; }' +
+            '.reports-sot-pdf-doc .reports-sot-pdf-signatures { margin-top: 24px; break-inside: avoid; page-break-inside: avoid; }' +
+            '.reports-sot-pdf-doc table.reports-sot-pdf-sig-table { width: 100%; border-collapse: collapse; margin: 0; }' +
+            '.reports-sot-pdf-doc table.reports-sot-pdf-sig-table td { border: none; width: 50%; padding: 26px 18px 0; vertical-align: bottom; }' +
+            '.reports-sot-pdf-doc .reports-sot-pdf-sig-line { border-top: 1.5px solid #000000; padding-top: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #1f3864; }' +
+            '.reports-sot-pdf-doc .reports-sot-pdf-sig-date { margin-top: 10px; font-size: 11px; color: #000000; }' +
             '.reports-sot-pdf-doc *, .reports-sot-pdf-doc { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
             '.reports-sot-pdf-doc .reports-sot-section-block, .reports-sot-pdf-doc table, .reports-sot-pdf-doc tr { break-inside: avoid; page-break-inside: avoid; }' +
+            '.reports-sot-pdf-scale-wrap { transform-origin: top left; }' +
             '@page { size: portrait; margin: 0.4in; }' +
             '@media print { html, body { background: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }'
           );
@@ -13589,7 +13595,40 @@
           doc.appendChild(upcomingTitle);
           doc.appendChild(buildSotStaticUpcomingTable());
 
+          doc.appendChild(buildSotPdfSignatureBlock());
+
           return doc;
+        }
+
+        function buildSotPdfSignatureBlock() {
+          const wrap = document.createElement("div");
+          wrap.className = "reports-sot-pdf-signatures";
+
+          const table = document.createElement("table");
+          table.className = "reports-sot-pdf-sig-table";
+          const tbody = document.createElement("tbody");
+          const tr = document.createElement("tr");
+
+          [
+            { label: "NCOIC OF TRAINING" },
+            { label: "COMMANDER" },
+          ].forEach(function (block) {
+            const td = document.createElement("td");
+            const line = document.createElement("div");
+            line.className = "reports-sot-pdf-sig-line";
+            line.textContent = block.label;
+            const date = document.createElement("div");
+            date.className = "reports-sot-pdf-sig-date";
+            date.textContent = "Reviewed Date: ______________";
+            td.appendChild(line);
+            td.appendChild(date);
+            tr.appendChild(td);
+          });
+
+          tbody.appendChild(tr);
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
         }
 
         function triggerSotThemedPdf() {
@@ -13632,14 +13671,33 @@
           win.onafterprint = cleanup;
 
           window.setTimeout(function () {
-            try {
-              win.focus();
-              win.print();
-            } catch (e) {
-              cleanup();
-            }
-            window.setTimeout(cleanup, 3000);
+            fitSotPdfToOnePage(contentNode);
+            window.setTimeout(function () {
+              try {
+                win.focus();
+                win.print();
+              } catch (e) {
+                cleanup();
+              }
+              window.setTimeout(cleanup, 3000);
+            }, 80);
           }, 450);
+        }
+
+        function fitSotPdfToOnePage(doc) {
+          if (!doc) return;
+          // Portrait Letter (8.5in x 11in) with 0.4in @page margins; reference 96dpi.
+          const usableHeightPx = (11 - 0.8) * 96;
+          const usableWidthPx = (8.5 - 0.8) * 96;
+          doc.style.transform = "none";
+          doc.style.width = "";
+          const naturalHeight = doc.scrollHeight;
+          if (!naturalHeight || naturalHeight <= usableHeightPx) return;
+          const scale = Math.max(0.4, usableHeightPx / naturalHeight);
+          doc.style.transformOrigin = "top left";
+          doc.style.transform = "scale(" + scale + ")";
+          // Widen before scaling so the content still fills the page width once scaled down.
+          doc.style.width = usableWidthPx / scale + "px";
         }
 
         function renderMonthlySotScreenReport(officeGroups, yyyyMm, phaseOneStats) {
