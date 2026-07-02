@@ -3530,7 +3530,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260702e";
+        const HUB_BUILD_ID = "20260702f";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -4027,7 +4027,7 @@
             id: "status-of-training",
             title: "Status of Training",
             subtitle:
-              "Active snapshot with Personnel names, or a monthly office summary for printing (no names).",
+              "Monthly weapons and AUoF/By-Law training readout with manual training inputs. Print or export a themed PDF.",
             badge: "SOT",
             implemented: true,
             printable: true,
@@ -12036,7 +12036,7 @@
           const id = reportDef.id;
           const signedIds = ["mql-report", "heavy-weapons", "cleo-report", "post-rc-report", "bls-report", "tccc-report"];
           const showSigned = reportDef.printable && signedIds.indexOf(id) >= 0;
-          const showExport = reportDef.printable && id === "mql-pdf";
+          const showExport = reportDef.printable && (id === "mql-pdf" || id === "status-of-training");
           if (reportsPrintBtn) {
             if (id === "status-of-training") {
               updateSotPrintButtonLabel();
@@ -13442,6 +13442,206 @@
           return wrap;
         }
 
+        function sotThemedPdfCss() {
+          return (
+            'html, body { margin: 0 !important; padding: 0 !important; background: #050807 !important; }' +
+            'body { font-family: "Consolas", "Monaco", "Lucida Console", "Courier New", monospace; }' +
+            '.reports-sot-pdf-doc { color: #3cff7a; background: radial-gradient(120% 80% at 50% 0%, #0d1f16 0%, #050807 55%); padding: 22px 26px; min-height: 100%; }' +
+            '.reports-sot-pdf-header { border-bottom: 2px solid #1e4a36; margin: 0 0 18px; padding-bottom: 12px; }' +
+            '.reports-sot-pdf-header h1 { margin: 0 0 8px; font-size: 20px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #3cff7a; }' +
+            '.reports-sot-pdf-header p { margin: 0 0 3px; font-size: 12px; color: #ffcc66; }' +
+            '.reports-sot-pdf-doc .reports-office-meta { color: rgba(210, 255, 224, 0.8); font-size: 12px; margin: 0 0 10px; }' +
+            '.reports-sot-pdf-doc h4.reports-sot-weapons-overdue-title { margin: 20px 0 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffcc66; }' +
+            '.reports-sot-pdf-doc .reports-sot-section-block { margin: 0 0 6px; }' +
+            '.reports-sot-pdf-doc table.reports-sot-table, .reports-sot-pdf-doc table.reports-sot-manual-table { width: 100%; border-collapse: collapse; margin: 0 0 16px; font-size: 12px; }' +
+            '.reports-sot-pdf-doc table th, .reports-sot-pdf-doc table td { border: 1px solid #1f8f47; padding: 6px 9px; text-align: left; vertical-align: top; }' +
+            '.reports-sot-pdf-doc table th { color: #ffcc66; background: #08160f; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }' +
+            '.reports-sot-pdf-doc table td { color: rgba(210, 255, 224, 0.92); }' +
+            '.reports-sot-pdf-doc td.reports-sot-num { text-align: center; }' +
+            '.reports-sot-pdf-doc .reports-sot-pdf-multiline { white-space: pre-wrap; word-break: break-word; }' +
+            '.reports-sot-pdf-doc *, .reports-sot-pdf-doc { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
+            '.reports-sot-pdf-doc .reports-sot-section-block, .reports-sot-pdf-doc table, .reports-sot-pdf-doc tr { break-inside: avoid; page-break-inside: avoid; }' +
+            '@page { size: portrait; margin: 0.4in; }' +
+            '@media print { html, body { background: #050807 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }'
+          );
+        }
+
+        function buildSotStaticTable(columns, rows, emptyText) {
+          const wrap = document.createElement("div");
+          wrap.className = "reports-sot-section-block";
+          const table = document.createElement("table");
+          table.className = "reports-sot-manual-table";
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          columns.forEach(function (col) {
+            const th = document.createElement("th");
+            th.textContent = col.label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          if (!rows.length) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.setAttribute("colspan", String(columns.length));
+            td.textContent = emptyText || "No data.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+          } else {
+            rows.forEach(function (row) {
+              const tr = document.createElement("tr");
+              columns.forEach(function (col) {
+                const td = document.createElement("td");
+                if (col.numeric) td.className = "reports-sot-num";
+                const val = row[col.key];
+                const text = val === null || val === undefined || val === "" ? "-" : String(val);
+                if (col.multiline) {
+                  td.className = (td.className ? td.className + " " : "") + "reports-sot-pdf-multiline";
+                  td.textContent = text;
+                } else {
+                  td.textContent = text;
+                }
+                tr.appendChild(td);
+              });
+              tbody.appendChild(tr);
+            });
+          }
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        function buildSotStaticManualTable() {
+          const rows = collectSotManualRowsFromUi().filter(function (r) {
+            return !sotManualRowIsEmpty(r);
+          });
+          return buildSotStaticTable(
+            [
+              { key: "dates", label: "Training Dates" },
+              { key: "trained", label: "Total Number Trained", numeric: true },
+              { key: "eagls", label: "Daily EAGLs Requested", multiline: true },
+            ],
+            rows.map(function (r) {
+              return {
+                dates: r.trainingDate ? formatWeaponsCertDisplayDate(r.trainingDate) : "",
+                trained: r.totalTrained === "" || r.totalTrained == null ? "" : r.totalTrained,
+                eagls: r.dailyEagls || "",
+              };
+            }),
+            "No monthly training entered.",
+          );
+        }
+
+        function buildSotStaticUpcomingTable() {
+          const rows = collectSotUpcomingRowsFromUi().filter(function (r) {
+            return !sotUpcomingRowIsEmpty(r);
+          });
+          return buildSotStaticTable(
+            [
+              { key: "months", label: "Months" },
+              { key: "training", label: "Training", multiline: true },
+            ],
+            rows.map(function (r) {
+              return { months: r.months || "", training: r.training || "" };
+            }),
+            "No upcoming training entered.",
+          );
+        }
+
+        function buildSotThemedPdfDocument(yyyyMm) {
+          const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+          const weaponsRows = Array.isArray(reportsSession.weaponsRows) ? reportsSession.weaponsRows : [];
+          const bylawRows = Array.isArray(reportsSession.bylawRows) ? reportsSession.bylawRows : [];
+
+          const doc = document.createElement("div");
+          doc.className = "reports-sot-pdf-doc";
+
+          const header = document.createElement("div");
+          header.className = "reports-sot-pdf-header";
+          const h1 = document.createElement("h1");
+          h1.textContent = "STATUS OF TRAINING";
+          header.appendChild(h1);
+          const squadron = document.createElement("p");
+          squadron.textContent = "SQUADRON: " + String(SOT_SQUADRON_LABEL || "88 SFS");
+          header.appendChild(squadron);
+          const dataMonth = document.createElement("p");
+          dataMonth.textContent = "DATA MONTH: " + formatYearMonthLabel(yyyyMm);
+          header.appendChild(dataMonth);
+          const generated = document.createElement("p");
+          generated.textContent =
+            "Report generated: " + formatWeaponsCertDisplayDate(isoDateFromCalendarDate(new Date()));
+          header.appendChild(generated);
+          doc.appendChild(header);
+
+          doc.appendChild(renderSotWeaponsQualSection(personRows, weaponsRows, yyyyMm));
+          doc.appendChild(renderSotAuofBylawTrainingSection(personRows, bylawRows, yyyyMm));
+
+          const manualTitle = document.createElement("h4");
+          manualTitle.className = "reports-sot-weapons-overdue-title";
+          manualTitle.textContent = "MONTHLY TRAINING CONDUCTED";
+          doc.appendChild(manualTitle);
+          doc.appendChild(buildSotStaticManualTable());
+
+          const upcomingTitle = document.createElement("h4");
+          upcomingTitle.className = "reports-sot-weapons-overdue-title";
+          upcomingTitle.textContent = "UPCOMING TRAINING";
+          doc.appendChild(upcomingTitle);
+          doc.appendChild(buildSotStaticUpcomingTable());
+
+          return doc;
+        }
+
+        function triggerSotThemedPdf() {
+          const yyyyMm = reportsSession.selectedMonth || selectedSotMonthKey();
+          const contentNode = buildSotThemedPdfDocument(yyyyMm);
+
+          const iframe = document.createElement("iframe");
+          iframe.setAttribute("title", "Status of Training PDF");
+          iframe.setAttribute("aria-hidden", "true");
+          iframe.style.cssText =
+            "position:fixed;left:-10000px;top:0;width:8.5in;height:11in;border:0;margin:0;padding:0;opacity:0;pointer-events:none";
+          document.body.appendChild(iframe);
+
+          const win = iframe.contentWindow;
+          const idoc = iframe.contentDocument || (win && win.document);
+          if (!idoc || !win) {
+            iframe.remove();
+            return;
+          }
+
+          idoc.open();
+          idoc.write(
+            '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Status of Training</title></head><body></body></html>',
+          );
+          idoc.close();
+
+          const printStyle = idoc.createElement("style");
+          printStyle.textContent = sotThemedPdfCss();
+          idoc.head.appendChild(printStyle);
+          idoc.body.appendChild(contentNode);
+
+          let cleaned = false;
+          const cleanup = function () {
+            if (cleaned) return;
+            cleaned = true;
+            try {
+              if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+            } catch (_) {}
+          };
+          win.onafterprint = cleanup;
+
+          window.setTimeout(function () {
+            try {
+              win.focus();
+              win.print();
+            } catch (e) {
+              cleanup();
+            }
+            window.setTimeout(cleanup, 3000);
+          }, 450);
+        }
+
         function renderMonthlySotScreenReport(officeGroups, yyyyMm, phaseOneStats) {
           const wrap = document.createElement("div");
           wrap.className = "reports-sot-monthly-screen";
@@ -13557,15 +13757,22 @@
         function syncSotReportUiState() {
           const root = document.getElementById("sp-pip-ui");
           if (!root) return;
-          root.classList.toggle("sot-monthly-active", reportsSession.activeReportId === "status-of-training");
+          // The themed Status of Training PDF renders in its own isolated iframe, so the
+          // legacy on-screen ".sot-monthly-active" print layout is no longer used. Keep it
+          // off at all times so the hub header, reports hub, and back navigation stay visible.
+          root.classList.remove("sot-monthly-active");
         }
 
         function updateSotPrintButtonLabel() {
-          if (!reportsPrintBtn) return;
           if (reportsSession.activeReportId !== "status-of-training") return;
-          reportsPrintBtn.textContent = "Print report";
-          reportsPrintBtn.hidden = false;
-          if (reportsExportBtn) reportsExportBtn.hidden = true;
+          if (reportsPrintBtn) {
+            reportsPrintBtn.textContent = "Print report";
+            reportsPrintBtn.hidden = false;
+          }
+          if (reportsExportBtn) {
+            reportsExportBtn.textContent = "Generate PDF";
+            reportsExportBtn.hidden = false;
+          }
         }
 
         function refreshMonthlySotView() {
@@ -16113,7 +16320,7 @@
           const def = reportTypeById(reportsSession.activeReportId);
           if (!def || !def.printable) return;
           if (def.id === "status-of-training") {
-            window.print();
+            triggerSotThemedPdf();
             return;
           }
           const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
@@ -16192,7 +16399,12 @@
 
         async function exportActiveReport() {
           const def = reportTypeById(reportsSession.activeReportId);
-          if (!def || def.id !== "mql-pdf" || !def.printable) return;
+          if (!def || !def.printable) return;
+          if (def.id === "status-of-training") {
+            triggerSotThemedPdf();
+            return;
+          }
+          if (def.id !== "mql-pdf") return;
           await printActiveReport();
         }
 
