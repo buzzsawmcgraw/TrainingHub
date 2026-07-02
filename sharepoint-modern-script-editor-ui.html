@@ -3439,7 +3439,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260630g";
+        const HUB_BUILD_ID = "20260630i";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -3886,6 +3886,41 @@
           { label: "M870", match: ["M870"] },
           { label: "BAT COURSE", match: ["BAT COURSE", "BAT", "BATON"] },
         ];
+        const SOT_AUOF_BYLAW_MATCH_LABELS = ["AUOF", "AUoF By Law", "AUoF By-Law", "Annual Use of Force", "Use of Force"];
+        /** Fixed AUoF / By-Law annual training rows for Status of Training. */
+        const SOT_AUOF_BYLAW_TRAINING_DEFS = [
+          { label: "Phase 1 Training", kind: "phase1" },
+          {
+            label: "Alpha Annual Training",
+            kind: "office",
+            offices: ["S3OFA"],
+          },
+          {
+            label: "Bravo Annual Training",
+            kind: "office",
+            offices: ["S3OFB"],
+          },
+          {
+            label: "Charlie Annual Training",
+            kind: "office",
+            offices: ["S3OFC"],
+          },
+          {
+            label: "Delta Annual Training",
+            kind: "office",
+            offices: ["S3OFD"],
+          },
+          {
+            label: "Echo Annual Training",
+            kind: "office",
+            offices: ["S3OFE"],
+          },
+          {
+            label: "Staff Annual Training",
+            kind: "staff",
+          },
+        ];
+        const SOT_AUOF_FLIGHT_OFFICES = ["S3OFA", "S3OFB", "S3OFC", "S3OFD", "S3OFE"];
 
         /** Hub Reports menu (Reports nav). Set implemented:true when the report renderer is wired. */
         const HUB_REPORT_TYPES = [
@@ -12547,6 +12582,109 @@
           return wrap;
         }
 
+        function normalizeSotOfficeKey(office) {
+          return String(office || "").trim().toUpperCase();
+        }
+
+        function personInSotAuofTrainingCohort(person, rowDef) {
+          if (!person || person.Id == null || !rowDef) return false;
+          const office = normalizeSotOfficeKey(personOfficeKey(person));
+          const status = personStatusLabel(person);
+          if (rowDef.kind === "phase1") return personnelStatusIsPhaseOne(status);
+          if (rowDef.kind === "office") {
+            return (rowDef.offices || []).some(function (o) {
+              return office === normalizeSotOfficeKey(o);
+            });
+          }
+          if (rowDef.kind === "staff") {
+            if (!office || office === "S1") return false;
+            return SOT_AUOF_FLIGHT_OFFICES.indexOf(office) === -1;
+          }
+          return false;
+        }
+
+        function bylawRowMatchesSotAuofTrainingRow(row) {
+          const label = String(bylawLabelFromRow(row) || "").trim().toUpperCase();
+          if (!label) return false;
+          return (Array.isArray(SOT_AUOF_BYLAW_MATCH_LABELS) ? SOT_AUOF_BYLAW_MATCH_LABELS : []).some(function (token) {
+            const t = String(token || "").trim().toUpperCase();
+            return t && (label === t || label.indexOf(t) !== -1);
+          });
+        }
+
+        function personCompletedSotAuofRowInMonth(personBylawRows, rowDef, yyyyMm, bylawQualKeys) {
+          const rows = Array.isArray(personBylawRows) ? personBylawRows : [];
+          return rows.some(function (row) {
+            if (!trainingRowQualInMonth(row, yyyyMm, bylawQualKeys)) return false;
+            if (sotIsExcludedCatalogLabel(bylawLabelFromRow(row))) return false;
+            return bylawRowMatchesSotAuofTrainingRow(row);
+          });
+        }
+
+        function buildSotAuofBylawTrainingTableData(personRows, bylawRows, yyyyMm) {
+          const monthRange = formatSotMonthDayRange(yyyyMm);
+          const bylawQualKeys = bylawQualDateKeys();
+          const defs = Array.isArray(SOT_AUOF_BYLAW_TRAINING_DEFS) ? SOT_AUOF_BYLAW_TRAINING_DEFS : [];
+
+          return defs.map(function (rowDef) {
+            const cohort = (Array.isArray(personRows) ? personRows : []).filter(function (person) {
+              return personCountsForSotPosture(person) && personInSotAuofTrainingCohort(person, rowDef);
+            });
+            const required = cohort.length;
+            let completedMonth = 0;
+
+            cohort.forEach(function (person) {
+              const pid = String(person.Id);
+              const personBylaw = (Array.isArray(bylawRows) ? bylawRows : []).filter(function (row) {
+                return bylawPersonnelIdFromItem(row) === pid && sotBylawRowIncluded(row);
+              });
+              if (personCompletedSotAuofRowInMonth(personBylaw, rowDef, yyyyMm, bylawQualKeys)) {
+                completedMonth += 1;
+              }
+            });
+
+            return {
+              training: rowDef.label,
+              monthRange: monthRange,
+              required: required,
+              completedMonth: completedMonth,
+              overdue: Math.max(0, required - completedMonth),
+            };
+          });
+        }
+
+        function renderSotAuofBylawTrainingSection(personRows, bylawRows, yyyyMm, opts) {
+          opts = opts || {};
+          const wrap = document.createElement("div");
+          wrap.className =
+            "reports-sot-auof-section" + (opts.print ? " reports-sot-auof-section--print" : "");
+          if (opts.id) wrap.id = opts.id;
+
+          const title = document.createElement("h4");
+          title.className = "reports-sot-weapons-overdue-title";
+          title.textContent = "SCHEDULED ANNUAL AUoF/BY LAW TRAINING STATISTICS";
+          wrap.appendChild(title);
+
+          const tableSection = document.createElement("div");
+          tableSection.className = "reports-sot-section-block";
+          tableSection.appendChild(
+            renderSotDataTable(
+              [
+                { key: "training", label: "Training" },
+                { key: "monthRange", label: "Training Dates" },
+                { key: "required", label: "Required", numeric: true },
+                { key: "completedMonth", label: "completed trng", numeric: true },
+                { key: "overdue", label: "Over Due", numeric: true },
+              ],
+              buildSotAuofBylawTrainingTableData(personRows, bylawRows, yyyyMm),
+              "No scheduled AUoF / By-Law training data.",
+            ),
+          );
+          wrap.appendChild(tableSection);
+
+          return wrap;
+        }
+
         function buildOfficeBylawItemStats(personRows, bylawRows, officeKey, yyyyMm) {
           const people = (Array.isArray(personRows) ? personRows : []).filter(function (person) {
             return person && personOfficeKey(person) === officeKey;
@@ -13133,7 +13271,7 @@
           return rows;
         }
 
-        function renderMonthlySotPrintReport(personRows, officeGroups, yyyyMm, phaseOneStats, weaponsRows) {
+        function renderMonthlySotPrintReport(personRows, officeGroups, yyyyMm, phaseOneStats, weaponsRows, bylawRows) {
           const wrap = document.createElement("div");
           wrap.className = "reports-sot-monthly-print";
           wrap.appendChild(buildMonthlySotPrintHeader(yyyyMm));
@@ -13145,8 +13283,15 @@
               { print: true },
             ),
           );
+          wrap.appendChild(
+            renderSotAuofBylawTrainingSection(
+              personRows,
+              Array.isArray(bylawRows) ? bylawRows : [],
+              yyyyMm,
+              { print: true },
+            ),
+          );
 
-          const rollup = buildSquadronMonthlyRollup(officeGroups || []);
           const personnel = buildSquadronPersonnelAccounting(personRows);
 
           const personnelSection = document.createElement("div");
@@ -13166,26 +13311,6 @@
             ),
           );
           wrap.appendChild(personnelSection);
-
-          const scheduledSection = document.createElement("div");
-          scheduledSection.className = "reports-sot-section-block";
-          const scheduledTitle = document.createElement("h4");
-          scheduledTitle.className = "reports-sot-section-title";
-          scheduledTitle.textContent = "Scheduled annual AUoF / By-Law training statistics";
-          scheduledSection.appendChild(scheduledTitle);
-          scheduledSection.appendChild(
-            renderSotDataTable(
-              [
-                { key: "item", label: "Training" },
-                { key: "monthRange", label: "Training dates" },
-                { key: "required", label: "Required", numeric: true },
-                { key: "completedMonth", label: "Completed trng", numeric: true },
-              ],
-              buildSquadronPrintTrainingRows(rollup, phaseOneStats, yyyyMm),
-              "No training statistics.",
-            ),
-          );
-          wrap.appendChild(scheduledSection);
 
           const sig = document.createElement("p");
           sig.className = "reports-sot-signature";
@@ -13295,13 +13420,17 @@
         function mountMonthlySotViews(monthlyBody, personRows, officeGroups, yyyyMm, phaseOneStats) {
           monthlyBody.innerHTML = "";
           const weaponsRows = Array.isArray(reportsSession.weaponsRows) ? reportsSession.weaponsRows : [];
+          const bylawRows = Array.isArray(reportsSession.bylawRows) ? reportsSession.bylawRows : [];
           const screenWrap = document.createElement("div");
           screenWrap.className = "reports-sot-monthly-screen-wrap";
           screenWrap.appendChild(renderSotWeaponsQualSection(personRows, weaponsRows, yyyyMm));
+          screenWrap.appendChild(renderSotAuofBylawTrainingSection(personRows, bylawRows, yyyyMm));
           screenWrap.appendChild(renderMonthlySotScreenReport(officeGroups, yyyyMm, phaseOneStats));
           const printWrap = document.createElement("div");
           printWrap.className = "reports-sot-monthly-print-wrap";
-          printWrap.appendChild(renderMonthlySotPrintReport(personRows, officeGroups, yyyyMm, phaseOneStats, weaponsRows));
+          printWrap.appendChild(
+            renderMonthlySotPrintReport(personRows, officeGroups, yyyyMm, phaseOneStats, weaponsRows, bylawRows),
+          );
           monthlyBody.appendChild(screenWrap);
           monthlyBody.appendChild(printWrap);
           populateSotSectionDropdown(officeGroups);
@@ -15226,14 +15355,20 @@
             const rows = buildStatusOfTrainingRows(personRows, cache.weaponsRows, cache.bylawRows);
             reportsSession.sotRows = rows;
             const monthOptions = buildSotMonthOptions();
-            const weaponsSection = renderSotWeaponsQualSection(
-              personRows,
-              cache.weaponsRows,
-              currentYearMonthKey(),
-              { id: "reportsSotActiveWeaponsQual" },
+            const yyyyMm = currentYearMonthKey();
+            const trainingTables = document.createDocumentFragment();
+            trainingTables.appendChild(
+              renderSotWeaponsQualSection(personRows, cache.weaponsRows, yyyyMm, {
+                id: "reportsSotActiveWeaponsQual",
+              }),
+            );
+            trainingTables.appendChild(
+              renderSotAuofBylawTrainingSection(personRows, cache.bylawRows, yyyyMm, {
+                id: "reportsSotActiveAuof",
+              }),
             );
             const shell = buildStatusOfTrainingShell(
-              [weaponsSection, renderStatusOfTrainingSummary(rows), renderStatusOfTrainingTable(rows)],
+              [trainingTables, renderStatusOfTrainingSummary(rows), renderStatusOfTrainingTable(rows)],
               monthOptions,
             );
             reportsDetailBody.appendChild(shell);
