@@ -3543,7 +3543,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260702h";
+        const HUB_BUILD_ID = "20260702i";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -12728,6 +12728,38 @@
           });
         }
 
+        function personAuofBylawMatchRows(personBylawRows) {
+          return (Array.isArray(personBylawRows) ? personBylawRows : []).filter(function (row) {
+            if (sotIsExcludedCatalogLabel(bylawLabelFromRow(row))) return false;
+            return bylawRowMatchesSotAuofTrainingRow(row);
+          });
+        }
+
+        function bylawRowExpirationInMonth(row, yyyyMm) {
+          const exp = resolveCertExpirationDate(row, bylawTrainingExpiryDateKeys(), bylawQualDateKeys());
+          if (!exp || isNaN(exp.getTime())) return false;
+          return yearMonthKeyFromDate(exp) === yyyyMm;
+        }
+
+        /**
+         * AUoF / By-Law training is "required" this month only when the member is not
+         * current: no AUoF/By-Law record at all, an expired record, or a record that
+         * comes due (expires) in the selected month. Members whose training is still
+         * current are not counted as required.
+         */
+        function personNeedsAuofBylawTraining(auofRows, yyyyMm) {
+          const rows = Array.isArray(auofRows) ? auofRows : [];
+          if (!rows.length) return true;
+          let anyExpired = false;
+          let anyDueInMonth = false;
+          rows.forEach(function (row) {
+            const tone = computeBylawTrainingStatus(row).tone;
+            if (tone === "expired") anyExpired = true;
+            if (bylawRowExpirationInMonth(row, yyyyMm)) anyDueInMonth = true;
+          });
+          return anyExpired || anyDueInMonth;
+        }
+
         function buildSotAuofBylawTrainingTableData(personRows, bylawRows, yyyyMm) {
           const monthRange = formatSotMonthDayRange(yyyyMm);
           const bylawQualKeys = bylawQualDateKeys();
@@ -12737,7 +12769,7 @@
             const cohort = (Array.isArray(personRows) ? personRows : []).filter(function (person) {
               return personCountsForSotPosture(person) && personInSotAuofTrainingCohort(person, rowDef);
             });
-            const required = cohort.length;
+            let required = 0;
             let completedMonth = 0;
             const overduePeople = [];
 
@@ -12746,9 +12778,15 @@
               const personBylaw = (Array.isArray(bylawRows) ? bylawRows : []).filter(function (row) {
                 return bylawPersonnelIdFromItem(row) === pid && sotBylawRowIncluded(row);
               });
+
               if (personCompletedSotAuofRowInMonth(personBylaw, rowDef, yyyyMm, bylawQualKeys)) {
                 completedMonth += 1;
-              } else {
+                return;
+              }
+
+              const auofRows = personAuofBylawMatchRows(personBylaw);
+              if (personNeedsAuofBylawTraining(auofRows, yyyyMm)) {
+                required += 1;
                 overduePeople.push(person);
               }
             });
@@ -12758,7 +12796,7 @@
               monthRange: monthRange,
               required: required,
               completedMonth: completedMonth,
-              overdue: Math.max(0, required - completedMonth),
+              overdue: overduePeople.length,
               overduePeople: overduePeople,
             };
           });
@@ -13671,7 +13709,11 @@
           const printStyle = idoc.createElement("style");
           printStyle.textContent = sotThemedPdfCss();
           idoc.head.appendChild(printStyle);
-          idoc.body.appendChild(contentNode);
+
+          const scaleWrap = idoc.createElement("div");
+          scaleWrap.className = "reports-sot-pdf-scale-wrap";
+          scaleWrap.appendChild(contentNode);
+          idoc.body.appendChild(scaleWrap);
 
           let cleaned = false;
           const cleanup = function () {
@@ -13684,7 +13726,7 @@
           win.onafterprint = cleanup;
 
           window.setTimeout(function () {
-            fitSotPdfToOnePage(contentNode);
+            fitSotPdfToOnePage(scaleWrap, contentNode);
             window.setTimeout(function () {
               try {
                 win.focus();
@@ -13693,24 +13735,27 @@
                 cleanup();
               }
               window.setTimeout(cleanup, 3000);
-            }, 80);
+            }, 120);
           }, 450);
         }
 
-        function fitSotPdfToOnePage(doc) {
-          if (!doc) return;
+        function fitSotPdfToOnePage(scaleWrap, doc) {
+          if (!scaleWrap || !doc) return;
           // Portrait Letter (8.5in x 11in) with 0.4in @page margins; reference 96dpi.
-          const usableHeightPx = (11 - 0.8) * 96;
-          const usableWidthPx = (8.5 - 0.8) * 96;
+          // Trim a little vertical headroom so rounding never spills onto a 2nd page.
+          const usableHeightPx = (11 - 0.8) * 96 - 6;
           doc.style.transform = "none";
-          doc.style.width = "";
-          const naturalHeight = doc.scrollHeight;
+          scaleWrap.style.height = "";
+          scaleWrap.style.overflow = "";
+          const naturalHeight = doc.scrollHeight || doc.offsetHeight;
           if (!naturalHeight || naturalHeight <= usableHeightPx) return;
-          const scale = Math.max(0.4, usableHeightPx / naturalHeight);
+          const scale = Math.max(0.35, usableHeightPx / naturalHeight);
           doc.style.transformOrigin = "top left";
           doc.style.transform = "scale(" + scale + ")";
-          // Widen before scaling so the content still fills the page width once scaled down.
-          doc.style.width = usableWidthPx / scale + "px";
+          // Constrain the space the wrapper occupies to the scaled height so the print
+          // engine paginates against the visually-scaled size (keeps it to one page).
+          scaleWrap.style.height = Math.floor(naturalHeight * scale) + "px";
+          scaleWrap.style.overflow = "hidden";
         }
 
         function renderMonthlySotScreenReport(officeGroups, yyyyMm, phaseOneStats) {
