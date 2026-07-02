@@ -3439,7 +3439,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260630e";
+        const HUB_BUILD_ID = "20260630g";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -12367,6 +12367,15 @@
             }
             if (t === "M4") return label === "M4" || /\bM4\b/.test(label);
             if (t === "M18") return label === "M18" || /\bM18\b/.test(label);
+            if (def.label && String(def.label).trim().toUpperCase() === "BAT COURSE") {
+              return (
+                label === "BAT COURSE" ||
+                label.indexOf("BAT COURSE") !== -1 ||
+                label === "BATON" ||
+                /\bBATON\b/.test(label) ||
+                label === "BAT"
+              );
+            }
             if (t === "BAT" || t === "BATON" || t === "BAT COURSE") {
               return label.indexOf("BAT") !== -1 || label.indexOf("BATON") !== -1;
             }
@@ -12374,35 +12383,77 @@
           });
         }
 
+        function sotWeaponDefIsRequired(def) {
+          const label = String((def && def.label) || "").trim().toUpperCase();
+          return (Array.isArray(MQL_REQUIRED_WEAPON_LABELS) ? MQL_REQUIRED_WEAPON_LABELS : []).some(function (req) {
+            return String(req || "").trim().toUpperCase() === label;
+          });
+        }
+
+        function personWeaponRowsForCatalog(personId, weaponsRows, def) {
+          const pid = String(personId);
+          return (Array.isArray(weaponsRows) ? weaponsRows : []).filter(function (row) {
+            return (
+              weaponsPersonnelIdFromItem(row) === pid &&
+              sotWeaponRowIncluded(row) &&
+              sotWeaponRowMatchesCatalog(row, def)
+            );
+          });
+        }
+
+        function weaponRowExpirationInMonth(row, yyyyMm) {
+          const exp = resolveCertExpirationDate(row, weaponsCertExpiryDateKeys(), weaponsQualDateKeys());
+          if (!exp || isNaN(exp.getTime())) return false;
+          return yearMonthKeyFromDate(exp) === yyyyMm;
+        }
+
+        function personCountsAsRequiredForMqlWeapon(personWeaponRows, yyyyMm) {
+          const rows = Array.isArray(personWeaponRows) ? personWeaponRows : [];
+          if (!rows.length) return true;
+          let anyExpired = false;
+          let anyDueInMonth = false;
+          rows.forEach(function (row) {
+            const tone = computeWeaponsCertStatus(row).tone;
+            if (tone === "expired") anyExpired = true;
+            if (weaponRowExpirationInMonth(row, yyyyMm)) anyDueInMonth = true;
+          });
+          return anyExpired || anyDueInMonth;
+        }
+
         function buildSotWeaponsQualTableData(personRows, weaponsRows, yyyyMm) {
           const posturePeople = (Array.isArray(personRows) ? personRows : []).filter(personCountsForSotPosture);
-          const required = posturePeople.length;
           const weaponsQualKeys = weaponsQualDateKeys();
           const defs = Array.isArray(SOT_WEAPONS_MONTHLY_QUAL_DEFS) ? SOT_WEAPONS_MONTHLY_QUAL_DEFS : [];
 
           return defs.map(function (def) {
+            const isRequiredWeapon = sotWeaponDefIsRequired(def);
+            let required = 0;
             let qualified = 0;
             const overduePeople = [];
+
             posturePeople.forEach(function (person) {
-              const pid = String(person.Id);
-              const personWeaponRows = (Array.isArray(weaponsRows) ? weaponsRows : []).filter(function (row) {
-                return (
-                  weaponsPersonnelIdFromItem(row) === pid &&
-                  sotWeaponRowIncluded(row) &&
-                  sotWeaponRowMatchesCatalog(row, def)
-                );
-              });
+              const personWeaponRows = personWeaponRowsForCatalog(person.Id, weaponsRows, def);
               const qualInMonth = personWeaponRows.some(function (row) {
                 return trainingRowQualInMonth(row, yyyyMm, weaponsQualKeys);
               });
-              if (qualInMonth) qualified += 1;
-              else overduePeople.push(person);
+              if (qualInMonth) {
+                qualified += 1;
+                return;
+              }
+
+              if (!isRequiredWeapon) return;
+
+              if (personCountsAsRequiredForMqlWeapon(personWeaponRows, yyyyMm)) {
+                required += 1;
+                overduePeople.push(person);
+              }
             });
+
             return {
               weapon: def.label,
-              required: required,
+              required: isRequiredWeapon ? required : 0,
               qualified: qualified,
-              overdue: Math.max(0, required - qualified),
+              overdue: isRequiredWeapon ? overduePeople.length : 0,
               overduePeople: overduePeople,
             };
           });
