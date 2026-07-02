@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260630j";
+        const HUB_BUILD_ID = "20260702a";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -10285,9 +10285,92 @@
           const monthlyBody = document.createElement("div");
           monthlyBody.id = "reportsSotMonthlyBody";
           monthlyView.appendChild(monthlyBody);
+          monthlyView.appendChild(buildSotManualTrainingSection());
           frag.appendChild(monthlyView);
 
           return frag;
+        }
+
+        const SOT_MANUAL_TRAINING_COLUMNS = [
+          { key: "dates", label: "Training Dates", placeholder: "e.g. 3 - 5 Jan" },
+          { key: "trained", label: "Total Number Trained", placeholder: "0" },
+          { key: "eagls", label: "Daily EAGLs Requested", placeholder: "" },
+        ];
+        const SOT_MANUAL_TRAINING_DEFAULT_ROWS = 6;
+
+        function buildSotManualTrainingRow() {
+          const tr = document.createElement("tr");
+          SOT_MANUAL_TRAINING_COLUMNS.forEach(function (col) {
+            const td = document.createElement("td");
+            td.contentEditable = "true";
+            td.setAttribute("data-placeholder", col.placeholder || "");
+            td.dataset.manualKey = col.key;
+            tr.appendChild(td);
+          });
+          const tdActions = document.createElement("td");
+          tdActions.className = "reports-sot-manual-row-actions reports-no-print";
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "reports-sot-manual-del";
+          del.textContent = "x";
+          del.title = "Remove line";
+          del.addEventListener("click", function () {
+            const body = tr.parentNode;
+            tr.remove();
+            if (body && !body.querySelector("tr")) body.appendChild(buildSotManualTrainingRow());
+          });
+          tdActions.appendChild(del);
+          tr.appendChild(tdActions);
+          return tr;
+        }
+
+        function buildSotManualTrainingSection() {
+          const wrap = document.createElement("div");
+          wrap.className = "reports-sot-manual-section";
+          wrap.id = "reportsSotManualSection";
+
+          const title = document.createElement("h4");
+          title.className = "reports-sot-weapons-overdue-title";
+          title.textContent = "MONTHLY TRAINING CONDUCTED";
+          wrap.appendChild(title);
+
+          const toolbar = document.createElement("div");
+          toolbar.className = "reports-sot-manual-toolbar reports-no-print";
+          const addBtn = document.createElement("button");
+          addBtn.type = "button";
+          addBtn.className = "btn-secondary";
+          addBtn.textContent = "Add line";
+          toolbar.appendChild(addBtn);
+          wrap.appendChild(toolbar);
+
+          const table = document.createElement("table");
+          table.className = "reports-sot-manual-table";
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          SOT_MANUAL_TRAINING_COLUMNS.forEach(function (col) {
+            const th = document.createElement("th");
+            th.textContent = col.label;
+            trHead.appendChild(th);
+          });
+          const thAct = document.createElement("th");
+          thAct.className = "reports-sot-manual-row-actions reports-no-print";
+          thAct.textContent = " ";
+          trHead.appendChild(thAct);
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+
+          const tbody = document.createElement("tbody");
+          for (let i = 0; i < SOT_MANUAL_TRAINING_DEFAULT_ROWS; i++) {
+            tbody.appendChild(buildSotManualTrainingRow());
+          }
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+
+          addBtn.addEventListener("click", function () {
+            tbody.appendChild(buildSotManualTrainingRow());
+          });
+
+          return wrap;
         }
 
         async function fetchAllWeaponsCertRows(pw) {
