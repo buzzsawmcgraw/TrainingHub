@@ -3543,7 +3543,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260702i";
+        const HUB_BUILD_ID = "20260702j";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -12697,7 +12697,11 @@
           if (!person || person.Id == null || !rowDef) return false;
           const office = normalizeSotOfficeKey(personOfficeKey(person));
           const status = personStatusLabel(person);
-          if (rowDef.kind === "phase1") return personnelStatusIsPhaseOne(status);
+          const isPhaseOne = personnelStatusIsPhaseOne(status);
+          if (rowDef.kind === "phase1") return isPhaseOne;
+          // Phase 1 personnel only count in the Phase 1 row, never in an office/staff
+          // cohort, so no one is counted twice across rows.
+          if (isPhaseOne) return false;
           if (rowDef.kind === "office") {
             return (rowDef.offices || []).some(function (o) {
               return office === normalizeSotOfficeKey(o);
