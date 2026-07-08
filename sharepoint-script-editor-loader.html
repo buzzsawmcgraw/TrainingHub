@@ -72,7 +72,7 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260708c</span>
+              Build <span id="hubBuildIdLabel">20260708d</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
@@ -179,19 +179,19 @@
                   <div class="add-form-grid">
                     <div class="add-field">
                       <label for="pw_SMCDateCompleted">SMC date completed</label>
-                      <input type="date" id="pw_SMCDateCompleted" />
+                      <input type="text" id="pw_SMCDateCompleted" data-date-format="dd-mmm-yy" placeholder="DD-MMM-YY" />
                     </div>
                     <div class="add-field">
                       <label for="pw_SMCExpirationDate">SMC date expired</label>
-                      <input type="date" id="pw_SMCExpirationDate" />
+                      <input type="text" id="pw_SMCExpirationDate" data-date-format="dd-mmm-yy" placeholder="DD-MMM-YY" disabled />
                     </div>
                     <div class="add-field">
                       <label for="pw_M4M18SustCompletedDate">M4/M18 sust date completed</label>
-                      <input type="date" id="pw_M4M18SustCompletedDate" />
+                      <input type="text" id="pw_M4M18SustCompletedDate" data-date-format="dd-mmm-yy" placeholder="DD-MMM-YY" />
                     </div>
                     <div class="add-field">
                       <label for="pw_M4M18SustDueDate">M4/M18 sust due date</label>
-                      <input type="date" id="pw_M4M18SustDueDate" disabled />
+                      <input type="text" id="pw_M4M18SustDueDate" data-date-format="dd-mmm-yy" placeholder="DD-MMM-YY" disabled />
                     </div>
                   </div>
                   <div class="add-form-actions">
@@ -736,9 +736,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260708c";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260708c";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260708c";
+  var LOADER_BUILD_ID = "20260708d";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260708d";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260708d";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 

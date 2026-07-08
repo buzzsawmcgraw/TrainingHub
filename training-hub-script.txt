@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260708c";
+        const HUB_BUILD_ID = "20260708d";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -563,6 +563,14 @@
             title: "Post RC Report",
             subtitle: "Personnel with Post RC on file - qualification and expiration dates only.",
             badge: "PRC",
+            implemented: true,
+            printable: true,
+          },
+          {
+            id: "smc-report",
+            title: "SMC Report",
+            subtitle: "SMC completion/expiration status (missing completion is treated as expired).",
+            badge: "SMC",
             implemented: true,
             printable: true,
           },
@@ -1892,6 +1900,22 @@
         function parseWeaponsCertCalendarDate(val) {
           if (val === null || val === undefined || val === "") return null;
           const formatted = formatCellValue(val);
+          const dmy = String(formatted).match(/^(\d{1,2})[-\/ ]([A-Za-z]{3})[-\/ ](\d{2}|\d{4})$/);
+          if (dmy) {
+            const day = parseInt(dmy[1], 10);
+            const monthAbbr = String(dmy[2] || "").slice(0, 3).toLowerCase();
+            const month = WEAPONS_CERT_MONTH_ABBR.findIndex(function (m) {
+              return String(m || "")
+                .slice(0, 3)
+                .toLowerCase() === monthAbbr;
+            });
+            let year = parseInt(dmy[3], 10);
+            if (year < 100) year += year >= 70 ? 1900 : 2000;
+            if (month >= 0) {
+              const d = new Date(year, month, day);
+              if (!isNaN(d.getTime()) && d.getDate() === day && d.getMonth() === month) return d;
+            }
+          }
           const iso = String(formatted).match(/^(\d{4})-(\d{2})-(\d{2})$/);
           if (iso) {
             const d = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
@@ -1929,6 +1953,27 @@
           return day + "-" + mon + "-" + yr;
         }
 
+        function isDmyDateInput(el) {
+          return !!(el && el.dataset && String(el.dataset.dateFormat || "").toLowerCase() === "dd-mmm-yy");
+        }
+
+        function setDateInputValue(el, rawValue) {
+          if (!el) return;
+          if (isDmyDateInput(el)) {
+            el.value = formatWeaponsCertDisplayDate(rawValue) || "";
+            return;
+          }
+          el.value = isoDateForDateInput(rawValue);
+        }
+
+        function configureDmyDateInput(el) {
+          if (!el) return;
+          el.type = "text";
+          el.setAttribute("data-date-format", "dd-mmm-yy");
+          el.setAttribute("placeholder", "DD-MMM-YY");
+          el.autocomplete = "off";
+        }
+
         function expirationDateFromQualDate(qualDate) {
           const year = qualDate.getFullYear() + 1;
           const month = qualDate.getMonth();
@@ -1949,7 +1994,7 @@
           const qual = parseWeaponsCertCalendarDate(qualEl.value);
           if (!qual) return;
           const fn = typeof expirationFn === "function" ? expirationFn : expirationDateFromQualDate;
-          expEl.value = isoDateFromCalendarDate(fn(qual));
+          setDateInputValue(expEl, fn(qual));
         }
 
         function applyCertExpirationFromQual(formIdPrefix) {
@@ -2228,9 +2273,8 @@
 
         function personnelCleoDateDisplayFromKeys(item, keys) {
           const raw = valueFromItemByKeys(item, Array.isArray(keys) ? keys : []);
-          const d = parseWeaponsCertCalendarDate(raw);
-          if (!d) return formatCellValue(raw) || "-";
-          return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+          const display = formatWeaponsCertDisplayDate(raw);
+          return display || formatCellValue(raw) || "-";
         }
 
         function personSmcCompletedDateKeys() {
@@ -2299,12 +2343,30 @@
           return addMonthsPreserveDay(qual, 6);
         }
 
+        function smcExpirationDateFromCompletedDate(completedDate) {
+          if (!completedDate || isNaN(completedDate.getTime())) return null;
+          return expirationDateFromQualDate(completedDate);
+        }
+
         function applyPersonSustainmentDueFromWeapons(idPrefix, personId) {
           const dueEl = document.getElementById(idPrefix + "M4M18SustDueDate");
           if (!dueEl) return;
           const due = sustainmentDueDateFromM4M18(personId);
           if (!due) return;
-          dueEl.value = isoDateFromCalendarDate(due);
+          setDateInputValue(dueEl, due);
+        }
+
+        function applySmcExpirationFromCompletedInput(idPrefix) {
+          const completedEl = document.getElementById(idPrefix + "SMCDateCompleted");
+          const expirationEl = document.getElementById(idPrefix + "SMCExpirationDate");
+          if (!completedEl || !expirationEl) return;
+          const completed = parseWeaponsCertCalendarDate(completedEl.value);
+          if (!completed) {
+            expirationEl.value = "";
+            return;
+          }
+          const expiration = smcExpirationDateFromCompletedDate(completed);
+          setDateInputValue(expirationEl, expiration);
         }
 
         function setWeaponsSupportFieldDate(fieldKey, item, keyResolver) {
@@ -2312,7 +2374,7 @@
           if (!el) return;
           const keys = typeof keyResolver === "function" ? keyResolver() : [fieldKey];
           const raw = valueFromItemByKeys(item || {}, keys);
-          el.value = isoDateForDateInput(raw);
+          setDateInputValue(el, raw);
         }
 
         function loadPersonWeaponsSupportPanel(item) {
@@ -2320,7 +2382,18 @@
           personWeaponsSupportPanel.hidden = !item;
           if (!item) return;
           setWeaponsSupportFieldDate("SMCDateCompleted", item, personSmcCompletedDateKeys);
-          setWeaponsSupportFieldDate("SMCExpirationDate", item, personSmcExpirationDateKeys);
+          const smcCompleted = parseWeaponsCertCalendarDate(
+            valueFromItemByKeys(item || {}, personSmcCompletedDateKeys()),
+          );
+          const smcStoredExpiration = valueFromItemByKeys(item || {}, personSmcExpirationDateKeys());
+          if (smcCompleted) {
+            setDateInputValue(
+              document.getElementById("pw_SMCExpirationDate"),
+              smcExpirationDateFromCompletedDate(smcCompleted),
+            );
+          } else {
+            setDateInputValue(document.getElementById("pw_SMCExpirationDate"), smcStoredExpiration);
+          }
           setWeaponsSupportFieldDate("M4M18SustCompletedDate", item, personSustainmentCompletedDateKeys);
           applyPersonSustainmentDueFromWeapons("pw_", item.Id);
         }
@@ -2359,8 +2432,16 @@
           }
 
           const payload = {};
-          if (smcCompCol) payload[resolveWriteKey(smcCompCol, s.sampleRow)] = datePayloadFromInput("pw_SMCDateCompleted");
-          if (smcExpCol) payload[resolveWriteKey(smcExpCol, s.sampleRow)] = datePayloadFromInput("pw_SMCExpirationDate");
+          const smcCompletedRaw = datePayloadFromInput("pw_SMCDateCompleted");
+          if (smcCompCol) payload[resolveWriteKey(smcCompCol, s.sampleRow)] = smcCompletedRaw;
+          if (smcExpCol) {
+            const smcCompletedEl = document.getElementById("pw_SMCDateCompleted");
+            const smcCompletedDate = parseWeaponsCertCalendarDate(
+              String((smcCompletedEl && smcCompletedEl.value) || "").trim(),
+            );
+            const smcExpDate = smcExpirationDateFromCompletedDate(smcCompletedDate);
+            payload[resolveWriteKey(smcExpCol, s.sampleRow)] = smcExpDate ? spDateTimeFromCalendarDate(smcExpDate) : null;
+          }
           if (sustCompCol) {
             payload[resolveWriteKey(sustCompCol, s.sampleRow)] = datePayloadFromInput("pw_M4M18SustCompletedDate");
           }
@@ -2568,7 +2649,7 @@
             input.appendChild(opt0);
           } else if (isWeaponsCertDateColumn(col)) {
             input = document.createElement("input");
-            input.type = "date";
+            configureDmyDateInput(input);
             input.id = idPrefix + col.key;
             input.dataset.writeKey = writeKey;
           } else {
@@ -3367,7 +3448,7 @@
             input.appendChild(opt0);
           } else if (isWeaponsCertDateColumn(col)) {
             input = document.createElement("input");
-            input.type = "date";
+            configureDmyDateInput(input);
             input.id = idPrefix + col.key;
             input.dataset.writeKey = writeKey;
           } else {
@@ -4297,7 +4378,7 @@
               input.appendChild(opt0);
             } else if (isWeaponsCertDateColumn(col)) {
               input = document.createElement("input");
-              input.type = "date";
+              configureDmyDateInput(input);
             } else {
               input = document.createElement("input");
               input.type = "text";
@@ -4312,7 +4393,7 @@
             if (!el || !item) return;
             const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
             if (isWeaponsCertDateColumn(col)) {
-              el.value = isoDateForDateInput(raw);
+              setDateInputValue(el, raw);
               return;
             }
             if (el.tagName === "SELECT") {
@@ -5212,8 +5293,8 @@
             if (!fields) return;
             fields.innerHTML = "";
             [
-              { key: "QualDate", label: "Certification Date", type: "date" },
-              { key: "ExpirationDate", label: "Expiration Date", type: "date", readOnly: true },
+              { key: "QualDate", label: "Certification Date", type: "text", isDate: true },
+              { key: "ExpirationDate", label: "Expiration Date", type: "text", isDate: true, readOnly: true },
               { key: "Certifier", label: "Certifier", type: "select" },
               { key: "Notes", label: "Notes", type: "textarea" },
             ].forEach(function (def) {
@@ -5239,6 +5320,10 @@
                 input.type = def.type || "text";
               }
               input.id = FORM_PREFIX + def.key;
+              if (def.isDate) {
+                input.setAttribute("data-date-format", "dd-mmm-yy");
+                input.setAttribute("placeholder", "DD-MMM-YY");
+              }
               if (def.readOnly) input.disabled = true;
               fwrap.appendChild(input);
               fields.appendChild(fwrap);
@@ -5250,7 +5335,7 @@
             const expEl = document.getElementById(FORM_PREFIX + "ExpirationDate");
             const certEl = document.getElementById(FORM_PREFIX + "Certifier");
             const notesEl = document.getElementById(FORM_PREFIX + "Notes");
-            if (qualEl) qualEl.value = isoDateFromCalendarDate(new Date());
+            if (qualEl) setDateInputValue(qualEl, new Date());
             if (expEl) applyExpirationFromQual();
             if (certEl && item) {
               const raw = kindCertValue(item, kind);
@@ -6854,7 +6939,7 @@
               }
             } else if (field.inputType === "date") {
               input = document.createElement("input");
-              input.type = "date";
+              configureDmyDateInput(input);
             } else {
               input = document.createElement("input");
               input.type = "text";
@@ -6862,7 +6947,7 @@
             input.id = "p1e_" + field.key;
             input.dataset.writeKey = field.key;
             const raw = item ? valueFromItemByKeys(item, [field.key]) : "";
-            if (field.inputType === "date") input.value = isoDateForDateInput(raw);
+            if (field.inputType === "date") setDateInputValue(input, raw);
             else if (field.inputType !== "select") {
               input.value = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
             }
@@ -10805,9 +10890,9 @@
 
           const tdDates = document.createElement("td");
           const dateInput = document.createElement("input");
-          dateInput.type = "date";
+          configureDmyDateInput(dateInput);
           dateInput.className = "reports-sot-manual-input reports-sot-manual-input--date";
-          dateInput.value = rowData.trainingDate || "";
+          setDateInputValue(dateInput, rowData.trainingDate || "");
           tdDates.appendChild(dateInput);
           tr.appendChild(tdDates);
 
@@ -12712,6 +12797,159 @@
             });
         }
 
+        function smcReportStatusFromPerson(person) {
+          const completedRaw = valueFromItemByKeys(person, personSmcCompletedDateKeys());
+          const completed = parseWeaponsCertCalendarDate(completedRaw);
+          const expRaw = valueFromItemByKeys(person, personSmcExpirationDateKeys());
+          let expiration = parseWeaponsCertCalendarDate(expRaw);
+          if (!expiration && completed) expiration = smcExpirationDateFromCompletedDate(completed);
+          if (!completed || !expiration) return { text: "Expired", tone: "expired" };
+          const daysLeft = calendarDaysBetween(new Date(), expiration);
+          if (daysLeft < 0) return { text: "Expired", tone: "expired" };
+          if (daysLeft <= 30) return { text: "Due <= 30 days", tone: "urgent" };
+          if (daysLeft <= 60) return { text: "Due <= 60 days", tone: "warn" };
+          return { text: "Qualified", tone: "ok" };
+        }
+
+        function buildSmcReportRows(personRows) {
+          return (Array.isArray(personRows) ? personRows : [])
+            .filter(function (person) {
+              return person && person.Id != null;
+            })
+            .map(function (person) {
+              const completed = valueFromItemByKeys(person, personSmcCompletedDateKeys());
+              const expRaw = valueFromItemByKeys(person, personSmcExpirationDateKeys());
+              const completedDate = parseWeaponsCertCalendarDate(completed);
+              const expirationDate = parseWeaponsCertCalendarDate(expRaw);
+              const expiration = expirationDate || (completedDate ? smcExpirationDateFromCompletedDate(completedDate) : null);
+              return {
+                person: person,
+                smcCompleted: formatWeaponsCertDisplayDate(completed) || "-",
+                smcExpiration: expiration ? formatWeaponsCertDisplayDate(expiration) : "-",
+                status: smcReportStatusFromPerson(person),
+              };
+            });
+        }
+
+        function renderSmcReportTable(rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "roster-wrap";
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "reports-office-empty";
+            p.textContent = "No Personnel records on file.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          const table = document.createElement("table");
+          table.className = "roster reports-status-table";
+          table.setAttribute("aria-label", "SMC Report");
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          ["Personnel", "SMC completed", "SMC expiration", "Status"].forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          const sorted = rows.slice().sort(function (a, b) {
+            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
+              sensitivity: "base",
+            });
+          });
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (entry) {
+            const tr = document.createElement("tr");
+            const tdName = document.createElement("td");
+            const nameBtn = document.createElement("button");
+            nameBtn.type = "button";
+            nameBtn.className = "reports-name-link";
+            nameBtn.textContent = formatPersonDisplayName(entry.person);
+            nameBtn.title = "Open Personnel Record";
+            nameBtn.addEventListener("click", function () {
+              navigateToPersonDetail(entry.person.Id);
+            });
+            tdName.appendChild(nameBtn);
+            tr.appendChild(tdName);
+            const tdComp = document.createElement("td");
+            tdComp.textContent = displayCellText(entry.smcCompleted);
+            tr.appendChild(tdComp);
+            const tdExp = document.createElement("td");
+            tdExp.textContent = displayCellText(entry.smcExpiration);
+            tr.appendChild(tdExp);
+            const tdStatus = document.createElement("td");
+            tdStatus.textContent = displayCellText(entry.status.text);
+            if (entry.status.tone && entry.status.tone !== "unknown") tdStatus.className = "cert-status cert-status--" + entry.status.tone;
+            tr.appendChild(tdStatus);
+            frag.appendChild(tr);
+          });
+          tbody.appendChild(frag);
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        function renderSmcReportPrintDocument(rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "af-official-doc";
+          wrap.appendChild(
+            buildAfOfficialDocHeader("SMC Report", {
+              includeSeconds: true,
+              subtitle: String(AF_REPORT_UNIT_LABEL || APPOINTMENTS_SQUADRON_LABEL || "88 SFS"),
+            }),
+          );
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "af-official-doc-empty";
+            p.textContent = "No Personnel records on file.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          appendOfficialSectionTable(wrap, {
+            columns: ["Personnel", "SMC completed", "SMC expiration", "Status"],
+            sections: groupReportEntriesBySection(rows, function (entry) {
+              return entry.person;
+            }),
+            compact: true,
+            buildCells: function (entry) {
+              return [
+                formatPersonDisplayName(entry.person),
+                displayCellText(entry.smcCompleted),
+                displayCellText(entry.smcExpiration),
+                displayCellText(entry.status.text),
+              ];
+            },
+          });
+          return wrap;
+        }
+
+        async function loadSmcReport(reportDef) {
+          const personRows = Array.isArray(hubSession.personnelRows) ? hubSession.personnelRows : [];
+          if (!reportsDetailBody) return;
+          showReportsDetail(reportDef);
+          reportsDetailBody.innerHTML = "";
+          setReportsState("loading", "Building SMC Report...");
+          try {
+            const rows = buildSmcReportRows(personRows);
+            const summary = document.createElement("p");
+            summary.className = "reports-hint";
+            const expiredCount = rows.filter(function (r) {
+              return r.status && r.status.text === "Expired";
+            }).length;
+            summary.textContent = rows.length + " Personnel on file; " + expiredCount + " currently expired.";
+            reportsDetailBody.appendChild(summary);
+            reportsDetailBody.appendChild(renderSmcReportTable(rows));
+            setReportsState("ok", "SMC report updated.");
+            window.setTimeout(function () {
+              setReportsState("", "");
+            }, 2200);
+          } catch (e) {
+            setReportsState("err", "Could not build SMC report: " + (e.message || String(e)).slice(0, 220));
+          }
+        }
+
         function renderCleoReportTable(rows) {
           const wrap = document.createElement("div");
           wrap.className = "roster-wrap";
@@ -13121,6 +13359,10 @@
             await loadPostRCReport(def);
             return;
           }
+          if (def.implemented && def.id === "smc-report") {
+            await loadSmcReport(def);
+            return;
+          }
           if (def.implemented && def.id === "bls-report") {
             await loadTcccBlsCertReport(def, "BLS");
             return;
@@ -13199,6 +13441,10 @@
           }
           if (def.id === "post-rc-report") {
             triggerSchedulingPrint(renderPostRCReportPrintDocument(buildPostRCReportRows(personRows)));
+            return;
+          }
+          if (def.id === "smc-report") {
+            triggerSchedulingPrint(renderSmcReportPrintDocument(buildSmcReportRows(personRows)));
             return;
           }
           if (def.id === "bls-report") {
@@ -13666,7 +13912,7 @@
           let input;
           if (col.inputType === "date") {
             input = document.createElement("input");
-            input.type = "date";
+            configureDmyDateInput(input);
             input.id = idPrefix + col.key;
             input.dataset.writeKey = writeKey;
             if (col.readOnly) input.readOnly = true;
@@ -13840,9 +14086,8 @@
           if (isPersonNameFieldKey(col.key)) text = normalizePersonNameText(text);
           else if (isPersonPhoneFieldKey(col.key)) text = formatUsPhoneNumber(text) || text;
           else if (col.key === "DoDID") text = digitsOnly(text);
-          if (el.type === "date") {
-            const m = text.match(/^(\d{4}-\d{2}-\d{2})/);
-            if (m) el.value = m[1];
+          if (el.type === "date" || isDmyDateInput(el)) {
+            setDateInputValue(el, text);
             return;
           }
           if (el.tagName === "SELECT") {
@@ -14735,6 +14980,15 @@
             void savePersonWeaponsSupport();
           });
         }
+        const pwSmcCompletedInput = document.getElementById("pw_SMCDateCompleted");
+        if (pwSmcCompletedInput) {
+          pwSmcCompletedInput.addEventListener("input", function () {
+            applySmcExpirationFromCompletedInput("pw_");
+          });
+          pwSmcCompletedInput.addEventListener("change", function () {
+            applySmcExpirationFromCompletedInput("pw_");
+          });
+        }
 
         if (personWeaponsAddBtn) {
           personWeaponsAddBtn.addEventListener("click", function () {
@@ -15488,6 +15742,10 @@
           if (el.type === "checkbox") return el.checked;
           const v = String(el.value || "").trim();
           if (v === "") return null;
+          if (isDmyDateInput(el)) {
+            const d = parseWeaponsCertCalendarDate(v);
+            return d ? spDateTimeFromCalendarDate(d) : null;
+          }
           if (el.type === "date") return v + "T00:00:00Z";
           if (el.type === "datetime-local") return v.length === 16 ? v + ":00Z" : v;
           if (el.tagName === "SELECT" && /Id$/.test(writeKey)) {
@@ -15564,8 +15822,8 @@
 
         function primeRecordDateDefault() {
           const el = document.getElementById("nf_RecordDate");
-          if (el && el.tagName === "INPUT" && el.type === "date" && !el.value) {
-            el.value = new Date().toISOString().slice(0, 10);
+          if (el && el.tagName === "INPUT" && !el.value) {
+            setDateInputValue(el, new Date());
           }
         }
 
@@ -15658,7 +15916,7 @@
             input.rows = col.key === "Address" ? 2 : 2;
           } else if (col.key === "RecordDate") {
             input = document.createElement("input");
-            input.type = "date";
+            configureDmyDateInput(input);
             input.id = idPrefix + col.key;
             input.dataset.writeKey = writeKey;
           } else if (col.key === "DoDID") {
