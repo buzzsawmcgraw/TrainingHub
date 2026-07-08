@@ -6874,9 +6874,7 @@
           if (!phase1PersonSelect) return;
           while (phase1PersonSelect.options.length > 1) phase1PersonSelect.remove(1);
           const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
-          rows.sort(function (a, b) {
-            return formatPersonDisplayName(a).localeCompare(formatPersonDisplayName(b), undefined, { sensitivity: "base" });
-          });
+          rows.sort(comparePersonnelByLastName);
           rows.forEach(function (person) {
             if (!person || person.Id == null) return;
             if (personnelAlreadyInActivePhase1(person.Id)) return;
@@ -8222,11 +8220,7 @@
           const titleOptions = memoTitleOptions();
           const squadronOptions = memoSquadronOptions();
           const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
-          rows.sort(function (a, b) {
-            return formatPersonDisplayName(a).localeCompare(formatPersonDisplayName(b), undefined, {
-              sensitivity: "base",
-            });
-          });
+          rows.sort(comparePersonnelByLastName);
           schedulingMemoSignatureBlocks.forEach(function (block) {
             populateMemoSelectOptions(block.titleSelect, titleOptions, "Select title...");
             populateMemoSelectOptions(block.squadronSelect, squadronOptions, "Select squadron...");
@@ -8508,9 +8502,7 @@
           const prior = String(schedulingPersonSelect.value || "").trim();
           while (schedulingPersonSelect.options.length > 1) schedulingPersonSelect.remove(1);
           const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
-          rows.sort(function (a, b) {
-            return formatPersonDisplayName(a).localeCompare(formatPersonDisplayName(b), undefined, { sensitivity: "base" });
-          });
+          rows.sort(comparePersonnelByLastName);
           rows.forEach(function (person) {
             if (!person || person.Id == null) return;
             const displayName = formatPersonDisplayName(person);
@@ -11651,9 +11643,7 @@
           table.appendChild(thead);
           const tbody = document.createElement("tbody");
           const sorted = rows.slice().sort(function (a, b) {
-            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
-              sensitivity: "base",
-            });
+            return comparePersonnelByLastName(a.person, b.person);
           });
           const frag = document.createDocumentFragment();
           sorted.forEach(function (entry) {
@@ -13759,9 +13749,7 @@
             const label = certifierDisplayLabel(row).toLowerCase();
             if (label) takenNames.add(label);
           });
-          rows.sort(function (a, b) {
-            return formatPersonDisplayName(a).localeCompare(formatPersonDisplayName(b), undefined, { sensitivity: "base" });
-          });
+          rows.sort(comparePersonnelByLastName);
           rows.forEach(function (person) {
             if (!person || person.Id == null) return;
             const displayName = formatPersonDisplayName(person);
@@ -13878,6 +13866,21 @@
           if (mi) name = name ? name + " " + mi + "." : mi + ".";
           if (rank && name) return rank + " " + name;
           return rank || name || "Personnel Record";
+        }
+
+        function comparePersonnelByLastName(a, b) {
+          const lastA = itemFieldText(a, "LastName").toLowerCase();
+          const lastB = itemFieldText(b, "LastName").toLowerCase();
+          if (lastA !== lastB) return lastA < lastB ? -1 : 1;
+          const firstA = itemFieldText(a, "FirstName").toLowerCase();
+          const firstB = itemFieldText(b, "FirstName").toLowerCase();
+          if (firstA !== firstB) return firstA < firstB ? -1 : 1;
+          const miA = itemFieldText(a, "MiddleInitial").toLowerCase();
+          const miB = itemFieldText(b, "MiddleInitial").toLowerCase();
+          if (miA !== miB) return miA < miB ? -1 : 1;
+          const idA = Number(a && a.Id != null ? a.Id : 0);
+          const idB = Number(b && b.Id != null ? b.Id : 0);
+          return idA - idB;
         }
 
         function buildCleoDisplayField(label, text, tone) {
