@@ -12926,7 +12926,7 @@
         }
 
         async function loadSmcReport(reportDef) {
-          const personRows = Array.isArray(hubSession.personnelRows) ? hubSession.personnelRows : [];
+          const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
           if (!reportsDetailBody) return;
           showReportsDetail(reportDef);
           reportsDetailBody.innerHTML = "";
