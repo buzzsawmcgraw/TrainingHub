@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260702j";
+        const HUB_BUILD_ID = "20260708c";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -133,9 +133,9 @@
 
         const LIST_BLS_TCCC = "BlsTccc";
         const LIST_BLS_TCCC_GUID = "";
-        const BLS_TCCC_PERSON_FIELD = "PersonnelID";
+        const BLS_TCCC_PERSON_FIELD = "PersonnelId";
         const BLS_TCCC_PERSON_FIELD_ALT = [
-          "PersonnelId",
+          "PersonnelID",
           "PersonnelIdId",
           "Personnel_x0020_Id",
           "Personnel_x0020_ID",
@@ -678,8 +678,9 @@
         ];
 
         /**
-         * Personnel list CLEO / Post RC fields (not shown on main roster table).
-         * Create on **Personnel**: IsCLEO (Yes/No), CLEODate, PostRCQualDate, PostRCExpirationDate.
+         * Personnel list CLEO / Post RC / SMC / sustainment fields (not shown on main roster table).
+         * Create on **Personnel**: IsCLEO (Yes/No), CLEODate, PostRCQualDate, PostRCExpirationDate,
+         * SMCDateCompleted, SMCExpirationDate, M4M18SustCompletedDate, M4M18SustDueDate.
          */
         const PERSONNEL_CLEO_COLUMNS = [
           {
@@ -722,6 +723,31 @@
               "PostRCExpDate",
               "PostRCExpirationDate0",
             ],
+          },
+          {
+            key: "SMCDateCompleted",
+            label: "SMC date completed",
+            inputType: "date",
+            altKeys: ["SMC_x0020_Date_x0020_Completed", "SMCCompletedDate", "SMCDateCompleted0"],
+          },
+          {
+            key: "SMCExpirationDate",
+            label: "SMC date expired",
+            inputType: "date",
+            altKeys: ["SMC_x0020_Expiration_x0020_Date", "SMCExpDate", "SMCExpirationDate0"],
+          },
+          {
+            key: "M4M18SustCompletedDate",
+            label: "M4/M18 sust date completed",
+            inputType: "date",
+            altKeys: ["M4M18SustainmentCompletedDate", "M4M18Sust_x0020_Completed_x0020_Date", "M4M18SustCompDate"],
+          },
+          {
+            key: "M4M18SustDueDate",
+            label: "M4/M18 sust due date",
+            inputType: "date",
+            readOnly: true,
+            altKeys: ["M4M18SustainmentDueDate", "M4M18Sust_x0020_Due_x0020_Date", "M4M18SustDueDate0"],
           },
         ];
 
@@ -840,6 +866,9 @@
         const personWeaponsAddCancelBtn = document.getElementById("personWeaponsAddCancelBtn");
         const personWeaponsSaveBtn = document.getElementById("personWeaponsSaveBtn");
         const personWeaponsFormTitle = document.getElementById("personWeaponsFormTitle");
+        const personWeaponsSupportPanel = document.getElementById("personWeaponsSupportPanel");
+        const personWeaponsSupportForm = document.getElementById("personWeaponsSupportForm");
+        const personWeaponsSupportSaveBtn = document.getElementById("personWeaponsSupportSaveBtn");
         const personBylawWrap = document.getElementById("personBylawWrap");
         const personBylawThead = document.getElementById("personBylawThead");
         const personBylawBody = document.getElementById("personBylawBody");
@@ -2197,6 +2226,169 @@
           return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
         }
 
+        function personnelCleoDateDisplayFromKeys(item, keys) {
+          const raw = valueFromItemByKeys(item, Array.isArray(keys) ? keys : []);
+          const d = parseWeaponsCertCalendarDate(raw);
+          if (!d) return formatCellValue(raw) || "-";
+          return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+        }
+
+        function personSmcCompletedDateKeys() {
+          const col = normalizedPersonnelCleoColumns().find(function (c) {
+            return c.key === "SMCDateCompleted";
+          });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["SMCDateCompleted"];
+        }
+
+        function personSmcExpirationDateKeys() {
+          const col = normalizedPersonnelCleoColumns().find(function (c) {
+            return c.key === "SMCExpirationDate";
+          });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["SMCExpirationDate"];
+        }
+
+        function personSustainmentCompletedDateKeys() {
+          const col = normalizedPersonnelCleoColumns().find(function (c) {
+            return c.key === "M4M18SustCompletedDate";
+          });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["M4M18SustCompletedDate"];
+        }
+
+        function personSustainmentDueDateKeys() {
+          const col = normalizedPersonnelCleoColumns().find(function (c) {
+            return c.key === "M4M18SustDueDate";
+          });
+          return col && col.tryKeys ? col.tryKeys.slice() : ["M4M18SustDueDate"];
+        }
+
+        function addMonthsPreserveDay(date, months) {
+          if (!date || isNaN(date.getTime())) return null;
+          const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          const day = d.getDate();
+          const targetYear = d.getFullYear();
+          const targetMonthIndex = d.getMonth() + Number(months || 0);
+          const lastTargetDay = new Date(targetYear, targetMonthIndex + 1, 0).getDate();
+          return new Date(targetYear, targetMonthIndex, Math.min(day, lastTargetDay));
+        }
+
+        function weaponsRowIsM4OrM18(row) {
+          const label = String(weaponLabelFromRow(row) || "").trim().toUpperCase();
+          if (!label) return false;
+          return label === "M4" || label === "M18" || /\bM4\b/.test(label) || /\bM18\b/.test(label);
+        }
+
+        function latestM4M18QualDateForPerson(personId) {
+          const pid = String(personId || "");
+          if (!pid) return null;
+          const rows = Array.isArray(hubSession.weaponsCertRows) ? hubSession.weaponsCertRows : [];
+          const qualKeys = weaponsQualDateKeys();
+          let latest = null;
+          rows.forEach(function (row) {
+            if (weaponsPersonnelIdFromItem(row) !== pid) return;
+            if (!weaponsRowIsM4OrM18(row)) return;
+            const q = parseWeaponsCertCalendarDate(valueFromItemByKeys(row, qualKeys));
+            if (!q || isNaN(q.getTime())) return;
+            if (!latest || q.getTime() > latest.getTime()) latest = q;
+          });
+          return latest;
+        }
+
+        function sustainmentDueDateFromM4M18(personId) {
+          const qual = latestM4M18QualDateForPerson(personId);
+          if (!qual) return null;
+          return addMonthsPreserveDay(qual, 6);
+        }
+
+        function applyPersonSustainmentDueFromWeapons(idPrefix, personId) {
+          const dueEl = document.getElementById(idPrefix + "M4M18SustDueDate");
+          if (!dueEl) return;
+          const due = sustainmentDueDateFromM4M18(personId);
+          if (!due) return;
+          dueEl.value = isoDateFromCalendarDate(due);
+        }
+
+        function setWeaponsSupportFieldDate(fieldKey, item, keyResolver) {
+          const el = document.getElementById("pw_" + fieldKey);
+          if (!el) return;
+          const keys = typeof keyResolver === "function" ? keyResolver() : [fieldKey];
+          const raw = valueFromItemByKeys(item || {}, keys);
+          el.value = isoDateForDateInput(raw);
+        }
+
+        function loadPersonWeaponsSupportPanel(item) {
+          if (!personWeaponsSupportPanel) return;
+          personWeaponsSupportPanel.hidden = !item;
+          if (!item) return;
+          setWeaponsSupportFieldDate("SMCDateCompleted", item, personSmcCompletedDateKeys);
+          setWeaponsSupportFieldDate("SMCExpirationDate", item, personSmcExpirationDateKeys);
+          setWeaponsSupportFieldDate("M4M18SustCompletedDate", item, personSustainmentCompletedDateKeys);
+          applyPersonSustainmentDueFromWeapons("pw_", item.Id);
+        }
+
+        async function savePersonWeaponsSupport() {
+          const s = personDetailSession;
+          if (!s || !s.item || s.item.Id == null || !s.pw || !s.seg) {
+            setWeaponsCertState("warn", "Open a Personnel Record before saving sustainment.");
+            return;
+          }
+          const cols = normalizedPersonnelCleoColumns();
+          const smcCompCol = cols.find(function (c) {
+            return c.key === "SMCDateCompleted";
+          });
+          const smcExpCol = cols.find(function (c) {
+            return c.key === "SMCExpirationDate";
+          });
+          const sustCompCol = cols.find(function (c) {
+            return c.key === "M4M18SustCompletedDate";
+          });
+          const sustDueCol = cols.find(function (c) {
+            return c.key === "M4M18SustDueDate";
+          });
+          if (!smcCompCol && !smcExpCol && !sustCompCol && !sustDueCol) {
+            setWeaponsCertState("warn", "SMC / sustainment columns are not configured.");
+            return;
+          }
+
+          function datePayloadFromInput(id) {
+            const el = document.getElementById(id);
+            if (!el) return null;
+            const v = String(el.value || "").trim();
+            if (!v) return null;
+            const d = parseWeaponsCertCalendarDate(v);
+            return d ? spDateTimeFromCalendarDate(d) : null;
+          }
+
+          const payload = {};
+          if (smcCompCol) payload[resolveWriteKey(smcCompCol, s.sampleRow)] = datePayloadFromInput("pw_SMCDateCompleted");
+          if (smcExpCol) payload[resolveWriteKey(smcExpCol, s.sampleRow)] = datePayloadFromInput("pw_SMCExpirationDate");
+          if (sustCompCol) {
+            payload[resolveWriteKey(sustCompCol, s.sampleRow)] = datePayloadFromInput("pw_M4M18SustCompletedDate");
+          }
+          if (sustDueCol) {
+            const sustDue = sustainmentDueDateFromM4M18(s.item.Id);
+            payload[resolveWriteKey(sustDueCol, s.sampleRow)] = sustDue ? spDateTimeFromCalendarDate(sustDue) : null;
+          }
+
+          try {
+            setWeaponsCertState("loading", "Saving SMC / sustainment...");
+            if (personWeaponsSupportSaveBtn) personWeaponsSupportSaveBtn.disabled = true;
+            await spFetch(`/_api/web/${s.seg}/items(${s.item.Id})`, { method: "MERGE", body: payload }, s.pw);
+            const updated = mergePayloadIntoItem(s.item, payload);
+            updated.Id = s.item.Id;
+            personDetailSession.item = updated;
+            syncPersonInHubSession(updated);
+            loadPersonWeaponsSupportPanel(updated);
+            setWeaponsCertState("ok", "SMC / sustainment saved.");
+            window.setTimeout(function () {
+              setWeaponsCertState("", "");
+            }, 2200);
+          } catch (e) {
+            setWeaponsCertState("err", "Save failed: " + (e.message || String(e)).slice(0, 220));
+          } finally {
+            if (personWeaponsSupportSaveBtn) personWeaponsSupportSaveBtn.disabled = false;
+          }
+        }
+
         function computePersonPostRCStatus(item) {
           return computeCertStatusFromExpiryKeys(
             item,
@@ -2989,6 +3181,7 @@
         async function loadPersonWeaponsCertifications(personId, pw) {
           if (!personId) return;
           if (personWeaponsWrap) personWeaponsWrap.hidden = false;
+          loadPersonWeaponsSupportPanel(personDetailSession.item);
           setWeaponsCertState("loading", "Loading Weapons Qualifications...");
           clearWeaponsCertTable();
           if (personWeaponsEmpty) personWeaponsEmpty.hidden = true;
@@ -3025,6 +3218,9 @@
             hubSession.weaponsCertSampleRow = rows.length ? rows[0] : hubSession.weaponsCertSampleRow || null;
             hubSession.weaponsCertRows = rows.slice();
             renderWeaponsCertTable(rows);
+            if (personDetailSession && personDetailSession.item && String(personDetailSession.item.Id) === String(personId)) {
+              loadPersonWeaponsSupportPanel(personDetailSession.item);
+            }
             setWeaponsCertState("", "");
           } catch (e) {
             hubSession.weaponsCertSampleRow = hubSession.weaponsCertSampleRow || null;
@@ -4968,25 +5164,32 @@
           }
           async function resolvePersonPostKey(seg, pw) {
             if (hubSession.blsTcccPersonPostKey) return hubSession.blsTcccPersonPostKey;
-            const filterField = String(BLS_TCCC_PERSON_FIELD || "PersonnelID").trim();
-            let postKey = filterField;
-            try {
-              const esc = filterField.replace(/'/g, "''");
-              const data = await spFetch(
-                `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=InternalName,TypeAsString`,
-                {},
-                pw,
-              );
-              const internal = String(data.InternalName || filterField).trim();
-              const type = String(data.TypeAsString || "");
-              if (/lookup/i.test(type)) {
-                postKey = internal.endsWith("Id") ? internal : internal + "Id";
-              } else {
-                postKey = internal;
+            const candidates = certTrainingPersonFilterFieldCandidates(
+              BLS_TCCC_PERSON_FIELD,
+              BLS_TCCC_PERSON_FIELD_ALT,
+            );
+            let postKey = String(BLS_TCCC_PERSON_FIELD || "PersonnelId").trim();
+            for (let ci = 0; ci < candidates.length; ci++) {
+              const filterField = candidates[ci];
+              try {
+                const esc = filterField.replace(/'/g, "''");
+                const data = await spFetch(
+                  `/_api/web/${seg}/fields/getbyinternalnameortitle('${esc}')?$select=InternalName,TypeAsString`,
+                  {},
+                  pw,
+                );
+                const internal = String(data.InternalName || filterField).trim();
+                const type = String(data.TypeAsString || "");
+                if (/lookup/i.test(type)) {
+                  postKey = internal.endsWith("Id") ? internal : internal + "Id";
+                } else {
+                  postKey = internal;
+                }
+                hubSession.blsTcccPersonPostKey = postKey;
+                return postKey;
+              } catch (_) {
+                /* try next candidate */
               }
-            } catch (_) {
-              if (filterField === "PersonnelId" || filterField === "PersonnelID") postKey = "PersonnelIdId";
-              else if (!/Id$/.test(filterField)) postKey = filterField + "Id";
             }
             hubSession.blsTcccPersonPostKey = postKey;
             return postKey;
@@ -5063,10 +5266,21 @@
             if (notesEl && item) notesEl.value = formatCellValue(valueFromItemByKeys(item, NOTES_KEYS) || "");
             else if (notesEl) notesEl.value = "";
           }
+          function certifierFieldNameForKind(kind) {
+            if (!kind) return "BlsCertifier";
+            return kind.key === "TCCC" ? "TcccCertifier" : "BlsCertifier";
+          }
           async function populateEditDropdowns(pw) {
             const certSel = document.getElementById(FORM_PREFIX + "Certifier");
             if (!certSel || certSel.tagName !== "SELECT") return;
-            await fillBylawCertifierDropdown(certSel, listSeg(), pw, hubSession.blsTcccSampleRow);
+            const kind = kindByKey(editSession.kind);
+            await fillBylawCertifierDropdown(
+              certSel,
+              listSeg(),
+              pw,
+              hubSession.blsTcccSampleRow,
+              certifierFieldNameForKind(kind),
+            );
           }
           async function openEditPanel(kindKey) {
             if (!personDetailSession.item || personDetailSession.item.Id == null) {
@@ -5099,14 +5313,21 @@
             const expEl = document.getElementById(FORM_PREFIX + "ExpirationDate");
             const certEl = document.getElementById(FORM_PREFIX + "Certifier");
             const notesEl = document.getElementById(FORM_PREFIX + "Notes");
+            function datePayloadFromInput(el) {
+              if (!el) return null;
+              const v = String(el.value || "").trim();
+              if (!v) return null;
+              const d = parseWeaponsCertCalendarDate(v);
+              return d ? spDateTimeFromCalendarDate(d) : null;
+            }
             if (qualEl) {
               const qualWriteKey = resolveWriteKey(kind.qualKeys, sampleRow);
-              const v = formFieldPayloadValue(qualEl, qualWriteKey);
+              const v = datePayloadFromInput(qualEl);
               if (v !== null) payload[qualWriteKey] = v;
             }
             if (expEl) {
               const expWriteKey = resolveWriteKey(kind.expKeys, sampleRow);
-              const v = formFieldPayloadValue(expEl, expWriteKey);
+              const v = datePayloadFromInput(expEl);
               if (v !== null) payload[expWriteKey] = v;
             }
             if (certEl) {
@@ -5173,7 +5394,12 @@
             const payload = {};
             payload[resolveWriteKey(kind.qualKeys, sampleRow)] = null;
             payload[resolveWriteKey(kind.expKeys, sampleRow)] = null;
-            payload[resolveWriteKey(kind.certKeys, sampleRow)] = null;
+            const certWriteKey = await resolveCertifierFieldWriteKey(
+              listSeg(),
+              pw,
+              certifierFieldNameForKind(kind),
+            );
+            payload[certWriteKey] = null;
             try {
               setState("loading", "Clearing " + kind.label + " certification...");
               await spFetch(`/_api/web/${listSeg()}/items(${existing.Id})`, { method: "MERGE", body: payload }, pw);
@@ -13395,7 +13621,7 @@
           block.className = "person-cleo-block";
           const title = document.createElement("div");
           title.className = "person-cleo-block-title";
-          title.textContent = "CLEO / Post RC";
+          title.textContent = "CLEO / Post RC / SMC / Sustainment";
           block.appendChild(title);
           const grid = document.createElement("div");
           grid.className = "person-cleo-grid";
@@ -13455,14 +13681,21 @@
         }
 
         function buildCleoEditBlock(item, sampleRow) {
-          const cols = normalizedPersonnelCleoColumns();
+          const cols = normalizedPersonnelCleoColumns().filter(function (c) {
+            return (
+              c.key !== "SMCDateCompleted" &&
+              c.key !== "SMCExpirationDate" &&
+              c.key !== "M4M18SustCompletedDate" &&
+              c.key !== "M4M18SustDueDate"
+            );
+          });
           if (!cols.length) return null;
           const idPrefix = "pf_";
           const block = document.createElement("div");
           block.className = "person-cleo-block";
           const title = document.createElement("div");
           title.className = "person-cleo-block-title";
-          title.textContent = "CLEO / Post RC";
+          title.textContent = "CLEO / Post RC / SMC / Sustainment";
           block.appendChild(title);
           const grid = document.createElement("div");
           grid.className = "person-cleo-grid person-cleo-edit-grid";
@@ -13798,6 +14031,7 @@
             );
             wirePersonPostRCQualAutoExpiry(form, "pf_");
             applyPersonPostRCExpirationFromQual("pf_");
+            applyPersonSustainmentDueFromWeapons("pf_", item.Id);
             wirePersonnelFieldInputBehaviors(form, "pf_");
             requestAnimationFrame(function () {
               requestAnimationFrame(function () {
@@ -13898,7 +14132,7 @@
               payload[writeKey] = personnelCleoPayloadValue(el, writeKey, s.sampleRow);
               return;
             }
-            if (col.key === "PostRCExpirationDate") return;
+            if (col.key === "PostRCExpirationDate" || col.key === "M4M18SustDueDate") return;
             const v = formFieldPayloadValue(el, writeKey);
             if (v === null) return;
             payload[writeKey] = v;
@@ -13913,6 +14147,14 @@
               const expWriteKey = resolveWriteKey(expCol, s.sampleRow);
               payload[expWriteKey] = isoDateFromCalendarDate(expirationDateFromQualDate(qual)) + "T00:00:00Z";
             }
+          }
+          const sustDueCol = normalizedPersonnelCleoColumns().find(function (c) {
+            return c.key === "M4M18SustDueDate";
+          });
+          if (sustDueCol) {
+            const sustDueWriteKey = resolveWriteKey(sustDueCol, s.sampleRow);
+            const sustDue = sustainmentDueDateFromM4M18(s.item.Id);
+            if (sustDue) payload[sustDueWriteKey] = isoDateFromCalendarDate(sustDue) + "T00:00:00Z";
           }
 
           if (SET_TITLE_ON_CREATE) {
@@ -14485,6 +14727,12 @@
           personDetailCancelBtn.addEventListener("click", function () {
             if (!personDetailSession.item) return;
             void renderPersonDetailView(personDetailSession.item, false);
+          });
+        }
+        if (personWeaponsSupportForm) {
+          personWeaponsSupportForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            void savePersonWeaponsSupport();
           });
         }
 
@@ -15071,28 +15319,39 @@
           return fetchListItemChoices(pw, "", listId, lookupField);
         }
 
-        async function resolveBylawCertifierWriteKey(seg, pw) {
+        async function resolveCertifierFieldWriteKey(seg, pw, fieldName) {
+          const name = String(fieldName || "Certifier").trim();
           try {
-            const r = await fetchChoiceOptions(seg, pw, "Certifier");
-            const internal = String((r.field && r.field.InternalName) || "Certifier").trim();
+            const r = await fetchChoiceOptions(seg, pw, name);
+            const internal = String((r.field && r.field.InternalName) || name).trim();
             const type = String((r.field && r.field.TypeAsString) || "");
             if (/lookup/i.test(type)) {
               return internal.endsWith("Id") ? internal : internal + "Id";
             }
             return internal;
           } catch (_) {
-            return "CertifierId";
+            if (name === "Certifier") return "CertifierId";
+            const base = name.replace(/Id$/, "");
+            return base ? base + "Id" : "CertifierId";
           }
         }
 
-        async function fillBylawCertifierDropdown(sel, seg, pw, sampleRow) {
+        async function resolveBylawCertifierWriteKey(seg, pw) {
+          return resolveCertifierFieldWriteKey(seg, pw, "Certifier");
+        }
+
+        async function fillBylawCertifierDropdown(sel, seg, pw, sampleRow, certFieldName) {
           if (!sel || sel.tagName !== "SELECT") return;
-          const certCol = normalizedBylawTrainingColumns().find(function (c) {
-            return c.key === "Certifier";
-          });
+          const fieldName = String(certFieldName || "Certifier").trim();
+          const certCol =
+            fieldName === "Certifier"
+              ? normalizedBylawTrainingColumns().find(function (c) {
+                  return c.key === "Certifier";
+                })
+              : { key: fieldName, label: fieldName, altKeys: [fieldName + "Id"] };
           if (!certCol) return;
 
-          const writeKey = await resolveBylawCertifierWriteKey(seg, pw);
+          const writeKey = await resolveCertifierFieldWriteKey(seg, pw, fieldName);
           const lookupBase = writeKey.replace(/Id$/, "");
           sel.dataset.writeKey = writeKey;
           if (lookupBase) sel.dataset.lookupDisplayKey = lookupBase;
@@ -15108,7 +15367,7 @@
 
           const listSeg = certifiersListApiSegment();
           const errText = listSeg
-            ? "(no certifiers in list " + LIST_CERTIFIERS + " - check Certifier column and list permissions)"
+            ? "(no certifiers in list " + LIST_CERTIFIERS + " - check " + fieldName + " column and list permissions)"
             : "(Certifiers list not configured)";
           while (sel.options.length > 1) sel.remove(1);
           const o = document.createElement("option");

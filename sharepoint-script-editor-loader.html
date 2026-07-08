@@ -72,7 +72,7 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260702j</span>
+              Build <span id="hubBuildIdLabel">20260708c</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
@@ -170,6 +170,32 @@
                   <div class="add-form-actions">
                     <button type="submit" id="personWeaponsSaveBtn">Save qualification</button>
                     <button type="button" id="personWeaponsAddCancelBtn" class="btn-secondary">Cancel</button>
+                  </div>
+                </form>
+              </div>
+              <div id="personWeaponsSupportPanel" class="weapons-add-panel">
+                <h4 class="weapons-add-title">SMC / M4-M18 Sustainment</h4>
+                <form id="personWeaponsSupportForm" class="weapons-add-form add-form-stack" aria-label="Edit SMC and sustainment dates">
+                  <div class="add-form-grid">
+                    <div class="add-field">
+                      <label for="pw_SMCDateCompleted">SMC date completed</label>
+                      <input type="date" id="pw_SMCDateCompleted" />
+                    </div>
+                    <div class="add-field">
+                      <label for="pw_SMCExpirationDate">SMC date expired</label>
+                      <input type="date" id="pw_SMCExpirationDate" />
+                    </div>
+                    <div class="add-field">
+                      <label for="pw_M4M18SustCompletedDate">M4/M18 sust date completed</label>
+                      <input type="date" id="pw_M4M18SustCompletedDate" />
+                    </div>
+                    <div class="add-field">
+                      <label for="pw_M4M18SustDueDate">M4/M18 sust due date</label>
+                      <input type="date" id="pw_M4M18SustDueDate" disabled />
+                    </div>
+                  </div>
+                  <div class="add-form-actions">
+                    <button type="submit" id="personWeaponsSupportSaveBtn">Save sustainment</button>
                   </div>
                 </form>
               </div>
@@ -710,9 +736,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260702j";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260702j";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260702j";
+  var LOADER_BUILD_ID = "20260708c";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260708c";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260708c";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 
