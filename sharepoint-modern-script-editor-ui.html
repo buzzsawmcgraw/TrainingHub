@@ -8617,6 +8617,7 @@
         function createPersonBlsTcccModule() {
           const editSession = { kind: null };
           const listSession = { item: null };
+          const certifierLabelById = Object.create(null);
           const FORM_PREFIX = "bt_";
           const AUTO_EXPIRY_KEY = "blsTcccAutoExpiryWired";
           const KIND_DEFS = [
@@ -8692,6 +8693,37 @@
             if (!item || !kind) return null;
             return valueFromItemByKeys(item, kind.certKeys);
           }
+          function setCertifierLookupCache(entries) {
+            Object.keys(certifierLabelById).forEach(function (k) {
+              delete certifierLabelById[k];
+            });
+            (Array.isArray(entries) ? entries : []).forEach(function (entry) {
+              const id = String(entry && entry.id != null ? entry.id : "").trim();
+              const text = String(entry && entry.text != null ? entry.text : "").trim();
+              if (!id || !text) return;
+              certifierLabelById[id] = text;
+            });
+          }
+          function certifierDisplayFromRaw(raw) {
+            if (raw === null || raw === undefined || raw === "") return "";
+            if (typeof raw === "number") {
+              const hit = certifierLabelById[String(raw)];
+              return hit || String(raw);
+            }
+            if (typeof raw === "string") {
+              const s = raw.trim();
+              if (/^\d+$/.test(s) && certifierLabelById[s]) return certifierLabelById[s];
+              return s;
+            }
+            if (typeof raw === "object") {
+              const label = formatSharePointLookupDisplay(raw);
+              if (label && !/^\d+$/.test(String(label).trim())) return label;
+              const id = raw.Id != null ? String(raw.Id).trim() : "";
+              if (id && certifierLabelById[id]) return certifierLabelById[id];
+              return label;
+            }
+            return formatSharePointLookupDisplay(raw);
+          }
           function certStatusForKind(item, kind) {
             const qual = parseWeaponsCertCalendarDate(kindQualValue(item, kind));
             let expiry = parseWeaponsCertCalendarDate(kindExpRawValue(item, kind));
@@ -8750,7 +8782,7 @@
               tdExp.textContent = displayCellText(hasQual ? formatWeaponsCertDisplayDate(kindExpValue(item, kind)) : "-");
               tr.appendChild(tdExp);
               const tdCert = document.createElement("td");
-              tdCert.textContent = displayCellText(hasQual ? formatSharePointLookupDisplay(kindCertValue(item, kind)) : "-");
+              tdCert.textContent = displayCellText(hasQual ? certifierDisplayFromRaw(kindCertValue(item, kind)) : "-");
               tr.appendChild(tdCert);
               const tdStatus = document.createElement("td");
               const status = hasQual ? certStatusForKind(item, kind) : { text: "-", tone: "unknown" };
@@ -9058,6 +9090,7 @@
               return;
             }
             try {
+              setCertifierLookupCache(await fetchCertifiersListEntries(pw));
               const item = await fetchListItemForPerson(personId, pw);
               listSession.item = item;
               if (item) hubSession.blsTcccSampleRow = item;
