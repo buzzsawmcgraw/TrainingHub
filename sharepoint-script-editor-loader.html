@@ -72,7 +72,7 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260709c</span>
+              Build <span id="hubBuildIdLabel">20260709d</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
@@ -91,7 +91,7 @@
         <section class="hub-section hub-section--status" aria-label="Connection status and refresh">
           <div id="rosterReadState" class="read-state loading">Loading list...</div>
           <div class="hub-toolbar">
-            <button type="button" id="probeRun" class="btn-refresh">Refresh list</button>
+            <button type="button" id="probeRun" class="pip-btn-refresh">Refresh list</button>
           </div>
         </section>
         <section class="hub-section hub-section--roster" aria-label="Personnel Roster">
@@ -128,7 +128,7 @@
               </div>
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="personDetailEditBtn" class="btn-secondary">Edit record</button>
-                <button type="button" id="personDetailSaveBtn" class="btn-primary" hidden>Save changes</button>
+                <button type="button" id="personDetailSaveBtn" class="pip-btn-save" hidden>Save changes</button>
                 <button type="button" id="personDetailCancelBtn" class="btn-secondary" hidden>Cancel</button>
               </div>
             </div>
@@ -162,7 +162,7 @@
                     <div id="personWeaponsBulkItems" class="bylaw-bulk-items" role="group" aria-label="Weapons to qualify"></div>
                   </div>
                   <div class="add-form-actions">
-                    <button type="submit" id="personWeaponsBulkSaveBtn">Save all selected</button>
+                    <button type="submit" class="pip-btn-save" id="personWeaponsBulkSaveBtn">Save all selected</button>
                     <button type="button" id="personWeaponsBulkCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
                 </form>
@@ -172,7 +172,7 @@
                 <form id="personWeaponsAddForm" class="weapons-add-form add-form-stack" aria-label="Add Weapons Qualification">
                   <div id="personWeaponsAddFields" class="add-form-grid"></div>
                   <div class="add-form-actions">
-                    <button type="submit" id="personWeaponsSaveBtn">Save qualification</button>
+                    <button type="submit" class="pip-btn-save" id="personWeaponsSaveBtn">Save qualification</button>
                     <button type="button" id="personWeaponsAddCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
                 </form>
@@ -199,7 +199,7 @@
                     </div>
                   </div>
                   <div class="add-form-actions">
-                    <button type="submit" id="personWeaponsSupportSaveBtn">Save sustainment</button>
+                    <button type="submit" class="pip-btn-save" id="personWeaponsSupportSaveBtn">Save sustainment</button>
                   </div>
                 </form>
               </div>
@@ -231,7 +231,7 @@
                     <div id="personBylawBulkItems" class="bylaw-bulk-items" role="group" aria-label="Training items to add"></div>
                   </div>
                   <div class="add-form-actions">
-                    <button type="submit" id="personBylawBulkSaveBtn">Save all selected</button>
+                    <button type="submit" class="pip-btn-save" id="personBylawBulkSaveBtn">Save all selected</button>
                     <button type="button" id="personBylawBulkCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
                 </form>
@@ -241,7 +241,7 @@
                 <form id="personBylawAddForm" class="bylaw-add-form add-form-stack" aria-label="Add By-Law Training Record">
                   <div id="personBylawAddFields" class="add-form-grid"></div>
                   <div class="add-form-actions">
-                    <button type="submit" id="personBylawSaveBtn">Save Training</button>
+                    <button type="submit" class="pip-btn-save" id="personBylawSaveBtn">Save Training</button>
                     <button type="button" id="personBylawAddCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
                 </form>
@@ -261,7 +261,7 @@
                 <form id="personTcccBlsEditForm" class="bylaw-add-form add-form-stack" aria-label="Edit TCCC / BLS certification">
                   <div id="personTcccBlsEditFields" class="add-form-grid"></div>
                   <div class="add-form-actions">
-                    <button type="submit" id="personTcccBlsSaveBtn">Save</button>
+                    <button type="submit" class="pip-btn-save" id="personTcccBlsSaveBtn">Save</button>
                     <button type="button" id="personTcccBlsClearBtn" class="btn-secondary">Clear certification</button>
                     <button type="button" id="personTcccBlsEditCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
@@ -311,7 +311,7 @@
                   </div>
                 </div>
                 <div class="add-form-actions">
-                  <button type="submit" id="instructorsSaveBtn">Save instructor</button>
+                  <button type="submit" class="pip-btn-save" id="instructorsSaveBtn">Save instructor</button>
                   <button type="button" id="instructorsAddCancelBtn" class="btn-secondary">Cancel</button>
                 </div>
               </form>
@@ -356,7 +356,7 @@
             <h2 class="hub-subtitle person-detail-title">ETHOS Members</h2>
             <div id="ethosReadState" class="read-state loading">Loading ETHOS list...</div>
             <div class="hub-toolbar">
-              <button type="button" id="ethosProbeRun" class="btn-refresh">Refresh list</button>
+              <button type="button" id="ethosProbeRun" class="pip-btn-refresh">Refresh list</button>
             </div>
             <div id="ethosAddMemberPanel" class="add-person-panel" aria-live="polite"></div>
             <div class="roster-wrap">
@@ -377,7 +377,7 @@
               <a id="ethosMemberDetailBackLink" class="person-detail-back" href="#">Back to ETHOS roster</a>
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="ethosMemberDetailEditBtn" class="btn-secondary">Edit record</button>
-                <button type="button" id="ethosMemberDetailSaveBtn" class="btn-primary" hidden>Save changes</button>
+                <button type="button" id="ethosMemberDetailSaveBtn" class="pip-btn-save" hidden>Save changes</button>
                 <button type="button" id="ethosMemberDetailCancelBtn" class="btn-secondary" hidden>Cancel</button>
               </div>
             </div>
@@ -411,7 +411,7 @@
                     <div id="ethosWeaponsBulkItems" class="bylaw-bulk-items" role="group" aria-label="Weapons to qualify"></div>
                   </div>
                   <div class="add-form-actions">
-                    <button type="submit" id="ethosWeaponsBulkSaveBtn">Save all selected</button>
+                    <button type="submit" class="pip-btn-save" id="ethosWeaponsBulkSaveBtn">Save all selected</button>
                     <button type="button" id="ethosWeaponsBulkCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
                 </form>
@@ -421,7 +421,7 @@
                 <form id="ethosWeaponsAddForm" class="weapons-add-form add-form-stack" aria-label="Add ETHOS Weapons Qualification">
                   <div id="ethosWeaponsAddFields" class="add-form-grid"></div>
                   <div class="add-form-actions">
-                    <button type="submit" id="ethosWeaponsSaveBtn">Save qualification</button>
+                    <button type="submit" class="pip-btn-save" id="ethosWeaponsSaveBtn">Save qualification</button>
                     <button type="button" id="ethosWeaponsAddCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
                 </form>
@@ -454,7 +454,7 @@
                     <div id="ethosBylawBulkItems" class="bylaw-bulk-items" role="group" aria-label="Training items to add"></div>
                   </div>
                   <div class="add-form-actions">
-                    <button type="submit" id="ethosBylawBulkSaveBtn">Save all selected</button>
+                    <button type="submit" class="pip-btn-save" id="ethosBylawBulkSaveBtn">Save all selected</button>
                     <button type="button" id="ethosBylawBulkCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
                 </form>
@@ -464,7 +464,7 @@
                 <form id="ethosBylawAddForm" class="bylaw-add-form add-form-stack" aria-label="Add ETHOS By-Law Training Record">
                   <div id="ethosBylawAddFields" class="add-form-grid"></div>
                   <div class="add-form-actions">
-                    <button type="submit" id="ethosBylawSaveBtn">Save Training</button>
+                    <button type="submit" class="pip-btn-save" id="ethosBylawSaveBtn">Save Training</button>
                     <button type="button" id="ethosBylawAddCancelBtn" class="btn-secondary">Cancel</button>
                   </div>
                 </form>
@@ -504,7 +504,7 @@
                   <div id="schedulingAddFields" class="add-form-grid scheduling-add-fields-grid"></div>
                 </div>
                 <div class="add-form-actions">
-                  <button type="submit" id="schedulingSaveBtn">Save appointment</button>
+                  <button type="submit" class="pip-btn-save" id="schedulingSaveBtn">Save appointment</button>
                   <button type="button" id="schedulingAddCancelBtn" class="btn-secondary">Cancel</button>
                 </div>
               </form>
@@ -536,7 +536,7 @@
               <a id="phase1BackLink" class="person-detail-back" href="#">Back to roster</a>
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="phase1AddBtn" class="btn-secondary">Enter Phase 1</button>
-                <button type="button" id="phase1RefreshBtn" class="btn-refresh">Refresh</button>
+                <button type="button" id="phase1RefreshBtn" class="pip-btn-refresh">Refresh</button>
               </div>
             </div>
             <h2 class="hub-subtitle person-detail-title">Phase-1 Tracker</h2>
@@ -574,7 +574,7 @@
               <form id="phase1EditForm" class="weapons-add-form add-form-stack" aria-label="Edit Phase 1 record">
                 <div id="phase1EditFields" class="add-form-grid"></div>
                 <div class="add-form-actions">
-                  <button type="submit" id="phase1EditSaveBtn">Save changes</button>
+                  <button type="submit" class="pip-btn-save" id="phase1EditSaveBtn">Save changes</button>
                   <button type="button" id="phase1EditCancelBtn" class="btn-secondary">Cancel</button>
                   <button type="button" id="phase1ArchiveBtn" class="btn-danger">Archive record</button>
                 </div>
@@ -658,7 +658,7 @@
                   <label for="schedulingMemoLetterheadFooter">Memo footer (optional)</label>
                   <textarea id="schedulingMemoLetterheadFooter" rows="3" placeholder="Distribution, page note, or footer text"></textarea>
                 </div>
-                <button type="button" id="schedulingMemoLetterheadSaveBtn" class="btn-primary">Save letterhead</button>
+                <button type="button" id="schedulingMemoLetterheadSaveBtn" class="pip-btn-save">Save letterhead</button>
               </details>
               <p class="scheduling-hint">
                 Signature blocks - choose Personnel, title, and squadron from the dropdowns below.
@@ -740,9 +740,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260709c";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260709c";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260709c";
+  var LOADER_BUILD_ID = "20260709d";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260709d";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260709d";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 

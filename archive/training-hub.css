@@ -258,40 +258,49 @@
         font-weight: 700;
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: #021208;
-        background: linear-gradient(180deg, #5dff8f 0%, var(--pip-green) 100%);
-        border: 1px solid var(--pip-green-dim);
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        color: #021208 !important;
+        background: linear-gradient(180deg, #5dff8f 0%, var(--pip-green) 100%) !important;
+        border: 1px solid var(--pip-green-dim) !important;
         border-radius: 4px;
-        text-shadow: none;
+        text-shadow: none !important;
         box-shadow: 0 0 14px var(--pip-green-glow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        min-width: 0 !important;
+        -webkit-appearance: none;
+        appearance: none;
       }
       #sp-pip-ui button:hover {
-        background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%);
-        color: #010a06;
+        background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%) !important;
+        color: #010a06 !important;
       }
-      #sp-pip-ui button.btn-primary,
-      #sp-pip-ui button.btn-refresh,
+      #sp-pip-ui button.pip-btn-save,
+      #sp-pip-ui button.pip-btn-refresh,
       #sp-pip-ui .add-form-actions button[type="submit"]:not(.btn-secondary) {
-        background: linear-gradient(180deg, #5dff8f 0%, var(--pip-green) 100%);
-        color: #021208;
-        border: 1px solid var(--pip-green-dim);
-        box-shadow: 0 0 14px var(--pip-green-glow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        color: #021208 !important;
+        background: linear-gradient(180deg, #5dff8f 0%, var(--pip-green) 100%) !important;
+        border: 1px solid var(--pip-green-dim) !important;
+        box-shadow: 0 0 14px var(--pip-green-glow), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
       }
-      #sp-pip-ui button.btn-primary:hover,
-      #sp-pip-ui button.btn-refresh:hover,
+      #sp-pip-ui button.pip-btn-save:hover,
+      #sp-pip-ui button.pip-btn-refresh:hover,
       #sp-pip-ui .add-form-actions button[type="submit"]:not(.btn-secondary):hover {
-        background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%);
-        color: #010a06;
+        background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%) !important;
+        color: #010a06 !important;
       }
       #sp-pip-ui button.btn-secondary {
-        background: rgba(8, 24, 14, 0.6);
-        color: var(--pip-green);
-        border: 1px solid var(--pip-green-dim);
-        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.06);
+        background: rgba(8, 24, 14, 0.6) !important;
+        color: var(--pip-green) !important;
+        border: 1px solid var(--pip-green-dim) !important;
+        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.06) !important;
       }
       #sp-pip-ui button.btn-secondary:hover {
-        background: rgba(30, 255, 69, 0.12);
-        color: #7dff8f;
+        background: rgba(30, 255, 69, 0.12) !important;
+        color: #7dff8f !important;
       }
       #sp-pip-ui button.btn-danger {
         margin: 0;
