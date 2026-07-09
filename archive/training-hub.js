@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260709d";
+        const HUB_BUILD_ID = "20260709e";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -7661,7 +7661,7 @@
           details.appendChild(fields);
           const saveBtn = document.createElement("button");
           saveBtn.type = "button";
-          saveBtn.className = "pip-btn-save mql-sig-save-btn";
+          saveBtn.className = "mql-sig-save-btn";
           saveBtn.textContent = "Save signature block";
           details.appendChild(saveBtn);
           saveBtn.addEventListener("click", function () {
@@ -11162,7 +11162,6 @@
           addBtn.textContent = "Add line";
           const saveBtn = document.createElement("button");
           saveBtn.type = "button";
-          saveBtn.className = "pip-btn-save";
           saveBtn.id = "reportsSotManualSave";
           saveBtn.textContent = "Save rows";
           toolbar.appendChild(addBtn);
@@ -11479,7 +11478,6 @@
           addBtn.textContent = "Add line";
           const saveBtn = document.createElement("button");
           saveBtn.type = "button";
-          saveBtn.className = "pip-btn-save";
           saveBtn.id = "reportsSotUpcomingSave";
           saveBtn.textContent = "Save rows";
           toolbar.appendChild(addBtn);
@@ -16315,7 +16313,6 @@
           bar.className = "add-form-actions";
           const submitBtn = document.createElement("button");
           submitBtn.type = "submit";
-          submitBtn.className = "pip-btn-save";
           submitBtn.textContent = "Submit";
           bar.appendChild(submitBtn);
           const clearBtn = document.createElement("button");
@@ -16807,7 +16804,6 @@
           bar.className = "add-form-actions";
           const submitBtn = document.createElement("button");
           submitBtn.type = "submit";
-          submitBtn.className = "pip-btn-save";
           submitBtn.textContent = "Submit";
           bar.appendChild(submitBtn);
           form.appendChild(bar);

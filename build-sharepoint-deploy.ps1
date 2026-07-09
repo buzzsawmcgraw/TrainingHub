@@ -112,6 +112,39 @@ $loaderCss = @'
       #sp-pip-ui .hub-build-badge #hubBuildIdLabel {
         color: #0a140c;
       }
+      #sp-pip-ui #hubAccessSubmit,
+      #sp-pip-ui #probeRun,
+      #sp-pip-ui #ethosProbeRun,
+      #sp-pip-ui #phase1RefreshBtn,
+      #sp-pip-ui #personDetailSaveBtn,
+      #sp-pip-ui #ethosMemberDetailSaveBtn,
+      #sp-pip-ui #schedulingMemoLetterheadSaveBtn,
+      #sp-pip-ui #reportsSotManualSave,
+      #sp-pip-ui #reportsSotUpcomingSave,
+      #sp-pip-ui button.mql-sig-save-btn,
+      #sp-pip-ui form#newPersonForm button[type="submit"],
+      #sp-pip-ui .add-form-actions > button[type="submit"] {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        min-width: 8em !important;
+        min-height: 2.25em !important;
+        width: auto !important;
+        height: auto !important;
+        color: #021208 !important;
+        background: linear-gradient(180deg, #5dff8f 0%, #3cff7a 100%) !important;
+        border: 1px solid #1f8f47 !important;
+        border-radius: 4px !important;
+        box-shadow: 0 0 14px rgba(60, 255, 122, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+        font-family: Consolas, Monaco, "Courier New", monospace !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.1em !important;
+        text-transform: uppercase !important;
+        cursor: pointer !important;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+      }
 '@
 
 $loaderJs = @'
