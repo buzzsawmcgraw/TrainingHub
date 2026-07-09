@@ -652,23 +652,19 @@
         margin-top: 0;
         margin-bottom: 0;
       }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired,
-      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--expired {
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired {
         background: #f5c2c7 !important;
         color: #000 !important;
       }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--urgent,
-      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--urgent {
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--urgent {
         background: #ffc78a !important;
         color: #000 !important;
       }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--warn,
-      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--warn {
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--warn {
         background: #fff3a0 !important;
         color: #000 !important;
       }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--recert,
-      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--recert {
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--recert {
         background: #b8e6b8 !important;
         color: #000 !important;
       }
@@ -676,6 +672,22 @@
       #sp-pip-ui table.reports-mql-table td.mql-cert-cell {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+      }
+      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--expired {
+        background: transparent !important;
+        color: #b10f1d !important;
+      }
+      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--urgent {
+        background: transparent !important;
+        color: #c76300 !important;
+      }
+      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--warn {
+        background: transparent !important;
+        color: #8a6a00 !important;
+      }
+      #sp-pip-ui table.reports-mql-table td.mql-cert-cell--recert {
+        background: transparent !important;
+        color: #146a3a !important;
       }
       #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table {
         font-size: 7pt;
