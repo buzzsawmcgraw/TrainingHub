@@ -273,6 +273,20 @@
         background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%);
         color: #010a06;
       }
+      #sp-pip-ui button.btn-primary,
+      #sp-pip-ui button.btn-refresh,
+      #sp-pip-ui .add-form-actions button[type="submit"]:not(.btn-secondary) {
+        background: linear-gradient(180deg, #5dff8f 0%, var(--pip-green) 100%);
+        color: #021208;
+        border: 1px solid var(--pip-green-dim);
+        box-shadow: 0 0 14px var(--pip-green-glow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      }
+      #sp-pip-ui button.btn-primary:hover,
+      #sp-pip-ui button.btn-refresh:hover,
+      #sp-pip-ui .add-form-actions button[type="submit"]:not(.btn-secondary):hover {
+        background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%);
+        color: #010a06;
+      }
       #sp-pip-ui button.btn-secondary {
         background: rgba(8, 24, 14, 0.6);
         color: var(--pip-green);
@@ -434,6 +448,15 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
+      }
+      #sp-pip-ui .person-detail-toolbar-start {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+      #sp-pip-ui .person-detail-toolbar-start button {
+        margin: 0;
       }
       #sp-pip-ui .person-detail-toolbar-actions {
         display: flex;
@@ -2946,7 +2969,7 @@
         <section class="hub-section hub-section--status" aria-label="Connection status and refresh">
           <div id="rosterReadState" class="read-state loading">Loading list...</div>
           <div class="hub-toolbar">
-            <button type="button" id="probeRun">Refresh list</button>
+            <button type="button" id="probeRun" class="btn-refresh">Refresh list</button>
           </div>
         </section>
         <section class="hub-section hub-section--roster" aria-label="Personnel Roster">
@@ -2976,10 +2999,14 @@
         <section id="personDetailSection" class="hub-section hub-section--person-detail" hidden aria-label="Personnel Record Detail">
           <div class="person-detail-panel">
             <div class="person-detail-toolbar">
-              <a id="personDetailBackLink" class="person-detail-back" href="#">Back to roster</a>
+              <div class="person-detail-toolbar-start">
+                <a id="personDetailBackLink" class="person-detail-back" href="#">Back to roster</a>
+                <button type="button" id="personDetailPrevBtn" class="btn-secondary">Previous record</button>
+                <button type="button" id="personDetailNextBtn" class="btn-secondary">Next record</button>
+              </div>
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="personDetailEditBtn" class="btn-secondary">Edit record</button>
-                <button type="button" id="personDetailSaveBtn" hidden>Save changes</button>
+                <button type="button" id="personDetailSaveBtn" class="btn-primary" hidden>Save changes</button>
                 <button type="button" id="personDetailCancelBtn" class="btn-secondary" hidden>Cancel</button>
               </div>
             </div>
@@ -3207,7 +3234,7 @@
             <h2 class="hub-subtitle person-detail-title">ETHOS Members</h2>
             <div id="ethosReadState" class="read-state loading">Loading ETHOS list...</div>
             <div class="hub-toolbar">
-              <button type="button" id="ethosProbeRun">Refresh list</button>
+              <button type="button" id="ethosProbeRun" class="btn-refresh">Refresh list</button>
             </div>
             <div id="ethosAddMemberPanel" class="add-person-panel" aria-live="polite"></div>
             <div class="roster-wrap">
@@ -3228,7 +3255,7 @@
               <a id="ethosMemberDetailBackLink" class="person-detail-back" href="#">Back to ETHOS roster</a>
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="ethosMemberDetailEditBtn" class="btn-secondary">Edit record</button>
-                <button type="button" id="ethosMemberDetailSaveBtn" hidden>Save changes</button>
+                <button type="button" id="ethosMemberDetailSaveBtn" class="btn-primary" hidden>Save changes</button>
                 <button type="button" id="ethosMemberDetailCancelBtn" class="btn-secondary" hidden>Cancel</button>
               </div>
             </div>
@@ -3387,7 +3414,7 @@
               <a id="phase1BackLink" class="person-detail-back" href="#">Back to roster</a>
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="phase1AddBtn" class="btn-secondary">Enter Phase 1</button>
-                <button type="button" id="phase1RefreshBtn" class="btn-secondary">Refresh</button>
+                <button type="button" id="phase1RefreshBtn" class="btn-refresh">Refresh</button>
               </div>
             </div>
             <h2 class="hub-subtitle person-detail-title">Phase-1 Tracker</h2>
@@ -3509,7 +3536,7 @@
                   <label for="schedulingMemoLetterheadFooter">Memo footer (optional)</label>
                   <textarea id="schedulingMemoLetterheadFooter" rows="3" placeholder="Distribution, page note, or footer text"></textarea>
                 </div>
-                <button type="button" id="schedulingMemoLetterheadSaveBtn" class="btn-secondary">Save letterhead</button>
+                <button type="button" id="schedulingMemoLetterheadSaveBtn" class="btn-primary">Save letterhead</button>
               </details>
               <p class="scheduling-hint">
                 Signature blocks - choose Personnel, title, and squadron from the dropdowns below.
@@ -3615,7 +3642,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260709a";
+        const HUB_BUILD_ID = "20260709c";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -4442,6 +4469,8 @@
         const personDetailContent = document.getElementById("personDetailContent");
         const personDetailReadState = document.getElementById("personDetailReadState");
         const personDetailBackLink = document.getElementById("personDetailBackLink");
+        const personDetailPrevBtn = document.getElementById("personDetailPrevBtn");
+        const personDetailNextBtn = document.getElementById("personDetailNextBtn");
         const personDetailEditBtn = document.getElementById("personDetailEditBtn");
         const personDetailSaveBtn = document.getElementById("personDetailSaveBtn");
         const personDetailCancelBtn = document.getElementById("personDetailCancelBtn");
@@ -11250,7 +11279,7 @@
           details.appendChild(fields);
           const saveBtn = document.createElement("button");
           saveBtn.type = "button";
-          saveBtn.className = "btn-secondary mql-sig-save-btn";
+          saveBtn.className = "btn-primary mql-sig-save-btn";
           saveBtn.textContent = "Save signature block";
           details.appendChild(saveBtn);
           saveBtn.addEventListener("click", function () {
@@ -17543,6 +17572,49 @@
           if (personDetailEditBtn) personDetailEditBtn.hidden = !!editing;
           if (personDetailSaveBtn) personDetailSaveBtn.hidden = !editing;
           if (personDetailCancelBtn) personDetailCancelBtn.hidden = !editing;
+          updatePersonDetailNavButtons();
+        }
+
+        function personnelDetailNavigationRows() {
+          const allRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+          const searchQuery = getRosterSearchQuery();
+          return filterPersonnelRowsBySearch(allRows, searchQuery).filter(function (row) {
+            return row && row.Id != null;
+          });
+        }
+
+        function personnelDetailNeighborId(direction) {
+          const rows = personnelDetailNavigationRows();
+          const currentId = personDetailSession.item && personDetailSession.item.Id;
+          if (currentId == null || !rows.length) return null;
+          const idx = rows.findIndex(function (row) {
+            return String(row.Id) === String(currentId);
+          });
+          if (idx < 0) return null;
+          if (direction === "prev") return idx > 0 ? rows[idx - 1].Id : null;
+          if (direction === "next") return idx < rows.length - 1 ? rows[idx + 1].Id : null;
+          return null;
+        }
+
+        function updatePersonDetailNavButtons() {
+          const editing = !!(personDetailSession && personDetailSession.editing);
+          const prevId = personnelDetailNeighborId("prev");
+          const nextId = personnelDetailNeighborId("next");
+          if (personDetailPrevBtn) personDetailPrevBtn.disabled = editing || prevId == null;
+          if (personDetailNextBtn) personDetailNextBtn.disabled = editing || nextId == null;
+        }
+
+        function navigatePersonDetailRelative(direction) {
+          if (personDetailSession.editing) return;
+          const neighborId = personnelDetailNeighborId(direction);
+          if (neighborId == null) return;
+          void showPersonDetailById(
+            neighborId,
+            personDetailSession.meta || hubSession.meta,
+            personDetailSession.pw || hubSession.pw,
+            personDetailSession.seg || hubSession.seg,
+            hubSession.rows,
+          );
         }
 
         function itemFieldText(item, fieldKey) {
@@ -18215,6 +18287,7 @@
           await loadPersonBylawTraining(item.Id, personDetailSession.pw);
           if (PERSON_BLS_TCCC) await PERSON_BLS_TCCC.load(item.Id, personDetailSession.pw);
           await loadPersonAppointments(item.Id, personDetailSession.pw);
+          updatePersonDetailNavButtons();
         }
 
         async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {
@@ -18227,6 +18300,18 @@
           personDetailBackLink.addEventListener("click", function (ev) {
             ev.preventDefault();
             void navigateToRoster();
+          });
+        }
+
+        if (personDetailPrevBtn) {
+          personDetailPrevBtn.addEventListener("click", function () {
+            navigatePersonDetailRelative("prev");
+          });
+        }
+
+        if (personDetailNextBtn) {
+          personDetailNextBtn.addEventListener("click", function () {
+            navigatePersonDetailRelative("next");
           });
         }
 

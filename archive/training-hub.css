@@ -269,6 +269,20 @@
         background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%);
         color: #010a06;
       }
+      #sp-pip-ui button.btn-primary,
+      #sp-pip-ui button.btn-refresh,
+      #sp-pip-ui .add-form-actions button[type="submit"]:not(.btn-secondary) {
+        background: linear-gradient(180deg, #5dff8f 0%, var(--pip-green) 100%);
+        color: #021208;
+        border: 1px solid var(--pip-green-dim);
+        box-shadow: 0 0 14px var(--pip-green-glow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      }
+      #sp-pip-ui button.btn-primary:hover,
+      #sp-pip-ui button.btn-refresh:hover,
+      #sp-pip-ui .add-form-actions button[type="submit"]:not(.btn-secondary):hover {
+        background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%);
+        color: #010a06;
+      }
       #sp-pip-ui button.btn-secondary {
         background: rgba(8, 24, 14, 0.6);
         color: var(--pip-green);
@@ -430,6 +444,15 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
+      }
+      #sp-pip-ui .person-detail-toolbar-start {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+      #sp-pip-ui .person-detail-toolbar-start button {
+        margin: 0;
       }
       #sp-pip-ui .person-detail-toolbar-actions {
         display: flex;

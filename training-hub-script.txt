@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260709a";
+        const HUB_BUILD_ID = "20260709c";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -851,6 +851,8 @@
         const personDetailContent = document.getElementById("personDetailContent");
         const personDetailReadState = document.getElementById("personDetailReadState");
         const personDetailBackLink = document.getElementById("personDetailBackLink");
+        const personDetailPrevBtn = document.getElementById("personDetailPrevBtn");
+        const personDetailNextBtn = document.getElementById("personDetailNextBtn");
         const personDetailEditBtn = document.getElementById("personDetailEditBtn");
         const personDetailSaveBtn = document.getElementById("personDetailSaveBtn");
         const personDetailCancelBtn = document.getElementById("personDetailCancelBtn");
@@ -7659,7 +7661,7 @@
           details.appendChild(fields);
           const saveBtn = document.createElement("button");
           saveBtn.type = "button";
-          saveBtn.className = "btn-secondary mql-sig-save-btn";
+          saveBtn.className = "btn-primary mql-sig-save-btn";
           saveBtn.textContent = "Save signature block";
           details.appendChild(saveBtn);
           saveBtn.addEventListener("click", function () {
@@ -13952,6 +13954,49 @@
           if (personDetailEditBtn) personDetailEditBtn.hidden = !!editing;
           if (personDetailSaveBtn) personDetailSaveBtn.hidden = !editing;
           if (personDetailCancelBtn) personDetailCancelBtn.hidden = !editing;
+          updatePersonDetailNavButtons();
+        }
+
+        function personnelDetailNavigationRows() {
+          const allRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+          const searchQuery = getRosterSearchQuery();
+          return filterPersonnelRowsBySearch(allRows, searchQuery).filter(function (row) {
+            return row && row.Id != null;
+          });
+        }
+
+        function personnelDetailNeighborId(direction) {
+          const rows = personnelDetailNavigationRows();
+          const currentId = personDetailSession.item && personDetailSession.item.Id;
+          if (currentId == null || !rows.length) return null;
+          const idx = rows.findIndex(function (row) {
+            return String(row.Id) === String(currentId);
+          });
+          if (idx < 0) return null;
+          if (direction === "prev") return idx > 0 ? rows[idx - 1].Id : null;
+          if (direction === "next") return idx < rows.length - 1 ? rows[idx + 1].Id : null;
+          return null;
+        }
+
+        function updatePersonDetailNavButtons() {
+          const editing = !!(personDetailSession && personDetailSession.editing);
+          const prevId = personnelDetailNeighborId("prev");
+          const nextId = personnelDetailNeighborId("next");
+          if (personDetailPrevBtn) personDetailPrevBtn.disabled = editing || prevId == null;
+          if (personDetailNextBtn) personDetailNextBtn.disabled = editing || nextId == null;
+        }
+
+        function navigatePersonDetailRelative(direction) {
+          if (personDetailSession.editing) return;
+          const neighborId = personnelDetailNeighborId(direction);
+          if (neighborId == null) return;
+          void showPersonDetailById(
+            neighborId,
+            personDetailSession.meta || hubSession.meta,
+            personDetailSession.pw || hubSession.pw,
+            personDetailSession.seg || hubSession.seg,
+            hubSession.rows,
+          );
         }
 
         function itemFieldText(item, fieldKey) {
@@ -14624,6 +14669,7 @@
           await loadPersonBylawTraining(item.Id, personDetailSession.pw);
           if (PERSON_BLS_TCCC) await PERSON_BLS_TCCC.load(item.Id, personDetailSession.pw);
           await loadPersonAppointments(item.Id, personDetailSession.pw);
+          updatePersonDetailNavButtons();
         }
 
         async function showPersonDetailById(itemId, meta, pw, seg, cachedRows) {
@@ -14636,6 +14682,18 @@
           personDetailBackLink.addEventListener("click", function (ev) {
             ev.preventDefault();
             void navigateToRoster();
+          });
+        }
+
+        if (personDetailPrevBtn) {
+          personDetailPrevBtn.addEventListener("click", function () {
+            navigatePersonDetailRelative("prev");
+          });
+        }
+
+        if (personDetailNextBtn) {
+          personDetailNextBtn.addEventListener("click", function () {
+            navigatePersonDetailRelative("next");
           });
         }
 
