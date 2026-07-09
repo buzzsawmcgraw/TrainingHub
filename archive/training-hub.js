@@ -307,6 +307,7 @@
         const SOT_EXCLUDED_CATALOG_LABELS = ["airfield driving", "combatives"];
         const MQL_EXPORT_PRINT_TITLE = "MQL Data Export";
         const MQL_PRINT_STYLE_ID = "hubMqlLandscapePrintStyle";
+        const REPORT_PRINT_STYLE_ID = "hubReportPrintPageStyle";
         /** Fixed landscape columns for standard MQL report and data export. */
         const MQL_STANDARD_COLUMN_DEFS = [
           { label: "Duty Status", kind: "person", field: "status" },
@@ -6751,7 +6752,27 @@
             : (phase1Session.trackingRows || []).filter(function (item) {
                 return phaseOneIsActive(item);
               });
-          renderPhase1Table(rows, isArchive);
+          renderPhase1Table(isArchive ? rows.slice() : sortPhaseOneRowsByDateArrived(rows), isArchive);
+        }
+        function phaseOneDateArrivedForSort(item) {
+          const raw = valueFromItemByKeys(item || {}, ["DateArrived", "Date_x0020_Arrived"]);
+          return parseWeaponsCertCalendarDate(raw);
+        }
+        function sortPhaseOneRowsByDateArrived(rows) {
+          return (Array.isArray(rows) ? rows : []).slice().sort(function (a, b) {
+            const da = phaseOneDateArrivedForSort(a);
+            const db = phaseOneDateArrivedForSort(b);
+            if (da && db && da.getTime() !== db.getTime()) return da.getTime() - db.getTime();
+            if (da && !db) return -1;
+            if (!da && db) return 1;
+            const nameA = phaseOneFieldText(a, { key: "PersonnelName", tryKeys: ["PersonnelName", "Title"] });
+            const nameB = phaseOneFieldText(b, { key: "PersonnelName", tryKeys: ["PersonnelName", "Title"] });
+            const nameCmp = String(nameA || "").localeCompare(String(nameB || ""), undefined, { sensitivity: "base" });
+            if (nameCmp !== 0) return nameCmp;
+            const ida = Number(a && a.Id != null ? a.Id : 0);
+            const idb = Number(b && b.Id != null ? b.Id : 0);
+            return ida - idb;
+          });
         }
         function renderPhase1Table(rows, isArchive) {
           clearPhase1Table();
@@ -7842,6 +7863,21 @@
           }
         }
 
+        function setReportPrintPageMode(mode) {
+          let el = document.getElementById(REPORT_PRINT_STYLE_ID);
+          const wanted = String(mode || "").toLowerCase();
+          if (!wanted || wanted === "default") {
+            if (el) el.remove();
+            return;
+          }
+          if (!el) {
+            el = document.createElement("style");
+            el.id = REPORT_PRINT_STYLE_ID;
+            document.head.appendChild(el);
+          }
+          el.textContent = "@media print { @page { size: " + wanted + "; margin: 0.4in; } }";
+        }
+
         function cloneMqlPrintTableShell(table, includeThead) {
           const shell = document.createElement("table");
           shell.className = table.className;
@@ -8434,6 +8470,7 @@
           if (!schedulingPrintSurface || !node) return;
           const root = document.getElementById("sp-pip-ui");
           schedulingPrintSurface.className = "scheduling-print-surface";
+          setReportPrintPageMode(options.pageOrientation || "default");
           if (options.mqlLandscape) {
             schedulingPrintSurface.classList.add("scheduling-print-surface--mql");
             setMqlLandscapePrintMode(true);
@@ -8451,6 +8488,7 @@
               if (root) root.classList.remove("scheduling-print-active");
               removeMqlPrintSignatureStamp();
               setMqlLandscapePrintMode(false);
+              setReportPrintPageMode("default");
               schedulingPrintSurface.className = "scheduling-print-surface";
               schedulingPrintSurface.hidden = true;
             }, 500);
@@ -12516,7 +12554,7 @@
           const display = mqlDisplayOpts(opts);
           display.catalog = catalog;
           const wrap = document.createElement("div");
-          wrap.className = "roster-wrap reports-mql-wrap";
+          wrap.className = "roster-wrap reports-mql-wrap" + (mqlIsHeavyCatalog(catalog) ? " reports-table-compact" : "");
           const columnLabels = mqlColumnLabels(catalog);
           if (!rows.length) {
             const p = document.createElement("p");
@@ -12586,7 +12624,9 @@
               ? "Heavy Weapons Qual / Authorization Report"
               : MQL_REPORT_PRINT_TITLE);
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc af-official-doc--mql-landscape af-official-doc--mql-signed";
+          wrap.className =
+            "af-official-doc af-official-doc--mql-signed" +
+            (opts && opts.portrait ? " af-official-doc--compact-report" : " af-official-doc--mql-landscape");
           wrap.appendChild(
             buildMqlSignedPrintHeader(title, {
               unitLabel: opts.unitLabel || String(AF_REPORT_UNIT_LABEL || "88th Security Forces Squadron"),
@@ -12711,7 +12751,7 @@
 
         function renderTcccBlsCertReportTable(rows, reportTitle, emptyText) {
           const wrap = document.createElement("div");
-          wrap.className = "roster-wrap";
+          wrap.className = "roster-wrap reports-table-compact";
           if (!rows.length) {
             const p = document.createElement("p");
             p.className = "reports-office-empty";
@@ -12769,7 +12809,7 @@
 
         function renderTcccBlsCertReportPrintDocument(rows, printTitle, emptyText) {
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc";
+          wrap.className = "af-official-doc af-official-doc--compact-report";
           wrap.appendChild(
             buildAfOfficialDocHeader(printTitle, {
               includeSeconds: true,
@@ -12886,7 +12926,7 @@
 
         function renderSmcReportTable(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "roster-wrap";
+          wrap.className = "roster-wrap reports-table-compact";
           if (!rows.length) {
             const p = document.createElement("p");
             p.className = "reports-office-empty";
@@ -12946,7 +12986,7 @@
 
         function renderSmcReportPrintDocument(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc";
+          wrap.className = "af-official-doc af-official-doc--compact-report";
           wrap.appendChild(
             buildAfOfficialDocHeader("SMC Report", {
               includeSeconds: true,
@@ -13005,7 +13045,7 @@
 
         function renderCleoReportTable(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "roster-wrap";
+          wrap.className = "roster-wrap reports-table-compact";
           if (!rows.length) {
             const p = document.createElement("p");
             p.className = "reports-office-empty";
@@ -13058,7 +13098,7 @@
 
         function renderCleoReportPrintDocument(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc";
+          wrap.className = "af-official-doc af-official-doc--compact-report";
           wrap.appendChild(
             buildAfOfficialDocHeader("CLEO Report", {
               includeSeconds: true,
@@ -13087,7 +13127,7 @@
 
         function renderPostRCReportTable(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "roster-wrap";
+          wrap.className = "roster-wrap reports-table-compact";
           if (!rows.length) {
             const p = document.createElement("p");
             p.className = "reports-office-empty";
@@ -13143,7 +13183,7 @@
 
         function renderPostRCReportPrintDocument(rows) {
           const wrap = document.createElement("div");
-          wrap.className = "af-official-doc";
+          wrap.className = "af-official-doc af-official-doc--compact-report";
           wrap.appendChild(
             buildAfOfficialDocHeader("Post RC Report", {
               includeSeconds: true,
@@ -13473,9 +13513,8 @@
             const sigPanel =
               reportsDetailBody && reportsDetailBody.querySelector(".reports-mql-signature-panel");
             const sig = currentMqlSignatureForPrint(sigPanel || reportsDetailBody);
-            triggerMqlPrint(renderMqlSignedPrintDocument(data.rows, data.catalog, { signature: sig }), {
-              signed: true,
-              signature: sig,
+            triggerSchedulingPrint(renderMqlSignedPrintDocument(data.rows, data.catalog, { signature: sig, portrait: true }), {
+              pageOrientation: "portrait",
             });
             return;
           }
@@ -13489,15 +13528,21 @@
             return;
           }
           if (def.id === "cleo-report") {
-            triggerSchedulingPrint(renderCleoReportPrintDocument(buildCleoReportRows(personRows)));
+            triggerSchedulingPrint(renderCleoReportPrintDocument(buildCleoReportRows(personRows)), {
+              pageOrientation: "portrait",
+            });
             return;
           }
           if (def.id === "post-rc-report") {
-            triggerSchedulingPrint(renderPostRCReportPrintDocument(buildPostRCReportRows(personRows)));
+            triggerSchedulingPrint(renderPostRCReportPrintDocument(buildPostRCReportRows(personRows)), {
+              pageOrientation: "portrait",
+            });
             return;
           }
           if (def.id === "smc-report") {
-            triggerSchedulingPrint(renderSmcReportPrintDocument(buildSmcReportRows(personRows)));
+            triggerSchedulingPrint(renderSmcReportPrintDocument(buildSmcReportRows(personRows)), {
+              pageOrientation: "portrait",
+            });
             return;
           }
           if (def.id === "bls-report") {
@@ -13507,6 +13552,7 @@
               const rows = buildTcccBlsCertReportRows(personRows, cache.blsTcccRows || [], "BLS");
               triggerSchedulingPrint(
                 renderTcccBlsCertReportPrintDocument(rows, "BLS Report", "No Personnel with BLS certification on file."),
+                { pageOrientation: "portrait" },
               );
             });
             return;
@@ -13518,6 +13564,7 @@
               const rows = buildTcccBlsCertReportRows(personRows, cache.blsTcccRows || [], "TCCC");
               triggerSchedulingPrint(
                 renderTcccBlsCertReportPrintDocument(rows, "TCCC Report", "No Personnel with TCCC certification on file."),
+                { pageOrientation: "portrait" },
               );
             });
             return;
