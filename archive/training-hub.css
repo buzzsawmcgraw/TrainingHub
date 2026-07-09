@@ -850,6 +850,11 @@
         line-height: 1.15;
         font-variant-numeric: tabular-nums;
       }
+      #sp-pip-ui table.reports-mql-table--heavy th,
+      #sp-pip-ui table.reports-mql-table--heavy td {
+        white-space: normal;
+        word-break: break-word;
+      }
       #sp-pip-ui table.reports-mql-table td.reports-mql-cert {
         font-size: 11px;
       }

@@ -12221,10 +12221,12 @@
           if (!mqlIsHeavyCatalog(catalog)) return mqlStandardColumnLabels();
           const labels = ["Duty Status", "Full Name"];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (w) {
-            labels.push(w);
+            labels.push(w + " Qual");
+            labels.push(w + " Exp");
           });
           (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (b) {
-            labels.push(b);
+            labels.push(b + " Qual");
+            labels.push(b + " Exp");
           });
           return labels;
         }
@@ -12251,10 +12253,14 @@
             display.displayNameFn(person),
           ];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
-            cells.push(mqlCertCell(mqlLookupCertRow(entry.weapons, label), computeMqlWeaponsCertCellStatus));
+            const row = mqlLookupCertRow(entry.weapons, label);
+            cells.push(mqlExportCertCell(row, "qual", computeMqlWeaponsCertCellStatus, true));
+            cells.push(mqlExportCertCell(row, "exp", computeMqlWeaponsCertCellStatus, true));
           });
           (catalog && catalog.bylaws ? catalog.bylaws : []).forEach(function (label) {
-            cells.push(mqlCertCell(mqlLookupCertRow(entry.bylaws, label), computeMqlBylawCertCellStatus));
+            const row = mqlLookupCertRow(entry.bylaws, label);
+            cells.push(mqlExportCertCell(row, "qual", computeMqlBylawCertCellStatus, false));
+            cells.push(mqlExportCertCell(row, "exp", computeMqlBylawCertCellStatus, false));
           });
           return cells;
         }
@@ -12282,6 +12288,7 @@
         function appendMqlTableCell(tr, cell, idx, entry, display) {
           const td = document.createElement("td");
           const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
+          const tone = cell && typeof cell === "object" ? cell.tone : null;
           const nameColIndex = mqlIsHeavyCatalog(display.catalog) ? 1 : 2;
           if (idx === nameColIndex && display.navigateToPerson && entry.person && entry.person.Id != null) {
             const nameBtn = document.createElement("button");
@@ -12296,6 +12303,8 @@
           } else {
             td.textContent = displayCellText(text);
           }
+          applyMqlCertCellStyle(td, tone);
+          if (tone) td.classList.add("reports-mql-cert");
           tr.appendChild(td);
         }
 
@@ -12527,7 +12536,7 @@
             const table = document.createElement("table");
             table.className =
               "roster reports-status-table reports-mql-table" +
-              (mqlIsHeavyCatalog(catalog) ? "" : " reports-mql-table--standard");
+              (mqlIsHeavyCatalog(catalog) ? " reports-mql-table--heavy" : " reports-mql-table--standard");
             table.setAttribute("aria-label", (opts && opts.tableLabel) || "MQL Report");
             if (!mqlIsHeavyCatalog(catalog)) {
               appendOfficialColgroup(table, mqlStandardColumnWidths());
@@ -12666,25 +12675,38 @@
           };
         }
 
-        function buildTcccBlsCertReportRows(blsTcccRows, itemLabel) {
+        function buildTcccBlsCertReportRows(personRows, blsTcccRows, itemLabel) {
           const fields = blsTcccKindFieldKeys(itemLabel);
-          return (Array.isArray(blsTcccRows) ? blsTcccRows : [])
-            .map(function (row) {
-              const pid = certTrainingPersonnelIdFromItem(row, BLS_TCCC_PERSON_FIELD, BLS_TCCC_PERSON_FIELD_ALT);
-              if (!pid) return null;
-              const person = personnelById(pid);
-              if (!person) return null;
-              const qual = parseWeaponsCertCalendarDate(valueFromItemByKeys(row, fields.qualKeys));
-              if (!qual || isNaN(qual.getTime())) return null;
-              let exp = parseWeaponsCertCalendarDate(valueFromItemByKeys(row, fields.expKeys));
-              if (!exp || isNaN(exp.getTime())) exp = tcccBlsExpirationDateFromQualDate(qual);
+          const byPersonId = {};
+          (Array.isArray(blsTcccRows) ? blsTcccRows : []).forEach(function (row) {
+            const pid = certTrainingPersonnelIdFromItem(row, BLS_TCCC_PERSON_FIELD, BLS_TCCC_PERSON_FIELD_ALT);
+            if (!pid) return;
+            byPersonId[String(pid)] = row;
+          });
+          return (Array.isArray(personRows) ? personRows : [])
+            .filter(function (person) {
+              return person && person.Id != null;
+            })
+            .map(function (person) {
+              const row = byPersonId[String(person.Id)] || null;
+              const qual = row ? parseWeaponsCertCalendarDate(valueFromItemByKeys(row, fields.qualKeys)) : null;
+              let exp = row ? parseWeaponsCertCalendarDate(valueFromItemByKeys(row, fields.expKeys)) : null;
+              if ((!exp || isNaN(exp.getTime())) && qual) exp = tcccBlsExpirationDateFromQualDate(qual);
+              let status = { text: "Expired", tone: "expired" };
+              if (exp && !isNaN(exp.getTime()) && qual && !isNaN(qual.getTime())) {
+                const daysLeft = calendarDaysBetween(new Date(), exp);
+                if (daysLeft < 0) status = { text: "Expired", tone: "expired" };
+                else if (daysLeft <= 30) status = { text: "Qualified", tone: "urgent" };
+                else if (daysLeft <= 60) status = { text: "Qualified", tone: "warn" };
+                else status = { text: "Qualified", tone: "ok" };
+              }
               return {
                 person: person,
-                qualDate: formatWeaponsCertDisplayDate(isoDateFromCalendarDate(qual)),
-                expDate: formatWeaponsCertDisplayDate(isoDateFromCalendarDate(exp)),
+                qualDate: qual ? formatWeaponsCertDisplayDate(isoDateFromCalendarDate(qual)) : "-",
+                expDate: exp ? formatWeaponsCertDisplayDate(isoDateFromCalendarDate(exp)) : "-",
+                status: status,
               };
-            })
-            .filter(Boolean);
+            });
         }
 
         function renderTcccBlsCertReportTable(rows, reportTitle, emptyText) {
@@ -12702,7 +12724,7 @@
           table.setAttribute("aria-label", reportTitle || "Certification Report");
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
-          ["Personnel", "Certified date", "Expiration date"].forEach(function (label) {
+          ["Personnel", "Certified date", "Expiration date", "Status"].forEach(function (label) {
             const th = document.createElement("th");
             th.textContent = label;
             trHead.appendChild(th);
@@ -12711,9 +12733,7 @@
           table.appendChild(thead);
           const tbody = document.createElement("tbody");
           const sorted = rows.slice().sort(function (a, b) {
-            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
-              sensitivity: "base",
-            });
+            return comparePersonnelByLastName(a.person, b.person);
           });
           const frag = document.createDocumentFragment();
           sorted.forEach(function (entry) {
@@ -12735,6 +12755,10 @@
             const tdExp = document.createElement("td");
             tdExp.textContent = displayCellText(entry.expDate);
             tr.appendChild(tdExp);
+            const tdStatus = document.createElement("td");
+            tdStatus.textContent = displayCellText(entry.status && entry.status.text ? entry.status.text : "Expired");
+            if (entry.status && entry.status.tone) tdStatus.className = "cert-status cert-status--" + entry.status.tone;
+            tr.appendChild(tdStatus);
             frag.appendChild(tr);
           });
           tbody.appendChild(frag);
@@ -12760,7 +12784,7 @@
             return wrap;
           }
           appendOfficialSectionTable(wrap, {
-            columns: ["Personnel", "Certified date", "Expiration date"],
+            columns: ["Personnel", "Certified date", "Expiration date", "Status"],
             sections: groupReportEntriesBySection(rows, function (entry) {
               return entry.person;
             }),
@@ -12770,6 +12794,7 @@
                 formatPersonDisplayName(entry.person),
                 displayCellText(entry.qualDate),
                 displayCellText(entry.expDate),
+                displayCellText(entry.status && entry.status.text ? entry.status.text : "Expired"),
               ];
             },
           });
@@ -12791,10 +12816,15 @@
           setReportsState("loading", "Building " + reportTitle + "...");
           try {
             const cache = await ensureReportsTrainingCache(pw);
-            const rows = buildTcccBlsCertReportRows(cache.blsTcccRows || [], label);
+            const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+            const rows = buildTcccBlsCertReportRows(personRows, cache.blsTcccRows || [], label);
             const summary = document.createElement("p");
             summary.className = "reports-hint";
-            summary.textContent = rows.length + " " + label + " certification(s) on file.";
+            const expiredCount = rows.filter(function (r) {
+              return r.status && r.status.text === "Expired";
+            }).length;
+            summary.textContent =
+              rows.length + " Personnel on file; " + expiredCount + " currently expired for " + label + ".";
             reportsDetailBody.appendChild(summary);
             reportsDetailBody.appendChild(renderTcccBlsCertReportTable(rows, reportTitle, emptyText));
             setReportsState("ok", reportTitle + " updated.");
@@ -13473,7 +13503,8 @@
           if (def.id === "bls-report") {
             if (!pw) return;
             void ensureReportsTrainingCache(pw).then(function (cache) {
-              const rows = buildTcccBlsCertReportRows(cache.blsTcccRows || [], "BLS");
+              const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+              const rows = buildTcccBlsCertReportRows(personRows, cache.blsTcccRows || [], "BLS");
               triggerSchedulingPrint(
                 renderTcccBlsCertReportPrintDocument(rows, "BLS Report", "No Personnel with BLS certification on file."),
               );
@@ -13483,7 +13514,8 @@
           if (def.id === "tccc-report") {
             if (!pw) return;
             void ensureReportsTrainingCache(pw).then(function (cache) {
-              const rows = buildTcccBlsCertReportRows(cache.blsTcccRows || [], "TCCC");
+              const personRows = Array.isArray(hubSession.rows) ? hubSession.rows : [];
+              const rows = buildTcccBlsCertReportRows(personRows, cache.blsTcccRows || [], "TCCC");
               triggerSchedulingPrint(
                 renderTcccBlsCertReportPrintDocument(rows, "TCCC Report", "No Personnel with TCCC certification on file."),
               );
