@@ -47,6 +47,40 @@
       #sp-pip-ui .hub-build-badge #hubBuildIdLabel {
         color: #0a140c;
       }
+      #sp-pip-ui .hub-access-gate {
+        background: #050807 !important;
+      }
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-top-banner-wrap,
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-header,
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-main {
+        visibility: hidden !important;
+        pointer-events: none !important;
+      }
+      #sp-pip-ui #hubAccessInput {
+        color: rgba(210, 255, 224, 0.95) !important;
+        -webkit-text-fill-color: rgba(210, 255, 224, 0.95) !important;
+        background: #081610 !important;
+      }
+      #sp-pip-ui button.btn-danger {
+        color: #1a0505 !important;
+        background: #ff3b35 !important;
+        border: 2px solid #9c1818 !important;
+      }
+      #sp-pip-ui button.btn-record {
+        color: #3cff7a !important;
+        background: rgba(8, 24, 14, 0.95) !important;
+        border: 1px solid #1f8f47 !important;
+      }
+      #sp-pip-ui button.reports-hub-card {
+        color: rgba(210, 255, 224, 0.92) !important;
+        background: rgba(5, 14, 10, 0.95) !important;
+        border: 1px solid #1e4a36 !important;
+      }
+      #sp-pip-ui button.reports-name-link {
+        color: #3cff7a !important;
+        background: transparent !important;
+        border: none !important;
+      }
       #sp-pip-ui #hubAccessSubmit,
       #sp-pip-ui #probeRun,
       #sp-pip-ui #ethosProbeRun,
@@ -105,7 +139,7 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260709e</span>
+              Build <span id="hubBuildIdLabel">20260709f</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
@@ -773,9 +807,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260709e";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260709e";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260709e";
+  var LOADER_BUILD_ID = "20260709f";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260709f";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260709f";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 

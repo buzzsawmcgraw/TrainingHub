@@ -249,7 +249,7 @@
         line-height: 1.4;
         text-shadow: 0 0 4px var(--pip-green-glow);
       }
-      #sp-pip-ui button {
+      #sp-pip-ui button:not(.btn-secondary):not(.btn-danger):not(.btn-record):not(.reports-hub-card):not(.reports-name-link):not(.hub-nav-btn):not(.scheduling-tab):not(.reports-sot-manual-del) {
         margin: 8px 8px 8px 0;
         padding: 9px 18px;
         cursor: pointer;
@@ -265,19 +265,29 @@
         text-shadow: none;
         box-shadow: 0 0 14px var(--pip-green-glow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
       }
-      #sp-pip-ui button:hover {
+      #sp-pip-ui button:not(.btn-secondary):not(.btn-danger):not(.btn-record):not(.reports-hub-card):not(.reports-name-link):not(.hub-nav-btn):not(.scheduling-tab):not(.reports-sot-manual-del):hover {
         background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%);
         color: #010a06;
       }
       #sp-pip-ui button.btn-secondary {
-        background: rgba(8, 24, 14, 0.6);
-        color: var(--pip-green);
-        border: 1px solid var(--pip-green-dim);
-        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.06);
+        margin: 8px 8px 8px 0;
+        padding: 9px 18px;
+        cursor: pointer;
+        font-family: var(--pip-font);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--pip-green) !important;
+        background: rgba(8, 24, 14, 0.92) !important;
+        border: 1px solid var(--pip-green-dim) !important;
+        border-radius: 4px;
+        text-shadow: none !important;
+        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.06) !important;
       }
       #sp-pip-ui button.btn-secondary:hover {
-        background: rgba(30, 255, 69, 0.12);
-        color: #7dff8f;
+        background: rgba(30, 255, 69, 0.22) !important;
+        color: #7dff8f !important;
       }
       #sp-pip-ui button.btn-danger {
         margin: 0;
@@ -288,16 +298,16 @@
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #1a0505;
-        background: #ff3b35;
-        border: 2px solid #9c1818;
+        color: #1a0505 !important;
+        background: #ff3b35 !important;
+        border: 2px solid #9c1818 !important;
         border-radius: 2px;
-        text-shadow: none;
-        box-shadow: 0 0 10px rgba(255, 60, 50, 0.4);
+        text-shadow: none !important;
+        box-shadow: 0 0 10px rgba(255, 60, 50, 0.4) !important;
       }
       #sp-pip-ui button.btn-danger:hover {
-        background: #ff6258;
-        color: #0a0202;
+        background: #ff6258 !important;
+        color: #0a0202 !important;
       }
       #sp-pip-ui table.roster th.roster-actions,
       #sp-pip-ui table.roster td.roster-actions {
@@ -322,16 +332,16 @@
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--pip-green);
-        background: rgba(8, 24, 14, 0.6);
-        border: 1px solid var(--pip-green-dim);
+        color: var(--pip-green) !important;
+        background: rgba(8, 24, 14, 0.95) !important;
+        border: 1px solid var(--pip-green-dim) !important;
         border-radius: 2px;
-        text-shadow: 0 0 4px var(--pip-green-glow);
-        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.06);
+        text-shadow: 0 0 4px var(--pip-green-glow) !important;
+        box-shadow: inset 0 0 12px rgba(60, 255, 122, 0.08) !important;
       }
       #sp-pip-ui button.btn-record:hover {
-        background: rgba(30, 255, 69, 0.12);
-        color: #7dff8f;
+        background: rgba(30, 255, 69, 0.22) !important;
+        color: #7dff8f !important;
       }
       #sp-pip-ui button:active {
         transform: translateY(1px);
@@ -1554,17 +1564,17 @@
         text-transform: none;
         letter-spacing: 0.02em;
         font-weight: 400;
-        color: rgba(210, 255, 224, 0.92);
-        background: rgba(5, 14, 10, 0.55);
-        border: 1px solid var(--pip-border);
+        color: rgba(210, 255, 224, 0.92) !important;
+        background: rgba(5, 14, 10, 0.95) !important;
+        border: 1px solid var(--pip-border) !important;
         border-radius: 6px;
-        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), inset 0 0 28px rgba(0, 0, 0, 0.45);
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), inset 0 0 28px rgba(0, 0, 0, 0.45) !important;
       }
       #sp-pip-ui button.reports-hub-card:hover {
-        color: var(--pip-green);
-        border-color: var(--pip-green-dim);
-        background: rgba(8, 24, 14, 0.72);
-        box-shadow: 0 0 14px var(--pip-green-glow), inset 0 0 20px rgba(0, 0, 0, 0.4);
+        color: var(--pip-green) !important;
+        border-color: var(--pip-green-dim) !important;
+        background: rgba(8, 24, 14, 0.98) !important;
+        box-shadow: 0 0 14px var(--pip-green-glow), inset 0 0 20px rgba(0, 0, 0, 0.4) !important;
       }
       #sp-pip-ui .reports-hub-card-badge {
         display: inline-block;
@@ -1702,21 +1712,23 @@
       #sp-pip-ui button.reports-name-link {
         margin: 0;
         padding: 0;
-        border: none;
-        background: none;
-        box-shadow: none;
+        border: none !important;
+        background: transparent !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
         font: inherit;
         font-size: inherit;
         font-weight: inherit;
         letter-spacing: inherit;
         text-transform: none;
-        color: var(--pip-green);
-        text-shadow: 0 0 4px var(--pip-green-glow);
+        color: var(--pip-green) !important;
+        text-shadow: 0 0 4px var(--pip-green-glow) !important;
         cursor: pointer;
       }
       #sp-pip-ui button.reports-name-link:hover {
-        color: #7dff8f;
-        background: none;
+        color: #7dff8f !important;
+        background: transparent !important;
+        background-color: transparent !important;
       }
       #sp-pip-ui .reports-sot-toolbar {
         display: flex;
@@ -2112,9 +2124,9 @@
         text-align: center;
       }
       #sp-pip-ui .reports-sot-manual-del {
-        background: transparent;
-        border: 1px solid rgba(255, 90, 90, 0.55);
-        color: rgba(255, 140, 140, 0.95);
+        background: rgba(40, 8, 8, 0.92) !important;
+        border: 1px solid #9c1818 !important;
+        color: #ffb4b4 !important;
         border-radius: 4px;
         cursor: pointer;
         padding: 2px 8px;
@@ -2912,8 +2924,14 @@
         align-items: center;
         justify-content: center;
         padding: 24px;
-        background: radial-gradient(120% 80% at 50% 0%, #0d1f16 0%, var(--pip-bg) 55%);
+        background: #050807 !important;
         border-radius: 8px;
+      }
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-top-banner-wrap,
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-header,
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-main {
+        visibility: hidden !important;
+        pointer-events: none !important;
       }
       #sp-pip-ui .hub-access-gate[hidden] {
         display: none !important;
@@ -2923,8 +2941,8 @@
         padding: 22px 22px 20px;
         border: 1px solid var(--pip-border);
         border-radius: 8px;
-        background: rgba(5, 14, 10, 0.88);
-        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), 0 0 28px rgba(0, 0, 0, 0.45);
+        background: #050807 !important;
+        box-shadow: inset 0 1px 0 rgba(60, 255, 122, 0.05), 0 0 28px rgba(0, 0, 0, 0.65);
       }
       #sp-pip-ui .hub-access-panel h2 {
         margin: 0 0 8px;
@@ -2956,9 +2974,10 @@
         margin-bottom: 14px;
         padding: 10px 12px;
         font: 13px var(--pip-font);
-        color: rgba(210, 255, 224, 0.92);
-        background: rgba(5, 14, 10, 0.72);
-        border: 1px solid rgba(30, 74, 54, 0.5);
+        color: rgba(210, 255, 224, 0.95) !important;
+        -webkit-text-fill-color: rgba(210, 255, 224, 0.95) !important;
+        background: #081610 !important;
+        border: 1px solid rgba(30, 74, 54, 0.75) !important;
         border-radius: var(--pip-control-radius);
       }
       #sp-pip-ui #hubAccessInput:focus {
