@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260708d";
+        const HUB_BUILD_ID = "20260709a";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -8902,7 +8902,15 @@
         function updateReportsPrintButtons(reportDef) {
           if (!reportDef) return;
           const id = reportDef.id;
-          const signedIds = ["mql-report", "heavy-weapons", "cleo-report", "post-rc-report", "bls-report", "tccc-report"];
+          const signedIds = [
+            "mql-report",
+            "heavy-weapons",
+            "cleo-report",
+            "post-rc-report",
+            "smc-report",
+            "bls-report",
+            "tccc-report",
+          ];
           const showSigned = reportDef.printable && signedIds.indexOf(id) >= 0;
           const showExport = reportDef.printable && (id === "mql-pdf" || id === "status-of-training");
           if (reportsPrintBtn) {
@@ -11728,9 +11736,7 @@
           const out = [];
           groups.forEach(function (items, section) {
             items.sort(function (a, b) {
-              return formatPersonDisplayName(getPerson(a)).localeCompare(formatPersonDisplayName(getPerson(b)), undefined, {
-                sensitivity: "base",
-              });
+              return comparePersonnelByLastName(getPerson(a), getPerson(b));
             });
             out.push({ section: section, items: items });
           });
@@ -11752,6 +11758,27 @@
                 return "6.25%";
               }),
           );
+        }
+
+        function compactPortraitReportColumnWidths(columnLabels) {
+          const n = (columnLabels || []).length;
+          if (!n) return [];
+          if (n > 4) return officialColumnWidths(columnLabels);
+          if (n === 2) return ["58%", "42%"];
+          if (n === 3) return ["46%", "27%", "27%"];
+          if (n === 4) return ["40%", "20%", "20%", "20%"];
+          const each = (100 / n).toFixed(2) + "%";
+          return columnLabels.map(function () {
+            return each;
+          });
+        }
+
+        function applyCompactRosterTableLayout(table, columnLabels) {
+          if (!table) return;
+          table.style.width = "100%";
+          table.style.tableLayout = "fixed";
+          const widths = compactPortraitReportColumnWidths(columnLabels);
+          if (widths.length) appendOfficialColgroup(table, widths);
         }
 
         function officialColumnWidths(columnLabels) {
@@ -11825,12 +11852,14 @@
           if (!parent || !columnLabels.length || !sections.length || typeof buildCells !== "function") return;
 
           const compactContent = !!options.compactContent;
-          const widths = compactContent ? null : options.columnWidths || officialColumnWidths(columnLabels);
+          const widths = compactContent
+            ? compactPortraitReportColumnWidths(columnLabels)
+            : options.columnWidths || officialColumnWidths(columnLabels);
           const headerWrap = document.createElement("div");
           headerWrap.className = "af-official-table-header-wrap";
           const headerTable = document.createElement("table");
           headerTable.className = tableClass + " af-official-table--columns";
-          headerTable.style.width = compactContent ? "auto" : "100%";
+          headerTable.style.width = "100%";
           if (widths && widths.length) appendOfficialColgroup(headerTable, widths);
           const thead = document.createElement("thead");
           const headRow = document.createElement("tr");
@@ -11853,7 +11882,7 @@
             block.appendChild(heading);
             const table = document.createElement("table");
             table.className = tableClass + " af-official-table--section-body";
-            table.style.width = compactContent ? "auto" : "100%";
+            table.style.width = "100%";
             if (widths && widths.length) appendOfficialColgroup(table, widths);
             const tbody = document.createElement("tbody");
             group.items.forEach(function (entry) {
@@ -12764,6 +12793,7 @@
           const table = document.createElement("table");
           table.className = "roster reports-status-table";
           table.setAttribute("aria-label", reportTitle || "Certification Report");
+          applyCompactRosterTableLayout(table, ["Personnel", "Certified date", "Expiration date", "Status"]);
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
           ["Personnel", "Certified date", "Expiration date", "Status"].forEach(function (label) {
@@ -12940,6 +12970,7 @@
           const table = document.createElement("table");
           table.className = "roster reports-status-table";
           table.setAttribute("aria-label", "SMC Report");
+          applyCompactRosterTableLayout(table, ["Personnel", "SMC completed", "SMC expiration", "Status"]);
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
           ["Personnel", "SMC completed", "SMC expiration", "Status"].forEach(function (label) {
@@ -12951,9 +12982,7 @@
           table.appendChild(thead);
           const tbody = document.createElement("tbody");
           const sorted = rows.slice().sort(function (a, b) {
-            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
-              sensitivity: "base",
-            });
+            return comparePersonnelByLastName(a.person, b.person);
           });
           const frag = document.createDocumentFragment();
           sorted.forEach(function (entry) {
@@ -13060,6 +13089,7 @@
           const table = document.createElement("table");
           table.className = "roster reports-status-table";
           table.setAttribute("aria-label", "CLEO Report");
+          applyCompactRosterTableLayout(table, ["Personnel", "Certified date"]);
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
           ["Personnel", "Certified date"].forEach(function (label) {
@@ -13071,9 +13101,7 @@
           table.appendChild(thead);
           const tbody = document.createElement("tbody");
           const sorted = rows.slice().sort(function (a, b) {
-            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
-              sensitivity: "base",
-            });
+            return comparePersonnelByLastName(a.person, b.person);
           });
           const frag = document.createDocumentFragment();
           sorted.forEach(function (entry) {
@@ -13143,6 +13171,7 @@
           const table = document.createElement("table");
           table.className = "roster reports-status-table";
           table.setAttribute("aria-label", "Post RC Report");
+          applyCompactRosterTableLayout(table, ["Personnel", "Post RC qual date", "Post RC expiration"]);
           const thead = document.createElement("thead");
           const trHead = document.createElement("tr");
           ["Personnel", "Post RC qual date", "Post RC expiration"].forEach(function (label) {
@@ -13154,9 +13183,7 @@
           table.appendChild(thead);
           const tbody = document.createElement("tbody");
           const sorted = rows.slice().sort(function (a, b) {
-            return formatPersonDisplayName(a.person).localeCompare(formatPersonDisplayName(b.person), undefined, {
-              sensitivity: "base",
-            });
+            return comparePersonnelByLastName(a.person, b.person);
           });
           const frag = document.createDocumentFragment();
           sorted.forEach(function (entry) {
