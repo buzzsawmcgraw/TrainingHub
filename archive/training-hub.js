@@ -11824,13 +11824,14 @@
                 };
           if (!parent || !columnLabels.length || !sections.length || typeof buildCells !== "function") return;
 
-          const widths = options.columnWidths || officialColumnWidths(columnLabels);
+          const compactContent = !!options.compactContent;
+          const widths = compactContent ? null : options.columnWidths || officialColumnWidths(columnLabels);
           const headerWrap = document.createElement("div");
           headerWrap.className = "af-official-table-header-wrap";
           const headerTable = document.createElement("table");
           headerTable.className = tableClass + " af-official-table--columns";
-          headerTable.style.width = "100%";
-          appendOfficialColgroup(headerTable, widths);
+          headerTable.style.width = compactContent ? "auto" : "100%";
+          if (widths && widths.length) appendOfficialColgroup(headerTable, widths);
           const thead = document.createElement("thead");
           const headRow = document.createElement("tr");
           columnLabels.forEach(function (label) {
@@ -11852,8 +11853,8 @@
             block.appendChild(heading);
             const table = document.createElement("table");
             table.className = tableClass + " af-official-table--section-body";
-            table.style.width = "100%";
-            appendOfficialColgroup(table, widths);
+            table.style.width = compactContent ? "auto" : "100%";
+            if (widths && widths.length) appendOfficialColgroup(table, widths);
             const tbody = document.createElement("tbody");
             group.items.forEach(function (entry) {
               const tr = document.createElement("tr");
@@ -12654,6 +12655,7 @@
               return entry.person;
             }),
             compact: true,
+            compactContent: !!(opts && opts.portrait),
             buildCells: function (entry) {
               return mqlRowCells(entry, catalog, display);
             },
@@ -12829,6 +12831,7 @@
               return entry.person;
             }),
             compact: true,
+            compactContent: true,
             buildCells: function (entry) {
               return [
                 formatPersonDisplayName(entry.person),
@@ -13006,6 +13009,7 @@
               return entry.person;
             }),
             compact: true,
+            compactContent: true,
             buildCells: function (entry) {
               return [
                 formatPersonDisplayName(entry.person),
@@ -13118,6 +13122,7 @@
               return entry.person;
             }),
             compact: true,
+            compactContent: true,
             buildCells: function (entry) {
               return [formatPersonDisplayName(entry.person), displayCellText(entry.cleoDate)];
             },
@@ -13203,6 +13208,7 @@
               return entry.person;
             }),
             compact: true,
+            compactContent: true,
             buildCells: function (entry) {
               return [
                 formatPersonDisplayName(entry.person),
