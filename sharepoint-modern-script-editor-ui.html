@@ -2512,29 +2512,36 @@
       }
       #sp-pip-ui .bylaw-bulk-items {
         display: flex;
-        flex-direction: column;
-        gap: 10px;
-        max-height: 280px;
-        overflow-y: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        align-content: flex-start;
+        gap: 10px 12px;
         padding: 12px 14px;
         border: 1px solid var(--pip-border);
         border-radius: 6px;
         background: rgba(5, 12, 9, 0.45);
       }
       #sp-pip-ui .bylaw-bulk-item-check {
-        display: flex;
+        display: inline-flex;
+        flex: 0 1 auto;
         align-items: center;
-        gap: 14px;
-        font-size: 16px;
-        line-height: 1.45;
+        gap: 10px;
+        max-width: 100%;
+        font-size: 14px;
+        line-height: 1.35;
         color: rgba(210, 255, 224, 0.95);
         cursor: pointer;
-        padding: 6px 4px;
-        border-radius: 4px;
+        padding: 8px 12px;
+        border: 1px solid rgba(30, 74, 54, 0.45);
+        border-radius: 6px;
+        background: rgba(5, 14, 10, 0.55);
+        white-space: nowrap;
         text-shadow: 0 0 2px var(--pip-green-glow);
       }
       #sp-pip-ui .bylaw-bulk-item-check:hover {
-        background: rgba(30, 255, 69, 0.07);
+        background: rgba(30, 255, 69, 0.12);
+        border-color: var(--pip-green-dim);
       }
       #sp-pip-ui .bylaw-bulk-item-check input[type="checkbox"] {
         appearance: none;
@@ -3732,7 +3739,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260709f";
+        const HUB_BUILD_ID = "20260710a";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
