@@ -422,6 +422,29 @@
         background: linear-gradient(180deg, #7dffaa 0%, #5dff8f 100%) !important;
         color: #010a06 !important;
       }
+      /* SharePoint theme CSS often overrides legend/h2/h3/label - keep amber section headings & labels. */
+      #sp-pip-ui .hub-section--roster h2.hub-subtitle,
+      #sp-pip-ui .add-person-panel h2.hub-subtitle,
+      #sp-pip-ui .roster-search-label,
+      #sp-pip-ui .person-detail-label,
+      #sp-pip-ui .person-cleo-block-title,
+      #sp-pip-ui h3.person-weapons-title,
+      #sp-pip-ui h3.person-bylaw-title,
+      #sp-pip-ui h3.person-appointments-title,
+      #sp-pip-ui h3.scheduling-upcoming-title,
+      #sp-pip-ui h3.reports-office-title,
+      #sp-pip-ui h4.weapons-add-title,
+      #sp-pip-ui h4.bylaw-add-title,
+      #sp-pip-ui legend.add-form-group-legend,
+      #sp-pip-ui .add-field > label,
+      #sp-pip-ui .hub-access-panel h2,
+      #sp-pip-ui .hub-access-panel label,
+      #sp-pip-ui .phase1-house-hunting-label,
+      #sp-pip-ui .reports-hub-card-badge {
+        color: #ffcc66 !important;
+        -webkit-text-fill-color: #ffcc66 !important;
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22) !important;
+      }
       #sp-pip-ui .err {
         color: var(--pip-red);
         text-shadow: 0 0 6px rgba(255, 77, 45, 0.55);
@@ -3757,7 +3780,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260710c";
+        const HUB_BUILD_ID = "20260710d";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";

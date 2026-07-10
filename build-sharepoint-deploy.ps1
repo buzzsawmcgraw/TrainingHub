@@ -146,6 +146,28 @@ $loaderCss = @'
         background: transparent !important;
         border: none !important;
       }
+      #sp-pip-ui .hub-section--roster h2.hub-subtitle,
+      #sp-pip-ui .add-person-panel h2.hub-subtitle,
+      #sp-pip-ui .roster-search-label,
+      #sp-pip-ui .person-detail-label,
+      #sp-pip-ui .person-cleo-block-title,
+      #sp-pip-ui h3.person-weapons-title,
+      #sp-pip-ui h3.person-bylaw-title,
+      #sp-pip-ui h3.person-appointments-title,
+      #sp-pip-ui h3.scheduling-upcoming-title,
+      #sp-pip-ui h3.reports-office-title,
+      #sp-pip-ui h4.weapons-add-title,
+      #sp-pip-ui h4.bylaw-add-title,
+      #sp-pip-ui legend.add-form-group-legend,
+      #sp-pip-ui .add-field > label,
+      #sp-pip-ui .hub-access-panel h2,
+      #sp-pip-ui .hub-access-panel label,
+      #sp-pip-ui .phase1-house-hunting-label,
+      #sp-pip-ui .reports-hub-card-badge {
+        color: #ffcc66 !important;
+        -webkit-text-fill-color: #ffcc66 !important;
+        text-shadow: 0 0 8px rgba(255, 204, 102, 0.22) !important;
+      }
       #sp-pip-ui #hubAccessSubmit,
       #sp-pip-ui #probeRun,
       #sp-pip-ui #ethosProbeRun,
