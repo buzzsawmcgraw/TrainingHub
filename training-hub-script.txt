@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260710b";
+        const HUB_BUILD_ID = "20260710c";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -856,6 +856,8 @@
         const personDetailEditBtn = document.getElementById("personDetailEditBtn");
         const personDetailSaveBtn = document.getElementById("personDetailSaveBtn");
         const personDetailCancelBtn = document.getElementById("personDetailCancelBtn");
+        const personCleoPostRcWrap = document.getElementById("personCleoPostRcWrap");
+        const personCleoPostRcContent = document.getElementById("personCleoPostRcContent");
         const personWeaponsWrap = document.getElementById("personWeaponsWrap");
         const personWeaponsThead = document.getElementById("personWeaponsThead");
         const personWeaponsBody = document.getElementById("personWeaponsBody");
@@ -2554,7 +2556,16 @@
           if (personWeaponsBody) personWeaponsBody.innerHTML = "";
         }
 
+        function clearPersonCleoPostRcSection() {
+          if (personCleoPostRcContent) personCleoPostRcContent.innerHTML = "";
+          if (personCleoPostRcWrap) {
+            personCleoPostRcWrap.hidden = true;
+            delete personCleoPostRcWrap.dataset.postRcExpiryWired;
+          }
+        }
+
         function clearPersonWeaponsCertSection() {
+          clearPersonCleoPostRcSection();
           clearWeaponsCertTable();
           setWeaponsCertState("", "");
           weaponsCertEditSession.item = null;
@@ -12877,11 +12888,15 @@
             compact: true,
             compactContent: true,
             buildCells: function (entry) {
+              const tone = entry.status && entry.status.tone ? entry.status.tone : "expired";
               return [
                 formatPersonDisplayName(entry.person),
-                displayCellText(entry.qualDate),
-                displayCellText(entry.expDate),
-                displayCellText(entry.status && entry.status.text ? entry.status.text : "Expired"),
+                { text: displayCellText(entry.qualDate), tone: tone },
+                { text: displayCellText(entry.expDate), tone: tone },
+                {
+                  text: displayCellText(entry.status && entry.status.text ? entry.status.text : "Expired"),
+                  tone: tone,
+                },
               ];
             },
           });
@@ -13057,11 +13072,12 @@
             compact: true,
             compactContent: true,
             buildCells: function (entry) {
+              const tone = entry.status && entry.status.tone ? entry.status.tone : "expired";
               return [
                 formatPersonDisplayName(entry.person),
-                displayCellText(entry.smcCompleted),
-                displayCellText(entry.smcExpiration),
-                displayCellText(entry.status.text),
+                { text: displayCellText(entry.smcCompleted), tone: tone },
+                { text: displayCellText(entry.smcExpiration), tone: tone },
+                { text: displayCellText(entry.status.text), tone: tone },
               ];
             },
           });
@@ -14070,12 +14086,12 @@
           return fwrap;
         }
 
-        function buildCleoDetailBlock(item) {
+        function buildCleoPostRcDetailBlock(item) {
           const block = document.createElement("div");
           block.className = "person-cleo-block";
           const title = document.createElement("div");
           title.className = "person-cleo-block-title";
-          title.textContent = "CLEO / Post RC / SMC / Sustainment";
+          title.textContent = "CLEO / Post RC";
           block.appendChild(title);
           const grid = document.createElement("div");
           grid.className = "person-cleo-grid";
@@ -14134,7 +14150,7 @@
           return fwrap;
         }
 
-        function buildCleoEditBlock(item, sampleRow) {
+        function buildCleoPostRcEditBlock(item, sampleRow) {
           const cols = normalizedPersonnelCleoColumns().filter(function (c) {
             return (
               c.key !== "SMCDateCompleted" &&
@@ -14149,7 +14165,7 @@
           block.className = "person-cleo-block";
           const title = document.createElement("div");
           title.className = "person-cleo-block-title";
-          title.textContent = "CLEO / Post RC / SMC / Sustainment";
+          title.textContent = "CLEO / Post RC";
           block.appendChild(title);
           const grid = document.createElement("div");
           grid.className = "person-cleo-grid person-cleo-edit-grid";
@@ -14166,12 +14182,17 @@
           return block;
         }
 
-        function appendCleoBlockToRightColumn(splitWrap, cleoBlock) {
-          if (!splitWrap || !cleoBlock) return;
-          const fieldsets = splitWrap.querySelectorAll(":scope > fieldset.add-form-group");
-          const rightFs = fieldsets.length > 1 ? fieldsets[1] : fieldsets[0];
-          if (rightFs) rightFs.appendChild(cleoBlock);
-          else splitWrap.appendChild(cleoBlock);
+        function renderPersonCleoPostRcPanel(item, editing) {
+          if (!personCleoPostRcWrap || !personCleoPostRcContent || !item) return;
+          personCleoPostRcContent.innerHTML = "";
+          const sampleRow = personDetailSession.sampleRow || item;
+          const block = editing ? buildCleoPostRcEditBlock(item, sampleRow) : buildCleoPostRcDetailBlock(item);
+          if (!block) {
+            personCleoPostRcWrap.hidden = true;
+            return;
+          }
+          personCleoPostRcContent.appendChild(block);
+          personCleoPostRcWrap.hidden = false;
         }
 
         function buildDetailFieldWrap(col, item) {
@@ -14430,9 +14451,6 @@
             });
           }
 
-          const cleoBlock = editing ? buildCleoEditBlock(item, sampleRow) : buildCleoDetailBlock(item);
-          appendCleoBlockToRightColumn(splitWrap, cleoBlock);
-
           if (!splitWrap.childElementCount) {
             const grid = document.createElement("div");
             grid.className = "add-form-grid add-form-grid--stack";
@@ -14483,9 +14501,11 @@
               item,
             );
             wirePersonPostRCQualAutoExpiry(form, "pf_");
+            if (personCleoPostRcWrap) wirePersonPostRCQualAutoExpiry(personCleoPostRcWrap, "pf_");
             applyPersonPostRCExpirationFromQual("pf_");
             applyPersonSustainmentDueFromWeapons("pf_", item.Id);
             wirePersonnelFieldInputBehaviors(form, "pf_");
+            if (personCleoPostRcWrap) wirePersonnelFieldInputBehaviors(personCleoPostRcWrap, "pf_");
             requestAnimationFrame(function () {
               requestAnimationFrame(function () {
                 balanceContactNotesToIdentityColumn(form);
@@ -14494,6 +14514,7 @@
           } else {
             personDetailContent.appendChild(fields);
           }
+          renderPersonCleoPostRcPanel(item, editing);
         }
 
         function mergePayloadIntoItem(item, body) {

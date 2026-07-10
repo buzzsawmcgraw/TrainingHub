@@ -2366,13 +2366,21 @@
       #sp-pip-ui .person-detail-field.add-field--address .person-detail-value {
         min-height: 52px;
       }
+      #sp-pip-ui .person-cleo-post-rc-wrap,
       #sp-pip-ui .person-weapons-wrap,
       #sp-pip-ui .person-bylaw-wrap,
-      #sp-pip-ui .person-appointments-wrap,
-      #sp-pip-ui .person-cleo-group {
+      #sp-pip-ui .person-appointments-wrap {
         margin-top: 22px;
         padding-top: 18px;
         border-top: 1px solid var(--pip-border);
+      }
+      #sp-pip-ui .person-cleo-post-rc-wrap .person-cleo-grid {
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      }
+      #sp-pip-ui .person-cleo-post-rc-wrap + .person-weapons-wrap {
+        margin-top: 16px;
+        padding-top: 0;
+        border-top: none;
       }
       #sp-pip-ui .person-cleo-block {
         margin-top: 14px;
