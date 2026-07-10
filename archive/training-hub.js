@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260710a";
+        const HUB_BUILD_ID = "20260710b";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -7819,6 +7819,17 @@
           td.classList.add("mql-cert-cell", "mql-cert-cell--" + tone);
         }
 
+        function applyReportsScreenMqlCertTone(td, tone) {
+          applyMqlCertCellStyle(td, tone);
+        }
+
+        function applyReportsScreenMqlCertToneToEntryCells(cells, tone) {
+          if (!Array.isArray(cells)) return;
+          cells.forEach(function (td) {
+            applyReportsScreenMqlCertTone(td, tone);
+          });
+        }
+
         function setMqlLandscapePrintMode(enabled) {
           let el = document.getElementById(MQL_PRINT_STYLE_ID);
           if (enabled) {
@@ -12791,7 +12802,7 @@
             return wrap;
           }
           const table = document.createElement("table");
-          table.className = "roster reports-status-table";
+          table.className = "roster reports-status-table reports-cert-tone-table";
           table.setAttribute("aria-label", reportTitle || "Certification Report");
           applyCompactRosterTableLayout(table, ["Personnel", "Certified date", "Expiration date", "Status"]);
           const thead = document.createElement("thead");
@@ -12829,8 +12840,11 @@
             tr.appendChild(tdExp);
             const tdStatus = document.createElement("td");
             tdStatus.textContent = displayCellText(entry.status && entry.status.text ? entry.status.text : "Expired");
-            if (entry.status && entry.status.tone) tdStatus.className = "cert-status cert-status--" + entry.status.tone;
             tr.appendChild(tdStatus);
+            applyReportsScreenMqlCertToneToEntryCells(
+              [tdQual, tdExp, tdStatus],
+              entry.status && entry.status.tone ? entry.status.tone : "expired",
+            );
             frag.appendChild(tr);
           });
           tbody.appendChild(frag);
@@ -12968,7 +12982,7 @@
             return wrap;
           }
           const table = document.createElement("table");
-          table.className = "roster reports-status-table";
+          table.className = "roster reports-status-table reports-cert-tone-table";
           table.setAttribute("aria-label", "SMC Report");
           applyCompactRosterTableLayout(table, ["Personnel", "SMC completed", "SMC expiration", "Status"]);
           const thead = document.createElement("thead");
@@ -13006,8 +13020,11 @@
             tr.appendChild(tdExp);
             const tdStatus = document.createElement("td");
             tdStatus.textContent = displayCellText(entry.status.text);
-            if (entry.status.tone && entry.status.tone !== "unknown") tdStatus.className = "cert-status cert-status--" + entry.status.tone;
             tr.appendChild(tdStatus);
+            applyReportsScreenMqlCertToneToEntryCells(
+              [tdComp, tdExp, tdStatus],
+              entry.status && entry.status.tone ? entry.status.tone : "expired",
+            );
             frag.appendChild(tr);
           });
           tbody.appendChild(frag);
