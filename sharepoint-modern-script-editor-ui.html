@@ -3793,7 +3793,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260710d";
+        const HUB_BUILD_ID = "20260716a";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -5065,6 +5065,82 @@
             if (val.Id != null) return String(val.Id);
           }
           return formatCellValue(val);
+        }
+
+        /** Certifiers list Id → display name (By-Law / TCCC lookup fields often return bare Ids without $expand). */
+        const hubCertifierLabelById = Object.create(null);
+        let hubCertifierLookupCacheKey = "";
+
+        function setHubCertifierLookupCache(entries) {
+          Object.keys(hubCertifierLabelById).forEach(function (k) {
+            delete hubCertifierLabelById[k];
+          });
+          (Array.isArray(entries) ? entries : []).forEach(function (entry) {
+            const id = String(entry && entry.id != null ? entry.id : "").trim();
+            const text = String(entry && entry.text != null ? entry.text : "").trim();
+            if (!id || !text) return;
+            hubCertifierLabelById[id] = text;
+          });
+        }
+
+        function formatCertifierDisplay(raw) {
+          if (raw === null || raw === undefined || raw === "") return "";
+          if (typeof raw === "number") {
+            const hit = hubCertifierLabelById[String(raw)];
+            return hit || String(raw);
+          }
+          if (typeof raw === "string") {
+            const s = raw.trim();
+            if (/^\d+$/.test(s) && hubCertifierLabelById[s]) return hubCertifierLabelById[s];
+            return s;
+          }
+          if (typeof raw === "object") {
+            const label = formatSharePointLookupDisplay(raw);
+            if (label && !/^\d+$/.test(String(label).trim())) return label;
+            const id = raw.Id != null ? String(raw.Id).trim() : "";
+            if (id && hubCertifierLabelById[id]) return hubCertifierLabelById[id];
+            return label;
+          }
+          return formatSharePointLookupDisplay(raw);
+        }
+
+        async function ensureCertifierLookupCache(pw) {
+          if (!pw) return;
+          const cacheKey = String(pw);
+          if (hubCertifierLookupCacheKey === cacheKey && Object.keys(hubCertifierLabelById).length) return;
+          try {
+            const entries = await fetchCertifiersListEntries(pw);
+            setHubCertifierLookupCache(entries);
+            hubCertifierLookupCacheKey = cacheKey;
+          } catch (_) {
+            /* Keep any prior cache; table will fall back to raw Id if empty. */
+          }
+        }
+
+        function sortBylawTrainingRowsByItemName(rows) {
+          const list = Array.isArray(rows) ? rows.slice() : [];
+          const dateKeys = [
+            "QualDate",
+            "QualificationDate",
+            "Qualification_x0020_Date",
+            "CertificationDate",
+            "Certification_x0020_Date",
+            "CertDate",
+          ];
+          const itemKeys =
+            typeof BYLAW_TRAINING_ITEM_SORT_KEYS !== "undefined" && Array.isArray(BYLAW_TRAINING_ITEM_SORT_KEYS)
+              ? BYLAW_TRAINING_ITEM_SORT_KEYS
+              : ["Item", "Title", "Training"];
+          list.sort(function (a, b) {
+            const wa = formatCellValue(valueFromItemByKeys(a, itemKeys) || "");
+            const wb = formatCellValue(valueFromItemByKeys(b, itemKeys) || "");
+            const byName = String(wa).localeCompare(String(wb), undefined, { sensitivity: "base" });
+            if (byName !== 0) return byName;
+            const da = formatCellValue(valueFromItemByKeys(a, dateKeys) || "");
+            const db = formatCellValue(valueFromItemByKeys(b, dateKeys) || "");
+            return String(db).localeCompare(String(da));
+          });
+          return list;
         }
 
         function formatCellValue(val) {
@@ -7683,7 +7759,7 @@
                 td.textContent = displayCellText(formatWeaponsCertDisplayDate(raw));
               } else if (col.key === "Certifier") {
                 const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
-                td.textContent = displayCellText(formatSharePointLookupDisplay(raw));
+                td.textContent = displayCellText(formatCertifierDisplay(raw));
               } else {
                 const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
                 const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
@@ -7899,23 +7975,9 @@
           }
 
           try {
-            const rows = await fetchBylawTrainingForPersonnel(seg, pw, personId);
-            const dateKeys = [
-              "QualDate",
-              "QualificationDate",
-              "Qualification_x0020_Date",
-              "CertificationDate",
-              "Certification_x0020_Date",
-              "CertDate",
-            ];
-            rows.sort(function (a, b) {
-              const da = formatCellValue(valueFromItemByKeys(a, dateKeys) || "");
-              const db = formatCellValue(valueFromItemByKeys(b, dateKeys) || "");
-              if (da !== db) return String(db).localeCompare(String(da));
-              const wa = formatCellValue(valueFromItemByKeys(a, BYLAW_TRAINING_ITEM_SORT_KEYS) || "");
-              const wb = formatCellValue(valueFromItemByKeys(b, BYLAW_TRAINING_ITEM_SORT_KEYS) || "");
-              return String(wa).localeCompare(String(wb));
-            });
+            await ensureCertifierLookupCache(pw);
+            const fetched = await fetchBylawTrainingForPersonnel(seg, pw, personId);
+            const rows = sortBylawTrainingRowsByItemName(fetched);
             hubSession.bylawTrainingSampleRow = rows.length ? rows[0] : hubSession.bylawTrainingSampleRow || null;
             hubSession.bylawTrainingRows = rows.slice();
             renderBylawTrainingTable(rows);
@@ -19545,7 +19607,11 @@
           const fieldsToTry = listItemDisplayFieldCandidates(CERTIFIERS_LIST_DISPLAY_FIELD);
           for (let i = 0; i < fieldsToTry.length; i++) {
             const entries = await fetchListItemChoices(pw, LIST_CERTIFIERS, LIST_CERTIFIERS_GUID, fieldsToTry[i]);
-            if (entries.length) return entries;
+            if (entries.length) {
+              setHubCertifierLookupCache(entries);
+              if (pw) hubCertifierLookupCacheKey = String(pw);
+              return entries;
+            }
           }
           return [];
         }
@@ -21234,7 +21300,7 @@
               } else if (isWeaponsCertDateColumn(col)) {
                 td.textContent = displayCellText(formatWeaponsCertDisplayDate(valueFromItemByKeys(item, col.tryKeys || [col.key])));
               } else if (col.key === "Certifier") {
-                td.textContent = displayCellText(formatSharePointLookupDisplay(valueFromItemByKeys(item, col.tryKeys || [col.key])));
+                td.textContent = displayCellText(formatCertifierDisplay(valueFromItemByKeys(item, col.tryKeys || [col.key])));
               } else {
                 const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
                 td.textContent = displayCellText(raw !== undefined && raw !== null ? formatCellValue(raw) : "");
@@ -21281,7 +21347,8 @@
             return;
           }
           try {
-            const rows = await fetchLinkedCertRowsForMember(seg, pw, memberId, {
+            await ensureCertifierLookupCache(pw);
+            const fetched = await fetchLinkedCertRowsForMember(seg, pw, memberId, {
               personField: ETHOS_BYLAW_PERSON_FIELD,
               personFieldAlt: ETHOS_BYLAW_PERSON_FIELD_ALT,
               orderBy: ETHOS_BYLAW_TRAINING_ITEMS_ORDERBY,
@@ -21290,6 +21357,7 @@
               filterFieldsKey: "bylawPersonFilterFields",
               lookupBase: "EthosMember",
             });
+            const rows = sortBylawTrainingRowsByItemName(fetched);
             ethosSession.bylawTrainingSampleRow = rows.length ? rows[0] : ethosSession.bylawTrainingSampleRow;
             ethosSession.bylawTrainingRows = rows.slice();
             renderEthosBylawTrainingTable(rows);
