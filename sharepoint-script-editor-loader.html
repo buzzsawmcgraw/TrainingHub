@@ -161,11 +161,12 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260723a</span>
+              Build <span id="hubBuildIdLabel">20260723c</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavInstructors">Instructors</button>
+            <button type="button" class="btn-secondary hub-nav-btn" id="hubNavCertifications">Certifications</button>
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavReports">Reports</button>
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavScheduling">Scheduling</button>
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavPhase1Tracker">Phase-1 Tracker</button>
@@ -405,6 +406,120 @@
                 <div class="add-form-actions">
                   <button type="submit" id="instructorsSaveBtn">Save instructor</button>
                   <button type="button" id="instructorsAddCancelBtn" class="btn-secondary">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+        <section id="certificationsSection" class="hub-section hub-section--certifications" hidden aria-label="Specialty Certifications">
+          <div class="person-detail-panel certifications-panel">
+            <div class="person-detail-toolbar">
+              <a id="certificationsBackLink" class="person-detail-back" href="#">Back to roster</a>
+              <div class="person-detail-toolbar-actions">
+                <button type="button" id="certificationsRefreshBtn" class="btn-secondary">Refresh</button>
+                <button type="button" id="certificationsAddBtn" class="btn-secondary">Add certification</button>
+              </div>
+            </div>
+            <h2 class="hub-subtitle person-detail-title">Certifications</h2>
+            <p class="instructors-hint">
+              Specialty certificates from the SpecialtyCertificates list. These are managed here (and via the Specialty
+              Certifications report) and are not shown on the Personnel record page.
+            </p>
+            <div id="certificationsReadState" class="read-state" hidden></div>
+            <div id="certificationsAddPanel" class="weapons-add-panel" hidden>
+              <h4 class="weapons-add-title">Add Specialty Certification</h4>
+              <form id="certificationsAddForm" class="weapons-add-form add-form-stack" aria-label="Add specialty certification">
+                <div class="add-form-grid">
+                  <div class="add-field">
+                    <label for="certificationsPersonSelect">Personnel</label>
+                    <select id="certificationsPersonSelect" class="add-field-select--autosize" required>
+                      <option value="">Select Personnel...</option>
+                    </select>
+                  </div>
+                  <div class="add-field">
+                    <label for="certificationsCertType">Cert type</label>
+                    <select id="certificationsCertType" class="add-field-select--autosize" required>
+                      <option value="">Select type...</option>
+                    </select>
+                  </div>
+                  <div class="add-field">
+                    <label for="certificationsAwardedDate">Awarded date</label>
+                    <input type="text" id="certificationsAwardedDate" data-date-format="dd-mmm-yy" placeholder="DD-MMM-YY" required />
+                  </div>
+                  <div class="add-field add-field--notes">
+                    <label for="certificationsNotes">Notes</label>
+                    <textarea id="certificationsNotes" rows="2"></textarea>
+                  </div>
+                </div>
+                <div class="add-form-actions">
+                  <button type="submit" id="certificationsSaveBtn">Save certification</button>
+                  <button type="button" id="certificationsAddCancelBtn" class="btn-secondary">Cancel</button>
+                </div>
+              </form>
+            </div>
+            <div class="roster-wrap certifications-roster-wrap">
+              <table class="roster" aria-label="Specialty certificates">
+                <thead id="certificationsThead"></thead>
+                <tbody id="certificationsTableBody"></tbody>
+              </table>
+            </div>
+            <p id="certificationsEmpty" class="weapons-empty" hidden>No specialty certificates on file.</p>
+
+            <div class="certifications-person-report-wrap">
+              <h3 class="person-weapons-title">Certification report (by person)</h3>
+              <p class="instructors-hint">Select a person to view and print only their specialty certificates.</p>
+              <div class="add-form-grid" style="max-width: 28rem; margin-bottom: 12px">
+                <div class="add-field">
+                  <label for="certificationsReportPersonSelect">Personnel</label>
+                  <select id="certificationsReportPersonSelect" class="add-field-select--autosize">
+                    <option value="">Select Personnel...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="person-detail-toolbar-actions" style="margin-bottom: 12px">
+                <button type="button" id="certificationsReportRunBtn" class="btn-secondary">Show report</button>
+                <button type="button" id="certificationsReportPrintBtn" class="btn-secondary" hidden>Print report</button>
+              </div>
+              <div id="certificationsReportBody"></div>
+            </div>
+
+            <div class="certifications-form483-wrap">
+              <h3 class="person-weapons-title">AF Form 483 Generator</h3>
+              <p class="instructors-hint">Print a Certificate of Competency for Baton or Taser.</p>
+              <form id="form483GeneratorForm" class="weapons-add-form add-form-stack" aria-label="AF Form 483 generator">
+                <div class="add-form-grid">
+                  <div class="add-field">
+                    <label for="form483PersonSelect">Personnel</label>
+                    <select id="form483PersonSelect" class="add-field-select--autosize" required>
+                      <option value="">Select Personnel...</option>
+                    </select>
+                  </div>
+                  <div class="add-field">
+                    <label for="form483CertType">Qualification</label>
+                    <select id="form483CertType" required>
+                      <option value="Baton">Baton</option>
+                      <option value="Taser">Taser</option>
+                    </select>
+                  </div>
+                  <div class="add-field">
+                    <label for="form483Date">Date</label>
+                    <input type="text" id="form483Date" data-date-format="dd-mmm-yy" placeholder="DD-MMM-YY" required />
+                  </div>
+                  <div class="add-field">
+                    <label for="form483CertNo">Certificate No. (optional)</label>
+                    <input type="text" id="form483CertNo" placeholder="Optional" />
+                  </div>
+                  <div class="add-field">
+                    <label for="form483Instructor">Instructor</label>
+                    <input type="text" id="form483Instructor" placeholder="Name, Rank" />
+                  </div>
+                  <div class="add-field">
+                    <label for="form483Command">Unit / Command</label>
+                    <input type="text" id="form483Command" value="88th Security Forces Squadron" />
+                  </div>
+                </div>
+                <div class="add-form-actions">
+                  <button type="submit" id="form483PrintBtn">Print AF Form 483</button>
                 </div>
               </form>
             </div>
@@ -836,9 +951,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260723a";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260723a";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260723a";
+  var LOADER_BUILD_ID = "20260723c";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260723c";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260723c";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 

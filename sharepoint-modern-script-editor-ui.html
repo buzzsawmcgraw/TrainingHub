@@ -567,6 +567,82 @@
       #sp-pip-ui .person-detail-toolbar-actions button {
         margin: 0;
       }
+      #sp-pip-ui .certifications-person-report-wrap,
+      #sp-pip-ui .certifications-form483-wrap {
+        margin-top: 28px;
+        padding-top: 18px;
+        border-top: 1px solid var(--pip-border);
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc {
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        color: #000;
+        background: #fff;
+        max-width: 7.5in;
+        margin: 0 auto;
+        padding: 0.35in 0.4in;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc h1 {
+        margin: 0 0 4px;
+        text-align: center;
+        font-size: 14pt;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-subtitle {
+        margin: 0 0 18px;
+        text-align: center;
+        font-size: 11pt;
+        font-weight: 700;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+        font-size: 10pt;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-field {
+        margin: 0 0 12px;
+        font-size: 11pt;
+        line-height: 1.45;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-label {
+        font-weight: 700;
+        display: inline-block;
+        min-width: 7.5em;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-line {
+        display: inline-block;
+        min-width: 55%;
+        border-bottom: 1px solid #000;
+        padding: 0 4px 1px;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-certify {
+        margin: 22px 0 28px;
+        font-size: 10.5pt;
+        line-height: 1.5;
+        text-align: justify;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-sig-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        margin-top: 36px;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-sig-block {
+        flex: 1 1 45%;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-sig-space {
+        height: 0.55in;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-sig-rule {
+        border-top: 1px solid #000;
+        margin-bottom: 4px;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-form-483-doc .af-form-483-sig-caption {
+        font-size: 9pt;
+      }
       #sp-pip-ui .instructors-hint,
       #sp-pip-ui .reports-hint,
       #sp-pip-ui .scheduling-hint,
@@ -765,6 +841,16 @@
         margin-bottom: 10px;
         break-inside: avoid;
         page-break-inside: avoid;
+      }
+      /* Compact portrait reports (SMC, CLEO, etc.): keep sections flowing without large page gaps. */
+      #sp-pip-ui .scheduling-print-surface .af-official-doc--compact-report .af-official-section-block {
+        margin-bottom: 4px;
+        break-inside: auto;
+        page-break-inside: auto;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-official-doc--compact-report .af-official-section-heading {
+        margin: 6px 0 2px;
+        font-size: 9pt;
       }
       #sp-pip-ui .scheduling-print-surface .af-official-table-header-wrap {
         margin-bottom: 0;
@@ -3102,6 +3188,7 @@
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavInstructors">Instructors</button>
+            <button type="button" class="btn-secondary hub-nav-btn" id="hubNavCertifications">Certifications</button>
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavReports">Reports</button>
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavScheduling">Scheduling</button>
             <button type="button" class="btn-secondary hub-nav-btn" id="hubNavPhase1Tracker">Phase-1 Tracker</button>
@@ -3341,6 +3428,120 @@
                 <div class="add-form-actions">
                   <button type="submit" id="instructorsSaveBtn">Save instructor</button>
                   <button type="button" id="instructorsAddCancelBtn" class="btn-secondary">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+        <section id="certificationsSection" class="hub-section hub-section--certifications" hidden aria-label="Specialty Certifications">
+          <div class="person-detail-panel certifications-panel">
+            <div class="person-detail-toolbar">
+              <a id="certificationsBackLink" class="person-detail-back" href="#">Back to roster</a>
+              <div class="person-detail-toolbar-actions">
+                <button type="button" id="certificationsRefreshBtn" class="btn-secondary">Refresh</button>
+                <button type="button" id="certificationsAddBtn" class="btn-secondary">Add certification</button>
+              </div>
+            </div>
+            <h2 class="hub-subtitle person-detail-title">Certifications</h2>
+            <p class="instructors-hint">
+              Specialty certificates from the SpecialtyCertificates list. These are managed here (and via the Specialty
+              Certifications report) and are not shown on the Personnel record page.
+            </p>
+            <div id="certificationsReadState" class="read-state" hidden></div>
+            <div id="certificationsAddPanel" class="weapons-add-panel" hidden>
+              <h4 class="weapons-add-title">Add Specialty Certification</h4>
+              <form id="certificationsAddForm" class="weapons-add-form add-form-stack" aria-label="Add specialty certification">
+                <div class="add-form-grid">
+                  <div class="add-field">
+                    <label for="certificationsPersonSelect">Personnel</label>
+                    <select id="certificationsPersonSelect" class="add-field-select--autosize" required>
+                      <option value="">Select Personnel...</option>
+                    </select>
+                  </div>
+                  <div class="add-field">
+                    <label for="certificationsCertType">Cert type</label>
+                    <select id="certificationsCertType" class="add-field-select--autosize" required>
+                      <option value="">Select type...</option>
+                    </select>
+                  </div>
+                  <div class="add-field">
+                    <label for="certificationsAwardedDate">Awarded date</label>
+                    <input type="text" id="certificationsAwardedDate" data-date-format="dd-mmm-yy" placeholder="DD-MMM-YY" required />
+                  </div>
+                  <div class="add-field add-field--notes">
+                    <label for="certificationsNotes">Notes</label>
+                    <textarea id="certificationsNotes" rows="2"></textarea>
+                  </div>
+                </div>
+                <div class="add-form-actions">
+                  <button type="submit" id="certificationsSaveBtn">Save certification</button>
+                  <button type="button" id="certificationsAddCancelBtn" class="btn-secondary">Cancel</button>
+                </div>
+              </form>
+            </div>
+            <div class="roster-wrap certifications-roster-wrap">
+              <table class="roster" aria-label="Specialty certificates">
+                <thead id="certificationsThead"></thead>
+                <tbody id="certificationsTableBody"></tbody>
+              </table>
+            </div>
+            <p id="certificationsEmpty" class="weapons-empty" hidden>No specialty certificates on file.</p>
+
+            <div class="certifications-person-report-wrap">
+              <h3 class="person-weapons-title">Certification report (by person)</h3>
+              <p class="instructors-hint">Select a person to view and print only their specialty certificates.</p>
+              <div class="add-form-grid" style="max-width: 28rem; margin-bottom: 12px">
+                <div class="add-field">
+                  <label for="certificationsReportPersonSelect">Personnel</label>
+                  <select id="certificationsReportPersonSelect" class="add-field-select--autosize">
+                    <option value="">Select Personnel...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="person-detail-toolbar-actions" style="margin-bottom: 12px">
+                <button type="button" id="certificationsReportRunBtn" class="btn-secondary">Show report</button>
+                <button type="button" id="certificationsReportPrintBtn" class="btn-secondary" hidden>Print report</button>
+              </div>
+              <div id="certificationsReportBody"></div>
+            </div>
+
+            <div class="certifications-form483-wrap">
+              <h3 class="person-weapons-title">AF Form 483 Generator</h3>
+              <p class="instructors-hint">Print a Certificate of Competency for Baton or Taser.</p>
+              <form id="form483GeneratorForm" class="weapons-add-form add-form-stack" aria-label="AF Form 483 generator">
+                <div class="add-form-grid">
+                  <div class="add-field">
+                    <label for="form483PersonSelect">Personnel</label>
+                    <select id="form483PersonSelect" class="add-field-select--autosize" required>
+                      <option value="">Select Personnel...</option>
+                    </select>
+                  </div>
+                  <div class="add-field">
+                    <label for="form483CertType">Qualification</label>
+                    <select id="form483CertType" required>
+                      <option value="Baton">Baton</option>
+                      <option value="Taser">Taser</option>
+                    </select>
+                  </div>
+                  <div class="add-field">
+                    <label for="form483Date">Date</label>
+                    <input type="text" id="form483Date" data-date-format="dd-mmm-yy" placeholder="DD-MMM-YY" required />
+                  </div>
+                  <div class="add-field">
+                    <label for="form483CertNo">Certificate No. (optional)</label>
+                    <input type="text" id="form483CertNo" placeholder="Optional" />
+                  </div>
+                  <div class="add-field">
+                    <label for="form483Instructor">Instructor</label>
+                    <input type="text" id="form483Instructor" placeholder="Name, Rank" />
+                  </div>
+                  <div class="add-field">
+                    <label for="form483Command">Unit / Command</label>
+                    <input type="text" id="form483Command" value="88th Security Forces Squadron" />
+                  </div>
+                </div>
+                <div class="add-form-actions">
+                  <button type="submit" id="form483PrintBtn">Print AF Form 483</button>
                 </div>
               </form>
             </div>
@@ -3797,7 +3998,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260723a";
+        const HUB_BUILD_ID = "20260723c";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -3882,6 +4083,46 @@
         /** SharePoint Certifiers list (lookup source for the Certifier field on ByLawTraining). */
         const LIST_CERTIFIERS = "Certifiers";
         const LIST_CERTIFIERS_GUID = "";
+        /** Specialty / additional certificates (not shown on Personnel record detail). */
+        const LIST_SPECIALTY_CERTIFICATES = "SpecialtyCertificates";
+        const LIST_SPECIALTY_CERTIFICATES_GUID = "";
+        const SPECIALTY_CERT_PERSON_FIELD = "PersonnelId";
+        const SPECIALTY_CERT_PERSON_FIELD_ALT = [
+          "PersonnelID",
+          "PersonnelIdId",
+          "Personnel_x0020_Id",
+          "Personnel_x0020_ID",
+          "Personnel/Id",
+        ];
+        const SPECIALTY_CERT_COLUMNS = [
+          { key: "Title", label: "Title", altKeys: ["Title"] },
+          {
+            key: "PersonnelId",
+            label: "Personnel",
+            altKeys: ["PersonnelID", "PersonnelIdId", "Personnel_x0020_Id", "Personnel0"],
+          },
+          {
+            key: "CertType",
+            label: "Cert type",
+            altKeys: ["CertType0", "CertificateType", "CertificationType", "Type"],
+          },
+          {
+            key: "AwardedDate",
+            label: "Awarded date",
+            altKeys: ["Awarded_x0020_Date", "AwardDate", "DateAwarded", "QualDate"],
+            inputType: "date",
+          },
+          { key: "Notes", label: "Notes", altKeys: ["Note", "Comments", "Remarks"] },
+          {
+            key: "SavedAt",
+            label: "Saved at",
+            altKeys: ["Saved_x0020_At", "SavedDate", "Modified"],
+            inputType: "date",
+          },
+        ];
+        const SPECIALTY_CERT_DROPDOWN_KEYS = ["CertType"];
+        const SPECIALTY_CERT_SET_TITLE = true;
+        const AF_FORM_483_TYPES = ["Baton", "Taser"];
         /**
          * Official AF letterhead is maintained as a Word/PDF template (not in a SharePoint list).
          * Upload the squadron letterhead PDF to Site Assets and set the path below.
@@ -4068,7 +4309,7 @@
         const MQL_SIGNED_SORT_LINE = "by Duty Status / Last Name";
         const MQL_EXPORT_SORT_LINE = "Alphabetical by Last Name";
         /** Duty status section order for MQL reports (on-screen sections and row sort). */
-        const MQL_DUTY_STATUS_ORDER = ["PFD", "IMA", "P1", "TDY", "TDA", "DEP", "Non-SF"];
+        const MQL_DUTY_STATUS_ORDER = ["PFD", "IMA", "P1", "TDY", "TDA", "DEP", "TAW", "Non-SF"];
         const MQL_SIGNATURE_STORAGE_KEY = "trainingHub.mqlSignature.v1";
         const DEFAULT_MQL_SIGNATURE_NAME = "Name, Rank, USAF";
         const DEFAULT_MQL_SIGNATURE_TITLE = "Commander";
@@ -4337,6 +4578,13 @@
             title: "Post RC Report",
             subtitle: "Personnel with Post RC on file — qualification and expiration dates only.",
             badge: "PRC",
+            implemented: true,
+            printable: true,
+          },
+            id: "specialty-certs-report",
+            title: "Specialty Certifications Report",
+            subtitle: "Certificates from SpecialtyCertificates for a selected person (print-ready).",
+            badge: "CERT",
             implemented: true,
             printable: true,
           },
@@ -4682,8 +4930,36 @@
         const personAppointmentsEmpty = document.getElementById("personAppointmentsEmpty");
         const personAppointmentsState = document.getElementById("personAppointmentsState");
         const hubNavInstructors = document.getElementById("hubNavInstructors");
+        const hubNavCertifications = document.getElementById("hubNavCertifications");
         const hubNavPhase1Tracker = document.getElementById("hubNavPhase1Tracker");
         const instructorsSection = document.getElementById("instructorsSection");
+        const certificationsSection = document.getElementById("certificationsSection");
+        const certificationsReadState = document.getElementById("certificationsReadState");
+        const certificationsBackLink = document.getElementById("certificationsBackLink");
+        const certificationsRefreshBtn = document.getElementById("certificationsRefreshBtn");
+        const certificationsAddBtn = document.getElementById("certificationsAddBtn");
+        const certificationsAddPanel = document.getElementById("certificationsAddPanel");
+        const certificationsAddForm = document.getElementById("certificationsAddForm");
+        const certificationsAddCancelBtn = document.getElementById("certificationsAddCancelBtn");
+        const certificationsSaveBtn = document.getElementById("certificationsSaveBtn");
+        const certificationsPersonSelect = document.getElementById("certificationsPersonSelect");
+        const certificationsCertType = document.getElementById("certificationsCertType");
+        const certificationsAwardedDate = document.getElementById("certificationsAwardedDate");
+        const certificationsNotes = document.getElementById("certificationsNotes");
+        const certificationsThead = document.getElementById("certificationsThead");
+        const certificationsTableBody = document.getElementById("certificationsTableBody");
+        const certificationsEmpty = document.getElementById("certificationsEmpty");
+        const certificationsReportPersonSelect = document.getElementById("certificationsReportPersonSelect");
+        const certificationsReportRunBtn = document.getElementById("certificationsReportRunBtn");
+        const certificationsReportPrintBtn = document.getElementById("certificationsReportPrintBtn");
+        const certificationsReportBody = document.getElementById("certificationsReportBody");
+        const form483GeneratorForm = document.getElementById("form483GeneratorForm");
+        const form483PersonSelect = document.getElementById("form483PersonSelect");
+        const form483CertType = document.getElementById("form483CertType");
+        const form483Date = document.getElementById("form483Date");
+        const form483CertNo = document.getElementById("form483CertNo");
+        const form483Instructor = document.getElementById("form483Instructor");
+        const form483Command = document.getElementById("form483Command");
         const instructorsThead = document.getElementById("instructorsThead");
         const instructorsTableBody = document.getElementById("instructorsTableBody");
         const instructorsEmpty = document.getElementById("instructorsEmpty");
@@ -5548,6 +5824,7 @@
           });
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = true;
+          if (certificationsSection) certificationsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
           if (phase1Section) phase1Section.hidden = true;
@@ -5565,12 +5842,14 @@
         async function navigateToRoster() {
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = true;
+          if (certificationsSection) certificationsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
           hidePhase1Section();
           hideEthosSections();
           clearEthosMemberDetailSection();
           setInstructorsAddPanelVisible(false);
+          setCertificationsAddPanelVisible(false);
           setSchedulingAddPanelVisible(false);
           setSchedulingMemoOverlayVisible(false);
           showReportsHub();
@@ -5593,6 +5872,7 @@
             (schedulingSection && !schedulingSection.hidden) ||
             (phase1Section && !phase1Section.hidden) ||
             (instructorsSection && !instructorsSection.hidden) ||
+            (certificationsSection && !certificationsSection.hidden) ||
             (personDetailSection && !personDetailSection.hidden)
           );
         }
@@ -5600,6 +5880,7 @@
         async function navigateToEthosRoster() {
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = true;
+          if (certificationsSection) certificationsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
           hidePhase1Section();
@@ -5685,6 +5966,7 @@
           });
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = true;
+          if (certificationsSection) certificationsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
           hideEthosSections();
@@ -12690,6 +12972,7 @@
           });
           if (personDetailSection) personDetailSection.hidden = visible;
           if (instructorsSection) instructorsSection.hidden = true;
+          if (certificationsSection) certificationsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
           if (phase1Section) phase1Section.hidden = true;
@@ -12702,6 +12985,20 @@
           });
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = !visible;
+          if (certificationsSection) certificationsSection.hidden = true;
+          if (reportsSection) reportsSection.hidden = true;
+          if (schedulingSection) schedulingSection.hidden = true;
+          if (phase1Section) phase1Section.hidden = true;
+          hideEthosSections();
+        }
+
+        function setCertificationsViewVisible(visible) {
+          document.querySelectorAll(".hub-section--form, .hub-section--status, .hub-section--roster").forEach(function (el) {
+            el.hidden = visible;
+          });
+          if (personDetailSection) personDetailSection.hidden = true;
+          if (instructorsSection) instructorsSection.hidden = true;
+          if (certificationsSection) certificationsSection.hidden = !visible;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = true;
           if (phase1Section) phase1Section.hidden = true;
@@ -12714,6 +13011,7 @@
           });
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = true;
+          if (certificationsSection) certificationsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = !visible;
           if (schedulingSection) schedulingSection.hidden = true;
           if (phase1Section) phase1Section.hidden = true;
@@ -12726,6 +13024,7 @@
           });
           if (personDetailSection) personDetailSection.hidden = true;
           if (instructorsSection) instructorsSection.hidden = true;
+          if (certificationsSection) certificationsSection.hidden = true;
           if (reportsSection) reportsSection.hidden = true;
           if (schedulingSection) schedulingSection.hidden = !visible;
           if (phase1Section) phase1Section.hidden = true;
@@ -12769,6 +13068,7 @@
             "heavy-weapons",
             "cleo-report",
             "post-rc-report",
+            "specialty-certs-report",
             "smc-report",
             "bls-report",
             "tccc-report",
@@ -16278,20 +16578,42 @@
           return rows.slice().sort(compareMqlRowsByDutyStatusThenName);
         }
 
-        function groupMqlEntriesByDutyStatus(entries) {
+        function isTawDutyStatus(status) {
+          const compact = mqlDutyStatusSortKey(status);
+          return compact === "TAW" || /\bTAW\b/i.test(String(status || ""));
+        }
+
+        function mqlScreenSectionLabel(person) {
+          const status = person ? personStatusLabel(person) : "Unknown";
+          if (isTawDutyStatus(status)) {
+            const section = personDutySectionLabel(person);
+            return section && section !== "-" ? section : "TAW";
+          }
+          return status || "Unknown";
+        }
+
+        function groupMqlEntriesByDutyStatus(entries, opts) {
+          opts = opts || {};
+          const useTawDutySection = !!opts.tawUseDutySection;
           const groups = new Map();
           (Array.isArray(entries) ? entries : []).forEach(function (entry) {
-            const status = entry && entry.person ? personStatusLabel(entry.person) : "Unknown";
-            if (!groups.has(status)) groups.set(status, []);
-            groups.get(status).push(entry);
+            const person = entry && entry.person;
+            const status = person ? personStatusLabel(person) : "Unknown";
+            const section = useTawDutySection ? mqlScreenSectionLabel(person) : status || "Unknown";
+            if (!groups.has(section)) groups.set(section, []);
+            groups.get(section).push(entry);
           });
           const out = [];
           groups.forEach(function (items, section) {
             out.push({ section: section, items: sortMqlReportRows(items) });
           });
           out.sort(function (a, b) {
-            const rankA = mqlDutyStatusSortIndex(a.section);
-            const rankB = mqlDutyStatusSortIndex(b.section);
+            const sampleA = a.items && a.items[0] && a.items[0].person;
+            const sampleB = b.items && b.items[0] && b.items[0].person;
+            const statusA = sampleA ? personStatusLabel(sampleA) : a.section;
+            const statusB = sampleB ? personStatusLabel(sampleB) : b.section;
+            const rankA = mqlDutyStatusSortIndex(isTawDutyStatus(statusA) ? "TAW" : statusA);
+            const rankB = mqlDutyStatusSortIndex(isTawDutyStatus(statusB) ? "TAW" : statusB);
             if (rankA !== rankB) return rankA - rankB;
             return String(a.section).localeCompare(String(b.section), undefined, { sensitivity: "base" });
           });
@@ -16492,7 +16814,7 @@
             wrap.appendChild(table);
           };
           if (!mqlIsHeavyCatalog(catalog)) {
-            groupMqlEntriesByDutyStatus(rows).forEach(function (group) {
+            groupMqlEntriesByDutyStatus(rows, { tawUseDutySection: true }).forEach(function (group) {
               const heading = document.createElement("h3");
               heading.className = "reports-office-title";
               heading.textContent = group.section;
@@ -16549,6 +16871,9 @@
               return mqlRowCells(entry, catalog, display);
             },
           });
+          if (opts && opts.signature) {
+            wrap.appendChild(buildMqlPrintSignatureBlock(opts.signature, "doc"));
+          }
           return wrap;
         }
 
@@ -17356,6 +17681,10 @@
             await loadPostRCReport(def);
             return;
           }
+          if (def.implemented && def.id === "specialty-certs-report") {
+            await loadSpecialtyCertsReport(def);
+            return;
+          }
           if (def.implemented && def.id === "smc-report") {
             await loadSmcReport(def);
             return;
@@ -17419,6 +17748,7 @@
             const sig = currentMqlSignatureForPrint(sigPanel || reportsDetailBody);
             triggerSchedulingPrint(renderMqlSignedPrintDocument(data.rows, data.catalog, { signature: sig, portrait: true }), {
               pageOrientation: "portrait",
+              mqlSignature: sig,
             });
             return;
           }
@@ -17441,6 +17771,10 @@
             triggerSchedulingPrint(renderPostRCReportPrintDocument(buildPostRCReportRows(personRows)), {
               pageOrientation: "portrait",
             });
+            return;
+          }
+          if (def.id === "specialty-certs-report") {
+            printSpecialtyCertPersonReport();
             return;
           }
           if (def.id === "smc-report") {
@@ -17689,6 +18023,711 @@
             setInstructorsState("err", "Could not load instructors: " + (e.message || String(e)).slice(0, 220));
             log("Instructors load failed:\n" + (e.message || String(e)), "err");
           }
+        }
+
+        let specialtyCertSession = {
+          rows: null,
+          personPostKey: undefined,
+          sampleRow: null,
+          reportPersonId: null,
+          reportRows: null,
+        };
+
+        function setCertificationsState(kind, message) {
+          if (!certificationsReadState) return;
+          if (!message) {
+            certificationsReadState.hidden = true;
+            certificationsReadState.textContent = "";
+            return;
+          }
+          certificationsReadState.hidden = false;
+          certificationsReadState.className = "read-state " + kind;
+          certificationsReadState.textContent = message;
+        }
+
+        function specialtyCertListApiPath() {
+          return certTrainingListApiPath(LIST_SPECIALTY_CERTIFICATES, LIST_SPECIALTY_CERTIFICATES_GUID);
+        }
+
+        function specialtyCertListConfigured() {
+          return certTrainingListConfigured(LIST_SPECIALTY_CERTIFICATES, LIST_SPECIALTY_CERTIFICATES_GUID);
+        }
+
+        function normalizedSpecialtyCertColumns() {
+          return (Array.isArray(SPECIALTY_CERT_COLUMNS) ? SPECIALTY_CERT_COLUMNS : [])
+            .map(function (entry) {
+              if (!entry || !entry.key) return null;
+              const key = String(entry.key).trim();
+              const label = String(entry.label || key).trim() || key;
+              const alt = Array.isArray(entry.altKeys)
+                ? entry.altKeys.map(function (x) {
+                    return String(x).trim();
+                  }).filter(Boolean)
+                : [];
+              const tryKeys = [key];
+              alt.forEach(function (a) {
+                if (tryKeys.indexOf(a) === -1) tryKeys.push(a);
+              });
+              return {
+                key: key,
+                label: label,
+                tryKeys: tryKeys,
+                inputType: entry.inputType || null,
+              };
+            })
+            .filter(Boolean);
+        }
+
+        function specialtyCertPersonIdFromItem(item) {
+          return certTrainingPersonnelIdFromItem(item, SPECIALTY_CERT_PERSON_FIELD, SPECIALTY_CERT_PERSON_FIELD_ALT);
+        }
+
+        function specialtyCertTypeFromItem(item) {
+          const col = normalizedSpecialtyCertColumns().find(function (c) {
+            return c.key === "CertType";
+          });
+          const raw = valueFromItemByKeys(item, (col && col.tryKeys) || ["CertType"]);
+          return formatSharePointLookupDisplay(raw) || formatCellValue(raw) || "";
+        }
+
+        function specialtyCertAwardedDisplay(item) {
+          const col = normalizedSpecialtyCertColumns().find(function (c) {
+            return c.key === "AwardedDate";
+          });
+          const raw = valueFromItemByKeys(item, (col && col.tryKeys) || ["AwardedDate"]);
+          return formatWeaponsCertDisplayDate(raw);
+        }
+
+        function specialtyCertNotesFromItem(item) {
+          const col = normalizedSpecialtyCertColumns().find(function (c) {
+            return c.key === "Notes";
+          });
+          const raw = valueFromItemByKeys(item, (col && col.tryKeys) || ["Notes"]);
+          return raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+        }
+
+        function specialtyCertSavedAtDisplay(item) {
+          const col = normalizedSpecialtyCertColumns().find(function (c) {
+            return c.key === "SavedAt";
+          });
+          const raw = valueFromItemByKeys(item, (col && col.tryKeys) || ["SavedAt"]);
+          return formatWeaponsCertDisplayDate(raw);
+        }
+
+        function specialtyCertPersonLabel(item) {
+          const pid = specialtyCertPersonIdFromItem(item);
+          if (!pid) return "-";
+          const person = (hubSession.rows || []).find(function (r) {
+            return r && String(r.Id) === String(pid);
+          });
+          return person ? formatPersonDisplayName(person) : "Id " + pid;
+        }
+
+        async function resolveSpecialtyCertPersonPostKey(seg, pw) {
+          if (specialtyCertSession.personPostKey !== undefined) return specialtyCertSession.personPostKey;
+          const fields = await discoverCertTrainingPersonFilterFields(
+            seg,
+            pw,
+            SPECIALTY_CERT_PERSON_FIELD,
+            "specialtyCertPersonFilterFields",
+          );
+          const primary = fields && fields.length ? fields[0] : String(SPECIALTY_CERT_PERSON_FIELD || "PersonnelId");
+          let postKey = primary;
+          try {
+            const esc = primary.replace(/'/g, "''");
+            const data = await spFetch(
+              `/_api/web/${seg}/fields?$select=InternalName,TypeAsString&$filter=InternalName eq '${esc}' or EntityPropertyName eq '${esc}'&$top=5`,
+              {},
+              pw,
+            );
+            const field = data && data.value && data.value[0];
+            if (field && /lookup/i.test(String(field.TypeAsString || ""))) {
+              const internal = String(field.InternalName || primary).trim();
+              postKey = internal.endsWith("Id") ? internal : internal + "Id";
+            }
+          } catch (_) {
+            if (/personnelid$/i.test(primary) && !/idid$/i.test(primary)) postKey = primary + "Id";
+          }
+          specialtyCertSession.personPostKey = postKey;
+          return postKey;
+        }
+
+        function populateSpecialtyCertPersonSelects() {
+          const selects = [certificationsPersonSelect, certificationsReportPersonSelect, form483PersonSelect];
+          const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
+          rows.sort(comparePersonnelByLastName);
+          selects.forEach(function (sel) {
+            if (!sel) return;
+            const prior = String(sel.value || "").trim();
+            while (sel.options.length > 1) sel.remove(1);
+            rows.forEach(function (person) {
+              if (!person || person.Id == null) return;
+              const o = document.createElement("option");
+              o.value = String(person.Id);
+              o.textContent = formatPersonDisplayName(person);
+              sel.appendChild(o);
+            });
+            if (prior) sel.value = prior;
+            applySelectAutosize(sel);
+          });
+        }
+
+        async function populateSpecialtyCertTypeDropdown(seg, pw) {
+          if (!certificationsCertType) return;
+          const col = normalizedSpecialtyCertColumns().find(function (c) {
+            return c.key === "CertType";
+          }) || { key: "CertType", label: "Cert type", tryKeys: ["CertType"] };
+          await fillDropdownSelect(certificationsCertType, col, seg, pw, specialtyCertSession.sampleRow, null);
+          applySelectAutosize(certificationsCertType);
+        }
+
+        function setCertificationsAddPanelVisible(show) {
+          if (certificationsAddPanel) certificationsAddPanel.hidden = !show;
+          if (!show && certificationsAddForm) certificationsAddForm.reset();
+        }
+
+        function clearSpecialtyCertTable() {
+          if (certificationsThead) certificationsThead.innerHTML = "";
+          if (certificationsTableBody) certificationsTableBody.innerHTML = "";
+        }
+
+        function renderSpecialtyCertTable(rows) {
+          clearSpecialtyCertTable();
+          if (!certificationsThead || !certificationsTableBody) return;
+          const showActions = !!(hubSession.pw && certificationsSection && !certificationsSection.hidden);
+          const headers = ["Personnel", "Cert type", "Awarded date", "Notes", "Saved at"];
+          const trHead = document.createElement("tr");
+          headers.forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          if (showActions) {
+            const thAct = document.createElement("th");
+            thAct.className = "roster-actions";
+            thAct.textContent = " ";
+            trHead.appendChild(thAct);
+          }
+          certificationsThead.appendChild(trHead);
+          const sorted = (Array.isArray(rows) ? rows.slice() : []).sort(function (a, b) {
+            const nameCmp = specialtyCertPersonLabel(a).localeCompare(specialtyCertPersonLabel(b), undefined, {
+              sensitivity: "base",
+            });
+            if (nameCmp !== 0) return nameCmp;
+            return specialtyCertTypeFromItem(a).localeCompare(specialtyCertTypeFromItem(b), undefined, {
+              sensitivity: "base",
+            });
+          });
+          const frag = document.createDocumentFragment();
+          sorted.forEach(function (item) {
+            const tr = document.createElement("tr");
+            [
+              specialtyCertPersonLabel(item),
+              specialtyCertTypeFromItem(item),
+              specialtyCertAwardedDisplay(item),
+              specialtyCertNotesFromItem(item),
+              specialtyCertSavedAtDisplay(item),
+            ].forEach(function (text) {
+              const td = document.createElement("td");
+              td.textContent = displayCellText(text);
+              tr.appendChild(td);
+            });
+            if (showActions && item.Id != null) {
+              const tdAct = document.createElement("td");
+              tdAct.className = "roster-actions";
+              const inner = document.createElement("div");
+              inner.className = "roster-actions-inner";
+              const delBtn = document.createElement("button");
+              delBtn.type = "button";
+              delBtn.className = "btn-danger";
+              delBtn.textContent = "Delete";
+              delBtn.addEventListener("click", function () {
+                void deleteSpecialtyCertRow(item.Id);
+              });
+              inner.appendChild(delBtn);
+              tdAct.appendChild(inner);
+              tr.appendChild(tdAct);
+            }
+            frag.appendChild(tr);
+          });
+          certificationsTableBody.appendChild(frag);
+          if (certificationsEmpty) {
+            certificationsEmpty.hidden = sorted.length > 0;
+            certificationsEmpty.textContent = sorted.length ? "" : "No specialty certificates on file.";
+          }
+        }
+
+        async function fetchSpecialtyCertRows(pw) {
+          const seg = specialtyCertListApiPath();
+          const data = await spFetch(`/_api/web/${seg}/items?$top=500`, {}, pw);
+          return (data && data.value) || [];
+        }
+
+        async function loadSpecialtyCertificates() {
+          const pw = hubSession.pw;
+          populateSpecialtyCertPersonSelects();
+          if (!specialtyCertListConfigured()) {
+            renderSpecialtyCertTable([]);
+            setCertificationsState("warn", "SpecialtyCertificates list is not configured.");
+            return;
+          }
+          if (!pw) {
+            renderSpecialtyCertTable([]);
+            setCertificationsState("warn", "Load the Personnel Roster first.");
+            return;
+          }
+          try {
+            setCertificationsState("loading", "Loading specialty certificates...");
+            const rows = await fetchSpecialtyCertRows(pw);
+            specialtyCertSession.rows = rows;
+            specialtyCertSession.sampleRow = rows.length ? rows[0] : specialtyCertSession.sampleRow;
+            renderSpecialtyCertTable(rows);
+            setCertificationsState("", "");
+          } catch (e) {
+            specialtyCertSession.rows = [];
+            renderSpecialtyCertTable([]);
+            setCertificationsState("err", "Could not load certificates: " + (e.message || String(e)).slice(0, 220));
+          }
+        }
+
+        async function navigateToCertifications() {
+          setCertificationsViewVisible(true);
+          setCertificationsAddPanelVisible(false);
+          if (certificationsAwardedDate) configureDmyDateInput(certificationsAwardedDate);
+          if (form483Date) configureDmyDateInput(form483Date);
+          if (form483Command && !String(form483Command.value || "").trim()) {
+            form483Command.value = String(AF_REPORT_UNIT_LABEL || "88th Security Forces Squadron");
+          }
+          populateSpecialtyCertPersonSelects();
+          if (hubSession.pw && specialtyCertListConfigured()) {
+            try {
+              await populateSpecialtyCertTypeDropdown(specialtyCertListApiPath(), hubSession.pw);
+            } catch (_) {}
+          }
+          await loadSpecialtyCertificates();
+        }
+
+        async function submitSpecialtyCertAdd(ev) {
+          if (ev && ev.preventDefault) ev.preventDefault();
+          const pw = hubSession.pw;
+          if (!pw || !specialtyCertListConfigured()) {
+            setCertificationsState("err", "SpecialtyCertificates list is not available.");
+            return;
+          }
+          const personId = certificationsPersonSelect
+            ? parseInt(String(certificationsPersonSelect.value || "").trim(), 10)
+            : 0;
+          const certType = certificationsCertType ? String(certificationsCertType.value || "").trim() : "";
+          const awardedRaw = certificationsAwardedDate ? String(certificationsAwardedDate.value || "").trim() : "";
+          const awardedIso = isoDateFromCalendarDate(parseWeaponsCertCalendarDate(awardedRaw));
+          const notes = certificationsNotes ? String(certificationsNotes.value || "").trim() : "";
+          if (!personId || isNaN(personId)) {
+            setCertificationsState("err", "Select a person.");
+            return;
+          }
+          if (!certType) {
+            setCertificationsState("err", "Select a cert type.");
+            return;
+          }
+          if (!awardedIso) {
+            setCertificationsState("err", "Enter a valid awarded date (DD-MMM-YY).");
+            return;
+          }
+          const person = (hubSession.rows || []).find(function (r) {
+            return r && String(r.Id) === String(personId);
+          });
+          const seg = specialtyCertListApiPath();
+          const personKey = await resolveSpecialtyCertPersonPostKey(seg, pw);
+          const todayIso = isoDateFromCalendarDate(new Date());
+          const payload = {};
+          payload[personKey] = personId;
+          payload.CertType = certType;
+          payload.AwardedDate = awardedIso;
+          if (notes) payload.Notes = notes;
+          payload.SavedAt = todayIso;
+          if (SPECIALTY_CERT_SET_TITLE) {
+            payload.Title =
+              certType + (person ? " — " + formatPersonDisplayName(person) : " — Id " + personId);
+          }
+          try {
+            if (certificationsSaveBtn) certificationsSaveBtn.disabled = true;
+            setCertificationsState("loading", "Saving certification...");
+            await spFetch(`/_api/web/${seg}/items`, { method: "POST", body: payload }, pw);
+            setCertificationsAddPanelVisible(false);
+            await loadSpecialtyCertificates();
+            setCertificationsState("ok", "Certification saved.");
+            window.setTimeout(function () {
+              setCertificationsState("", "");
+            }, 2200);
+          } catch (e) {
+            setCertificationsState("err", "Save failed: " + (e.message || String(e)).slice(0, 280));
+          } finally {
+            if (certificationsSaveBtn) certificationsSaveBtn.disabled = false;
+          }
+        }
+
+        async function deleteSpecialtyCertRow(id) {
+          const sid = parseInt(String(id), 10);
+          const pw = hubSession.pw;
+          if (!sid || isNaN(sid) || !pw) return;
+          if (!confirm("Delete specialty certification Id " + sid + "? This cannot be undone.")) return;
+          try {
+            setCertificationsState("loading", "Deleting...");
+            await spFetch(`/_api/web/${specialtyCertListApiPath()}/items(${sid})`, { method: "DELETE" }, pw);
+            await loadSpecialtyCertificates();
+            setCertificationsState("ok", "Deleted.");
+            window.setTimeout(function () {
+              setCertificationsState("", "");
+            }, 2000);
+          } catch (e) {
+            setCertificationsState("err", "Delete failed: " + (e.message || String(e)).slice(0, 220));
+          }
+        }
+
+        function renderSpecialtyCertPersonReportTable(person, rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "roster-wrap";
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "weapons-empty";
+            p.textContent = "No specialty certificates on file for " + formatPersonDisplayName(person) + ".";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          const table = document.createElement("table");
+          table.className = "roster";
+          table.setAttribute("aria-label", "Specialty certifications for person");
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          ["Cert type", "Awarded date", "Notes", "Saved at"].forEach(function (label) {
+            const th = document.createElement("th");
+            th.textContent = label;
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          rows
+            .slice()
+            .sort(function (a, b) {
+              return specialtyCertTypeFromItem(a).localeCompare(specialtyCertTypeFromItem(b), undefined, {
+                sensitivity: "base",
+              });
+            })
+            .forEach(function (item) {
+              const tr = document.createElement("tr");
+              [
+                specialtyCertTypeFromItem(item),
+                specialtyCertAwardedDisplay(item),
+                specialtyCertNotesFromItem(item),
+                specialtyCertSavedAtDisplay(item),
+              ].forEach(function (text) {
+                const td = document.createElement("td");
+                td.textContent = displayCellText(text);
+                tr.appendChild(td);
+              });
+              tbody.appendChild(tr);
+            });
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          return wrap;
+        }
+
+        function renderSpecialtyCertPersonPrintDocument(person, rows) {
+          const wrap = document.createElement("div");
+          wrap.className = "af-official-doc af-official-doc--compact-report";
+          wrap.appendChild(
+            buildAfOfficialDocHeader("Specialty Certifications — " + formatPersonDisplayName(person), {
+              includeSeconds: true,
+              subtitle: String(AF_REPORT_UNIT_LABEL || "88 SFS"),
+            }),
+          );
+          if (!rows.length) {
+            const p = document.createElement("p");
+            p.className = "af-official-doc-empty";
+            p.textContent = "No specialty certificates on file.";
+            wrap.appendChild(p);
+            return wrap;
+          }
+          appendOfficialSectionTable(wrap, {
+            columns: ["Cert type", "Awarded date", "Notes", "Saved at"],
+            sections: [{ section: formatPersonDisplayName(person), items: rows.slice() }],
+            compact: true,
+            compactContent: true,
+            buildCells: function (entry) {
+              return [
+                displayCellText(specialtyCertTypeFromItem(entry)),
+                displayCellText(specialtyCertAwardedDisplay(entry)),
+                displayCellText(specialtyCertNotesFromItem(entry)),
+                displayCellText(specialtyCertSavedAtDisplay(entry)),
+              ];
+            },
+          });
+          return wrap;
+        }
+
+        async function runSpecialtyCertPersonReport(personIdOpt) {
+          const pw = hubSession.pw;
+          const personId =
+            personIdOpt != null
+              ? personIdOpt
+              : certificationsReportPersonSelect
+                ? parseInt(String(certificationsReportPersonSelect.value || "").trim(), 10)
+                : 0;
+          if (!personId || isNaN(personId)) {
+            setCertificationsState("err", "Select a person for the certification report.");
+            return;
+          }
+          const person = (hubSession.rows || []).find(function (r) {
+            return r && String(r.Id) === String(personId);
+          });
+          if (!person) {
+            setCertificationsState("err", "Person not found in roster.");
+            return;
+          }
+          try {
+            setCertificationsState("loading", "Building person certification report...");
+            let allRows = Array.isArray(specialtyCertSession.rows) ? specialtyCertSession.rows : null;
+            if (!allRows) allRows = await fetchSpecialtyCertRows(pw);
+            const rows = certTrainingRowsMatchPersonnel(
+              allRows,
+              personId,
+              SPECIALTY_CERT_PERSON_FIELD,
+              SPECIALTY_CERT_PERSON_FIELD_ALT,
+            );
+            specialtyCertSession.reportPersonId = personId;
+            specialtyCertSession.reportRows = rows;
+            if (certificationsReportBody) {
+              certificationsReportBody.innerHTML = "";
+              const title = document.createElement("h4");
+              title.className = "weapons-add-title";
+              title.textContent = formatPersonDisplayName(person);
+              certificationsReportBody.appendChild(title);
+              certificationsReportBody.appendChild(renderSpecialtyCertPersonReportTable(person, rows));
+            }
+            if (certificationsReportPrintBtn) certificationsReportPrintBtn.hidden = false;
+            setCertificationsState("ok", rows.length + " certificate(s) for " + formatPersonDisplayName(person) + ".");
+            window.setTimeout(function () {
+              setCertificationsState("", "");
+            }, 2200);
+          } catch (e) {
+            setCertificationsState("err", "Report failed: " + (e.message || String(e)).slice(0, 220));
+          }
+        }
+
+        function printSpecialtyCertPersonReport() {
+          const personId = specialtyCertSession.reportPersonId;
+          const rows = Array.isArray(specialtyCertSession.reportRows) ? specialtyCertSession.reportRows : [];
+          const person = (hubSession.rows || []).find(function (r) {
+            return r && String(r.Id) === String(personId);
+          });
+          if (!person) {
+            setCertificationsState("err", "Run the person report before printing.");
+            return;
+          }
+          triggerSchedulingPrint(renderSpecialtyCertPersonPrintDocument(person, rows), {
+            pageOrientation: "portrait",
+          });
+        }
+
+        async function loadSpecialtyCertsReport(reportDef) {
+          showReportsDetail(reportDef);
+          if (!reportsDetailBody) return;
+          reportsDetailBody.innerHTML = "";
+          const hint = document.createElement("p");
+          hint.className = "reports-hint";
+          hint.textContent =
+            "Choose a person to view specialty certificates from SpecialtyCertificates. You can also manage these on the Certifications tab.";
+          reportsDetailBody.appendChild(hint);
+          const grid = document.createElement("div");
+          grid.className = "add-form-grid";
+          grid.style.maxWidth = "28rem";
+          const field = document.createElement("div");
+          field.className = "add-field";
+          const lab = document.createElement("label");
+          lab.setAttribute("for", "reportsSpecialtyCertPersonSelect");
+          lab.textContent = "Personnel";
+          const sel = document.createElement("select");
+          sel.id = "reportsSpecialtyCertPersonSelect";
+          sel.className = "add-field-select--autosize";
+          const opt0 = document.createElement("option");
+          opt0.value = "";
+          opt0.textContent = "Select Personnel...";
+          sel.appendChild(opt0);
+          const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
+          rows.sort(comparePersonnelByLastName);
+          rows.forEach(function (person) {
+            if (!person || person.Id == null) return;
+            const o = document.createElement("option");
+            o.value = String(person.Id);
+            o.textContent = formatPersonDisplayName(person);
+            sel.appendChild(o);
+          });
+          field.appendChild(lab);
+          field.appendChild(sel);
+          grid.appendChild(field);
+          reportsDetailBody.appendChild(grid);
+          const actions = document.createElement("div");
+          actions.className = "person-detail-toolbar-actions";
+          actions.style.margin = "12px 0";
+          const runBtn = document.createElement("button");
+          runBtn.type = "button";
+          runBtn.className = "btn-secondary";
+          runBtn.textContent = "Show report";
+          const printBtn = document.createElement("button");
+          printBtn.type = "button";
+          printBtn.className = "btn-secondary";
+          printBtn.textContent = "Print report";
+          printBtn.hidden = true;
+          actions.appendChild(runBtn);
+          actions.appendChild(printBtn);
+          reportsDetailBody.appendChild(actions);
+          const body = document.createElement("div");
+          body.id = "reportsSpecialtyCertReportBody";
+          reportsDetailBody.appendChild(body);
+          applySelectAutosize(sel);
+          runBtn.addEventListener("click", function () {
+            void (async function () {
+              const personId = parseInt(String(sel.value || "").trim(), 10);
+              if (!personId || isNaN(personId)) {
+                setReportsState("err", "Select a person.");
+                return;
+              }
+              const person = (hubSession.rows || []).find(function (r) {
+                return r && String(r.Id) === String(personId);
+              });
+              if (!person) return;
+              try {
+                setReportsState("loading", "Loading certificates...");
+                const allRows = await fetchSpecialtyCertRows(hubSession.pw);
+                const matched = certTrainingRowsMatchPersonnel(
+                  allRows,
+                  personId,
+                  SPECIALTY_CERT_PERSON_FIELD,
+                  SPECIALTY_CERT_PERSON_FIELD_ALT,
+                );
+                specialtyCertSession.reportPersonId = personId;
+                specialtyCertSession.reportRows = matched;
+                body.innerHTML = "";
+                body.appendChild(renderSpecialtyCertPersonReportTable(person, matched));
+                printBtn.hidden = false;
+                setReportsState("ok", matched.length + " certificate(s).");
+              } catch (e) {
+                setReportsState("err", (e.message || String(e)).slice(0, 220));
+              }
+            })();
+          });
+          printBtn.addEventListener("click", function () {
+            printSpecialtyCertPersonReport();
+          });
+          setReportsState("", "");
+        }
+
+        function renderAfForm483Document(data) {
+          data = data || {};
+          const wrap = document.createElement("div");
+          wrap.className = "af-form-483-doc";
+          const h1 = document.createElement("h1");
+          h1.textContent = "Certificate of Competency";
+          wrap.appendChild(h1);
+          const sub = document.createElement("div");
+          sub.className = "af-form-483-subtitle";
+          sub.textContent = "AF Form 483 (Local Generator) — " + String(data.certType || "");
+          wrap.appendChild(sub);
+          const meta = document.createElement("div");
+          meta.className = "af-form-483-meta";
+          const certNo = document.createElement("div");
+          certNo.innerHTML =
+            "<strong>Certificate No.</strong> " +
+            (data.certNo ? String(data.certNo) : "________________");
+          const dateEl = document.createElement("div");
+          dateEl.innerHTML = "<strong>Date</strong> " + displayCellText(data.dateDisplay || "");
+          meta.appendChild(certNo);
+          meta.appendChild(dateEl);
+          wrap.appendChild(meta);
+          function fieldRow(label, value) {
+            const row = document.createElement("div");
+            row.className = "af-form-483-field";
+            const lab = document.createElement("span");
+            lab.className = "af-form-483-label";
+            lab.textContent = label;
+            const line = document.createElement("span");
+            line.className = "af-form-483-line";
+            line.textContent = value || " ";
+            row.appendChild(lab);
+            row.appendChild(line);
+            return row;
+          }
+          wrap.appendChild(fieldRow("Name", data.personName || ""));
+          wrap.appendChild(fieldRow("Unit / Command", data.command || ""));
+          wrap.appendChild(fieldRow("Qualification", data.certType || ""));
+          wrap.appendChild(fieldRow("Instructor", data.instructor || ""));
+          const certify = document.createElement("p");
+          certify.className = "af-form-483-certify";
+          certify.textContent =
+            "This certifies that the individual named above has completed the prescribed course of instruction and practical tests and is hereby certified competent for " +
+            String(data.certType || "the listed qualification") +
+            " duties as required by local Security Forces training guidance.";
+          wrap.appendChild(certify);
+          const sigRow = document.createElement("div");
+          sigRow.className = "af-form-483-sig-row";
+          ["Instructor signature", "Commander / certifying official"].forEach(function (caption) {
+            const block = document.createElement("div");
+            block.className = "af-form-483-sig-block";
+            const space = document.createElement("div");
+            space.className = "af-form-483-sig-space";
+            const rule = document.createElement("div");
+            rule.className = "af-form-483-sig-rule";
+            const cap = document.createElement("div");
+            cap.className = "af-form-483-sig-caption";
+            cap.textContent = caption;
+            block.appendChild(space);
+            block.appendChild(rule);
+            block.appendChild(cap);
+            sigRow.appendChild(block);
+          });
+          wrap.appendChild(sigRow);
+          return wrap;
+        }
+
+        function printAfForm483(ev) {
+          if (ev && ev.preventDefault) ev.preventDefault();
+          const personId = form483PersonSelect ? parseInt(String(form483PersonSelect.value || "").trim(), 10) : 0;
+          const certType = form483CertType ? String(form483CertType.value || "").trim() : "";
+          const dateRaw = form483Date ? String(form483Date.value || "").trim() : "";
+          const dateDisplay = formatWeaponsCertDisplayDate(dateRaw) || dateRaw;
+          if (!personId || isNaN(personId)) {
+            setCertificationsState("err", "Select a person for AF Form 483.");
+            return;
+          }
+          if (!certType) {
+            setCertificationsState("err", "Select Baton or Taser.");
+            return;
+          }
+          if (!parseWeaponsCertCalendarDate(dateRaw)) {
+            setCertificationsState("err", "Enter a valid date (DD-MMM-YY).");
+            return;
+          }
+          const person = (hubSession.rows || []).find(function (r) {
+            return r && String(r.Id) === String(personId);
+          });
+          if (!person) {
+            setCertificationsState("err", "Person not found in roster.");
+            return;
+          }
+          triggerSchedulingPrint(
+            renderAfForm483Document({
+              personName: formatPersonDisplayName(person),
+              certType: certType,
+              dateDisplay: dateDisplay,
+              certNo: form483CertNo ? String(form483CertNo.value || "").trim() : "",
+              instructor: form483Instructor ? String(form483Instructor.value || "").trim() : "",
+              command:
+                (form483Command && String(form483Command.value || "").trim()) ||
+                String(AF_REPORT_UNIT_LABEL || "88th Security Forces Squadron"),
+            }),
+            { pageOrientation: "portrait" },
+          );
         }
 
         async function deleteCertifierRow(id, pw) {
@@ -18581,6 +19620,72 @@
         if (hubNavInstructors) {
           hubNavInstructors.addEventListener("click", function () {
             void navigateToInstructors();
+          });
+        }
+
+        if (hubNavCertifications) {
+          hubNavCertifications.addEventListener("click", function () {
+            void navigateToCertifications();
+          });
+        }
+
+        if (certificationsBackLink) {
+          certificationsBackLink.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            void navigateToRoster();
+          });
+        }
+
+        if (certificationsRefreshBtn) {
+          certificationsRefreshBtn.addEventListener("click", function () {
+            void loadSpecialtyCertificates();
+          });
+        }
+
+        if (certificationsAddBtn) {
+          certificationsAddBtn.addEventListener("click", function () {
+            populateSpecialtyCertPersonSelects();
+            if (hubSession.pw && specialtyCertListConfigured()) {
+              void populateSpecialtyCertTypeDropdown(specialtyCertListApiPath(), hubSession.pw);
+            }
+            if (certificationsAwardedDate) {
+              configureDmyDateInput(certificationsAwardedDate);
+              if (!certificationsAwardedDate.value) {
+                certificationsAwardedDate.value = formatWeaponsCertDisplayDate(isoDateFromCalendarDate(new Date()));
+              }
+            }
+            setCertificationsAddPanelVisible(true);
+            setCertificationsState("", "");
+          });
+        }
+
+        if (certificationsAddCancelBtn) {
+          certificationsAddCancelBtn.addEventListener("click", function () {
+            setCertificationsAddPanelVisible(false);
+          });
+        }
+
+        if (certificationsAddForm) {
+          certificationsAddForm.addEventListener("submit", function (ev) {
+            void submitSpecialtyCertAdd(ev);
+          });
+        }
+
+        if (certificationsReportRunBtn) {
+          certificationsReportRunBtn.addEventListener("click", function () {
+            void runSpecialtyCertPersonReport();
+          });
+        }
+
+        if (certificationsReportPrintBtn) {
+          certificationsReportPrintBtn.addEventListener("click", function () {
+            printSpecialtyCertPersonReport();
+          });
+        }
+
+        if (form483GeneratorForm) {
+          form483GeneratorForm.addEventListener("submit", function (ev) {
+            printAfForm483(ev);
           });
         }
 
@@ -20678,12 +21783,164 @@
           }
         }
 
+        function ethosCertStatusStillCurrent(status) {
+          const tone = status && status.tone ? String(status.tone) : "unknown";
+          return tone === "ok" || tone === "warn" || tone === "urgent" || tone === "unknown";
+        }
+
+        /** True when the member has at least one cert row and every weapons/By-Law row is past expiration. */
+        function ethosMemberIsCompletelyExpired(weaponsRows, bylawRows) {
+          const weapons = Array.isArray(weaponsRows) ? weaponsRows : [];
+          const bylaw = Array.isArray(bylawRows) ? bylawRows : [];
+          if (!weapons.length && !bylaw.length) return false;
+          for (let i = 0; i < weapons.length; i++) {
+            if (ethosCertStatusStillCurrent(computeEthosWeaponsCertStatus(weapons[i]))) return false;
+          }
+          for (let j = 0; j < bylaw.length; j++) {
+            if (ethosCertStatusStillCurrent(computeEthosBylawTrainingStatus(bylaw[j]))) return false;
+          }
+          return true;
+        }
+
+        async function deleteEthosLinkedCertRowsQuiet(rows, seg, pw) {
+          const list = Array.isArray(rows) ? rows : [];
+          for (let i = 0; i < list.length; i++) {
+            const row = list[i];
+            if (!row || row.Id == null) continue;
+            try {
+              await spFetch(`/_api/web/${seg}/items(${row.Id})`, { method: "DELETE" }, pw);
+            } catch (e) {
+              log(
+                "ETHOS linked cert delete failed (Id " + row.Id + "):\n" + (e.message || String(e)),
+                "err",
+              );
+            }
+          }
+        }
+
+        async function cascadeDeleteEthosMemberLinkedCerts(memberId, pw, weaponsByMember, bylawByMember) {
+          const mid = String(memberId);
+          const weaponsRows = (weaponsByMember && weaponsByMember[mid]) || [];
+          const bylawRows = (bylawByMember && bylawByMember[mid]) || [];
+          if (weaponsRows.length && (ethosWeaponsCertListTitle() || ethosWeaponsCertListUsesGuid())) {
+            await deleteEthosLinkedCertRowsQuiet(weaponsRows, ethosWeaponsCertListApiPath(), pw);
+          }
+          if (bylawRows.length && (ethosBylawListTitle() || ethosBylawListUsesGuid())) {
+            await deleteEthosLinkedCertRowsQuiet(bylawRows, ethosBylawTrainingListApiPath(), pw);
+          }
+        }
+
+        async function purgeCompletelyExpiredEthosMembers(pw, seg, rows) {
+          const list = Array.isArray(rows) ? rows.slice() : [];
+          if (!list.length || !pw || !seg) return { remaining: list, purged: 0 };
+
+          let allWeapons = [];
+          let allBylaw = [];
+          try {
+            if (ethosWeaponsCertListTitle() || ethosWeaponsCertListUsesGuid()) {
+              allWeapons = await fetchAllEthosLinkedRows(ethosWeaponsCertListApiPath(), pw, {
+                orderBy: ETHOS_WEAPONS_CERT_ITEMS_ORDERBY,
+              });
+            }
+          } catch (e) {
+            log("ETHOS weapons load for expiry purge failed:\n" + (e.message || String(e)), "err");
+          }
+          try {
+            if (ethosBylawListTitle() || ethosBylawListUsesGuid()) {
+              allBylaw = await fetchAllEthosLinkedRows(ethosBylawTrainingListApiPath(), pw, {
+                orderBy: ETHOS_BYLAW_TRAINING_ITEMS_ORDERBY,
+              });
+            }
+          } catch (e) {
+            log("ETHOS By-Law load for expiry purge failed:\n" + (e.message || String(e)), "err");
+          }
+
+          const weaponsByMember = groupLinkedRowsByMember(
+            allWeapons,
+            ETHOS_WEAPONS_PERSON_FIELD,
+            ETHOS_WEAPONS_PERSON_FIELD_ALT,
+            "EthosMember",
+          );
+          const bylawByMember = groupLinkedRowsByMember(
+            allBylaw,
+            ETHOS_BYLAW_PERSON_FIELD,
+            ETHOS_BYLAW_PERSON_FIELD_ALT,
+            "EthosMember",
+          );
+
+          const remaining = [];
+          let purged = 0;
+          for (let i = 0; i < list.length; i++) {
+            const item = list[i];
+            if (!item || item.Id == null) {
+              if (item) remaining.push(item);
+              continue;
+            }
+            const mid = String(item.Id);
+            const weaponsRows = weaponsByMember[mid] || [];
+            const bylawRows = bylawByMember[mid] || [];
+            if (!ethosMemberIsCompletelyExpired(weaponsRows, bylawRows)) {
+              remaining.push(item);
+              continue;
+            }
+            try {
+              await cascadeDeleteEthosMemberLinkedCerts(item.Id, pw, weaponsByMember, bylawByMember);
+              await spFetch(`/_api/web/${seg}/items(${item.Id})`, { method: "DELETE" }, pw);
+              purged++;
+            } catch (e) {
+              log(
+                "Completely expired ETHOS member delete failed (Id " + item.Id + "):\n" + (e.message || String(e)),
+                "err",
+              );
+              remaining.push(item);
+            }
+          }
+          return { remaining: remaining, purged: purged };
+        }
+
         async function deleteEthosMemberRow(id, pw, seg) {
           const sid = parseInt(String(id), 10);
           if (!sid || isNaN(sid)) { setEthosReadState("err", "Invalid row Id for delete."); return; }
-          if (!confirm("Delete ETHOS Member Id " + sid + "? This cannot be undone.")) return;
+          if (!confirm("Delete ETHOS Member Id " + sid + "? Linked weapons and By-Law records will also be removed. This cannot be undone.")) return;
           try {
             setEthosReadState("loading", "Deleting member...");
+            let weaponsRows = [];
+            let bylawRows = [];
+            try {
+              if (ethosWeaponsCertListTitle() || ethosWeaponsCertListUsesGuid()) {
+                weaponsRows = await fetchLinkedCertRowsForMember(ethosWeaponsCertListApiPath(), pw, sid, {
+                  personField: ETHOS_WEAPONS_PERSON_FIELD,
+                  personFieldAlt: ETHOS_WEAPONS_PERSON_FIELD_ALT,
+                  orderBy: ETHOS_WEAPONS_CERT_ITEMS_ORDERBY,
+                  session: ethosSession,
+                  filterFieldKey: "weaponsPersonFilterField",
+                  filterFieldsKey: "weaponsPersonFilterFields",
+                  lookupBase: "EthosMember",
+                });
+              }
+            } catch (eW) {
+              log("ETHOS weapons cascade load failed:\n" + (eW.message || String(eW)), "err");
+            }
+            try {
+              if (ethosBylawListTitle() || ethosBylawListUsesGuid()) {
+                bylawRows = await fetchLinkedCertRowsForMember(ethosBylawTrainingListApiPath(), pw, sid, {
+                  personField: ETHOS_BYLAW_PERSON_FIELD,
+                  personFieldAlt: ETHOS_BYLAW_PERSON_FIELD_ALT,
+                  orderBy: ETHOS_BYLAW_TRAINING_ITEMS_ORDERBY,
+                  session: ethosSession,
+                  filterFieldKey: "bylawPersonFilterField",
+                  filterFieldsKey: "bylawPersonFilterFields",
+                  lookupBase: "EthosMember",
+                });
+              }
+            } catch (eB) {
+              log("ETHOS By-Law cascade load failed:\n" + (eB.message || String(eB)), "err");
+            }
+            const weaponsByMember = {};
+            weaponsByMember[String(sid)] = weaponsRows;
+            const bylawByMember = {};
+            bylawByMember[String(sid)] = bylawRows;
+            await cascadeDeleteEthosMemberLinkedCerts(sid, pw, weaponsByMember, bylawByMember);
             await spFetch(`/_api/web/${seg}/items(${sid})`, { method: "DELETE" }, pw);
             await runEthosProbe();
             setEthosReadState("ok", "Deleted member Id " + sid + ".");
@@ -20856,9 +22113,27 @@
               }
             }
             let rows = sortEthosRowsAlphabetical((items && items.value) || []);
+            let purgedExpired = 0;
+            try {
+              const purgeResult = await purgeCompletelyExpiredEthosMembers(pw, seg, rows);
+              rows = sortEthosRowsAlphabetical(purgeResult.remaining || []);
+              purgedExpired = Number(purgeResult.purged) || 0;
+            } catch (ePurge) {
+              log("ETHOS completely-expired purge failed:\n" + (ePurge.message || String(ePurge)), "err");
+            }
             const sampleRow = rows.length ? rows[0] : null;
             ethosSession = Object.assign({}, ethosSession, { rows: rows, meta: meta, pw: pw, seg: seg, sampleRow: sampleRow });
             renderEthosRosterTable(rows, meta, pw, seg);
+            if (purgedExpired > 0) {
+              setEthosReadState(
+                "ok",
+                "Loaded " +
+                  rows.length +
+                  " ETHOS member(s). Removed " +
+                  purgedExpired +
+                  " completely expired member(s).",
+              );
+            }
             try {
               await renderEthosAddMemberForm(meta, pw, seg, sampleRow);
             } catch (eForm) {
