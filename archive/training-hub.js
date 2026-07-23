@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260723c";
+        const HUB_BUILD_ID = "20260723d";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -607,6 +607,7 @@
             implemented: true,
             printable: true,
           },
+          {
             id: "specialty-certs-report",
             title: "Specialty Certifications Report",
             subtitle: "Certificates from SpecialtyCertificates for a selected person (print-ready).",
