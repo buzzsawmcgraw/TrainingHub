@@ -117,7 +117,8 @@ $loaderCss = @'
       }
       #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-top-banner-wrap,
       #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-header,
-      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-main {
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-main,
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-external-links {
         visibility: hidden !important;
         pointer-events: none !important;
       }

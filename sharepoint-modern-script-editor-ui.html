@@ -3015,7 +3015,8 @@
       }
       #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-top-banner-wrap,
       #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-header,
-      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-main {
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-main,
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-external-links {
         visibility: hidden !important;
         pointer-events: none !important;
       }
@@ -3886,7 +3887,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260723h";
+        const HUB_BUILD_ID = "20260723j";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -4241,10 +4242,22 @@
           },
         ];
         /**
-         * Future hub footer quick links (render when populated). Example:
-         * { label: "SharePoint", url: "https://..." }
+         * Hub footer quick links (open in a new tab).
          */
-        const HUB_EXTERNAL_LINKS = [];
+        const HUB_EXTERNAL_LINKS = [
+          {
+            label: "ARIS",
+            url: "https://aris.cce.af.mil/PersonnelReadiness/pr/selectOrganization.jspx",
+          },
+          {
+            label: "DTS",
+            url: "https://dtsproweb.defensetravel.osd.mil",
+          },
+          {
+            label: "AF Portal",
+            url: "https://www.my.af.mil",
+          },
+        ];
         const APPOINTMENTS_MEMO_DEFAULT_FROM = "88 SFS/S3T";
         const MEMO_SIGNATURE_TITLE_PRESETS = [
           "Training NCOIC",

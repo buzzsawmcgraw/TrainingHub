@@ -52,7 +52,8 @@
       }
       #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-top-banner-wrap,
       #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-header,
-      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-main {
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-main,
+      #sp-pip-ui:has(#hubAccessGate:not([hidden])) > .hub-external-links {
         visibility: hidden !important;
         pointer-events: none !important;
       }
@@ -161,7 +162,7 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260723h</span>
+              Build <span id="hubBuildIdLabel">20260723j</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
@@ -910,9 +911,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260723h";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260723h";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260723h";
+  var LOADER_BUILD_ID = "20260723j";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260723j";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260723j";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 
