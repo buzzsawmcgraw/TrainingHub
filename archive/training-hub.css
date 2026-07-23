@@ -704,28 +704,24 @@
         white-space: normal;
         word-break: break-word;
       }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th:nth-child(1),
-      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(1),
-      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th:nth-child(2),
-      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(2) {
-        font-size: 6pt;
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th,
+      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td {
+        font-size: 7pt;
         padding: 1px 2px;
         line-height: 1.05;
-        white-space: normal;
+        white-space: nowrap;
         overflow: hidden;
       }
       #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(3) {
         white-space: normal;
         word-break: break-word;
       }
-      #sp-pip-ui table.reports-mql-table--standard th:nth-child(1),
-      #sp-pip-ui table.reports-mql-table--standard td:nth-child(1),
-      #sp-pip-ui table.reports-mql-table--standard th:nth-child(2),
-      #sp-pip-ui table.reports-mql-table--standard td:nth-child(2) {
+      #sp-pip-ui table.reports-mql-table--standard th,
+      #sp-pip-ui table.reports-mql-table--standard td {
         font-size: 11px;
         padding: 2px 3px;
         line-height: 1.1;
-        white-space: normal;
+        white-space: nowrap;
       }
       #sp-pip-ui table.reports-mql-table--standard td:nth-child(3) {
         white-space: normal;
@@ -969,6 +965,8 @@
       #sp-pip-ui .scheduling-print-surface table.af-official-table th.mql-status-taw-as-pfd {
         color: #c00000 !important;
         font-weight: 700;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
       #sp-pip-ui .scheduling-print-surface .mql-print-page-signature {
         margin-top: 28px;

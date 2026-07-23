@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260723l";
+        const HUB_BUILD_ID = "20260723n";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -378,18 +378,17 @@
             match: ["AUOF", "Annual Use of Force", "Use of Force"],
           },
         ];
-        /** Extra snapshot columns for unsigned MQL PDF export only. */
+        /** Extra snapshot columns for unsigned MQL PDF export only (expiration / due dates). */
         const MQL_EXPORT_SUPPORT_COLUMN_DEFS = [
-          { label: "SMC Qual", kind: "support", field: "smc", part: "qual" },
           { label: "SMC Exp", kind: "support", field: "smc", part: "exp" },
-          { label: "Sust Qual", kind: "support", field: "sust", part: "qual" },
           { label: "Sust Due", kind: "support", field: "sust", part: "exp" },
-          { label: "BLS Qual", kind: "support", field: "bls", part: "qual" },
           { label: "BLS Exp", kind: "support", field: "bls", part: "exp" },
-          { label: "TCCC Qual", kind: "support", field: "tccc", part: "qual" },
           { label: "TCCC Exp", kind: "support", field: "tccc", part: "exp" },
         ];
-        const MQL_EXPORT_COLUMN_DEFS = MQL_STANDARD_COLUMN_DEFS.concat(MQL_EXPORT_SUPPORT_COLUMN_DEFS);
+        /** Unsigned MQL PDF: person fields + expiration dates only (no qual dates). */
+        const MQL_EXPORT_COLUMN_DEFS = MQL_STANDARD_COLUMN_DEFS.filter(function (col) {
+          return !col || col.kind === "person" || String(col.part || "").toLowerCase() !== "qual";
+        }).concat(MQL_EXPORT_SUPPORT_COLUMN_DEFS);
         /**
          * Hub footer quick links (open in a new tab).
          */
@@ -533,6 +532,8 @@
         const SOT_PERSONNEL_STATUS_FOR_COUNTS = [];
         /** Always excluded from Status of Training required/overdue firing math. */
         const SOT_EXCLUDED_STATUS_LABELS = ["Non-SF", "Non SF", "NONSF"];
+        /** Phase 1 statuses excluded from Required (except the dedicated Phase 1 AUoF row). */
+        const SOT_EXCLUDED_PHASE_ONE = true;
         /** Office symbols always excluded from Status of Training required/overdue firing math. */
         const SOT_EXCLUDED_OFFICE_SYMBOLS = ["S1"];
         /** Printed monthly report header (matches legacy SOT PDF). */
@@ -1027,6 +1028,7 @@
         const reportsHubGrid = document.getElementById("reportsHubGrid");
         const reportsDetailPanel = document.getElementById("reportsDetailPanel");
         const reportsDetailBackLink = document.getElementById("reportsDetailBackLink");
+        const reportsRefreshBtn = document.getElementById("reportsRefreshBtn");
         const reportsPrintBtn = document.getElementById("reportsPrintBtn");
         const reportsExportBtn = document.getElementById("reportsExportBtn");
         const reportsDetailTitle = document.getElementById("reportsDetailTitle");
@@ -1042,6 +1044,7 @@
         const ethosRosterTableBody = document.getElementById("ethosRosterTableBody");
         const ethosRosterWrap = document.getElementById("ethosRosterWrap");
         const ethosMqlReportBtn = document.getElementById("ethosMqlReportBtn");
+        const ethosMqlRefreshBtn = document.getElementById("ethosMqlRefreshBtn");
         const ethosMqlPrintBtn = document.getElementById("ethosMqlPrintBtn");
         const ethosMqlCloseBtn = document.getElementById("ethosMqlCloseBtn");
         const ethosMqlReportPanel = document.getElementById("ethosMqlReportPanel");
@@ -1863,6 +1866,7 @@
           if (ethosMemberDetailSection) ethosMemberDetailSection.hidden = true;
           if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = true;
           if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = true;
+          if (ethosMqlRefreshBtn) ethosMqlRefreshBtn.hidden = true;
           if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = true;
         }
 
@@ -1935,6 +1939,7 @@
           if (ethosMemberDetailSection) ethosMemberDetailSection.hidden = true;
           if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = true;
           if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = true;
+          if (ethosMqlRefreshBtn) ethosMqlRefreshBtn.hidden = true;
           if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = true;
           ethosDetailSession = { item: null, editing: false, meta: null, pw: null, seg: null, sampleRow: null };
           clearEthosMemberWeaponsSection();
@@ -8244,7 +8249,7 @@
             "#sp-pip-ui .scheduling-print-surface table.af-official-table--compact { font-size: 7pt; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table th, #sp-pip-ui .scheduling-print-surface table.af-official-table td { border: 1px solid #000; padding: 2px 3px; text-align: left; vertical-align: top; color: #000; background: #fff; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table th { font-weight: 700; }" +
-            "#sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th:nth-child(1), #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(1), #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th:nth-child(2), #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(2) { white-space: nowrap; padding-left: 2px; padding-right: 2px; font-size: 7pt; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th, #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td { white-space: nowrap; padding: 1px 2px; font-size: 7pt; line-height: 1.05; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(3) { white-space: normal; word-break: break-word; }" +
             "table.mql-print-unified-table { border-collapse: collapse; width: 100%; }" +
             "table.mql-print-unified-table tr.mql-print-section-row td.mql-print-section-heading-cell { font-weight: 700; font-size: 8pt; border: 1px solid #000; padding: 3px 5px; background: #fff; color: #000; }" +
@@ -9104,6 +9109,7 @@
           syncSotReportUiState();
           if (reportsHubPanel) reportsHubPanel.hidden = false;
           if (reportsDetailPanel) reportsDetailPanel.hidden = true;
+          if (reportsRefreshBtn) reportsRefreshBtn.hidden = true;
           if (reportsPrintBtn) reportsPrintBtn.hidden = true;
           if (reportsExportBtn) reportsExportBtn.hidden = true;
           renderReportsHubGrid();
@@ -9122,8 +9128,13 @@
             "bls-report",
             "tccc-report",
           ];
+          const mqlRefreshIds = ["mql-report", "heavy-weapons", "mql-pdf"];
           const showSigned = reportDef.printable && signedIds.indexOf(id) >= 0;
           const showExport = reportDef.printable && (id === "mql-pdf" || id === "status-of-training");
+          if (reportsRefreshBtn) {
+            reportsRefreshBtn.hidden = mqlRefreshIds.indexOf(id) < 0;
+            reportsRefreshBtn.textContent = "Refresh";
+          }
           if (reportsPrintBtn) {
             if (id === "status-of-training") {
               updateSotPrintButtonLabel();
@@ -9137,6 +9148,13 @@
             reportsExportBtn.textContent = "Generate PDF";
             reportsExportBtn.hidden = !showExport;
           }
+        }
+
+        async function refreshActiveMqlReport() {
+          const id = String(reportsSession.activeReportId || "").trim();
+          if (id !== "mql-report" && id !== "heavy-weapons" && id !== "mql-pdf") return;
+          invalidateReportsTrainingCache();
+          await openHubReport(id);
         }
 
         function showReportsDetail(reportDef) {
@@ -9266,10 +9284,14 @@
           });
         }
 
-        function personCountsForSotPosture(item) {
+        function personCountsForSotPosture(item, opts) {
           if (!item) return false;
           if (personIsExcludedSotStatus(item)) return false;
           if (personIsExcludedSotOffice(item)) return false;
+          const includePhaseOne = !!(opts && opts.includePhaseOne);
+          if (SOT_EXCLUDED_PHASE_ONE && !includePhaseOne && personnelStatusIsPhaseOne(personStatusLabel(item))) {
+            return false;
+          }
           const allowed = Array.isArray(SOT_PERSONNEL_STATUS_FOR_COUNTS) ? SOT_PERSONNEL_STATUS_FOR_COUNTS : [];
           if (!allowed.length) return true;
           const status = personStatusLabel(item);
@@ -9869,7 +9891,10 @@
 
           return defs.map(function (rowDef) {
             const cohort = (Array.isArray(personRows) ? personRows : []).filter(function (person) {
-              return personCountsForSotPosture(person) && personInSotAuofTrainingCohort(person, rowDef);
+              return (
+                personCountsForSotPosture(person, { includePhaseOne: rowDef.kind === "phase1" }) &&
+                personInSotAuofTrainingCohort(person, rowDef)
+              );
             });
             let required = 0;
             let completedMonth = 0;
@@ -11990,7 +12015,8 @@
           const defs = mqlColumnDefsForMode(opts);
           const n = defs.length;
           if (n <= 4) return ["14%", "14%", "36%", "36%"].slice(0, n);
-          const personShare = Math.min(38, Math.max(28, 120 / n));
+          // Keep person columns readable; give cert/exp cells enough width for one-line dates.
+          const personShare = opts && opts.exportSnapshot ? Math.min(34, Math.max(24, 100 / n + 8)) : 32;
           const personEach = (personShare / 4).toFixed(2) + "%";
           const certCount = Math.max(1, n - 4);
           const certEach = ((100 - personShare) / certCount).toFixed(2) + "%";
@@ -15950,7 +15976,20 @@
           ethosMqlCloseBtn.addEventListener("click", function () {
             if (ethosMqlReportPanel) ethosMqlReportPanel.hidden = true;
             if (ethosMqlPrintBtn) ethosMqlPrintBtn.hidden = true;
+            if (ethosMqlRefreshBtn) ethosMqlRefreshBtn.hidden = true;
             if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = true;
+          });
+        }
+
+        if (ethosMqlRefreshBtn) {
+          ethosMqlRefreshBtn.addEventListener("click", function () {
+            void showEthosMqlReport();
+          });
+        }
+
+        if (reportsRefreshBtn) {
+          reportsRefreshBtn.addEventListener("click", function () {
+            void refreshActiveMqlReport();
           });
         }
 
@@ -19199,6 +19238,7 @@
               ethosMqlPrintBtn.hidden = false;
               ethosMqlPrintBtn.textContent = "Print signed report";
             }
+            if (ethosMqlRefreshBtn) ethosMqlRefreshBtn.hidden = false;
             if (ethosMqlCloseBtn) ethosMqlCloseBtn.hidden = false;
             setEthosReadState("", "");
           } catch (e) {

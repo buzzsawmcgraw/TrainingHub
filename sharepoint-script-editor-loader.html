@@ -162,7 +162,7 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260723l</span>
+              Build <span id="hubBuildIdLabel">20260723n</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
@@ -500,6 +500,7 @@
               <div class="person-detail-toolbar">
                 <a id="reportsDetailBackLink" class="person-detail-back" href="#">Back to reports</a>
                 <div class="person-detail-toolbar-actions">
+                  <button type="button" id="reportsRefreshBtn" class="btn-secondary" hidden>Refresh</button>
                   <button type="button" id="reportsPrintBtn" class="btn-secondary" hidden>Print signed report</button>
                   <button type="button" id="reportsExportBtn" class="btn-secondary" hidden>Export PDF</button>
                 </div>
@@ -516,6 +517,7 @@
               <a id="ethosBackLink" class="person-detail-back" href="#">Back to Personnel roster</a>
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="ethosMqlReportBtn" class="btn-secondary">ETHOS MQL Report</button>
+                <button type="button" id="ethosMqlRefreshBtn" class="btn-secondary" hidden>Refresh</button>
                 <button type="button" id="ethosMqlPrintBtn" class="btn-secondary" hidden>Print report</button>
                 <button type="button" id="ethosMqlCloseBtn" class="btn-secondary" hidden>Close report</button>
               </div>
@@ -911,9 +913,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260723l";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260723l";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260723l";
+  var LOADER_BUILD_ID = "20260723n";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260723n";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260723n";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 
