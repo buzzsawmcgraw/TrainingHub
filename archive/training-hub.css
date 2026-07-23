@@ -984,17 +984,44 @@
       #sp-pip-ui .hub-external-links {
         display: none;
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 14px;
         justify-content: center;
-        padding: 14px 16px 20px;
+        padding: 18px 16px 24px;
         border-top: 1px solid var(--pip-border);
         margin-top: 8px;
       }
       #sp-pip-ui .hub-external-links.hub-external-links--visible {
         display: flex;
       }
-      #sp-pip-ui .hub-external-links a {
+      #sp-pip-ui .hub-external-links a.hub-external-link,
+      #sp-pip-ui a.hub-external-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         margin: 0;
+        min-width: 7.5rem;
+        min-height: 48px;
+        padding: 14px 28px;
+        box-sizing: border-box;
+        text-decoration: none;
+        cursor: pointer;
+        font-family: var(--pip-font);
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #010a06 !important;
+        background: linear-gradient(180deg, #7dffaa 0%, #3cff7a 55%, #2ad868 100%) !important;
+        border: 2px solid var(--pip-green-dim) !important;
+        border-radius: 4px;
+        text-shadow: none !important;
+        box-shadow: 0 0 18px rgba(60, 255, 122, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+      }
+      #sp-pip-ui .hub-external-links a.hub-external-link:hover,
+      #sp-pip-ui a.hub-external-link:hover {
+        background: linear-gradient(180deg, #9dffc0 0%, #5dff8f 55%, #3cff7a 100%) !important;
+        color: #010a06 !important;
+        box-shadow: 0 0 24px rgba(60, 255, 122, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
       }
       #sp-pip-ui .reports-mql-wrap {
         overflow-x: auto;
@@ -1432,6 +1459,7 @@
         #sp-pip-ui.scheduling-print-active .hub-header,
         #sp-pip-ui.scheduling-print-active main,
         #sp-pip-ui.scheduling-print-active .hub-section--diag,
+        #sp-pip-ui.scheduling-print-active .hub-external-links,
         #sp-pip-ui.scheduling-print-active .scheduling-memo-overlay {
           display: none !important;
         }
@@ -1755,6 +1783,16 @@
       }
       #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report.af-official-doc--mql-signed {
         width: 100%;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        background: #fff !important;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report.af-official-doc--mql-signed .af-official-table-header-wrap,
+      #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report.af-official-doc--mql-signed .af-official-section-block {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
       }
       #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report table.af-official-table {
         width: 100%;

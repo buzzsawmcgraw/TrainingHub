@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260723j";
+        const HUB_BUILD_ID = "20260723k";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -377,6 +377,14 @@
             preferWeapon: false,
             match: ["AUOF", "Annual Use of Force", "Use of Force"],
           },
+          { label: "SMC Qual", kind: "support", field: "smc", part: "qual" },
+          { label: "SMC Exp", kind: "support", field: "smc", part: "exp" },
+          { label: "Sust Qual", kind: "support", field: "sust", part: "qual" },
+          { label: "Sust Due", kind: "support", field: "sust", part: "exp" },
+          { label: "BLS Qual", kind: "support", field: "bls", part: "qual" },
+          { label: "BLS Exp", kind: "support", field: "bls", part: "exp" },
+          { label: "TCCC Qual", kind: "support", field: "tccc", part: "qual" },
+          { label: "TCCC Exp", kind: "support", field: "tccc", part: "exp" },
         ];
         /**
          * Hub footer quick links (open in a new tab).
@@ -515,9 +523,14 @@
         const SOT_REPORT_MONTHS_BACK = 24;
         /**
          * Personnel Status values included in training posture counts (OfficeSymbol groups).
-         * Leave empty [] to include every status. Example: ["Active", "AGR"].
+         * Leave empty [] to include every status except built-in exclusions (Non-SF, S1).
+         * Example: ["Active", "AGR"].
          */
         const SOT_PERSONNEL_STATUS_FOR_COUNTS = [];
+        /** Always excluded from Status of Training required/overdue firing math. */
+        const SOT_EXCLUDED_STATUS_LABELS = ["Non-SF", "Non SF", "NONSF"];
+        /** Office symbols always excluded from Status of Training required/overdue firing math. */
+        const SOT_EXCLUDED_OFFICE_SYMBOLS = ["S1"];
         /** Printed monthly report header (matches legacy SOT PDF). */
         const SOT_SQUADRON_LABEL = "88 SFS";
         /** Fixed weapon rows for Status of Training monthly weapons qualification tables. */
@@ -589,7 +602,7 @@
           {
             id: "mql-pdf",
             title: "MQL PDF",
-            subtitle: "Export layout with separate qual/expiration columns for Excel and email.",
+            subtitle: "Full snapshot export with weapons, By-Law, SMC, sustainment, BLS, and TCCC columns.",
             badge: "PDF",
             implemented: true,
             printable: true,
@@ -9229,7 +9242,29 @@
           return status || "Unknown";
         }
 
+        function personIsExcludedSotOffice(item) {
+          const office = normalizeSotOfficeKey(personOfficeKey(item));
+          if (!office || office === "UNASSIGNED") return false;
+          return (Array.isArray(SOT_EXCLUDED_OFFICE_SYMBOLS) ? SOT_EXCLUDED_OFFICE_SYMBOLS : []).some(function (entry) {
+            const key = normalizeSotOfficeKey(entry);
+            if (!key) return false;
+            return office === key || office.indexOf(key + "/") === 0 || office.indexOf(key + "-") === 0;
+          });
+        }
+
+        function personIsExcludedSotStatus(item) {
+          const status = personStatusLabel(item);
+          const compact = mqlDutyStatusSortKey(status);
+          if (compact === "NONSF" || compact.indexOf("NONSF") === 0) return true;
+          return (Array.isArray(SOT_EXCLUDED_STATUS_LABELS) ? SOT_EXCLUDED_STATUS_LABELS : []).some(function (entry) {
+            return mqlDutyStatusSortKey(entry) === compact;
+          });
+        }
+
         function personCountsForSotPosture(item) {
+          if (!item) return false;
+          if (personIsExcludedSotStatus(item)) return false;
+          if (personIsExcludedSotOffice(item)) return false;
           const allowed = Array.isArray(SOT_PERSONNEL_STATUS_FOR_COUNTS) ? SOT_PERSONNEL_STATUS_FOR_COUNTS : [];
           if (!allowed.length) return true;
           const status = personStatusLabel(item);
@@ -11942,11 +11977,17 @@
         }
 
         function mqlStandardColumnWidths() {
-          return ["5.5%", "6%", "19%", "7%"].concat(
-            Array(10)
+          const n = (Array.isArray(MQL_STANDARD_COLUMN_DEFS) ? MQL_STANDARD_COLUMN_DEFS : []).length;
+          if (n <= 4) return ["14%", "14%", "36%", "36%"].slice(0, n);
+          const personShare = Math.min(38, Math.max(28, 120 / n));
+          const personEach = (personShare / 4).toFixed(2) + "%";
+          const certCount = Math.max(1, n - 4);
+          const certEach = ((100 - personShare) / certCount).toFixed(2) + "%";
+          return [personEach, personEach, personEach, personEach].concat(
+            Array(certCount)
               .fill(null)
               .map(function () {
-                return "6.25%";
+                return certEach;
               }),
           );
         }
@@ -12457,6 +12498,74 @@
           return { row: null, isWeapon: preferWeapon !== false };
         }
 
+        function mqlBlsTcccRowForPerson(personId) {
+          const pid = String(personId || "").trim();
+          if (!pid) return null;
+          const rows = Array.isArray(reportsSession.blsTcccRows) ? reportsSession.blsTcccRows : [];
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const rid = certTrainingPersonnelIdFromItem(row, BLS_TCCC_PERSON_FIELD, BLS_TCCC_PERSON_FIELD_ALT);
+            if (rid && String(rid) === pid) return row;
+          }
+          return null;
+        }
+
+        function mqlToneFromExpiration(expiration, hasQual) {
+          if (!expiration || isNaN(expiration.getTime())) return hasQual ? "unknown" : "expired";
+          const daysLeft = calendarDaysBetween(new Date(), expiration);
+          if (daysLeft < 0) return "expired";
+          if (daysLeft <= 30) return "urgent";
+          if (daysLeft <= 60) return "warn";
+          return "ok";
+        }
+
+        function mqlSupportCertParts(person, field) {
+          const key = String(field || "").trim().toLowerCase();
+          if (key === "smc") {
+            const completedRaw = valueFromItemByKeys(person, personSmcCompletedDateKeys());
+            const completed = parseWeaponsCertCalendarDate(completedRaw);
+            const expRaw = valueFromItemByKeys(person, personSmcExpirationDateKeys());
+            let expiration = parseWeaponsCertCalendarDate(expRaw);
+            if (!expiration && completed) expiration = smcExpirationDateFromCompletedDate(completed);
+            return {
+              qual: completed ? formatWeaponsCertDisplayDate(completed) : "-",
+              exp: expiration ? formatWeaponsCertDisplayDate(expiration) : "-",
+              tone: mqlToneFromExpiration(expiration, !!completed),
+            };
+          }
+          if (key === "sust") {
+            const completedRaw = valueFromItemByKeys(person, personSustainmentCompletedDateKeys());
+            const completed = parseWeaponsCertCalendarDate(completedRaw);
+            const dueRaw = valueFromItemByKeys(person, personSustainmentDueDateKeys());
+            const due = parseWeaponsCertCalendarDate(dueRaw);
+            return {
+              qual: completed ? formatWeaponsCertDisplayDate(completed) : "-",
+              exp: due ? formatWeaponsCertDisplayDate(due) : "-",
+              tone: mqlToneFromExpiration(due, !!completed),
+            };
+          }
+          if (key === "bls" || key === "tccc") {
+            const row = mqlBlsTcccRowForPerson(person && person.Id);
+            const fields = blsTcccKindFieldKeys(key === "bls" ? "BLS" : "TCCC");
+            const qual = row ? parseWeaponsCertCalendarDate(valueFromItemByKeys(row, fields.qualKeys)) : null;
+            let exp = row ? parseWeaponsCertCalendarDate(valueFromItemByKeys(row, fields.expKeys)) : null;
+            if ((!exp || isNaN(exp.getTime())) && qual) exp = tcccBlsExpirationDateFromQualDate(qual);
+            return {
+              qual: qual ? formatWeaponsCertDisplayDate(qual) : "-",
+              exp: exp ? formatWeaponsCertDisplayDate(exp) : "-",
+              tone: mqlToneFromExpiration(exp, !!qual),
+            };
+          }
+          return { qual: "-", exp: "-", tone: "expired" };
+        }
+
+        function mqlSupportCertCell(person, col) {
+          const parts = mqlSupportCertParts(person, col && col.field);
+          const part = String((col && col.part) || "exp").toLowerCase();
+          const text = part === "qual" ? parts.qual : parts.exp;
+          return { text: text || "-", tone: parts.tone };
+        }
+
         function mqlStandardRowCells(entry, opts) {
           const display = mqlDisplayOpts(opts);
           const person = entry.person;
@@ -12467,6 +12576,10 @@
               else if (col.field === "section") cells.push({ text: personDutySectionLabel(person), tone: "ok" });
               else if (col.field === "fullName") cells.push({ text: formatPersonFullName(person), tone: "ok" });
               else if (col.field === "dodid") cells.push({ text: itemFieldText(person, "DoDID") || "-", tone: "ok" });
+              return;
+            }
+            if (col.kind === "support") {
+              cells.push(mqlSupportCertCell(person, col));
               return;
             }
             const lookup = mqlLookupTrainingRow(entry, col);
@@ -13779,7 +13892,6 @@
             const sig = currentMqlSignatureForPrint(sigPanel || reportsDetailBody);
             triggerSchedulingPrint(renderMqlSignedPrintDocument(data.rows, data.catalog, { signature: sig, portrait: true }), {
               pageOrientation: "portrait",
-              mqlSignature: sig,
             });
             return;
           }
@@ -18930,7 +19042,7 @@
           links.forEach(function (entry) {
             if (!entry || !entry.url) return;
             const a = document.createElement("a");
-            a.className = "btn-secondary";
+            a.className = "hub-external-link";
             a.href = String(entry.url);
             a.target = "_blank";
             a.rel = "noopener noreferrer";
