@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260723d";
+        const HUB_BUILD_ID = "20260723g";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -148,7 +148,6 @@
         ];
         const SPECIALTY_CERT_DROPDOWN_KEYS = ["CertType"];
         const SPECIALTY_CERT_SET_TITLE = true;
-        const AF_FORM_483_TYPES = ["Baton", "Taser"];
         /**
          * Official AF letterhead is maintained as a Word/PDF template (not in a SharePoint list).
          * Upload the squadron letterhead PDF to Site Assets and set the path below.
@@ -980,13 +979,6 @@
         const certificationsReportRunBtn = document.getElementById("certificationsReportRunBtn");
         const certificationsReportPrintBtn = document.getElementById("certificationsReportPrintBtn");
         const certificationsReportBody = document.getElementById("certificationsReportBody");
-        const form483GeneratorForm = document.getElementById("form483GeneratorForm");
-        const form483PersonSelect = document.getElementById("form483PersonSelect");
-        const form483CertType = document.getElementById("form483CertType");
-        const form483Date = document.getElementById("form483Date");
-        const form483CertNo = document.getElementById("form483CertNo");
-        const form483Instructor = document.getElementById("form483Instructor");
-        const form483Command = document.getElementById("form483Command");
         const instructorsThead = document.getElementById("instructorsThead");
         const instructorsTableBody = document.getElementById("instructorsTableBody");
         const instructorsEmpty = document.getElementById("instructorsEmpty");
@@ -14180,7 +14172,7 @@
         }
 
         function populateSpecialtyCertPersonSelects() {
-          const selects = [certificationsPersonSelect, certificationsReportPersonSelect, form483PersonSelect];
+          const selects = [certificationsPersonSelect, certificationsReportPersonSelect];
           const rows = Array.isArray(hubSession.rows) ? hubSession.rows.slice() : [];
           rows.sort(comparePersonnelByLastName);
           selects.forEach(function (sel) {
@@ -14321,10 +14313,6 @@
           setCertificationsViewVisible(true);
           setCertificationsAddPanelVisible(false);
           if (certificationsAwardedDate) configureDmyDateInput(certificationsAwardedDate);
-          if (form483Date) configureDmyDateInput(form483Date);
-          if (form483Command && !String(form483Command.value || "").trim()) {
-            form483Command.value = String(AF_REPORT_UNIT_LABEL || "88th Security Forces Squadron");
-          }
           populateSpecialtyCertPersonSelects();
           if (hubSession.pw && specialtyCertListConfigured()) {
             try {
@@ -14648,113 +14636,6 @@
             printSpecialtyCertPersonReport();
           });
           setReportsState("", "");
-        }
-
-        function renderAfForm483Document(data) {
-          data = data || {};
-          const wrap = document.createElement("div");
-          wrap.className = "af-form-483-doc";
-          const h1 = document.createElement("h1");
-          h1.textContent = "Certificate of Competency";
-          wrap.appendChild(h1);
-          const sub = document.createElement("div");
-          sub.className = "af-form-483-subtitle";
-          sub.textContent = "AF Form 483 (Local Generator) - " + String(data.certType || "");
-          wrap.appendChild(sub);
-          const meta = document.createElement("div");
-          meta.className = "af-form-483-meta";
-          const certNo = document.createElement("div");
-          certNo.innerHTML =
-            "<strong>Certificate No.</strong> " +
-            (data.certNo ? String(data.certNo) : "________________");
-          const dateEl = document.createElement("div");
-          dateEl.innerHTML = "<strong>Date</strong> " + displayCellText(data.dateDisplay || "");
-          meta.appendChild(certNo);
-          meta.appendChild(dateEl);
-          wrap.appendChild(meta);
-          function fieldRow(label, value) {
-            const row = document.createElement("div");
-            row.className = "af-form-483-field";
-            const lab = document.createElement("span");
-            lab.className = "af-form-483-label";
-            lab.textContent = label;
-            const line = document.createElement("span");
-            line.className = "af-form-483-line";
-            line.textContent = value || " ";
-            row.appendChild(lab);
-            row.appendChild(line);
-            return row;
-          }
-          wrap.appendChild(fieldRow("Name", data.personName || ""));
-          wrap.appendChild(fieldRow("Unit / Command", data.command || ""));
-          wrap.appendChild(fieldRow("Qualification", data.certType || ""));
-          wrap.appendChild(fieldRow("Instructor", data.instructor || ""));
-          const certify = document.createElement("p");
-          certify.className = "af-form-483-certify";
-          certify.textContent =
-            "This certifies that the individual named above has completed the prescribed course of instruction and practical tests and is hereby certified competent for " +
-            String(data.certType || "the listed qualification") +
-            " duties as required by local Security Forces training guidance.";
-          wrap.appendChild(certify);
-          const sigRow = document.createElement("div");
-          sigRow.className = "af-form-483-sig-row";
-          ["Instructor signature", "Commander / certifying official"].forEach(function (caption) {
-            const block = document.createElement("div");
-            block.className = "af-form-483-sig-block";
-            const space = document.createElement("div");
-            space.className = "af-form-483-sig-space";
-            const rule = document.createElement("div");
-            rule.className = "af-form-483-sig-rule";
-            const cap = document.createElement("div");
-            cap.className = "af-form-483-sig-caption";
-            cap.textContent = caption;
-            block.appendChild(space);
-            block.appendChild(rule);
-            block.appendChild(cap);
-            sigRow.appendChild(block);
-          });
-          wrap.appendChild(sigRow);
-          return wrap;
-        }
-
-        function printAfForm483(ev) {
-          if (ev && ev.preventDefault) ev.preventDefault();
-          const personId = form483PersonSelect ? parseInt(String(form483PersonSelect.value || "").trim(), 10) : 0;
-          const certType = form483CertType ? String(form483CertType.value || "").trim() : "";
-          const dateRaw = form483Date ? String(form483Date.value || "").trim() : "";
-          const dateDisplay = formatWeaponsCertDisplayDate(dateRaw) || dateRaw;
-          if (!personId || isNaN(personId)) {
-            setCertificationsState("err", "Select a person for AF Form 483.");
-            return;
-          }
-          if (!certType) {
-            setCertificationsState("err", "Select Baton or Taser.");
-            return;
-          }
-          if (!parseWeaponsCertCalendarDate(dateRaw)) {
-            setCertificationsState("err", "Enter a valid date (DD-MMM-YY).");
-            return;
-          }
-          const person = (hubSession.rows || []).find(function (r) {
-            return r && String(r.Id) === String(personId);
-          });
-          if (!person) {
-            setCertificationsState("err", "Person not found in roster.");
-            return;
-          }
-          triggerSchedulingPrint(
-            renderAfForm483Document({
-              personName: formatPersonDisplayName(person),
-              certType: certType,
-              dateDisplay: dateDisplay,
-              certNo: form483CertNo ? String(form483CertNo.value || "").trim() : "",
-              instructor: form483Instructor ? String(form483Instructor.value || "").trim() : "",
-              command:
-                (form483Command && String(form483Command.value || "").trim()) ||
-                String(AF_REPORT_UNIT_LABEL || "88th Security Forces Squadron"),
-            }),
-            { pageOrientation: "portrait" },
-          );
         }
 
         async function deleteCertifierRow(id, pw) {
@@ -15707,12 +15588,6 @@
         if (certificationsReportPrintBtn) {
           certificationsReportPrintBtn.addEventListener("click", function () {
             printSpecialtyCertPersonReport();
-          });
-        }
-
-        if (form483GeneratorForm) {
-          form483GeneratorForm.addEventListener("submit", function (ev) {
-            printAfForm483(ev);
           });
         }
 

@@ -161,7 +161,7 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260723d</span>
+              Build <span id="hubBuildIdLabel">20260723g</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
@@ -481,47 +481,6 @@
                 <button type="button" id="certificationsReportPrintBtn" class="btn-secondary" hidden>Print report</button>
               </div>
               <div id="certificationsReportBody"></div>
-            </div>
-
-            <div class="certifications-form483-wrap">
-              <h3 class="person-weapons-title">AF Form 483 Generator</h3>
-              <p class="instructors-hint">Print a Certificate of Competency for Baton or Taser.</p>
-              <form id="form483GeneratorForm" class="weapons-add-form add-form-stack" aria-label="AF Form 483 generator">
-                <div class="add-form-grid">
-                  <div class="add-field">
-                    <label for="form483PersonSelect">Personnel</label>
-                    <select id="form483PersonSelect" class="add-field-select--autosize" required>
-                      <option value="">Select Personnel...</option>
-                    </select>
-                  </div>
-                  <div class="add-field">
-                    <label for="form483CertType">Qualification</label>
-                    <select id="form483CertType" required>
-                      <option value="Baton">Baton</option>
-                      <option value="Taser">Taser</option>
-                    </select>
-                  </div>
-                  <div class="add-field">
-                    <label for="form483Date">Date</label>
-                    <input type="text" id="form483Date" data-date-format="dd-mmm-yy" placeholder="DD-MMM-YY" required />
-                  </div>
-                  <div class="add-field">
-                    <label for="form483CertNo">Certificate No. (optional)</label>
-                    <input type="text" id="form483CertNo" placeholder="Optional" />
-                  </div>
-                  <div class="add-field">
-                    <label for="form483Instructor">Instructor</label>
-                    <input type="text" id="form483Instructor" placeholder="Name, Rank" />
-                  </div>
-                  <div class="add-field">
-                    <label for="form483Command">Unit / Command</label>
-                    <input type="text" id="form483Command" value="88th Security Forces Squadron" />
-                  </div>
-                </div>
-                <div class="add-form-actions">
-                  <button type="submit" id="form483PrintBtn">Print AF Form 483</button>
-                </div>
-              </form>
             </div>
           </div>
         </section>
@@ -951,9 +910,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260723d";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260723d";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260723d";
+  var LOADER_BUILD_ID = "20260723g";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260723g";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260723g";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 
