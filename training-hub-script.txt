@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260723k";
+        const HUB_BUILD_ID = "20260723l";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -347,7 +347,7 @@
         const MQL_EXPORT_PRINT_TITLE = "MQL Data Export";
         const MQL_PRINT_STYLE_ID = "hubMqlLandscapePrintStyle";
         const REPORT_PRINT_STYLE_ID = "hubReportPrintPageStyle";
-        /** Fixed landscape columns for standard MQL report and data export. */
+        /** Fixed landscape columns for signed MQL report (commander signature). */
         const MQL_STANDARD_COLUMN_DEFS = [
           { label: "Duty Status", kind: "person", field: "status" },
           { label: "Duty Section", kind: "person", field: "section" },
@@ -377,6 +377,9 @@
             preferWeapon: false,
             match: ["AUOF", "Annual Use of Force", "Use of Force"],
           },
+        ];
+        /** Extra snapshot columns for unsigned MQL PDF export only. */
+        const MQL_EXPORT_SUPPORT_COLUMN_DEFS = [
           { label: "SMC Qual", kind: "support", field: "smc", part: "qual" },
           { label: "SMC Exp", kind: "support", field: "smc", part: "exp" },
           { label: "Sust Qual", kind: "support", field: "sust", part: "qual" },
@@ -386,6 +389,7 @@
           { label: "TCCC Qual", kind: "support", field: "tccc", part: "qual" },
           { label: "TCCC Exp", kind: "support", field: "tccc", part: "exp" },
         ];
+        const MQL_EXPORT_COLUMN_DEFS = MQL_STANDARD_COLUMN_DEFS.concat(MQL_EXPORT_SUPPORT_COLUMN_DEFS);
         /**
          * Hub footer quick links (open in a new tab).
          */
@@ -8249,6 +8253,7 @@
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--warn { background: #fff3a0 !important; color: #000 !important; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--recert { background: #b8e6b8 !important; color: #000 !important; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-status-taw-as-pfd { color: #c00000 !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
             ".mql-print-doc-signature, .mql-print-signature-stamp, .mql-print-iframe-footer { display: none !important; }" +
             "@media print {" +
             "@page { size: landscape; margin: 0.35in 0.4in 0.25in 0.4in; }" +
@@ -9671,6 +9676,7 @@
               });
               if (qualInMonth) {
                 qualified += 1;
+                if (isRequiredWeapon) required += 1;
                 return;
               }
 
@@ -9682,11 +9688,12 @@
               }
             });
 
+            const overdue = isRequiredWeapon ? Math.max(0, required - qualified) : 0;
             return {
               weapon: def.label,
               required: isRequiredWeapon ? required : 0,
               qualified: qualified,
-              overdue: isRequiredWeapon ? overduePeople.length : 0,
+              overdue: overdue,
               overduePeople: overduePeople,
             };
           });
@@ -9698,22 +9705,22 @@
               return (row.overdue || 0) > 0;
             })
             .map(function (row) {
-              const counts = { deployed: 0, taw: 0, ima: 0, profile: 0, remaining: 0 };
+              const counts = { deployed: 0, taw: 0, ima: 0, profile: 0 };
               (row.overduePeople || []).forEach(function (person) {
                 const category = categorizePersonForSotAccounting(personStatusLabel(person));
                 if (category === "Deployed / TDY / Leave") counts.deployed += 1;
                 else if (category === "TAW Personnel") counts.taw += 1;
                 else if (category === "IMA") counts.ima += 1;
                 else if (category === "Profile") counts.profile += 1;
-                else counts.remaining += 1;
               });
+              const bucketTotal = counts.deployed + counts.taw + counts.ima + counts.profile;
               return {
                 weapon: row.weapon,
                 deployed: counts.deployed,
                 taw: counts.taw,
                 ima: counts.ima,
                 profile: counts.profile,
-                remaining: counts.remaining,
+                remaining: Math.max(0, (row.overdue || 0) - bucketTotal),
               };
             });
         }
@@ -9876,6 +9883,7 @@
 
               if (personCompletedSotAuofRowInMonth(personBylaw, rowDef, yyyyMm, bylawQualKeys)) {
                 completedMonth += 1;
+                required += 1;
                 return;
               }
 
@@ -9891,31 +9899,33 @@
               monthRange: monthRange,
               required: required,
               completedMonth: completedMonth,
-              overdue: overduePeople.length,
+              overdue: Math.max(0, required - completedMonth),
               overduePeople: overduePeople,
             };
           });
         }
 
         function buildSotAuofOverdueBreakdownRow(auofTableData) {
-          const counts = { deployed: 0, taw: 0, ima: 0, profile: 0, remaining: 0 };
+          const counts = { deployed: 0, taw: 0, ima: 0, profile: 0 };
+          let overdueTotal = 0;
           (Array.isArray(auofTableData) ? auofTableData : []).forEach(function (row) {
+            overdueTotal += Number(row.overdue) || 0;
             (row.overduePeople || []).forEach(function (person) {
               const category = categorizePersonForSotAccounting(personStatusLabel(person));
               if (category === "Deployed / TDY / Leave") counts.deployed += 1;
               else if (category === "TAW Personnel") counts.taw += 1;
               else if (category === "IMA") counts.ima += 1;
               else if (category === "Profile") counts.profile += 1;
-              else counts.remaining += 1;
             });
           });
+          const bucketTotal = counts.deployed + counts.taw + counts.ima + counts.profile;
           return {
             training: "AUoF / By-Law Training",
             deployed: counts.deployed,
             taw: counts.taw,
             ima: counts.ima,
             profile: counts.profile,
-            remaining: counts.remaining,
+            remaining: Math.max(0, overdueTotal - bucketTotal),
           };
         }
 
@@ -11976,8 +11986,9 @@
           renderOfficialSectionedTables(parent, options);
         }
 
-        function mqlStandardColumnWidths() {
-          const n = (Array.isArray(MQL_STANDARD_COLUMN_DEFS) ? MQL_STANDARD_COLUMN_DEFS : []).length;
+        function mqlStandardColumnWidths(opts) {
+          const defs = mqlColumnDefsForMode(opts);
+          const n = defs.length;
           if (n <= 4) return ["14%", "14%", "36%", "36%"].slice(0, n);
           const personShare = Math.min(38, Math.max(28, 120 / n));
           const personEach = (personShare / 4).toFixed(2) + "%";
@@ -12125,6 +12136,7 @@
                 td.textContent = text === "" || text == null ? "-" : String(text);
                 const tone = cell && typeof cell === "object" ? cell.tone : null;
                 applyMqlCertCellStyle(td, tone);
+                if (cell && typeof cell === "object" && cell.statusClass) td.classList.add(cell.statusClass);
                 tr.appendChild(td);
               });
               tbody.appendChild(tr);
@@ -12441,10 +12453,31 @@
           return !!(catalog && catalog.mode === "heavy");
         }
 
-        function mqlStandardColumnLabels() {
-          return (Array.isArray(MQL_STANDARD_COLUMN_DEFS) ? MQL_STANDARD_COLUMN_DEFS : []).map(function (col) {
+        function mqlColumnDefsForMode(opts) {
+          if (opts && opts.exportSnapshot) {
+            return Array.isArray(MQL_EXPORT_COLUMN_DEFS) ? MQL_EXPORT_COLUMN_DEFS : MQL_STANDARD_COLUMN_DEFS;
+          }
+          return Array.isArray(MQL_STANDARD_COLUMN_DEFS) ? MQL_STANDARD_COLUMN_DEFS : [];
+        }
+
+        function mqlStandardColumnLabels(opts) {
+          return mqlColumnDefsForMode(opts).map(function (col) {
             return col.label;
           });
+        }
+
+        function mqlPrintStatusCell(person, display, opts) {
+          const rawStatus =
+            typeof display.statusLabelFn === "function" ? display.statusLabelFn(person) : personStatusLabel(person);
+          if (opts && opts.printTawAsPfd && isTawDutyStatus(rawStatus)) {
+            return { text: "PFD", tone: "ok", statusClass: "mql-status-taw-as-pfd" };
+          }
+          return { text: rawStatus || "Unknown", tone: "ok" };
+        }
+
+        function applyMqlPrintCellMeta(td, cell) {
+          if (!td || !cell || typeof cell !== "object") return;
+          if (cell.statusClass) td.classList.add(cell.statusClass);
         }
 
         function mqlMatchCatalogLabel(storedLabel, wantedLabel) {
@@ -12570,9 +12603,9 @@
           const display = mqlDisplayOpts(opts);
           const person = entry.person;
           const cells = [];
-          (Array.isArray(MQL_STANDARD_COLUMN_DEFS) ? MQL_STANDARD_COLUMN_DEFS : []).forEach(function (col) {
+          mqlColumnDefsForMode(opts).forEach(function (col) {
             if (col.kind === "person") {
-              if (col.field === "status") cells.push({ text: display.statusLabelFn(person), tone: "ok" });
+              if (col.field === "status") cells.push(mqlPrintStatusCell(person, display, opts));
               else if (col.field === "section") cells.push({ text: personDutySectionLabel(person), tone: "ok" });
               else if (col.field === "fullName") cells.push({ text: formatPersonFullName(person), tone: "ok" });
               else if (col.field === "dodid") cells.push({ text: itemFieldText(person, "DoDID") || "-", tone: "ok" });
@@ -12604,7 +12637,7 @@
         }
 
         function mqlExportColumnLabels(catalog) {
-          if (!mqlIsHeavyCatalog(catalog)) return mqlStandardColumnLabels();
+          if (!mqlIsHeavyCatalog(catalog)) return mqlStandardColumnLabels({ exportSnapshot: true });
           const labels = ["Duty Status", "Full Name"];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (w) {
             labels.push(w + " Qual");
@@ -12620,10 +12653,8 @@
         function mqlRowCells(entry, catalog, opts) {
           const display = mqlDisplayOpts(opts);
           const person = entry.person;
-          const cells = [
-            display.statusLabelFn(person),
-            display.displayNameFn(person),
-          ];
+          const statusCell = mqlPrintStatusCell(person, display, opts);
+          const cells = [statusCell, display.displayNameFn(person)];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
             const row = mqlLookupCertRow(entry.weapons, label);
             cells.push(mqlExportCertCell(row, "qual", computeMqlWeaponsCertCellStatus, true));
@@ -12640,10 +12671,7 @@
         function mqlExportRowCells(entry, catalog, opts) {
           const display = mqlDisplayOpts(opts);
           const person = entry.person;
-          const cells = [
-            display.statusLabelFn(person),
-            display.displayNameFn(person),
-          ];
+          const cells = [mqlPrintStatusCell(person, display, opts), display.displayNameFn(person)];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
             const row = mqlLookupCertRow(entry.weapons, label);
             cells.push(mqlExportCertCell(row, "qual", computeMqlWeaponsCertCellStatus, true));
@@ -12739,11 +12767,15 @@
         function groupMqlEntriesByDutyStatus(entries, opts) {
           opts = opts || {};
           const useTawDutySection = !!opts.tawUseDutySection;
+          const printTawAsPfd = !!opts.printTawAsPfd;
           const groups = new Map();
           (Array.isArray(entries) ? entries : []).forEach(function (entry) {
             const person = entry && entry.person;
             const status = person ? personStatusLabel(person) : "Unknown";
-            const section = useTawDutySection ? mqlScreenSectionLabel(person) : status || "Unknown";
+            let section;
+            if (printTawAsPfd && isTawDutyStatus(status)) section = "PFD";
+            else if (useTawDutySection) section = mqlScreenSectionLabel(person);
+            else section = status || "Unknown";
             if (!groups.has(section)) groups.set(section, []);
             groups.get(section).push(entry);
           });
@@ -12756,8 +12788,12 @@
             const sampleB = b.items && b.items[0] && b.items[0].person;
             const statusA = sampleA ? personStatusLabel(sampleA) : a.section;
             const statusB = sampleB ? personStatusLabel(sampleB) : b.section;
-            const rankA = mqlDutyStatusSortIndex(isTawDutyStatus(statusA) ? "TAW" : statusA);
-            const rankB = mqlDutyStatusSortIndex(isTawDutyStatus(statusB) ? "TAW" : statusB);
+            const rankStatusA =
+              printTawAsPfd && isTawDutyStatus(statusA) ? "PFD" : isTawDutyStatus(statusA) ? "TAW" : statusA;
+            const rankStatusB =
+              printTawAsPfd && isTawDutyStatus(statusB) ? "PFD" : isTawDutyStatus(statusB) ? "TAW" : statusB;
+            const rankA = mqlDutyStatusSortIndex(rankStatusA);
+            const rankB = mqlDutyStatusSortIndex(rankStatusB);
             if (rankA !== rankB) return rankA - rankB;
             return String(a.section).localeCompare(String(b.section), undefined, { sensitivity: "base" });
           });
@@ -12778,15 +12814,24 @@
 
         function buildMqlFlatPrintTable(rows, catalog, display, options) {
           options = options || {};
-          const columnLabels = mqlIsHeavyCatalog(catalog) ? mqlExportColumnLabels(catalog) : mqlStandardColumnLabels();
+          const exportSnapshot = !mqlIsHeavyCatalog(catalog);
+          const printOpts = Object.assign({}, display, {
+            exportSnapshot: exportSnapshot,
+            printTawAsPfd: true,
+          });
+          const columnLabels = mqlIsHeavyCatalog(catalog)
+            ? mqlExportColumnLabels(catalog)
+            : mqlStandardColumnLabels({ exportSnapshot: true });
           const buildCells = mqlIsHeavyCatalog(catalog)
             ? function (entry) {
-                return mqlExportRowCells(entry, catalog, display);
+                return mqlExportRowCells(entry, catalog, printOpts);
               }
             : function (entry) {
-                return mqlStandardRowCells(entry, display);
+                return mqlStandardRowCells(entry, printOpts);
               };
-          const widths = mqlIsHeavyCatalog(catalog) ? officialColumnWidths(columnLabels) : mqlStandardColumnWidths();
+          const widths = mqlIsHeavyCatalog(catalog)
+            ? officialColumnWidths(columnLabels)
+            : mqlStandardColumnWidths({ exportSnapshot: true });
           const table = document.createElement("table");
           table.className =
             "af-official-table af-official-table--columns af-official-table--compact" +
@@ -12816,6 +12861,7 @@
                 const tone = cell && typeof cell === "object" ? cell.tone : null;
                 applyMqlCertCellStyle(td, tone);
               }
+              applyMqlPrintCellMeta(td, cell);
               tr.appendChild(td);
             });
             tbody.appendChild(tr);
@@ -12826,6 +12872,7 @@
 
         function buildMqlSignedPrintDutyGroupTable(items, display, options, includeThead) {
           options = options || {};
+          const printOpts = Object.assign({}, display, { printTawAsPfd: true });
           const columnLabels = mqlStandardColumnLabels();
           const table = document.createElement("table");
           table.className =
@@ -12847,13 +12894,14 @@
           const tbody = document.createElement("tbody");
           items.forEach(function (entry) {
             const tr = document.createElement("tr");
-            mqlStandardRowCells(entry, display).forEach(function (cell) {
+            mqlStandardRowCells(entry, printOpts).forEach(function (cell) {
               const td = document.createElement("td");
               const text = cell && typeof cell === "object" && cell.text != null ? cell.text : cell;
               td.textContent = text === "" || text == null ? "-" : String(text);
               if (options.colorize) {
                 applyMqlCertCellStyle(td, cell && cell.tone);
               }
+              applyMqlPrintCellMeta(td, cell);
               tr.appendChild(td);
             });
             tbody.appendChild(tr);
@@ -12866,7 +12914,7 @@
           const wrap = document.createElement("div");
           wrap.className = "mql-print-signed-sections";
           let firstGroup = true;
-          groupMqlEntriesByDutyStatus(rows).forEach(function (group) {
+          groupMqlEntriesByDutyStatus(rows, { printTawAsPfd: true }).forEach(function (group) {
             const block = document.createElement("div");
             block.className = "mql-print-duty-block";
             const heading = document.createElement("div");
@@ -13012,7 +13060,7 @@
             compact: true,
             compactContent: !!(opts && opts.portrait),
             buildCells: function (entry) {
-              return mqlRowCells(entry, catalog, display);
+              return mqlRowCells(entry, catalog, Object.assign({}, display, { printTawAsPfd: true }));
             },
           });
           if (opts && opts.signature) {

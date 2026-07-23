@@ -938,8 +938,9 @@
         width: 100%;
       }
       #sp-pip-ui .scheduling-print-surface .mql-print-doc-signature {
-        margin-top: 28px;
+        margin-top: auto;
         margin-left: auto;
+        padding-top: 24px;
         width: 2.85in;
         font-size: 10pt;
         line-height: 1.35;
@@ -947,6 +948,27 @@
         text-align: left;
         break-inside: avoid;
         page-break-inside: avoid;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report.af-official-doc--mql-signed {
+        width: 100%;
+        min-height: 9.4in;
+        display: flex;
+        flex-direction: column;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        background: #fff !important;
+      }
+      #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report.af-official-doc--mql-signed .af-official-table-header-wrap,
+      #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report.af-official-doc--mql-signed .af-official-section-block {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+      }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-status-taw-as-pfd,
+      #sp-pip-ui .scheduling-print-surface table.af-official-table th.mql-status-taw-as-pfd {
+        color: #c00000 !important;
+        font-weight: 700;
       }
       #sp-pip-ui .scheduling-print-surface .mql-print-page-signature {
         margin-top: 28px;
@@ -1465,6 +1487,7 @@
         }
         #sp-pip-ui.scheduling-print-active {
           border: none !important;
+          outline: none !important;
           background: #fff !important;
           text-shadow: none !important;
           color: #000 !important;
@@ -1474,6 +1497,14 @@
           display: block !important;
           position: static !important;
           width: 100% !important;
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        #sp-pip-ui.scheduling-print-active .af-official-doc--mql-signed {
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
         }
         #sp-pip-ui.scheduling-print-active .scheduling-unit-report {
           padding: 0;
@@ -1780,19 +1811,6 @@
         max-width: 100%;
         margin-left: auto;
         margin-right: auto;
-      }
-      #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report.af-official-doc--mql-signed {
-        width: 100%;
-        border: none !important;
-        outline: none !important;
-        box-shadow: none !important;
-        background: #fff !important;
-      }
-      #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report.af-official-doc--mql-signed .af-official-table-header-wrap,
-      #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report.af-official-doc--mql-signed .af-official-section-block {
-        border: none !important;
-        outline: none !important;
-        box-shadow: none !important;
       }
       #sp-pip-ui .scheduling-print-surface .af-official-doc.af-official-doc--compact-report table.af-official-table {
         width: 100%;
