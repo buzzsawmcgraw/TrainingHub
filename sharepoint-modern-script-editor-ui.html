@@ -3886,7 +3886,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260723g";
+        const HUB_BUILD_ID = "20260723h";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -22896,11 +22896,31 @@
           }
         }
 
+        function isPfdMqlStatus(status) {
+          return mqlDutyStatusSortKey(status) === "PFD";
+        }
+
+        function filterEthosMqlRowsForPrint(rows) {
+          return (Array.isArray(rows) ? rows : []).filter(function (entry) {
+            const person = entry && entry.person;
+            const status =
+              (person && ethosItemFieldText(person, "Status")) ||
+              (person && personStatusLabel(person)) ||
+              "";
+            return isPfdMqlStatus(status);
+          });
+        }
+
         function printEthosMqlReport() {
           const rows = ethosSession.mqlRows;
           const catalog = ethosSession.mqlCatalog;
           if (!rows || !catalog) {
             setEthosReadState("warn", "Open ETHOS MQL Report first.");
+            return;
+          }
+          const printRows = filterEthosMqlRowsForPrint(rows);
+          if (!printRows.length) {
+            setEthosReadState("warn", "No PFD ETHOS members to print.");
             return;
           }
           const pw = ethosSession.pw || hubSession.pw;
@@ -22910,7 +22930,14 @@
               ethosMqlReportBody && ethosMqlReportBody.querySelector(".reports-mql-signature-panel");
             const sig = currentMqlSignatureForPrint(sigPanel || ethosMqlReportBody);
             triggerMqlPrint(
-              renderMqlSignedPrintDocument(rows, catalog, Object.assign({}, ethosMqlDisplayOpts(), { signature: sig })),
+              renderMqlSignedPrintDocument(
+                printRows,
+                catalog,
+                Object.assign({}, ethosMqlDisplayOpts(), {
+                  signature: sig,
+                  printTitle: "ETHOS MQL Report (PFD)",
+                }),
+              ),
               { signed: true, signature: sig },
             );
           })();
