@@ -3387,7 +3387,7 @@
               <button type="button" id="ethosProbeRun">Refresh list</button>
             </div>
             <div id="ethosAddMemberPanel" class="add-person-panel" aria-live="polite"></div>
-            <div class="roster-wrap">
+            <div id="ethosRosterWrap" class="roster-wrap">
               <table class="roster" aria-label="ETHOS member rows from SharePoint">
                 <thead id="ethosRosterThead"></thead>
                 <tbody id="ethosRosterTableBody"></tbody>
@@ -3402,7 +3402,11 @@
         <section id="ethosMemberDetailSection" class="hub-section hub-section--ethos-detail" hidden aria-label="ETHOS Member Record Detail">
           <div class="person-detail-panel">
             <div class="person-detail-toolbar">
-              <a id="ethosMemberDetailBackLink" class="person-detail-back" href="#">Back to ETHOS roster</a>
+              <div class="person-detail-toolbar-start">
+                <a id="ethosMemberDetailBackLink" class="person-detail-back" href="#">Back to ETHOS roster</a>
+                <button type="button" id="ethosMemberDetailPrevBtn" class="btn-secondary">Previous record</button>
+                <button type="button" id="ethosMemberDetailNextBtn" class="btn-secondary">Next record</button>
+              </div>
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="ethosMemberDetailEditBtn" class="btn-secondary">Edit record</button>
                 <button type="button" id="ethosMemberDetailSaveBtn" hidden>Save changes</button>
@@ -3793,7 +3797,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build — shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260716a";
+        const HUB_BUILD_ID = "20260723a";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -4712,6 +4716,7 @@
         const ethosProbeRun = document.getElementById("ethosProbeRun");
         const ethosBackLink = document.getElementById("ethosBackLink");
         const ethosRosterTableBody = document.getElementById("ethosRosterTableBody");
+        const ethosRosterWrap = document.getElementById("ethosRosterWrap");
         const ethosMqlReportBtn = document.getElementById("ethosMqlReportBtn");
         const ethosMqlPrintBtn = document.getElementById("ethosMqlPrintBtn");
         const ethosMqlCloseBtn = document.getElementById("ethosMqlCloseBtn");
@@ -4723,6 +4728,8 @@
         const ethosMemberDetailContent = document.getElementById("ethosMemberDetailContent");
         const ethosMemberDetailReadState = document.getElementById("ethosMemberDetailReadState");
         const ethosMemberDetailBackLink = document.getElementById("ethosMemberDetailBackLink");
+        const ethosMemberDetailPrevBtn = document.getElementById("ethosMemberDetailPrevBtn");
+        const ethosMemberDetailNextBtn = document.getElementById("ethosMemberDetailNextBtn");
         const ethosMemberDetailEditBtn = document.getElementById("ethosMemberDetailEditBtn");
         const ethosMemberDetailSaveBtn = document.getElementById("ethosMemberDetailSaveBtn");
         const ethosMemberDetailCancelBtn = document.getElementById("ethosMemberDetailCancelBtn");
@@ -18728,6 +18735,18 @@
           });
         }
 
+        if (ethosMemberDetailPrevBtn) {
+          ethosMemberDetailPrevBtn.addEventListener("click", function () {
+            navigateEthosMemberDetailRelative("prev");
+          });
+        }
+
+        if (ethosMemberDetailNextBtn) {
+          ethosMemberDetailNextBtn.addEventListener("click", function () {
+            navigateEthosMemberDetailRelative("next");
+          });
+        }
+
         if (ethosProbeRun) {
           ethosProbeRun.addEventListener("click", function () {
             runEthosProbe().catch(function (e) {
@@ -20524,7 +20543,8 @@
           const col = normalizedEthosRosterColumns().find(function (c) { return c.key === fieldKey; });
           const keys = col ? col.tryKeys || [col.key] : sortKeysForPersonnelName(fieldKey);
           const raw = valueFromItemByKeys(item, keys);
-          return raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+          const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+          return formatPersonnelFieldDisplay(fieldKey, text);
         }
 
         function formatEthosMemberDisplayName(item) {
@@ -20536,6 +20556,46 @@
           if (mi) name = name ? name + " " + mi + "." : mi + ".";
           if (rank && name) return rank + " " + name;
           return rank || name || "ETHOS Member";
+        }
+
+        function ethosDetailNavigationRows() {
+          return (Array.isArray(ethosSession.rows) ? ethosSession.rows : []).filter(function (row) {
+            return row && row.Id != null;
+          });
+        }
+
+        function ethosDetailNeighborId(direction) {
+          const rows = ethosDetailNavigationRows();
+          const currentId = ethosDetailSession.item && ethosDetailSession.item.Id;
+          if (currentId == null || !rows.length) return null;
+          const idx = rows.findIndex(function (row) {
+            return String(row.Id) === String(currentId);
+          });
+          if (idx < 0) return null;
+          if (direction === "prev") return idx > 0 ? rows[idx - 1].Id : null;
+          if (direction === "next") return idx < rows.length - 1 ? rows[idx + 1].Id : null;
+          return null;
+        }
+
+        function updateEthosMemberDetailNavButtons() {
+          const editing = !!(ethosDetailSession && ethosDetailSession.editing);
+          const prevId = ethosDetailNeighborId("prev");
+          const nextId = ethosDetailNeighborId("next");
+          if (ethosMemberDetailPrevBtn) ethosMemberDetailPrevBtn.disabled = editing || prevId == null;
+          if (ethosMemberDetailNextBtn) ethosMemberDetailNextBtn.disabled = editing || nextId == null;
+        }
+
+        function navigateEthosMemberDetailRelative(direction) {
+          if (ethosDetailSession.editing) return;
+          const neighborId = ethosDetailNeighborId(direction);
+          if (neighborId == null) return;
+          void openEthosMemberDetailRecord(
+            neighborId,
+            ethosDetailSession.meta || ethosSession.meta,
+            ethosDetailSession.pw || ethosSession.pw,
+            ethosDetailSession.seg || ethosSession.seg,
+            ethosSession.rows,
+          );
         }
 
         function renderEthosRosterTable(rows, meta, pw, seg) {
@@ -20564,7 +20624,8 @@
             columns.forEach(function (col) {
               const td = document.createElement("td");
               const raw = valueFromItemByKeys(item, col.tryKeys || [col.key]);
-              td.textContent = displayCellText(raw !== undefined && raw !== null ? formatCellValue(raw) : "");
+              const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+              td.textContent = displayCellText(formatPersonnelFieldDisplay(col.key, text));
               tr.appendChild(td);
             });
             if (showActions && item.Id != null) {
@@ -20590,6 +20651,22 @@
             frag.appendChild(tr);
           });
           ethosRosterTableBody.appendChild(frag);
+
+          if (ethosRosterWrap) {
+            const scrollAfter = Number(ETHOS_ROSTER_SCROLL_AFTER_ROWS) > 0 ? Number(ETHOS_ROSTER_SCROLL_AFTER_ROWS) : 10;
+            if (rows.length > scrollAfter) {
+              ethosRosterWrap.classList.add("roster-wrap--scroll");
+              const headerRow = thead.querySelector("tr");
+              const sampleRow = ethosRosterTableBody.querySelector("tr");
+              const headerH = headerRow ? headerRow.getBoundingClientRect().height : 42;
+              const rowH = sampleRow ? sampleRow.getBoundingClientRect().height : 42;
+              ethosRosterWrap.style.maxHeight = Math.ceil(headerH + rowH * scrollAfter + 4) + "px";
+            } else {
+              ethosRosterWrap.classList.remove("roster-wrap--scroll");
+              ethosRosterWrap.style.maxHeight = "";
+            }
+          }
+
           const listTitle = meta && meta.Title ? String(meta.Title) : ethosMembersListTitle();
           if (rows.length > 0) {
             setEthosReadState("ok", "Loaded " + rows.length + " ETHOS member(s). List \"" + listTitle + "\".");
@@ -20688,6 +20765,7 @@
             await fillDropdownSelect(sel, col, seg, pw, sampleRow, sampleRow);
           }
           applyAllSelectAutosizes(form);
+          wirePersonnelFieldInputBehaviors(form, "enf_");
         }
 
         async function submitNewEthosMember(meta, pw, seg, sampleRow) {
@@ -20698,8 +20776,8 @@
             const el = document.getElementById("enf_" + col.key);
             if (!el) return;
             const v = String(el.value || "").trim();
-            if (col.key === "LastName") lastName = v;
-            if (col.key === "FirstName") firstName = v;
+            if (col.key === "LastName") lastName = normalizePersonNameText(v);
+            if (col.key === "FirstName") firstName = normalizePersonNameText(v);
           });
           if (!lastName || !firstName) {
             setEthosReadState("err", "Last name and First name are required.");
@@ -20710,8 +20788,10 @@
             const el = document.getElementById("enf_" + col.key);
             if (!el) return;
             const writeKey = el.dataset.writeKey || resolveWriteKey(col, sampleRow);
-            const v = formFieldPayloadValue(el, writeKey);
+            let v = formFieldPayloadValue(el, writeKey);
             if (v === null) return;
+            v = normalizePersonnelFieldForSave(col.key, v);
+            if (v === null || v === "") return;
             payload[writeKey] = v;
           });
           if (ETHOS_SET_TITLE_ON_CREATE) payload.Title = [lastName, firstName].filter(Boolean).join(", ") || "ETHOS Member";
@@ -20805,6 +20885,7 @@
           if (ethosMemberDetailEditBtn) ethosMemberDetailEditBtn.hidden = !!editing;
           if (ethosMemberDetailSaveBtn) ethosMemberDetailSaveBtn.hidden = !editing;
           if (ethosMemberDetailCancelBtn) ethosMemberDetailCancelBtn.hidden = !editing;
+          updateEthosMemberDetailNavButtons();
         }
 
         function buildEthosDetailFieldWrap(col, item) {
@@ -20816,7 +20897,8 @@
           lab.textContent = col.label;
           const val = document.createElement("div");
           val.className = "person-detail-value";
-          val.textContent = displayCellText(raw !== undefined && raw !== null ? formatCellValue(raw) : "");
+          const text = raw !== undefined && raw !== null ? formatCellValue(raw) : "";
+          val.textContent = displayCellText(formatPersonnelFieldDisplay(col.key, text));
           fwrap.appendChild(lab);
           fwrap.appendChild(val);
           return fwrap;
@@ -20876,6 +20958,7 @@
               await fillDropdownSelect(sel, col, ethosDetailSession.seg, ethosDetailSession.pw, ethosDetailSession.sampleRow, item);
             }
             applyAllSelectAutosizes(form);
+            wirePersonnelFieldInputBehaviors(form, "ef_");
           } else ethosMemberDetailContent.appendChild(fields);
         }
 
@@ -20898,8 +20981,10 @@
             const el = document.getElementById("ef_" + col.key);
             if (!el) return;
             const writeKey = el.dataset.writeKey || resolveWriteKey(col, s.sampleRow);
-            const v = formFieldPayloadValue(el, writeKey);
+            let v = formFieldPayloadValue(el, writeKey);
             if (v === null) return;
+            v = normalizePersonnelFieldForSave(col.key, v);
+            if (v === null || v === "") return;
             payload[writeKey] = v;
           });
           try {
@@ -21595,6 +21680,7 @@
           await renderEthosMemberDetailView(item, false);
           await loadEthosMemberWeaponsCertifications(item.Id, ethosDetailSession.pw);
           await loadEthosMemberBylawTraining(item.Id, ethosDetailSession.pw);
+          updateEthosMemberDetailNavButtons();
         }
 
         function buildEthosMqlCertTable(rows, columns, statusFn, itemLabelKey) {

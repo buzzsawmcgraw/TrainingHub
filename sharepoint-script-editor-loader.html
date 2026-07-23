@@ -161,7 +161,7 @@
             <h1 class="hub-org">88th Security Forces Squadron</h1>
             <p class="hub-banner">Authorized Personnel Only</p>
             <p class="hub-build-badge" title="Hub script version - verify after Site Assets upload">
-              Build <span id="hubBuildIdLabel">20260716a</span>
+              Build <span id="hubBuildIdLabel">20260723a</span>
             </p>
           </div>
           <nav class="hub-header-nav" aria-label="Hub navigation">
@@ -451,7 +451,7 @@
               <button type="button" id="ethosProbeRun">Refresh list</button>
             </div>
             <div id="ethosAddMemberPanel" class="add-person-panel" aria-live="polite"></div>
-            <div class="roster-wrap">
+            <div id="ethosRosterWrap" class="roster-wrap">
               <table class="roster" aria-label="ETHOS member rows from SharePoint">
                 <thead id="ethosRosterThead"></thead>
                 <tbody id="ethosRosterTableBody"></tbody>
@@ -466,7 +466,11 @@
         <section id="ethosMemberDetailSection" class="hub-section hub-section--ethos-detail" hidden aria-label="ETHOS Member Record Detail">
           <div class="person-detail-panel">
             <div class="person-detail-toolbar">
-              <a id="ethosMemberDetailBackLink" class="person-detail-back" href="#">Back to ETHOS roster</a>
+              <div class="person-detail-toolbar-start">
+                <a id="ethosMemberDetailBackLink" class="person-detail-back" href="#">Back to ETHOS roster</a>
+                <button type="button" id="ethosMemberDetailPrevBtn" class="btn-secondary">Previous record</button>
+                <button type="button" id="ethosMemberDetailNextBtn" class="btn-secondary">Next record</button>
+              </div>
               <div class="person-detail-toolbar-actions">
                 <button type="button" id="ethosMemberDetailEditBtn" class="btn-secondary">Edit record</button>
                 <button type="button" id="ethosMemberDetailSaveBtn" hidden>Save changes</button>
@@ -832,9 +836,9 @@
 <script>
 (function () {
   var SITE_ASSETS_BASE = "/sites/88thSFS/SiteAssets";
-  var LOADER_BUILD_ID = "20260716a";
-  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260716a";
-  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260716a";
+  var LOADER_BUILD_ID = "20260723a";
+  var cssUrl = SITE_ASSETS_BASE + "/training-hub-styles.txt?v=20260723a";
+  var jsUrl = SITE_ASSETS_BASE + "/training-hub-script.txt?v=20260723a";
   var statusEl = document.getElementById("hubLoaderStatus");
   var hubScriptCode = "";
 
