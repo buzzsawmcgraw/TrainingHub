@@ -700,44 +700,35 @@
         line-height: 1.1;
         white-space: nowrap;
       }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table--compact td:nth-child(2) {
-        white-space: normal;
-        word-break: break-word;
-      }
       #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th,
       #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td {
-        font-size: 7pt;
-        padding: 1px 2px;
-        line-height: 1.05;
+        font-size: 8pt;
+        padding: 2px 3px;
+        line-height: 1.15;
         white-space: nowrap;
         overflow: hidden;
-      }
-      #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(3) {
-        white-space: normal;
-        word-break: break-word;
+        vertical-align: middle;
       }
       #sp-pip-ui table.reports-mql-table--standard th,
       #sp-pip-ui table.reports-mql-table--standard td {
-        font-size: 11px;
-        padding: 2px 3px;
-        line-height: 1.1;
+        font-size: 12px;
+        padding: 3px 4px;
+        line-height: 1.15;
         white-space: nowrap;
       }
-      #sp-pip-ui table.reports-mql-table--standard td:nth-child(3) {
-        white-space: normal;
-        word-break: break-word;
-      }
       #sp-pip-ui .scheduling-print-surface table.af-official-table--many-cols {
-        font-size: 6pt;
+        font-size: 7pt;
       }
       #sp-pip-ui .scheduling-print-surface table.af-official-table--many-cols th,
       #sp-pip-ui .scheduling-print-surface table.af-official-table--many-cols td {
-        font-size: 6pt;
+        font-size: 7pt;
         padding: 1px 2px;
+        white-space: nowrap;
+        line-height: 1.1;
       }
       #sp-pip-ui .scheduling-print-surface table.af-official-table--many-cols th {
-        white-space: normal;
-        line-height: 1.05;
+        white-space: nowrap;
+        line-height: 1.1;
       }
       #sp-pip-ui .scheduling-print-surface .af-official-section-heading {
         margin: 14px 0 4px;
@@ -835,11 +826,23 @@
         text-shadow: none !important;
       }
       #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table {
-        font-size: 7pt;
+        font-size: 9pt;
+        table-layout: fixed;
+        width: 100%;
       }
       #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table th,
       #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table td {
-        padding: 1px 2px;
+        padding: 2px 3px;
+        line-height: 1.2;
+        font-size: 9pt;
+        white-space: nowrap !important;
+        overflow: hidden;
+        text-overflow: clip;
+        vertical-align: middle;
+        word-break: normal;
+      }
+      #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table th {
+        font-size: 8pt;
         line-height: 1.1;
       }
       #sp-pip-ui .scheduling-print-surface .mql-print-signature-stamp .mql-print-sig-signing-space {

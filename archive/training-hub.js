@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260723n";
+        const HUB_BUILD_ID = "20260724a";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -380,15 +380,33 @@
         ];
         /** Extra snapshot columns for unsigned MQL PDF export only (expiration / due dates). */
         const MQL_EXPORT_SUPPORT_COLUMN_DEFS = [
-          { label: "SMC Exp", kind: "support", field: "smc", part: "exp" },
-          { label: "Sust Due", kind: "support", field: "sust", part: "exp" },
-          { label: "BLS Exp", kind: "support", field: "bls", part: "exp" },
-          { label: "TCCC Exp", kind: "support", field: "tccc", part: "exp" },
+          { label: "SMC", kind: "support", field: "smc", part: "exp" },
+          { label: "Sust", kind: "support", field: "sust", part: "exp" },
+          { label: "BLS", kind: "support", field: "bls", part: "exp" },
+          { label: "TCCC", kind: "support", field: "tccc", part: "exp" },
         ];
         /** Unsigned MQL PDF: person fields + expiration dates only (no qual dates). */
         const MQL_EXPORT_COLUMN_DEFS = MQL_STANDARD_COLUMN_DEFS.filter(function (col) {
           return !col || col.kind === "person" || String(col.part || "").toLowerCase() !== "qual";
-        }).concat(MQL_EXPORT_SUPPORT_COLUMN_DEFS);
+        })
+          .map(function (col) {
+            if (!col) return col;
+            // Shorter PDF headers so name + date columns stay on one readable line.
+            const short = {
+              "Duty Status": "Status",
+              "Duty Section": "Section",
+              "Full Name": "Name",
+              "M18 Exp": "M18",
+              "M4 Exp": "M4",
+              "Baton Exp": "Baton",
+              "Taser Exp": "Taser",
+              "DD2760 Exp": "2760",
+              "AUOF Exp": "AUOF",
+            };
+            if (short[col.label]) return Object.assign({}, col, { label: short[col.label] });
+            return col;
+          })
+          .concat(MQL_EXPORT_SUPPORT_COLUMN_DEFS);
         /**
          * Hub footer quick links (open in a new tab).
          */
@@ -8246,11 +8264,12 @@
             "table.mql-print-table-continue { margin-top: 0; border-top: none; }" +
             "table.mql-print-table-continue tbody tr:first-child td { border-top: 1px solid #000; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table { width: 100%; border-collapse: collapse; margin: 0; font-size: 8pt; }" +
-            "#sp-pip-ui .scheduling-print-surface table.af-official-table--compact { font-size: 7pt; }" +
-            "#sp-pip-ui .scheduling-print-surface table.af-official-table th, #sp-pip-ui .scheduling-print-surface table.af-official-table td { border: 1px solid #000; padding: 2px 3px; text-align: left; vertical-align: top; color: #000; background: #fff; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table--compact { font-size: 8pt; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table th, #sp-pip-ui .scheduling-print-surface table.af-official-table td { border: 1px solid #000; padding: 2px 3px; text-align: left; vertical-align: middle; color: #000; background: #fff; white-space: nowrap; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table th { font-weight: 700; }" +
-            "#sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th, #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td { white-space: nowrap; padding: 1px 2px; font-size: 7pt; line-height: 1.05; }" +
-            "#sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td:nth-child(3) { white-space: normal; word-break: break-word; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard th, #sp-pip-ui .scheduling-print-surface table.af-official-table--mql-standard td { white-space: nowrap; padding: 2px 3px; font-size: 8pt; line-height: 1.15; overflow: hidden; }" +
+            "#sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table th, #sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table td { font-size: 9pt; padding: 2px 3px; white-space: nowrap !important; line-height: 1.2; overflow: hidden; word-break: normal; }" +
+            "#sp-pip-ui .scheduling-print-surface .mql-export-doc table.af-official-table th { font-size: 8pt; }" +
             "table.mql-print-unified-table { border-collapse: collapse; width: 100%; }" +
             "table.mql-print-unified-table tr.mql-print-section-row td.mql-print-section-heading-cell { font-weight: 700; font-size: 8pt; border: 1px solid #000; padding: 3px 5px; background: #fff; color: #000; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--expired { background: #f5c2c7 !important; color: #000 !important; }" +
@@ -8261,7 +8280,7 @@
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-status-taw-as-pfd { color: #c00000 !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
             ".mql-print-doc-signature, .mql-print-signature-stamp, .mql-print-iframe-footer { display: none !important; }" +
             "@media print {" +
-            "@page { size: landscape; margin: 0.35in 0.4in 0.25in 0.4in; }" +
+            "@page { size: landscape; margin: 0.25in 0.3in 0.2in 0.3in; }" +
             "html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }" +
             ".mql-print-sheet { height: 7.85in; min-height: 7.85in; max-height: 7.85in; page-break-after: always; break-after: page; }" +
             ".mql-print-sheet:last-child { page-break-after: auto; break-after: auto; }" +
@@ -12014,13 +12033,21 @@
         function mqlStandardColumnWidths(opts) {
           const defs = mqlColumnDefsForMode(opts);
           const n = defs.length;
-          if (n <= 4) return ["14%", "14%", "36%", "36%"].slice(0, n);
-          // Keep person columns readable; give cert/exp cells enough width for one-line dates.
-          const personShare = opts && opts.exportSnapshot ? Math.min(34, Math.max(24, 100 / n + 8)) : 32;
-          const personEach = (personShare / 4).toFixed(2) + "%";
+          if (n <= 4) return ["10%", "12%", "48%", "30%"].slice(0, n);
+          const isExport = !!(opts && opts.exportSnapshot);
+          // Wide name column keeps each person on one line; dates stay compact.
+          const statusPct = isExport ? 6 : 7;
+          const sectionPct = isExport ? 8 : 8;
+          const namePct = isExport ? 22 : 17;
+          const dodidPct = isExport ? 8 : 8;
           const certCount = Math.max(1, n - 4);
-          const certEach = ((100 - personShare) / certCount).toFixed(2) + "%";
-          return [personEach, personEach, personEach, personEach].concat(
+          const certEach = ((100 - (statusPct + sectionPct + namePct + dodidPct)) / certCount).toFixed(2) + "%";
+          return [
+            statusPct + "%",
+            sectionPct + "%",
+            namePct + "%",
+            dodidPct + "%",
+          ].concat(
             Array(certCount)
               .fill(null)
               .map(function () {
