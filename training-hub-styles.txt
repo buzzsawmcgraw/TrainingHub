@@ -971,6 +971,13 @@
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
+      #sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-name-profile,
+      #sp-pip-ui table.reports-mql-table td.mql-name-profile,
+      #sp-pip-ui table.reports-mql-table td.mql-name-profile .reports-name-link {
+        color: #4a4a4a !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
       #sp-pip-ui .scheduling-print-surface .mql-print-page-signature {
         margin-top: 28px;
         margin-left: auto;

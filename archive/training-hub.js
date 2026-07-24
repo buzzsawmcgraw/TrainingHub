@@ -24,7 +24,7 @@
         const HUB_ACCESS_PASSWORD = "Training2026";
         const HUB_ACCESS_STORAGE_KEY = "trainingHubAccessGranted";
         /** Bumped on each deploy build - shown in header as Build xxxxx. */
-        const HUB_BUILD_ID = "20260724a";
+        const HUB_BUILD_ID = "20260724b";
 
         /** Must match Site contents list title (URL .../Lists/Personnel... usually means title "Personnel"). */
         const LIST_PERSONNEL = "Personnel";
@@ -8278,6 +8278,7 @@
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell--recert { background: #b8e6b8 !important; color: #000 !important; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-cert-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
             "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-status-taw-as-pfd { color: #c00000 !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
+            "#sp-pip-ui .scheduling-print-surface table.af-official-table td.mql-name-profile { color: #4a4a4a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }" +
             ".mql-print-doc-signature, .mql-print-signature-stamp, .mql-print-iframe-footer { display: none !important; }" +
             "@media print {" +
             "@page { size: landscape; margin: 0.25in 0.3in 0.2in 0.3in; }" +
@@ -12531,6 +12532,11 @@
         function applyMqlPrintCellMeta(td, cell) {
           if (!td || !cell || typeof cell !== "object") return;
           if (cell.statusClass) td.classList.add(cell.statusClass);
+          if (cell.nameClass) td.classList.add(cell.nameClass);
+        }
+
+        function mqlProfileNameClass(person) {
+          return isProfileDutyStatus(personStatusLabel(person)) ? "mql-name-profile" : "";
         }
 
         function mqlMatchCatalogLabel(storedLabel, wantedLabel) {
@@ -12660,7 +12666,12 @@
             if (col.kind === "person") {
               if (col.field === "status") cells.push(mqlPrintStatusCell(person, display, opts));
               else if (col.field === "section") cells.push({ text: personDutySectionLabel(person), tone: "ok" });
-              else if (col.field === "fullName") cells.push({ text: formatPersonFullName(person), tone: "ok" });
+              else if (col.field === "fullName") {
+                const nameCell = { text: formatPersonFullName(person), tone: "ok" };
+                const nameClass = mqlProfileNameClass(person);
+                if (nameClass) nameCell.nameClass = nameClass;
+                cells.push(nameCell);
+              }
               else if (col.field === "dodid") cells.push({ text: itemFieldText(person, "DoDID") || "-", tone: "ok" });
               return;
             }
@@ -12707,7 +12718,10 @@
           const display = mqlDisplayOpts(opts);
           const person = entry.person;
           const statusCell = mqlPrintStatusCell(person, display, opts);
-          const cells = [statusCell, display.displayNameFn(person)];
+          const nameCell = { text: display.displayNameFn(person), tone: "ok" };
+          const nameClass = mqlProfileNameClass(person);
+          if (nameClass) nameCell.nameClass = nameClass;
+          const cells = [statusCell, nameCell];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
             const row = mqlLookupCertRow(entry.weapons, label);
             cells.push(mqlExportCertCell(row, "qual", computeMqlWeaponsCertCellStatus, true));
@@ -12724,7 +12738,10 @@
         function mqlExportRowCells(entry, catalog, opts) {
           const display = mqlDisplayOpts(opts);
           const person = entry.person;
-          const cells = [mqlPrintStatusCell(person, display, opts), display.displayNameFn(person)];
+          const nameCell = { text: display.displayNameFn(person), tone: "ok" };
+          const nameClass = mqlProfileNameClass(person);
+          if (nameClass) nameCell.nameClass = nameClass;
+          const cells = [mqlPrintStatusCell(person, display, opts), nameCell];
           (catalog && catalog.weapons ? catalog.weapons : []).forEach(function (label) {
             const row = mqlLookupCertRow(entry.weapons, label);
             cells.push(mqlExportCertCell(row, "qual", computeMqlWeaponsCertCellStatus, true));
@@ -12758,6 +12775,7 @@
           }
           applyMqlCertCellStyle(td, tone);
           if (tone) td.classList.add("reports-mql-cert");
+          applyMqlPrintCellMeta(td, cell);
           tr.appendChild(td);
         }
 
@@ -12768,7 +12786,15 @@
             .replace(/[\s_.-]+/g, "");
         }
 
+        function isProfileDutyStatus(status) {
+          const compact = mqlDutyStatusSortKey(status);
+          return compact === "PROFILE" || /\bPROFILE\b/i.test(String(status || ""));
+        }
+
         function mqlDutyStatusSortIndex(status) {
+          if (isProfileDutyStatus(status)) {
+            return MQL_DUTY_STATUS_ORDER.indexOf("PFD");
+          }
           const compact = mqlDutyStatusSortKey(status);
           if (!compact) return MQL_DUTY_STATUS_ORDER.length + 1;
           for (let i = 0; i < MQL_DUTY_STATUS_ORDER.length; i++) {
@@ -12810,6 +12836,7 @@
 
         function mqlScreenSectionLabel(person) {
           const status = person ? personStatusLabel(person) : "Unknown";
+          if (isProfileDutyStatus(status)) return "PFD";
           if (isTawDutyStatus(status)) {
             const section = personDutySectionLabel(person);
             return section && section !== "-" ? section : "TAW";
@@ -12826,7 +12853,8 @@
             const person = entry && entry.person;
             const status = person ? personStatusLabel(person) : "Unknown";
             let section;
-            if (printTawAsPfd && isTawDutyStatus(status)) section = "PFD";
+            if (isProfileDutyStatus(status)) section = "PFD";
+            else if (printTawAsPfd && isTawDutyStatus(status)) section = "PFD";
             else if (useTawDutySection) section = mqlScreenSectionLabel(person);
             else section = status || "Unknown";
             if (!groups.has(section)) groups.set(section, []);
@@ -12841,10 +12869,20 @@
             const sampleB = b.items && b.items[0] && b.items[0].person;
             const statusA = sampleA ? personStatusLabel(sampleA) : a.section;
             const statusB = sampleB ? personStatusLabel(sampleB) : b.section;
-            const rankStatusA =
-              printTawAsPfd && isTawDutyStatus(statusA) ? "PFD" : isTawDutyStatus(statusA) ? "TAW" : statusA;
-            const rankStatusB =
-              printTawAsPfd && isTawDutyStatus(statusB) ? "PFD" : isTawDutyStatus(statusB) ? "TAW" : statusB;
+            const rankStatusA = isProfileDutyStatus(statusA)
+              ? "PFD"
+              : printTawAsPfd && isTawDutyStatus(statusA)
+                ? "PFD"
+                : isTawDutyStatus(statusA)
+                  ? "TAW"
+                  : statusA;
+            const rankStatusB = isProfileDutyStatus(statusB)
+              ? "PFD"
+              : printTawAsPfd && isTawDutyStatus(statusB)
+                ? "PFD"
+                : isTawDutyStatus(statusB)
+                  ? "TAW"
+                  : statusB;
             const rankA = mqlDutyStatusSortIndex(rankStatusA);
             const rankB = mqlDutyStatusSortIndex(rankStatusB);
             if (rankA !== rankB) return rankA - rankB;
